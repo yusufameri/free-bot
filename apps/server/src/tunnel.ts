@@ -17,6 +17,7 @@ import {
 import type { PiInboundFrame } from "@freebot/pi-bridge";
 import { Hono } from "hono";
 import { app } from "./app";
+import { checkHost, checkOrigin, refusalLogLine, refusalResponse, TUNNEL_HOSTNAMES } from "./auth";
 
 const CLIENT_TOPIC = "stream";
 
@@ -65,7 +66,26 @@ export function startTunnelServer(options: { port?: number } = {}): TunnelServer
     port: options.port ?? 0,
     fetch(request, srv) {
       const url = new URL(request.url);
-      if (url.pathname !== "/tunnel" && url.pathname !== "/stream") return http.fetch(request);
+      if (url.pathname !== "/tunnel" && url.pathname !== "/stream") {
+        // A rebound page's fetch to its own hostname is same-origin, so it sends no Origin and CORS
+        // does not apply: the `Host` check is what refuses that read of the log.
+        // `TUNNEL_HOSTNAMES` allows `host.docker.internal` for the in-sandbox agent. See
+        // docs/server-auth.md.
+        const refused = checkHost(request.headers.get("host"), TUNNEL_HOSTNAMES);
+        if (refused !== null) {
+          console.log(refusalLogLine(refused, request));
+          return refusalResponse(refused);
+        }
+        return http.fetch(request);
+      }
+      // WebSockets escape CORS, so a page on any origin can open these legs, and a browser always
+      // sends Origin on a handshake: that is the provenance these upgrades have. The agent leg
+      // holds no token, so the operator-facing API leg (api-server.ts) is where the token lives.
+      const refusal = checkOrigin(request.headers.get("origin"));
+      if (refusal !== null) {
+        console.log(refusalLogLine(refusal, request));
+        return refusalResponse(refusal);
+      }
       const requested = Number(url.searchParams.get("last_seen_seq") ?? "0");
       const lastSeenSeq = Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : 0;
       const data: SocketData = {
