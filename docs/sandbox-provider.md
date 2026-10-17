@@ -120,10 +120,11 @@ Errors are typed, and the message is literal and assertable.
 | `link_error` | `tunnel` | no supervisor port file, no handshake, or a first line that is not an `attached` frame |
 
 `exec` does not throw for a command that ran and failed: the exit code is data in `ExecResult`. A
-buffered or detached `exec` is bounded like every other call (120s; 600s for a first image build), so a
-stuck daemon becomes a `docker_cli` error instead of a hang. A streamed `exec` is the one unbounded
-call: its lifetime is the command's, nothing here kills it, and its `result` settles when the command
-itself exits.
+buffered or detached `exec` is bounded like every other collected call (120s; 600s for a first image
+build), so a stuck daemon becomes a `docker_cli` error instead of a hang. The unbounded calls are the
+ones that carry a connection rather than an outcome: a streamed `exec`, `tunnel()` and `exposePort`'s
+per-connection bridge. Their lifetime is the connection's, nothing here kills them, and a streamed
+`result` settles when the command itself exits.
 
 ## The tunnel
 
