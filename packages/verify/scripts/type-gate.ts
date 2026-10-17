@@ -16,7 +16,7 @@
  * Run from the repo root: `bun packages/verify/scripts/type-gate.ts`.
  */
 
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { artifactDir } from "../src/index.ts";
@@ -57,6 +57,9 @@ const covered = [
 
 /**
  * Files in the tree that no included root reaches, each with its follow-up in docs/type-gate.md.
+ * The census asserts this list is exactly the tree-minus-program difference, so it is complete by
+ * construction and a new unreached file fails the probe.
+ *
  * An import pulls a file into a program whatever the include list says, which is why
  * `packages/pi-bridge/extension/tool-gate.ts` is not here despite living outside `src` and
  * `scripts`: `packages/pi-bridge/src/gate.test.ts` imports it.
@@ -94,6 +97,24 @@ function git(args: string[]): string {
     throw new Error(`git ${args.join(" ")} failed: ${proc.stderr.toString().trim()}`);
   }
   return proc.stdout.toString().trim();
+}
+
+/**
+ * Every `.ts`/`.tsx` file under `packages/` and `apps/`, repo-relative. The census diffs this
+ * against the program, so this list has to be the whole tree, not a subset.
+ */
+function treeFiles(): string[] {
+  const found: string[] = [];
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
+      const abs = join(dir, entry.name);
+      if (entry.isDirectory()) walk(abs);
+      else if (/\.tsx?$/.test(entry.name)) found.push(abs.slice(root.length + 1));
+    }
+  };
+  for (const top of ["packages", "apps"]) walk(join(root, top));
+  return found.sort();
 }
 
 /** Every file the given project puts in its program, repo-local only. */
@@ -178,14 +199,16 @@ try {
   for (const path of covered) {
     check(`in program: ${path}`, inProgram.has(join(root, path)), "the include narrowed");
   }
-  for (const path of blind) {
-    const abs = join(root, path);
-    check(
-      `not in program, as documented: ${path}`,
-      existsSync(abs) && !inProgram.has(abs),
-      "update docs/type-gate.md and this list",
-    );
-  }
+  const unreached = treeFiles().filter((path) => !inProgram.has(join(root, path)));
+  log.push(
+    `unreached .ts/.tsx files under packages/ and apps/: ${unreached.length}`,
+    ...unreached.map((path) => `  ${path}`),
+  );
+  check(
+    "the blind set is exactly the documented set",
+    unreached.join("\n") === blind.join("\n"),
+    "update docs/type-gate.md and the blind list",
+  );
 
   section("the hole, owned by the pre-widening include");
   for (const probeCase of cases) place(probeCase.path);
