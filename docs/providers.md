@@ -29,6 +29,10 @@ scripts/cases.ts   the literal cases the artifact carries
 scripts/evidence.ts  the evidence run that writes the artifact
 ```
 
+`package.json` declares the two workspace packages this code imports, `@freebot/pi-bridge` and
+`@freebot/verify`, and the source imports them by name. The two paths that stay relative are files
+outside a package's `exports` map: `pi-bridge/extension/smoke-tool.ts` and the replay fixture.
+
 ## Client contract
 
 `new OpenAiCompatibleClient({ baseUrl, apiKey }, { transport?, timeoutMs? })` posts to
@@ -84,7 +88,9 @@ The probe's steps:
    `text_delta` and `toolcall_delta` count the incremental evidence, `tool_execution_end` records
    whether each call ran, and `agent_settled` marks the turn's end.
 5. Derive the flags from that observation, plus the structured-output observation when the path was
-   exercised.
+   exercised. A Pi prompt request carries no `response_format` (`packages/pi-bridge/src/frames.ts`),
+   so the turn never supplies that observation: only a direct `response_format: json_object`
+   request does, which the live smoke makes when the key is in the environment.
 
 The replay half adds one bound to be honest about. `planReplayTurn` selects the first recorded
 prompt block that ran a tool successfully, plus the recorded model-list exchange, and hands only
@@ -101,9 +107,9 @@ the two commands the probe wrote.
 | `contextWindow` | The `contextWindow` of the model entry Pi listed for this connection, or `null`. |
 | `notes` | The literal evidence: which tool call was observed, how its execution ended, which flag is unknown and why. |
 
-A native tool call leaves `structuredOutput` at `null`, because that turn never exercised the path.
-The live probe fills it with one direct client request when the key is in the environment. A
-vault-only key leaves it unknown: this probe does not read key values out of the vault file.
+The turn never sets `structuredOutput`: a Pi prompt request carries no `response_format`, so only a
+direct request exercises the path. The live probe makes one when the key is in the environment. A
+vault-only key leaves the flag unknown: this probe does not read key values out of the vault file.
 
 ## Structured-output fallback for weak tool callers
 
@@ -166,5 +172,8 @@ another recorded transcript. Exit codes: 0 when the observed turn can drive Pi (
 - The artifact at `packages/verify/artifacts/providers/<short-sha>/assert.txt` carries the
   capability table, the malformed shapes, the error shapes, the fallback literals, and the key
   scan, with every observation line labelled `[replay]` or `[live]`.
+- Every row in the artifact is asserted against an expected literal, so a regression in the status
+  mapping, the `retryAfterMs` arithmetic, or the fallback's reading of a reply fails the run
+  instead of printing PASS.
 - The VERIFICATION.md row names the injectable transport and the replay-mode probe as the live
   surface, and states that the live-provider run is gate-bound on G1.

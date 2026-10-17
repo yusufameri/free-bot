@@ -21,13 +21,13 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { allowTools, PiSession, spawnPiTransport } from "@freebot/pi-bridge";
 import { SMOKE_ECHO_TOOL } from "../../pi-bridge/extension/smoke-tool.ts";
-import { allowTools, PiSession, spawnPiTransport } from "../../pi-bridge/src/index.ts";
 import { OpenAiCompatibleClient, type ToolSpec } from "../src/client.ts";
 import { ProviderRefusalError } from "../src/errors.ts";
 import { runStructuredToolTurn } from "../src/fallback.ts";
 import { formatFlags, observeTurn, type StructuredObservation } from "../src/flags.ts";
-import { probeReplayFixture, probeRun, structuredFromTurn } from "../src/probe.ts";
+import { probeReplayFixture, probeRun } from "../src/probe.ts";
 
 const USAGE =
   "usage: bun packages/providers/scripts/smoke.ts <baseUrl> <model> [--replay] [--fixture <path>]";
@@ -200,32 +200,30 @@ try {
     typeof entry?.contextWindow === "number" ? (entry.contextWindow as number) : null;
 
   const observation = observeTurn(session.events);
-  let structured = structuredFromTurn(observation);
-  let structuredNote = "observed in the live turn";
-  if (structured === null) {
-    const keyValue = envKeyPresent() ? (process.env.FREEBOT_BYOK_KEY as string) : null;
-    if (keyValue === null) {
-      structuredNote =
-        "not exercised: the key lives in the vault and this probe does not read key values";
-    } else {
-      const client = new OpenAiCompatibleClient(
-        { baseUrl: liveBaseUrl, apiKey: keyValue },
-        { timeoutMs: 30_000 },
-      );
-      const outcome = await runStructuredToolTurn(client, {
-        model: liveModel,
-        task: `Call ${SMOKE_ECHO_TOOL} with text "save-time-smoke".`,
-        tools: [ECHO_SPEC],
-      });
-      structured = {
-        parsableJson: outcome.reply.kind !== "invalid",
-        toolCall: outcome.reply.kind === "tool_call",
-      } satisfies StructuredObservation;
-      structuredNote =
-        outcome.failure === null
-          ? "one direct response_format:json_object request parsed"
-          : `one direct request failed: ${outcome.failure.reason}`;
-    }
+  const keyValue = envKeyPresent() ? (process.env.FREEBOT_BYOK_KEY as string) : null;
+  let structured: StructuredObservation | null = null;
+  let structuredNote: string;
+  if (keyValue === null) {
+    structuredNote =
+      "not exercised: a Pi prompt request carries no response_format, and the key lives in the vault, which this probe does not read";
+  } else {
+    const client = new OpenAiCompatibleClient(
+      { baseUrl: liveBaseUrl, apiKey: keyValue },
+      { timeoutMs: 30_000 },
+    );
+    const outcome = await runStructuredToolTurn(client, {
+      model: liveModel,
+      task: `Call ${SMOKE_ECHO_TOOL} with text "save-time-smoke".`,
+      tools: [ECHO_SPEC],
+    });
+    structured = {
+      parsableJson: outcome.reply.kind !== "invalid",
+      toolCall: outcome.reply.kind === "tool_call",
+    } satisfies StructuredObservation;
+    structuredNote =
+      outcome.failure === null
+        ? "one direct response_format:json_object request parsed"
+        : `one direct request failed: ${outcome.failure.reason}`;
   }
 
   const run = probeRun({

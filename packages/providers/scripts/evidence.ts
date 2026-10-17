@@ -22,7 +22,7 @@ import {
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { artifactDir } from "../../verify/src/index.ts";
+import { artifactDir } from "@freebot/verify";
 import { formatFlags } from "../src/flags.ts";
 import { probeReplayFixture } from "../src/probe.ts";
 import { errorShapeCases, fallbackCases, malformedToolCallCases, statusCases } from "./cases.ts";

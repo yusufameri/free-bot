@@ -7,7 +7,7 @@
  * process and against the committed replay transcript.
  */
 
-import type { PiEventFrame } from "../../pi-bridge/src/index.ts";
+import type { PiEventFrame } from "@freebot/pi-bridge";
 
 /** How reliably this connection drives Pi's tool pipeline, as observed. */
 export type ToolCalling = "strong" | "weak" | "none";
@@ -131,7 +131,11 @@ export function deriveFlags(
     notes.push("no native tool call; a structured reply parsed into a tool call");
   } else {
     toolCalling = "none";
-    notes.push("no tool call observed: neither a native call nor a parsable structured reply");
+    notes.push(
+      structured?.parsableJson === true
+        ? "no tool call observed: the structured reply parsed but carried no tool call"
+        : "no tool call observed: neither a native call nor a parsable structured reply",
+    );
   }
 
   const deltas = observation.textDeltas + observation.toolCallDeltas;

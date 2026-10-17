@@ -8,7 +8,7 @@
  * derivation the live path runs.
  */
 
-import type { PiInboundFrame, PiRequest, PiResponse } from "../../pi-bridge/src/index.ts";
+import type { PiInboundFrame, PiRequest, PiResponse } from "@freebot/pi-bridge";
 import {
   allowTools,
   createReplayTransport,
@@ -18,8 +18,7 @@ import {
   PiSession,
   parseFixture,
   type ReplayTransport,
-} from "../../pi-bridge/src/index.ts";
-import { parseStructuredReply } from "./fallback.ts";
+} from "@freebot/pi-bridge";
 import {
   type CapabilityFlags,
   deriveFlags,
@@ -180,20 +179,13 @@ function readModel(data: unknown, block: { frames: PiInboundFrame[] }): Recorded
   };
 }
 
-/**
- * The structured-output observation the turn itself carries. A native tool call leaves the path
- * unexercised (`null`); a JSON-shaped text reply is the observation, good or bad.
- */
-export function structuredFromTurn(observation: TurnObservation): StructuredObservation | null {
-  if (observation.toolCallsCompleted > 0) return null;
-  const text = observation.assistantText.trim();
-  if (text.length === 0) return null;
-  const reply = parseStructuredReply(text);
-  return { parsableJson: reply.kind !== "invalid", toolCall: reply.kind === "tool_call" };
-}
-
 export interface SessionProbeOptions {
   contextWindow: number | null;
+  /**
+   * The structured-output observation for this connection, or `null` when the path was not
+   * exercised. A Pi prompt request carries no `response_format` (frames.ts), so the turn can never
+   * supply it: only a real `response_format: json_object` request can, which the live smoke makes.
+   */
   structured: StructuredObservation | null;
   toolName: string;
 }
@@ -242,7 +234,7 @@ export async function probeReplayTurn(records: readonly FixtureRecord[]): Promis
     return probeRun({
       observation,
       contextWindow,
-      structured: structuredFromTurn(observation),
+      structured: null,
       toolName: plan.toolName,
       recorded: { provider: plan.provider, modelId: plan.modelId, baseUrl: plan.baseUrl },
       requestsWritten: 2,

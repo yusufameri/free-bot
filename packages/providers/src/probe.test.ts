@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { PiProtocolError, parseFixture } from "../../pi-bridge/src/index.ts";
+import { PiProtocolError, parseFixture } from "@freebot/pi-bridge";
 import { deriveFlags, observeTurn, type TurnObservation } from "./flags.ts";
 import { planReplayTurn, probeReplayFixture } from "./probe.ts";
 
@@ -123,6 +123,22 @@ describe("flag derivation", () => {
     expect(flags.streaming).toBeNull();
     expect(flags.structuredOutput).toBe(false);
     expect(flags.notes).toContain("the turn did not settle: agent_settled never arrived");
+  });
+
+  test("a parsable reply that carries no tool call is named as parsable, not denied", () => {
+    const flags = deriveFlags(
+      observation({ assistantMessages: 1, assistantText: '{"tool":null,"text":"nothing to do"}' }),
+      null,
+      { parsableJson: true, toolCall: false },
+    );
+    expect(flags.toolCalling).toBe("none");
+    expect(flags.structuredOutput).toBe(true);
+    expect(flags.notes).toContain(
+      "no tool call observed: the structured reply parsed but carried no tool call",
+    );
+    expect(flags.notes).not.toContain(
+      "no tool call observed: neither a native call nor a parsable structured reply",
+    );
   });
 
   test("an unevaluated structured path stays unknown rather than false", () => {
