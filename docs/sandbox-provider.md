@@ -6,9 +6,10 @@ adapter the Phase 1 MVP runs Pi-in-sandbox on. Interface and error types live in
 against the strictest adapter (boat: screen, suspend, fork), not against Docker, so E2B and boat
 fill in capabilities without a redesign.
 
-Artifact: `packages/verify/artifacts/sandbox-provider/dc875b3/assert.txt`, produced by
-`bun test packages/sandbox/src/docker.test.ts` at commit `dc875b31769843ebd3b743fc8a68b3f43566b35f` on
-branch `u1.2-sandbox-provider`.
+Artifact: `packages/verify/artifacts/sandbox-provider/7032a72/assert.txt`, produced by
+`bun test packages/sandbox/src/docker.test.ts` at commit `7032a72c9c7c01e2cc35f103e9c42c7b6dad8f66` on
+branch `u2.2-test-isolation` (the merge with U2.1's run path). U1.2's run of the same suite is
+`4f44e98/assert.txt`.
 
 ## Running the integration suite
 
@@ -29,6 +30,15 @@ the rest of `bun test` stays green.
 
 The image is arm64-only (order 18: this Mac builds), so the linux/amd64 CI runner cannot materialize
 it. CI skips this suite by design, and the committed artifact is the local run.
+
+The Docker engine is shared with sibling units, so the suite takes a per-run token: the pid in base
+36 plus six random hex digits, in every container name it creates (`freebot-sbx-u12-main-<token>`) and
+in its own `freebot.unit` label value (`u1.2-run-<token>`). Two runs at once on one engine share no
+name and no ownership label, so both pass. The artifact is per worktree rather than per engine: a run
+writes `packages/verify/artifacts/sandbox-provider/<sha>/assert.txt` and records its token in the
+header. One run per worktree at a time is the rule (order 3), which is why that single file can be the
+artifact; two runs in one worktree append into it, and the doubled `run token:` lines are how that
+shows.
 
 ## The interface, method by method
 
@@ -102,9 +112,18 @@ pattern, and cannot reach another unit's containers, which is what makes it safe
 Docker engine this repo and its sibling units run on. Callers cannot set labels in the `freebot.*`
 namespace; spec validation rejects them.
 
-The integration suite proves the boundary rather than asserting it: it creates a decoy container
-labelled `freebot.unit=u0.11` and an unlabelled one, runs `sweep()`, and asserts the unit's three
-containers are gone while both decoys keep their ids and their running state.
+A container name and a unit label are only as private as the process that chooses them, so the
+integration suite chooses per-run ones. The run token suffixes every container id it creates
+(`u12-main-<token>`) and becomes its ownership label value (`freebot.unit=u1.2-run-<token>`), so two
+runs of the suite on one engine share no name and no label value and each run's `sweep()` reaches
+exactly the containers that run created. A run killed hard leaves its containers behind under that
+token: they are removed by exact name or by that label, never by a pattern.
+
+The integration suite proves the boundary rather than asserting it: it creates three decoy
+containers, one labelled `freebot.unit=u0.11`, one carrying a sibling run's
+`freebot.unit=u1.2-run-<other-token>`, and one with no labels at all, runs `sweep()`, and asserts the
+run's exactly three containers are gone while all three decoys keep their ids and their running
+state.
 
 ## The error contract
 
