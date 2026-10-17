@@ -56,8 +56,9 @@ const LAUNCH_TAG = Math.random().toString(36).slice(2, 10);
 export interface RunServiceOptions {
   /** Inject a provider, for a test or for the keyed path once G1 clears. */
   readonly provider?: () => ProviderPort | Promise<ProviderPort>;
-  /** Inject a sandbox, so a test drives the endpoints without Docker. */
-  readonly sandbox?: SandboxPort;
+  /** Inject a sandbox, so a test drives the endpoints without Docker. A factory gets one port per
+   * run, which keeps two concurrent runs off each other's container. */
+  readonly sandbox?: SandboxPort | (() => SandboxPort);
   /** Journal path for the run store. Omitted means an in-memory store. */
   readonly file?: string;
   readonly transcript?: string;
@@ -189,8 +190,11 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
           for (const wake of [...waiters]) wake();
         },
       });
+      const injected = options.sandbox;
       const sandbox =
-        options.sandbox ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT }));
+        typeof injected === "function"
+          ? injected()
+          : (injected ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT })));
       const run = (async () => {
         const provider = await providerFor();
         return await runRunLoop(
