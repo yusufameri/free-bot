@@ -5,7 +5,10 @@
  *
  * Writes `packages/verify/artifacts/providers/<short-sha>/assert.txt`. Every observation line is
  * labelled `[replay]` (scripted transport or the committed replay transcript) or `[live]` (a real
- * provider); today every line is replay because gate G1 parks the live half.
+ * provider). The gate is deterministic: the smoke step asks for `--replay`, so it takes one path
+ * whether or not a key exists. Gate G1 is open, so the artifact reports `live-probe: AVAILABLE` and
+ * prints the live command beside the replay result; running the smoke live is a deliberate, separate
+ * step and is not part of the gate.
  *
  * Run from the repo root: `bun packages/providers/scripts/evidence.ts`.
  */
@@ -70,7 +73,12 @@ const steps: Array<{ name: string; step: () => Outcome }> = [
   },
   { name: "tests", step: () => run(["bun", "test", "packages/providers"]) },
   { name: "verify", step: () => run(["bun", "run", "verify"]) },
-  { name: "smoke-replay", step: () => run(["bun", "packages/providers/scripts/smoke.ts"]) },
+  // `--replay` pins the path. Without it, a key anywhere on the machine selects live mode, which
+  // needs a base URL and a model, so the gate would depend on whether a key exists.
+  {
+    name: "smoke-replay",
+    step: () => run(["bun", "packages/providers/scripts/smoke.ts", "--replay"]),
+  },
 ];
 
 const outcomes: Array<{ name: string; outcome: Outcome }> = [];
@@ -94,12 +102,13 @@ const scaffoldDir = join(
 const scaffoldRemoved = existsSync(scaffoldDir);
 if (scaffoldRemoved) rmSync(scaffoldDir, { recursive: true, force: true });
 
-// The live half parks on G1. Presence only: no key value is read into this process.
+// The live half runs on G1. Presence only: no key value is read into this process.
 const envKeyPresent = (process.env.FREEBOT_BYOK_KEY ?? "").length > 0;
 const vaultKeyPresent =
   existsSync(vaultPath) &&
   Bun.spawnSync(["grep", "-q", "^FREEBOT_BYOK_KEY=", vaultPath]).exitCode === 0;
-const liveParked = !envKeyPresent && !vaultKeyPresent;
+const liveReady = envKeyPresent || vaultKeyPresent;
+const smokeStep = outcomes.find((entry) => entry.name === "smoke-replay");
 
 // ---------------------------------------------------------------------------
 // The literal observations
@@ -170,7 +179,7 @@ const head = [
   `runtime: bun ${Bun.version} on ${process.platform} ${process.arch}`,
   "",
   ...outcomes.map((entry) => `step ${entry.name}: ${entry.outcome.ok ? "PASS" : "FAIL"}`),
-  `step live-probe: ${liveParked ? "PARKED (G1 BYOK key absent)" : "AVAILABLE (key present; run the live smoke)"}`,
+  `step live-probe: ${liveReady ? "AVAILABLE (G1 BYOK key present; the smoke gate stays on --replay)" : "PARKED (G1 BYOK key absent)"}`,
   `step verify-scope: ${scaffoldRemoved ? "removed the scaffold artifact dir this run wrote (outside this unit's artifact scope)" : "nothing to remove"}`,
   "",
 ];
@@ -180,6 +189,10 @@ const failedOutputs = outcomes
   .flatMap((entry) => [`--- failed step ${entry.name} ---`, tail(entry.outcome.output, 40), ""]);
 
 const sections = [
+  "== the gate's smoke step [replay] ==",
+  "command: bun packages/providers/scripts/smoke.ts --replay",
+  ...(smokeStep?.outcome.output.split("\n") ?? ["(the step did not run)"]),
+  "",
   "== capability flags, replay mode [replay] ==",
   `fixture: ${fixture.replace(`${root}/`, "")}`,
   probe.recorded === null
@@ -200,10 +213,12 @@ const sections = [
   ...fallback.lines,
   "",
   "== live probe [live] ==",
-  liveParked
-    ? "parked: G1 BYOK key absent (presence-only check; no key was read, requested, or logged)"
-    : "the key is present: run the live half with the command below",
-  "live command once the key exists: bun packages/providers/scripts/smoke.ts <baseUrl> <model>",
+  liveReady
+    ? "G1 is OPEN and the machine holds a key, so the live half can run. What that changes: the smoke selects live mode by default when a key is present, so the gate's smoke step asks for --replay instead. The gate therefore passes with or without a key, and the live path below is deliberate (presence-only check; no key was read, requested, or logged)."
+    : "parked: G1 BYOK key absent (presence-only check; no key was read, requested, or logged)",
+  "live command: bun packages/providers/scripts/smoke.ts <baseUrl> <model>",
+  "  baseUrl and model come from FREEBOT_BYOK_BASE_URL and FREEBOT_BYOK_MODEL; the key stays in",
+  "  ~/.freebot/provider.env and is interpolated by Pi's own !command support (order 8).",
   "",
 ];
 
@@ -239,8 +254,7 @@ for (const { name, outcome } of outcomes) {
   console.log(`${outcome.ok ? "PASS" : "FAIL"} step ${name}`);
   if (!outcome.ok) console.log(tail(outcome.output, 20));
 }
-console.log(`PASS step smoke-replay (see the artifact)`);
-console.log(`step live-probe: ${liveParked ? "PARKED (G1 BYOK key absent)" : "AVAILABLE"}`);
+console.log(`step live-probe: ${liveReady ? "AVAILABLE" : "PARKED (G1 BYOK key absent)"}`);
 console.log(`step key-scan: ${hits.length === 0 ? "PASS (0 hits)" : `FAIL (${hits.length} hits)`}`);
 console.log(`artifact: packages/verify/artifacts/${feature}/${shortSha}/assert.txt`);
 console.log(`${ok ? "PASS" : "FAIL"} ${feature}`);

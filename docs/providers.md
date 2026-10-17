@@ -1,8 +1,9 @@
 # Providers (U1.6): the BYOK OpenAI-compatible client, the capability probe, and the save-time smoke test
 
 Status: implementation complete, unit-test-verified over an injectable transport and the committed
-replay transcript. The live half of the probe is built and parks on gate G1; no key was read,
-used, or logged while producing this unit's evidence.
+replay transcript. The live half of the probe is built and parked on gate G1 while this unit ran; G1
+has since opened, so the live path below is documented, run against the real endpoint, and kept out
+of the gate on purpose.
 
 Plan citations. §2.5 puts the model layer at `@earendil-works/pi-ai` plus a custom
 OpenAI-compatible provider. §2.9 item 1 asks for a save-time smoke test that drives a real Pi
@@ -149,17 +150,26 @@ Keys live in the vault path and nowhere else (order 8).
 
 ## The one command
 
-Save-time, keyless (green on a machine with no key, against the committed replay transcript):
+Deterministic, and the step the evidence gate runs. Green with or without a key, against the
+committed replay transcript:
 
 ```
-bun packages/providers/scripts/smoke.ts
+bun packages/providers/scripts/smoke.ts --replay
 ```
 
-Save-time, live. This is the gate-bound step: it needs gate G1's BYOK key.
+Live. Gate G1 is open, so the vault key is there and this path runs. It is a deliberate step and never
+the gate: with a key present, the same command without `--replay` selects live mode, which needs a
+base URL and a model, so a key on the machine would decide whether the gate passes.
 
 ```
 bun packages/providers/scripts/smoke.ts <baseUrl> <model>
 ```
+
+`<baseUrl>` and `<model>` come from `FREEBOT_BYOK_BASE_URL` and `FREEBOT_BYOK_MODEL`. Leave the key in
+`~/.freebot/provider.env`: the smoke hands Pi the `!command` that reads it, so no key value enters the
+smoke's environment, its `models.json`, or its report. One consequence of that choice: the direct
+`response_format: json_object` step runs only when the key is in the environment, so a vault-only run
+reports `structuredOutput: unknown` and names why.
 
 `--replay` forces the replay path on a keyed machine. `--fixture <path>` points the replay at
 another recorded transcript. Exit codes: 0 when the observed turn can drive Pi (`strong` or

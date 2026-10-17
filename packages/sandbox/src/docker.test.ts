@@ -16,8 +16,15 @@
  * or a broken adapter fails the suite rather than skipping it), and FREEBOT_DOCKER_TESTS accepts only
  * `require` or nothing, failing on any other value.
  *
+ * Two suites may run on the shared engine at the same time, so every container this run creates
+ * carries one run token: `freebot-sbx-<case>-<token>` for the name, and `freebot.unit=u1.2-run-<token>`
+ * for the ownership label. Fixed names cannot collide and the order-22 sweep, unchanged and still
+ * label-scoped, reaches exactly this run's containers. The token is this process's pid in base 36
+ * plus six random hex digits.
+ *
  * Every check writes a literal line to `packages/verify/artifacts/sandbox-provider/<sha>/assert.txt`,
- * including the container lists before and after the label-scoped sweep (order 22).
+ * including the container lists before and after the label-scoped sweep (order 22). That path is
+ * per-worktree, which is per-agent (order 3), so the shared engine is the only shared resource.
  */
 
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
@@ -42,15 +49,58 @@ import {
   DockerAdapter,
   ensurePinnedImage,
   PINNED_IMAGE,
+  PROVIDER_LABEL,
   REPO_ROOT,
+  SANDBOX_LABEL,
   SandboxError,
   UNIT_LABEL,
 } from "./index.ts";
 
 const WORK = `/var/freebot`;
 const PEER_DIR = `${WORK}/link-peer`;
-const DECOYS = ["u12-decoy-foreign-unit", "u12-decoy-bare"];
-const UNIT_CONTAINERS = ["u12-main", "u12-no-link", "u12-from-snap", "u12-idle"];
+
+/** Pid in base 36 plus six random hex digits: unique per process, readable in `docker ps`. */
+function runToken(): string {
+  return `${process.pid.toString(36)}-${randomBytes(3).toString("hex")}`;
+}
+
+const RUN = runToken();
+
+function runId(name: string): string {
+  return `${name}-${RUN}`;
+}
+
+/** This run's ownership label value. `sweep()` is scoped to it and to nothing else. */
+const RUN_UNIT = `${DEFAULT_UNIT}-run-${RUN}`;
+/** A different run of this same suite; its containers must survive this run's sweep. */
+const SIBLING_UNIT = `${DEFAULT_UNIT}-run-${randomBytes(3).toString("hex")}`;
+/** Another unit on the same engine; its containers must survive this run's sweep. */
+const FOREIGN_UNIT = "u0.11";
+
+/** A container this run must not sweep, standing in for one it does not own. */
+interface Decoy {
+  readonly name: string;
+  /** The ownership label value it carries; null means it carries no labels at all. */
+  readonly unit: string | null;
+}
+
+const DECOYS: readonly Decoy[] = [
+  { name: runId("u12-decoy-foreign-unit"), unit: FOREIGN_UNIT },
+  { name: runId("u12-decoy-sibling-run"), unit: SIBLING_UNIT },
+  { name: runId("u12-decoy-bare"), unit: null },
+];
+
+function decoyRunArgs(decoy: Decoy): string[] {
+  if (decoy.unit === null) return [];
+  return [
+    "--label",
+    `${UNIT_LABEL}=${decoy.unit}`,
+    "--label",
+    `${SANDBOX_LABEL}=${decoy.name}`,
+    "--label",
+    `${PROVIDER_LABEL}=docker`,
+  ];
+}
 
 function cli(args: string[]): { code: number; stdout: string; stderr: string } {
   const proc = spawnSync(process.env.FREEBOT_DOCKER_BIN ?? "docker", args, { encoding: "utf8" });
@@ -120,9 +170,9 @@ function containerStatus(id: string): string {
 
 /** id + running state per name; uptime text is not comparable across two ps calls. */
 function decoyState(): string {
-  return DECOYS.map((name) => {
-    const inspected = cli(["inspect", "--format", "{{.Id}} {{.State.Status}}", name]).stdout;
-    return `${name}=${inspected}`;
+  return DECOYS.map((decoy) => {
+    const inspected = cli(["inspect", "--format", "{{.Id}} {{.State.Status}}", decoy.name]).stdout;
+    return `${decoy.name}=${inspected}`;
   }).join(", ");
 }
 
@@ -146,6 +196,7 @@ function artifactHeader(): string {
     `git short sha: ${SHORT_SHA} (branch ${git(["rev-parse", "--abbrev-ref", "HEAD"])})`,
     `runtime: bun ${Bun.version} on ${process.platform} ${process.arch}`,
     `docker server: ${cli(["version", "--format", "{{.Server.Version}}"]).stdout}`,
+    `run token: ${RUN} (this run owns ${UNIT_LABEL}=${RUN_UNIT})`,
     "",
   ].join("\n");
 }
@@ -199,8 +250,8 @@ async function waitFor(read: () => Promise<boolean>, timeoutMs: number): Promise
 }
 
 describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
-  const adapter = new DockerAdapter();
-  const scratch = mkdtempSync(join(tmpdir(), "freebot-u12-"));
+  const adapter = new DockerAdapter({ unit: RUN_UNIT });
+  const scratch = mkdtempSync(join(tmpdir(), `freebot-u12-${RUN}-`));
   let pinned: Awaited<ReturnType<typeof ensurePinnedImage>>;
 
   beforeAll(async () => {
@@ -211,41 +262,46 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
       `check pinned image: tag=${pinned.ref} id=${pinned.imageId} layers=${pinned.layers.length}/${PINNED_IMAGE.layers.length} matching docs/sandbox-image.md`,
     );
     const leftovers = await adapter.sweep();
-    record(`check pre-suite sweep (own labels only): removed=${leftovers.length}`);
-    for (const name of DECOYS) cli(["rm", "-f", name]);
-    for (const name of UNIT_CONTAINERS) cli(["rm", "-f", containerName(name)]);
-    cli([
-      "run",
-      "-d",
-      "--name",
-      DECOYS[0] as string,
-      "--label",
-      "freebot.unit=u0.11",
-      PINNED_IMAGE.tag,
-      "sleep",
-      "infinity",
-    ]);
-    cli(["run", "-d", "--name", DECOYS[1] as string, PINNED_IMAGE.tag, "sleep", "infinity"]);
     record(
-      `check decoys created (other unit and unlabelled): ${DECOYS.join(", ")} status=${DECOYS.map(rawStatus).join(", ")}`,
+      `check pre-suite sweep (this run's unit label ${RUN_UNIT} only, a fresh token finds nothing): removed=${leftovers.length}`,
+    );
+    for (const decoy of DECOYS) {
+      cli([
+        "run",
+        "-d",
+        "--name",
+        decoy.name,
+        ...decoyRunArgs(decoy),
+        PINNED_IMAGE.tag,
+        "sleep",
+        "infinity",
+      ]);
+    }
+    record(
+      `check decoys created: ${DECOYS.map((decoy) => `${decoy.name} (unit=${decoy.unit ?? "none"})`).join(", ")} status=${DECOYS.map((decoy) => rawStatus(decoy.name)).join(", ")}`,
     );
   }, 60_000);
 
   afterAll(async () => {
     await adapter.sweep();
-    for (const name of DECOYS) cli(["rm", "-f", name]);
+    for (const decoy of DECOYS) cli(["rm", "-f", decoy.name]);
     rmSync(scratch, { recursive: true, force: true });
   }, 60_000);
 
   test("create runs the pinned image and labels the container for order-22 cleanup", async () => {
-    const handle = await adapter.create({ name: "u12-main" });
-    expect(handle).toEqual({ provider: "docker", id: "u12-main" });
-    const raw = cli(["inspect", "--format", "{{json .Config.Labels}}", containerName("u12-main")]);
+    const handle = await adapter.create({ name: runId("u12-main") });
+    expect(handle).toEqual({ provider: "docker", id: runId("u12-main") });
+    const raw = cli([
+      "inspect",
+      "--format",
+      "{{json .Config.Labels}}",
+      containerName(runId("u12-main")),
+    ]);
     const labels = JSON.parse(raw.stdout) as Record<string, string>;
-    expect(labels["freebot.sandbox"]).toBe("u12-main");
-    expect(labels[UNIT_LABEL]).toBe(DEFAULT_UNIT);
-    expect(labels["freebot.provider"]).toBe("docker");
-    expect(containerStatus("u12-main")).toBe("running");
+    expect(labels[SANDBOX_LABEL]).toBe(runId("u12-main"));
+    expect(labels[UNIT_LABEL]).toBe(RUN_UNIT);
+    expect(labels[PROVIDER_LABEL]).toBe("docker");
+    expect(containerStatus(runId("u12-main"))).toBe("running");
     const layers = JSON.parse(
       cli(["image", "inspect", "--format", "{{json .RootFS.Layers}}", PINNED_IMAGE.tag]).stdout,
     ) as string[];
@@ -257,7 +313,7 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   }, 60_000);
 
   test("exec returns literal stdout, streams, and the command's own exit code", async () => {
-    const handle = { provider: "docker", id: "u12-main" } as const;
+    const handle = { provider: "docker", id: runId("u12-main") } as const;
     const plain = await adapter.exec(handle, ["bash", "-c", "echo hello-from-sandbox"]);
     expect(plain.exitCode).toBe(0);
     expect(plain.stdout.toString().trim()).toBe("hello-from-sandbox");
@@ -285,7 +341,7 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   }, 60_000);
 
   test("detached exec outlives the call", async () => {
-    const handle = { provider: "docker", id: "u12-main" } as const;
+    const handle = { provider: "docker", id: runId("u12-main") } as const;
     const started = await adapter.exec(
       handle,
       ["bash", "-c", `sleep 0.5 && printf detached-marker > ${WORK}/detached.txt`],
@@ -304,7 +360,7 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   }, 60_000);
 
   test("upload and download round-trip 4096 random bytes", async () => {
-    const handle = { provider: "docker", id: "u12-main" } as const;
+    const handle = { provider: "docker", id: runId("u12-main") } as const;
     const bytes = randomBytes(4096);
     const localUp = join(scratch, "up.bin");
     writeFileSync(localUp, bytes);
@@ -324,7 +380,7 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   }, 60_000);
 
   test("tunnel carries link frames to an agent link inside the sandbox", async () => {
-    const handle = { provider: "docker", id: "u12-main" } as const;
+    const handle = { provider: "docker", id: runId("u12-main") } as const;
     await adapter.exec(handle, ["mkdir", "-p", PEER_DIR]);
     await adapter.upload(
       handle,
@@ -376,7 +432,7 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   }, 60_000);
 
   test("tunnel fails typed when no link is running", async () => {
-    const handle = await adapter.create({ name: "u12-no-link" });
+    const handle = await adapter.create({ name: runId("u12-no-link") });
     const error = await adapter.tunnel(handle).then(
       () => null,
       (thrown: unknown) => thrown,
@@ -386,7 +442,7 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
     expect(typed.code).toBe("link_error");
     expect(
       typed.message.startsWith(
-        `no supervisor link in ${containerName("u12-no-link")}: ${WORK}/supervisor.port is not readable`,
+        `no supervisor link in ${containerName(runId("u12-no-link"))}: ${WORK}/supervisor.port is not readable`,
       ),
     ).toBe(true);
     await adapter.delete(handle);
@@ -396,7 +452,7 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   }, 60_000);
 
   test("exposePort forwards a loopback URL to a port inside the sandbox", async () => {
-    const handle = { provider: "docker", id: "u12-main" } as const;
+    const handle = { provider: "docker", id: runId("u12-main") } as const;
     await adapter.exec(
       handle,
       [
@@ -424,7 +480,7 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   }, 60_000);
 
   test("snapshot, stop, resume round trip keeps the disk state", async () => {
-    const handle = { provider: "docker", id: "u12-main" } as const;
+    const handle = { provider: "docker", id: runId("u12-main") } as const;
     await adapter.exec(handle, [
       "bash",
       "-c",
@@ -432,15 +488,15 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
     ]);
     const snapshot = await adapter.snapshot(handle, "u12-round-trip");
     expect(snapshot.ref.startsWith("sha256:")).toBe(true);
-    expect(snapshot.tag).toBe("freebot-snapshot/u12-main:u12-round-trip");
+    expect(snapshot.tag).toBe(`freebot-snapshot/${runId("u12-main")}:u12-round-trip`);
     expect(snapshot.provider).toBe("docker");
     await adapter.stop(handle);
-    expect(containerStatus("u12-main")).toBe("exited");
+    expect(containerStatus(runId("u12-main"))).toBe("exited");
     await adapter.resume(handle);
-    expect(containerStatus("u12-main")).toBe("running");
+    expect(containerStatus(runId("u12-main"))).toBe("running");
     const marker = await adapter.exec(handle, ["cat", "/workspace/marker.txt"]);
     expect(marker.stdout.toString()).toBe("round-trip-marker\n");
-    const restored = await adapter.create({ name: "u12-from-snap", image: snapshot.ref });
+    const restored = await adapter.create({ name: runId("u12-from-snap"), image: snapshot.ref });
     const restoredMarker = await adapter.exec(restored, ["cat", "/workspace/marker.txt"]);
     expect(restoredMarker.stdout.toString()).toBe("round-trip-marker\n");
     record(
@@ -455,44 +511,58 @@ describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   }, 120_000);
 
   test("idle-kill stops the sandbox after its ttl, but not while the sandbox is being used", async () => {
-    const idler = await adapter.create({ name: "u12-idle", idleTtlMs: 600 });
+    const idler = await adapter.create({ name: runId("u12-idle"), idleTtlMs: 600 });
     const startedAt = Date.now();
-    const stopped = await waitFor(async () => containerStatus("u12-idle") === "exited", 15_000);
+    const stopped = await waitFor(
+      async () => containerStatus(runId("u12-idle")) === "exited",
+      15_000,
+    );
     expect(stopped).toBe(true);
     record(
-      `check idle-kill: u12-idle (idleTtlMs=600) stopped after ${Date.now() - startedAt}ms with no adapter call (docker stop -t 2)`,
+      `check idle-kill: ${runId("u12-idle")} (idleTtlMs=600) stopped after ${Date.now() - startedAt}ms with no adapter call (docker stop -t 2)`,
     );
     await adapter.resume(idler);
     for (let index = 0; index < 4; index += 1) {
       await adapter.exec(idler, ["true"]);
       await Bun.sleep(200);
     }
-    expect(containerStatus("u12-idle")).toBe("running");
+    expect(containerStatus(runId("u12-idle"))).toBe("running");
     record(
       "check idle-touch: still running after 4 exec calls at 200ms intervals against a 600ms ttl",
     );
   }, 60_000);
 
-  test("the label-scoped sweep removes this unit's containers and nothing else", async () => {
-    expect(containerStatus("u12-idle")).toBe("running");
-    const unitBefore = ps([`label=${UNIT_LABEL}=${DEFAULT_UNIT}`]);
-    const foreignBefore = ps(["label=freebot.unit=u0.11"]);
-    const bareBefore = ps(["name=u12-decoy-bare"]);
+  test("the label-scoped sweep removes this run's containers and nothing else", async () => {
+    expect(containerStatus(runId("u12-idle"))).toBe("running");
+    const unitBefore = ps([`label=${UNIT_LABEL}=${RUN_UNIT}`]);
+    const foreignBefore = ps([`label=${UNIT_LABEL}=${FOREIGN_UNIT}`]);
+    const siblingBefore = ps([`label=${UNIT_LABEL}=${SIBLING_UNIT}`]);
+    const bareBefore = ps([`name=${runId("u12-decoy-bare")}`]);
     const decoysBefore = decoyState();
-    record(`containers before sweep (label ${UNIT_LABEL}=${DEFAULT_UNIT}):\n${unitBefore}`);
-    record(`containers before sweep (foreign unit u0.11):\n${foreignBefore}`);
+    record(`containers before sweep (label ${UNIT_LABEL}=${RUN_UNIT}):\n${unitBefore}`);
+    record(`containers before sweep (foreign unit ${FOREIGN_UNIT}):\n${foreignBefore}`);
+    record(`containers before sweep (a sibling run of this suite):\n${siblingBefore}`);
     record(`containers before sweep (unlabelled decoy):\n${bareBefore}`);
+    // The run owns main, from-snap and idle: no-link was deleted by its own test, and nothing else
+    // in this file creates a container.
+    const ownedBefore = ps([`label=${UNIT_LABEL}=${RUN_UNIT}`], "{{.Names}}")
+      .split("\n")
+      .filter((line) => line !== "")
+      .sort();
+    expect(ownedBefore).toEqual(
+      [runId("u12-from-snap"), runId("u12-idle"), runId("u12-main")].map(containerName).sort(),
+    );
     const removed = await adapter.sweep();
-    expect(removed.length).toBeGreaterThanOrEqual(3);
-    const unitAfter = ps([`label=${UNIT_LABEL}=${DEFAULT_UNIT}`]);
+    expect(removed.length).toBe(3);
+    const unitAfter = ps([`label=${UNIT_LABEL}=${RUN_UNIT}`]);
     expect(unitAfter).toBe("");
     expect(decoyState()).toBe(decoysBefore);
-    for (const name of DECOYS) expect(rawStatus(name)).toBe("running");
+    for (const decoy of DECOYS) expect(rawStatus(decoy.name)).toBe("running");
     record(
-      `check sweep removed ${removed.length} containers with label ${UNIT_LABEL}=${DEFAULT_UNIT}: ${removed.join(", ")}`,
+      `check sweep removed ${removed.length} containers with label ${UNIT_LABEL}=${RUN_UNIT}: ${removed.join(", ")}`,
     );
     record(
-      `containers after sweep (label ${UNIT_LABEL}=${DEFAULT_UNIT}):\n${unitAfter === "" ? "(none)" : unitAfter}`,
+      `containers after sweep (label ${UNIT_LABEL}=${RUN_UNIT}):\n${unitAfter === "" ? "(none)" : unitAfter}`,
     );
     record(`containers after sweep, unchanged: ${decoysBefore}`);
   }, 120_000);
