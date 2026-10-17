@@ -1,0 +1,195 @@
+feature: forge test A (a gated call cannot produce an in-VM side effect without a matching, unexpired grant)
+command: bun spikes/forge-test-a/run.ts
+timestamp: 2026-10-17T07:48:11.648Z
+git sha: a46071ce2b0108ad5d1d650a3a55ba4225520ced
+git sha short: a46071c
+branch: u0.9-forge-test-a
+runtime: bun 1.2.5 on darwin arm64, docker 28.3.2 aarch64 6.10.14-linuxkit
+base image: freebot-forge-a-base:a46071c sha256:a5a5e60d2b43e420be231a8d9c1fa794a9bcfe7133153895902197d4887f13f5 (pinned node digest label sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5)
+derived image: freebot-forge-a:a46071c sha256:b72be4b80722fb86615b12170a548ad8a179f9d246aa87cf4ad1912a7c185e32
+image base: packages/sandbox/image/Dockerfile (U0.6, unmodified), derived FROM it with bun added
+pi version: 1.3.0
+model decisions: a keyless scripted stub (spikes/forge-test-a/stub-model.ts), no BYOK key, no live
+  provider, no network egress beyond the host stub; nothing here is live-model traffic
+host: composer owns one SeqLog and U0.8's grant policy over a real GrantStore; the VM only relays
+
+--- row a: no grant -> denied no_grant; canary ABSENT ---
+     setup: {"grantsForTool":"none"}
+     call_a_1: expected no_grant, observed no_grant; canary "ABSENT"; isError=true durationMs=none result="denied by freebot gate: no_grant: no grant for action v1:sha256:979ed0df3542a3eee2f5f206b161c70ce0f663ef1d77803967b5f26bd496c7fe"
+
+--- row b: grant exists for other args -> denied grant_mismatch; canary ABSENT ---
+     setup: {"label":"grant for b-other.txt","grantId":"grant-1","seq":1,"actionHash":"v1:sha256:0e28e9d5115c1074bb06594b0eb3cd0ace02376fa088d29e3f26a14f2a34ca7d","expiresAt":1792226886452}
+     call_b_1: expected grant_mismatch, observed grant_mismatch; canary "ABSENT"; isError=true durationMs=none result="denied by freebot gate: grant_mismatch: args differ from grant grant-1 for tool bash"
+
+--- row c: expired grant -> denied grant_expired; canary ABSENT ---
+     setup: {"label":"grant already expired at issue","grantId":"grant-2","seq":2,"actionHash":"v1:sha256:5111b512d4af5dbfc3d7a879984557c10ecc665ec7774dddde74dcdf79e8d3b0","expiresAt":1792223227748}
+     call_c_1: expected grant_expired, observed grant_expired; canary "ABSENT"; isError=true durationMs=none result="denied by freebot gate: grant_expired: grant grant-2 expired at 2026-10-17T07:47:07.748Z"
+
+--- row d: matching grant -> one allow; second identical call denied grant_consumed; canary unchanged ---
+     setup: {"label":"matching grant","grantId":"grant-3","seq":3,"actionHash":"v1:sha256:f27b21996ebb442080e28d5d5ca06199859989699f008a351b8192f4defe4c42","expiresAt":1792226887036}
+     call_d_1: expected allow, observed allow; canary "1792223287211131169"; isError=false durationMs=8 result="(no output)"
+     call_d_2: expected grant_consumed, observed grant_consumed; canary "1792223287211131169"; isError=true durationMs=none result="denied by freebot gate: grant_consumed: grant grant-3 consumed by call_d_1"
+
+--- row e: grant tombstoned by rewind -> denied grant_tombstoned; canary ABSENT ---
+     setup: {"label":"grant tombstoned after the call was queued","grantId":"grant-4","seq":4,"actionHash":"v1:sha256:8a315495f5df885259ba1d39812d4de5d94c16b8840925bcbb8e9404128690eb","expiresAt":1792226887594,"rewind":{"tombstoned":["grant-1","grant-2","grant-3","grant-4"]}}
+     call_e_1: expected grant_tombstoned, observed grant_tombstoned; canary "ABSENT"; isError=true durationMs=none result="denied by freebot gate: grant_tombstoned: grant grant-4 tombstoned by rewind:0"
+
+--- row f: forged record (hash disagrees with content) -> denied grant_forged; canary ABSENT ---
+     setup: {"label":"forged grant","grantId":"grant-5","seq":5,"actionHash":"v1:sha256:4cd2ebcf72a903c93d1a6e28deea2c66963f3f4256adf1609f4d7446d0ec07ad","expiresAt":1792226887886,"forged":{"ok":true,"grantId":"grant-5","storedHash":"v1:sha256:4cd2ebcf72a903c93d1a6e28deea2c66963f3f4256adf1609f4d7446d0ec07ad","recomputedHash":"v1:sha256:42aacfd3fb356dfb182821c4181b409a7ce42754f747cd2dd77b5b4d02bec637"}}
+     call_f_1: expected grant_forged, observed grant_forged; canary "ABSENT"; isError=true durationMs=none result="denied by freebot gate: grant_forged: grant grant-5 hash does not match its content"
+
+--- row g: unknown tool outside the governed list, with a grant -> denied unknown_tool; canary ABSENT ---
+     setup: {"label":"grant for a tool the gate does not govern","grantId":"grant-6","seq":6,"actionHash":"v1:sha256:11aeaf9b6cab935e696c38199c940c9cb5ce4991b9bee19adb7b977ee9259e0c","expiresAt":1792226888181}
+     call_g_1: expected unknown_tool, observed unknown_tool; canary "ABSENT"; isError=true durationMs=none result="denied by freebot gate: unknown_tool: spike_unknown is not a governed tool"
+
+--- row h: positive control: one allow, canary present exactly once, second call denied grant_consumed ---
+     setup: {"label":"matching grant","grantId":"grant-7","seq":7,"actionHash":"v1:sha256:55308264ef63b938a48eed7b4db4c987833c1968c8dd9c9634a392d78f3ba310","expiresAt":1792226888467}
+     call_h_1: expected allow, observed allow; canary "1792223288630495295"; isError=false durationMs=3 result="(no output)"
+     call_h_2: expected grant_consumed, observed grant_consumed; canary "1792223288630495295"; isError=true durationMs=none result="denied by freebot gate: grant_consumed: grant grant-7 consumed by call_h_1"
+
+--- row hw: positive control for the file write surface: one allow, canary content literal ---
+     setup: {"label":"matching grant","grantId":"grant-8","seq":8,"actionHash":"v1:sha256:126ea9170148cc774d890ebcff58c27a60a8826a486681e1c398e4f6a204df7b","expiresAt":1792226888980}
+     call_hw_1: expected allow, observed allow; canary "allowed-write"; isError=false durationMs=1 result="Successfully wrote to /var/freebot-canary/hw.txt"
+
+--- row j: host policy throws -> denied fail-closed carrying the thrown text; canary ABSENT (U0.3's throwing-handler rule, on the composed path) ---
+     setup: {"armed":true}
+     call_j_1: expected denied, observed denied; canary "ABSENT"; isError=true durationMs=none result="denied by freebot gate: gate handler threw: simulated policy explosion (host producer threw)"
+
+--- row i: control plane unreachable mid-gated-call ---
+     call_i_1: expected grant_mismatch, observed grant_mismatch; canary "ABSENT"; isError=true durationMs=none result="denied by freebot gate: grant_mismatch: args differ from grant grant-7 for tool bash"
+
+--- every check ---
+ok   U0.3's landed fixture cited for the throwing-handler rule (packages/pi-bridge/src/gate.test.ts) (bun test -t "throwing handler" -> exit 0, 1 pass, denial reason "gate handler threw: boom")
+ok   pi version inside the container (pi --version -> 1.3.0)
+ok   canary directory is empty at boot (docker exec ls -A /var/freebot-canary -> "")
+ok   row a: canary absent before the call (/var/freebot-canary/a.txt -> "ABSENT")
+ok   row a call_a_1: decision code (expected no_grant, observed no_grant (no_grant: no grant for action v1:sha256:979ed0df3542a3eee2f5f206b161c70ce0f663ef1d77803967b5f26bd496c7fe))
+ok   row a call_a_1: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: no_grant: no grant for action v1:sha256:979ed0df3542a3eee2f5f206b161c70ce0f663ef1d77803967b5f26bd496c7fe")
+ok   row a call_a_1: Pi's own error text names the code (expected "no_grant" in isError=true durationMs=none result="denied by freebot gate: no_grant: no grant for action v1:sha256:979ed0df3542a3eee2f5f206b161c70ce0f663ef1d77803967b5f26bd496c7fe")
+ok   row a call_a_1: in-VM canary ABSENT (/var/freebot-canary/a.txt -> "ABSENT")
+ok   row b: canary absent before the call (/var/freebot-canary/b.txt -> "ABSENT")
+ok   row b call_b_1: decision code (expected grant_mismatch, observed grant_mismatch (grant_mismatch: args differ from grant grant-1 for tool bash))
+ok   row b call_b_1: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: grant_mismatch: args differ from grant grant-1 for tool bash")
+ok   row b call_b_1: Pi's own error text names the code (expected "grant_mismatch" in isError=true durationMs=none result="denied by freebot gate: grant_mismatch: args differ from grant grant-1 for tool bash")
+ok   row b call_b_1: in-VM canary ABSENT (/var/freebot-canary/b.txt -> "ABSENT")
+ok   row c: canary absent before the call (/var/freebot-canary/c.txt -> "ABSENT")
+ok   row c call_c_1: decision code (expected grant_expired, observed grant_expired (grant_expired: grant grant-2 expired at 2026-10-17T07:47:07.748Z))
+ok   row c call_c_1: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: grant_expired: grant grant-2 expired at 2026-10-17T07:47:07.748Z")
+ok   row c call_c_1: Pi's own error text names the code (expected "grant_expired" in isError=true durationMs=none result="denied by freebot gate: grant_expired: grant grant-2 expired at 2026-10-17T07:47:07.748Z")
+ok   row c call_c_1: in-VM canary ABSENT (/var/freebot-canary/c.txt -> "ABSENT")
+ok   row d: canary absent before the call (/var/freebot-canary/d.txt -> "ABSENT")
+ok   row d call_d_1: decision code (expected allow, observed allow ())
+ok   row d call_d_1: tool_execution_end isError (expected false, observed isError=false durationMs=8 result="(no output)")
+ok   row d call_d_1: in-VM canary PRESENT (/var/freebot-canary/d.txt -> "1792223287211131169")
+ok   row d call_d_2: decision code (expected grant_consumed, observed grant_consumed (grant_consumed: grant grant-3 consumed by call_d_1))
+ok   row d call_d_2: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: grant_consumed: grant grant-3 consumed by call_d_1")
+ok   row d call_d_2: Pi's own error text names the code (expected "grant_consumed" in isError=true durationMs=none result="denied by freebot gate: grant_consumed: grant grant-3 consumed by call_d_1")
+ok   row d call_d_2: in-VM canary UNCHANGED ("1792223287211131169" -> "1792223287211131169")
+ok   row e: canary absent before the call (/var/freebot-canary/e.txt -> "ABSENT")
+ok   row e call_e_1: decision code (expected grant_tombstoned, observed grant_tombstoned (grant_tombstoned: grant grant-4 tombstoned by rewind:0))
+ok   row e call_e_1: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: grant_tombstoned: grant grant-4 tombstoned by rewind:0")
+ok   row e call_e_1: Pi's own error text names the code (expected "grant_tombstoned" in isError=true durationMs=none result="denied by freebot gate: grant_tombstoned: grant grant-4 tombstoned by rewind:0")
+ok   row e call_e_1: in-VM canary ABSENT (/var/freebot-canary/e.txt -> "ABSENT")
+ok   row f: canary absent before the call (/var/freebot-canary/f.txt -> "ABSENT")
+ok   row f call_f_1: decision code (expected grant_forged, observed grant_forged (grant_forged: grant grant-5 hash does not match its content))
+ok   row f call_f_1: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: grant_forged: grant grant-5 hash does not match its content")
+ok   row f call_f_1: Pi's own error text names the code (expected "grant_forged" in isError=true durationMs=none result="denied by freebot gate: grant_forged: grant grant-5 hash does not match its content")
+ok   row f call_f_1: in-VM canary ABSENT (/var/freebot-canary/f.txt -> "ABSENT")
+ok   row g: canary absent before the call (/var/freebot-canary/g.txt -> "ABSENT")
+ok   row g call_g_1: decision code (expected unknown_tool, observed unknown_tool (unknown_tool: spike_unknown is not a governed tool))
+ok   row g call_g_1: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: unknown_tool: spike_unknown is not a governed tool")
+ok   row g call_g_1: Pi's own error text names the code (expected "unknown_tool" in isError=true durationMs=none result="denied by freebot gate: unknown_tool: spike_unknown is not a governed tool")
+ok   row g call_g_1: in-VM canary ABSENT (/var/freebot-canary/g.txt -> "ABSENT")
+ok   row h: canary absent before the call (/var/freebot-canary/h.txt -> "ABSENT")
+ok   row h call_h_1: decision code (expected allow, observed allow ())
+ok   row h call_h_1: tool_execution_end isError (expected false, observed isError=false durationMs=3 result="(no output)")
+ok   row h call_h_1: in-VM canary PRESENT (/var/freebot-canary/h.txt -> "1792223288630495295")
+ok   row h call_h_2: decision code (expected grant_consumed, observed grant_consumed (grant_consumed: grant grant-7 consumed by call_h_1))
+ok   row h call_h_2: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: grant_consumed: grant grant-7 consumed by call_h_1")
+ok   row h call_h_2: Pi's own error text names the code (expected "grant_consumed" in isError=true durationMs=none result="denied by freebot gate: grant_consumed: grant grant-7 consumed by call_h_1")
+ok   row h call_h_2: in-VM canary UNCHANGED ("1792223288630495295" -> "1792223288630495295")
+ok   row hw: canary absent before the call (/var/freebot-canary/hw.txt -> "ABSENT")
+ok   row hw call_hw_1: decision code (expected allow, observed allow ())
+ok   row hw call_hw_1: tool_execution_end isError (expected false, observed isError=false durationMs=1 result="Successfully wrote to /var/freebot-canary/hw.txt")
+ok   row hw call_hw_1: in-VM canary PRESENT (/var/freebot-canary/hw.txt -> "allowed-write")
+ok   row hw: canary content literal (expected "allowed-write", observed "allowed-write")
+ok   row j: canary absent before the call (/var/freebot-canary/j.txt -> "ABSENT")
+ok   row j call_j_1: decision code (expected denied, observed denied (gate handler threw: simulated policy explosion (host producer threw)))
+ok   row j call_j_1: tool_execution_end isError (expected true, observed isError=true durationMs=none result="denied by freebot gate: gate handler threw: simulated policy explosion (host producer threw)")
+ok   row j call_j_1: Pi's own error text names the code (expected "denied" in isError=true durationMs=none result="denied by freebot gate: gate handler threw: simulated policy explosion (host producer threw)")
+ok   row j call_j_1: the denial carries the thrown failure verbatim (expected "gate handler threw: simulated policy explosion" in "gate handler threw: simulated policy explosion (host producer threw)")
+ok   row j call_j_1: in-VM canary ABSENT (/var/freebot-canary/j.txt -> "ABSENT")
+ok   row d: the matched grant was consumed by call_d_1 (consumedBy="call_d_1")
+ok   row h: the matched grant was consumed by call_h_1 (consumedBy="call_h_1")
+ok   rows d and h: the denied second calls consumed nothing (consumedBy d="call_d_1" h="call_h_1")
+ok   row i: the composer holds the in-flight gate request (held="gate-13")
+ok   row i: the call is unresolved while the control plane holds it (no tool_execution_end before the kill)
+ok   row i: in-VM canary ABSENT while the call is parked (/var/freebot-canary/i.txt -> "ABSENT")
+ok   row i: in-VM canary ABSENT while the control plane is unreachable (/var/freebot-canary/i.txt -> "ABSENT")
+ok   row i: no side effect and no resolution while unreachable (still no tool_execution_end)
+ok   row i: the durable log did not move while the composer was dead (frames on disk 226 -> 226)
+ok   row i: exactly one decision for the call, made after rejoin (1 decision line(s))
+ok   row i: the call resolves under the same policy after rejoin (observed grant_mismatch (grant_mismatch: args differ from grant grant-7 for tool bash))
+ok   row i: Pi reports the rejoin resolution as an error result (isError=true durationMs=none result="denied by freebot gate: grant_mismatch: args differ from grant grant-7 for tool bash")
+ok   row i: in-VM canary ABSENT after rejoin (/var/freebot-canary/i.txt -> "ABSENT")
+ok   row i: the reloaded ledger holds every grant the pre-kill composer held (8 -> 8)
+ok   row i: the reloaded ledger still tombstoned grant e (tombstoned="rewind:0")
+ok   row i: the forged record survived the restart as it was (the gate still denies it) (grant grant-5 actionHash="v1:sha256:4cd2ebcf72a903c93d1a6e28deea2c66963f3f4256adf1609f4d7446d0ec07ad")
+ok   seq audit: zero gaps ([])
+ok   seq audit: zero duplicates ([])
+ok   seq audit: the log starts at seq 1 (firstSeq 1)
+ok   seq audit: one sequence, 1..N, across the composer restart (lastSeq 239, count 239)
+ok   observer stream: zero gaps ([])
+ok   observer stream: zero duplicates ([])
+ok   seq audit: no payload was refused during the run (0)
+ok   funnel: every tool_execution_end has exactly one host decision (13 ends, 13 decisions)
+ok   funnel: every call joins to exactly one decision by toolCallId (13 calls joined)
+ok   exactly three allows: the positive controls and nothing else (allows=["call_d_1","call_h_1","call_hw_1"])
+ok   the VM-side gate trail matches the host decision log (13 VM entries, 13 host decisions)
+ok   every denial in the VM trail corresponds to a host denial (10 denials)
+ok   the set of in-VM side effects equals the set of allows (/var/freebot-canary -> ["d.txt","h.txt","hw.txt"])
+ok   the gateway reports pi 1.3.0 with zero protocol errors (pi 1.3.0, protocolErrors 0)
+ok   the in-VM mint and the durable log agree (minted 239, logged 239 (seq 1..239); gateway acked 237 frames at exit, a delivery watermark that trails by the frames in flight when Pi settled)
+
+--- log tails ---
+[composer.log]
+[composer] listening port=51772
+[composer] frames loaded n=226 last_seq=226 store grants=8
+[composer] agent attached last_seen_seq=226 log_last_seq=226
+[composer] gate_request id=gate-13 tool=bash
+[composer] decision id=gate-13 tool=bash code=grant_mismatch reason=grant_mismatch: args differ from grant grant-7 for tool bash
+[composer] control op=state
+[composer] agent detached log_last_seq=239
+
+[relay.log]
+[relay] listening on 0.0.0.0:51754 -> 127.0.0.1:51772
+
+[gateway.log]
+[gateway] tunnel open last_seen_seq=0 reconnects=1
+[gateway] replayed 0 unconfirmed frames and 0 gate requests
+[gateway] boot ok pi_pid=24
+[gateway] prompt sent id=prompt-1
+[gateway] gate answer id=gate-1 tool=bash
+[gateway] gate answer id=gate-2 tool=bash
+[gateway] gate answer id=gate-3 tool=write
+[gateway] gate answer id=gate-4 tool=bash
+[gateway] gate answer id=gate-5 tool=bash
+[gateway] gate answer id=gate-6 tool=bash
+[gateway] gate answer id=gate-7 tool=write
+[gateway] gate answer id=gate-8 tool=spike_unknown
+[gateway] gate answer id=gate-9 tool=bash
+[gateway] gate answer id=gate-10 tool=bash
+[gateway] gate answer id=gate-11 tool=write
+[gateway] gate answer id=gate-12 tool=bash
+[gateway] tunnel closed; reconnecting in 250ms
+[gateway] tunnel closed; reconnecting in 250ms
+[gateway] tunnel open last_seen_seq=226 reconnects=2
+[gateway] replayed 0 unconfirmed frames and 1 gate requests
+[gateway] gate answer id=gate-13 tool=bash
+[gateway] settled seq=239
+
+[frame kinds]
+response: 2, agent_start: 1, turn_start: 14, message_start: 29, message_end: 29, message_update: 107, tool_execution_start: 13, extension_ui_request: 13, tool_execution_end: 13, turn_end: 14, tool_execution_update: 2, agent_end: 1, agent_settled: 1
+
+RESULT: PASS (91/91)
+

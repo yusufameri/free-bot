@@ -1,0 +1,275 @@
+[
+  {
+    "id": "a",
+    "title": "no grant -> denied no_grant; canary ABSENT",
+    "setup": {
+      "grantsForTool": "none"
+    },
+    "calls": [
+      {
+        "callId": "call_a_1",
+        "expectCode": "no_grant",
+        "observedCode": "no_grant",
+        "reason": "no_grant: no grant for action v1:sha256:979ed0df3542a3eee2f5f206b161c70ce0f663ef1d77803967b5f26bd496c7fe",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "ABSENT",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: no_grant: no grant for action v1:sha256:979ed0df3542a3eee2f5f206b161c70ce0f663ef1d77803967b5f26bd496c7fe\""
+      }
+    ]
+  },
+  {
+    "id": "b",
+    "title": "grant exists for other args -> denied grant_mismatch; canary ABSENT",
+    "setup": {
+      "label": "grant for b-other.txt",
+      "grantId": "grant-1",
+      "seq": 1,
+      "actionHash": "v1:sha256:0e28e9d5115c1074bb06594b0eb3cd0ace02376fa088d29e3f26a14f2a34ca7d",
+      "expiresAt": 1792226886452
+    },
+    "calls": [
+      {
+        "callId": "call_b_1",
+        "expectCode": "grant_mismatch",
+        "observedCode": "grant_mismatch",
+        "reason": "grant_mismatch: args differ from grant grant-1 for tool bash",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "ABSENT",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: grant_mismatch: args differ from grant grant-1 for tool bash\""
+      }
+    ]
+  },
+  {
+    "id": "c",
+    "title": "expired grant -> denied grant_expired; canary ABSENT",
+    "setup": {
+      "label": "grant already expired at issue",
+      "grantId": "grant-2",
+      "seq": 2,
+      "actionHash": "v1:sha256:5111b512d4af5dbfc3d7a879984557c10ecc665ec7774dddde74dcdf79e8d3b0",
+      "expiresAt": 1792223227748
+    },
+    "calls": [
+      {
+        "callId": "call_c_1",
+        "expectCode": "grant_expired",
+        "observedCode": "grant_expired",
+        "reason": "grant_expired: grant grant-2 expired at 2026-10-17T07:47:07.748Z",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "ABSENT",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: grant_expired: grant grant-2 expired at 2026-10-17T07:47:07.748Z\""
+      }
+    ]
+  },
+  {
+    "id": "d",
+    "title": "matching grant -> one allow; second identical call denied grant_consumed; canary unchanged",
+    "setup": {
+      "label": "matching grant",
+      "grantId": "grant-3",
+      "seq": 3,
+      "actionHash": "v1:sha256:f27b21996ebb442080e28d5d5ca06199859989699f008a351b8192f4defe4c42",
+      "expiresAt": 1792226887036
+    },
+    "calls": [
+      {
+        "callId": "call_d_1",
+        "expectCode": "allow",
+        "observedCode": "allow",
+        "reason": "",
+        "allow": true,
+        "isError": false,
+        "canaryAfter": "1792223287211131169",
+        "endText": "isError=false durationMs=8 result=\"(no output)\""
+      },
+      {
+        "callId": "call_d_2",
+        "expectCode": "grant_consumed",
+        "observedCode": "grant_consumed",
+        "reason": "grant_consumed: grant grant-3 consumed by call_d_1",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "1792223287211131169",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: grant_consumed: grant grant-3 consumed by call_d_1\""
+      }
+    ]
+  },
+  {
+    "id": "e",
+    "title": "grant tombstoned by rewind -> denied grant_tombstoned; canary ABSENT",
+    "setup": {
+      "label": "grant tombstoned after the call was queued",
+      "grantId": "grant-4",
+      "seq": 4,
+      "actionHash": "v1:sha256:8a315495f5df885259ba1d39812d4de5d94c16b8840925bcbb8e9404128690eb",
+      "expiresAt": 1792226887594,
+      "rewind": {
+        "tombstoned": ["grant-1", "grant-2", "grant-3", "grant-4"]
+      }
+    },
+    "calls": [
+      {
+        "callId": "call_e_1",
+        "expectCode": "grant_tombstoned",
+        "observedCode": "grant_tombstoned",
+        "reason": "grant_tombstoned: grant grant-4 tombstoned by rewind:0",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "ABSENT",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: grant_tombstoned: grant grant-4 tombstoned by rewind:0\""
+      }
+    ]
+  },
+  {
+    "id": "f",
+    "title": "forged record (hash disagrees with content) -> denied grant_forged; canary ABSENT",
+    "setup": {
+      "label": "forged grant",
+      "grantId": "grant-5",
+      "seq": 5,
+      "actionHash": "v1:sha256:4cd2ebcf72a903c93d1a6e28deea2c66963f3f4256adf1609f4d7446d0ec07ad",
+      "expiresAt": 1792226887886,
+      "forged": {
+        "ok": true,
+        "grantId": "grant-5",
+        "storedHash": "v1:sha256:4cd2ebcf72a903c93d1a6e28deea2c66963f3f4256adf1609f4d7446d0ec07ad",
+        "recomputedHash": "v1:sha256:42aacfd3fb356dfb182821c4181b409a7ce42754f747cd2dd77b5b4d02bec637"
+      }
+    },
+    "calls": [
+      {
+        "callId": "call_f_1",
+        "expectCode": "grant_forged",
+        "observedCode": "grant_forged",
+        "reason": "grant_forged: grant grant-5 hash does not match its content",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "ABSENT",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: grant_forged: grant grant-5 hash does not match its content\""
+      }
+    ]
+  },
+  {
+    "id": "g",
+    "title": "unknown tool outside the governed list, with a grant -> denied unknown_tool; canary ABSENT",
+    "setup": {
+      "label": "grant for a tool the gate does not govern",
+      "grantId": "grant-6",
+      "seq": 6,
+      "actionHash": "v1:sha256:11aeaf9b6cab935e696c38199c940c9cb5ce4991b9bee19adb7b977ee9259e0c",
+      "expiresAt": 1792226888181
+    },
+    "calls": [
+      {
+        "callId": "call_g_1",
+        "expectCode": "unknown_tool",
+        "observedCode": "unknown_tool",
+        "reason": "unknown_tool: spike_unknown is not a governed tool",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "ABSENT",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: unknown_tool: spike_unknown is not a governed tool\""
+      }
+    ]
+  },
+  {
+    "id": "h",
+    "title": "positive control: one allow, canary present exactly once, second call denied grant_consumed",
+    "setup": {
+      "label": "matching grant",
+      "grantId": "grant-7",
+      "seq": 7,
+      "actionHash": "v1:sha256:55308264ef63b938a48eed7b4db4c987833c1968c8dd9c9634a392d78f3ba310",
+      "expiresAt": 1792226888467
+    },
+    "calls": [
+      {
+        "callId": "call_h_1",
+        "expectCode": "allow",
+        "observedCode": "allow",
+        "reason": "",
+        "allow": true,
+        "isError": false,
+        "canaryAfter": "1792223288630495295",
+        "endText": "isError=false durationMs=3 result=\"(no output)\""
+      },
+      {
+        "callId": "call_h_2",
+        "expectCode": "grant_consumed",
+        "observedCode": "grant_consumed",
+        "reason": "grant_consumed: grant grant-7 consumed by call_h_1",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "1792223288630495295",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: grant_consumed: grant grant-7 consumed by call_h_1\""
+      }
+    ]
+  },
+  {
+    "id": "hw",
+    "title": "positive control for the file write surface: one allow, canary content literal",
+    "setup": {
+      "label": "matching grant",
+      "grantId": "grant-8",
+      "seq": 8,
+      "actionHash": "v1:sha256:126ea9170148cc774d890ebcff58c27a60a8826a486681e1c398e4f6a204df7b",
+      "expiresAt": 1792226888980
+    },
+    "calls": [
+      {
+        "callId": "call_hw_1",
+        "expectCode": "allow",
+        "observedCode": "allow",
+        "reason": "",
+        "allow": true,
+        "isError": false,
+        "canaryAfter": "allowed-write",
+        "endText": "isError=false durationMs=1 result=\"Successfully wrote to /var/freebot-canary/hw.txt\""
+      }
+    ]
+  },
+  {
+    "id": "j",
+    "title": "host policy throws -> denied fail-closed carrying the thrown text; canary ABSENT (U0.3's throwing-handler rule, on the composed path)",
+    "setup": {
+      "armed": true
+    },
+    "calls": [
+      {
+        "callId": "call_j_1",
+        "expectCode": "denied",
+        "observedCode": "denied",
+        "reason": "gate handler threw: simulated policy explosion (host producer threw)",
+        "allow": false,
+        "isError": true,
+        "canaryAfter": "ABSENT",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: gate handler threw: simulated policy explosion (host producer threw)\""
+      }
+    ]
+  },
+  {
+    "id": "i",
+    "title": "control plane unreachable -> no side effect; after rejoin denied under the same policy (grant_mismatch: bash grants exist, none matches call_i_1's args)",
+    "setup": {
+      "hold": "armed",
+      "kill": "relay + composer mid-gated-call",
+      "watermarkAtKill": 226
+    },
+    "calls": [
+      {
+        "callId": "call_i_1",
+        "expectCode": "grant_mismatch",
+        "observedCode": "grant_mismatch",
+        "reason": "grant_mismatch: args differ from grant grant-7 for tool bash",
+        "isError": true,
+        "canaryBefore": "ABSENT",
+        "canaryWhileUnreachable": "ABSENT",
+        "canaryAfter": "ABSENT",
+        "endText": "isError=true durationMs=none result=\"denied by freebot gate: grant_mismatch: args differ from grant grant-7 for tool bash\""
+      }
+    ]
+  }
+]
