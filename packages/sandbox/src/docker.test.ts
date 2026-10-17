@@ -1,8 +1,20 @@
 /**
  * The Docker integration suite: the live surface of `packages/sandbox` against a real daemon, from
- * the pinned image. Skips cleanly when no daemon is present so `bun test` stays green everywhere.
+ * the pinned image.
  *
+ *   bash packages/sandbox/image/run.sh                                          # materialize the image
  *   bun test packages/sandbox/src/docker.test.ts
+ *   FREEBOT_DOCKER_TESTS=require bun test packages/sandbox/src/docker.test.ts    # a skip fails instead
+ *
+ * `dockerTestsPrecondition` decides before any container exists. A daemon alone is the wrong
+ * precondition: GitHub's ubuntu runner has one, but not the pinned image, and the image is arm64-only
+ * (order 18: this Mac builds), so a linux/amd64 runner cannot materialize it. The suite runs only
+ * where a daemon answers `docker version` and `freebot-sandbox:u0.6` resolves on that daemon. Those
+ * two absences are the only skips; each prints its reason with the command that fixes it, and each is
+ * recorded as a `skip:` line in that run's artifact. Everything else is loud: a daemon that answers
+ * `version` and then fails `image ls` throws, a resolvable image always runs (so a drifted layer set
+ * or a broken adapter fails the suite rather than skipping it), and FREEBOT_DOCKER_TESTS accepts only
+ * `require` or nothing, failing on any other value.
  *
  * Every check writes a literal line to `packages/verify/artifacts/sandbox-provider/<sha>/assert.txt`,
  * including the container lists before and after the label-scoped sweep (order 22).
@@ -45,16 +57,56 @@ function cli(args: string[]): { code: number; stdout: string; stderr: string } {
   return {
     code: proc.status ?? -1,
     stdout: (proc.stdout ?? "").trim(),
-    stderr: (proc.stderr ?? "").trim(),
+    stderr: (proc.stderr ?? proc.error?.message ?? "").trim(),
   };
 }
 
-function dockerUp(): boolean {
-  try {
-    return cli(["version", "--format", "{{.Server.Version}}"]).code === 0;
-  } catch {
-    return false;
+/** `require` turns a would-be skip into a failure, unset keeps the skip, and anything else is a typo. */
+function dockerTestsRequired(): boolean {
+  const mode = process.env.FREEBOT_DOCKER_TESTS;
+  if (mode === undefined || mode === "") return false;
+  if (mode === "require") return true;
+  throw new Error(
+    `FREEBOT_DOCKER_TESTS=${JSON.stringify(mode)} is not a mode; use unset or "require"`,
+  );
+}
+
+const DOCKER_TESTS_REQUIRED = dockerTestsRequired();
+
+type DockerTests = { readonly run: true } | { readonly run: false; readonly why: string };
+
+/** A missing precondition skips, unless the caller demands the suite run. */
+function skip(why: string): DockerTests {
+  if (DOCKER_TESTS_REQUIRED) {
+    throw new Error(`FREEBOT_DOCKER_TESTS=require and the suite cannot run: ${why}`);
   }
+  return { run: false, why };
+}
+
+/**
+ * Why the suite will run or skip, decided before any container exists. `image ls -q` prints an id
+ * when the ref resolves and nothing when it does not, so absence is read from empty stdout instead of
+ * docker's wording; a non-zero exit there is a broken CLI or daemon, which is not absence, and throws.
+ */
+function dockerTestsPrecondition(): DockerTests {
+  const daemon = cli(["version", "--format", "{{.Server.Version}}"]);
+  if (daemon.code !== 0 || daemon.stdout === "") {
+    return skip(
+      `no reachable Docker daemon: docker version exited ${daemon.code} (${daemon.stderr === "" ? "no stderr" : daemon.stderr})`,
+    );
+  }
+  const listed = cli(["image", "ls", "-q", PINNED_IMAGE.tag]);
+  if (listed.code !== 0) {
+    throw new Error(
+      `docker image ls -q ${PINNED_IMAGE.tag} exited ${listed.code} while the daemon answers docker version ${daemon.stdout} (${listed.stderr === "" ? "no stderr" : listed.stderr}); fix the daemon rather than skipping the suite`,
+    );
+  }
+  if (listed.stdout === "") {
+    return skip(
+      `the pinned image ${PINNED_IMAGE.tag} is not on this daemon; materialize it with "bash packages/sandbox/image/run.sh"`,
+    );
+  }
+  return { run: true };
 }
 
 /** Container status by docker container name. */
@@ -83,11 +135,31 @@ const git = (args: string[]): string =>
   spawnSync("git", args, { cwd: REPO_ROOT, encoding: "utf8" }).stdout.trim();
 
 const SHORT_SHA = git(["rev-parse", "--short", "HEAD"]);
-const ARTIFACT = join(artifactDir(REPO_ROOT, "sandbox-provider", SHORT_SHA), "assert.txt");
+const ARTIFACT_DIR = artifactDir(REPO_ROOT, "sandbox-provider", SHORT_SHA);
+const ARTIFACT = join(ARTIFACT_DIR, "assert.txt");
+
+function artifactHeader(): string {
+  return [
+    "feature: sandbox-provider",
+    "command: bun test packages/sandbox/src/docker.test.ts",
+    `timestamp: ${new Date().toISOString()}`,
+    `git short sha: ${SHORT_SHA} (branch ${git(["rev-parse", "--abbrev-ref", "HEAD"])})`,
+    `runtime: bun ${Bun.version} on ${process.platform} ${process.arch}`,
+    `docker server: ${cli(["version", "--format", "{{.Server.Version}}"]).stdout}`,
+    "",
+  ].join("\n");
+}
 
 function record(line: string): void {
   appendFileSync(ARTIFACT, `${line}\n`);
   console.log(line);
+}
+
+const dockerTests = dockerTestsPrecondition();
+if (!dockerTests.run) {
+  mkdirSync(ARTIFACT_DIR, { recursive: true });
+  writeFileSync(ARTIFACT, `${artifactHeader()}skip: ${dockerTests.why}\n`);
+  console.log(`skip docker adapter (integration): ${dockerTests.why}`);
 }
 
 /** One JSONL line per call, off a duplex, with the same framing the link itself uses. */
@@ -126,25 +198,14 @@ async function waitFor(read: () => Promise<boolean>, timeoutMs: number): Promise
   return false;
 }
 
-describe.skipIf(!dockerUp())("docker adapter (integration)", () => {
+describe.skipIf(!dockerTests.run)("docker adapter (integration)", () => {
   const adapter = new DockerAdapter();
   const scratch = mkdtempSync(join(tmpdir(), "freebot-u12-"));
   let pinned: Awaited<ReturnType<typeof ensurePinnedImage>>;
 
   beforeAll(async () => {
-    mkdirSync(join(artifactDir(REPO_ROOT, "sandbox-provider", SHORT_SHA)), { recursive: true });
-    writeFileSync(
-      ARTIFACT,
-      [
-        "feature: sandbox-provider",
-        "command: bun test packages/sandbox/src/docker.test.ts",
-        `timestamp: ${new Date().toISOString()}`,
-        `git short sha: ${SHORT_SHA} (branch ${git(["rev-parse", "--abbrev-ref", "HEAD"])})`,
-        `runtime: bun ${Bun.version} on ${process.platform} ${process.arch}`,
-        `docker server: ${cli(["version", "--format", "{{.Server.Version}}"]).stdout}`,
-        "",
-      ].join("\n"),
-    );
+    mkdirSync(ARTIFACT_DIR, { recursive: true });
+    writeFileSync(ARTIFACT, artifactHeader());
     pinned = await ensurePinnedImage();
     record(
       `check pinned image: tag=${pinned.ref} id=${pinned.imageId} layers=${pinned.layers.length}/${PINNED_IMAGE.layers.length} matching docs/sandbox-image.md`,

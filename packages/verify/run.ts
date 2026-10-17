@@ -104,8 +104,11 @@ async function healthz(): Promise<Outcome> {
   }
 }
 
+/** Bun prints a failing file's errors first and its summary last, so keep both ends of the output. */
 function truncate(text: string, max = 4000): string {
-  return text.length > max ? `[...]\n${text.slice(-max)}` : text;
+  if (text.length <= max) return text;
+  const head = Math.floor(max / 2);
+  return `${text.slice(0, head)}\n[...]\n${text.slice(-(max - head))}`;
 }
 
 const steps: Array<[string, () => Outcome | Promise<Outcome>]> = [
