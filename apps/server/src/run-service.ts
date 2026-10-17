@@ -9,39 +9,34 @@
  * before it launches the loop, so a cancel or a read that arrives in the same tick as `start` sees
  * the run the caller just asked for. The action is the loop's; this file only supplies ports.
  *
- * The provider defaults to the replay transcript, because gate G1 parks the keyed path: a run
- * started today replays the committed turn's call and waits for the human. A keyed provider is a
- * later unit's swap of one factory.
+ * The model is real when the vault holds a key. `mode` defaults to `auto`, which asks the vault and
+ * falls back to the replay transcript on a keyless machine, so the launcher's page gets the model
+ * and a keyless machine still runs. The entrypoints the evidence drivers read state `replay`, so a
+ * golden run never bills a provider and never varies (order 9). The choice and its reasons are in
+ * `docs/RUNNING.md`.
  */
 
-import { join } from "node:path";
-import { fileURLToPath } from "node:url";
-import {
-  type ProviderPort,
-  ProviderTurnError,
-  RunStore,
-  runRunLoop,
-  type SandboxPort,
-  SeqLog,
-} from "@freebot/core";
+import { type ProviderPort, RunStore, runRunLoop, type SandboxPort, SeqLog } from "@freebot/core";
 import type { EventMessage } from "@freebot/protocol";
 import { GrantStore } from "@freebot/review";
 import { DockerAdapter } from "@freebot/sandbox";
-import { ReplayProvider, readTranscript, turnForTool, turnsInBlock } from "./replay-provider.ts";
+import {
+  chooseProvider,
+  createProviderPort,
+  DEFAULT_TRANSCRIPT,
+  type ProviderMode,
+} from "./provider.ts";
 import {
   createLogPort,
   createPendingApprovals,
   createReviewGate,
   DockerRunSandbox,
+  destructiveTool,
   type PendingApprovals,
   RUN_UNIT,
   runToolDefinitions,
 } from "./run-ports.ts";
-
-const DEFAULT_TRANSCRIPT = join(
-  fileURLToPath(new URL("../../../", import.meta.url)),
-  "packages/pi-bridge/fixtures/rpc-handshake.jsonl",
-);
+import { readVault, type VaultEntry } from "./vault.ts";
 
 const RUN_IDLE_TTL_MS = 300_000;
 
@@ -54,14 +49,22 @@ const RUN_IDLE_TTL_MS = 300_000;
 const LAUNCH_TAG = Math.random().toString(36).slice(2, 10);
 
 export interface RunServiceOptions {
-  /** Inject a provider, for a test or for the keyed path once G1 clears. */
-  readonly provider?: () => ProviderPort | Promise<ProviderPort>;
+  /** Inject a provider, for a test. A factory takes the run's prompt, which is the model's user
+   * message, so a keyed provider is built per run. */
+  readonly provider?: (prompt: string) => ProviderPort | Promise<ProviderPort>;
   /** Inject a sandbox, so a test drives the endpoints without Docker. A factory gets one port per
    * run, which keeps two concurrent runs off each other's container. */
   readonly sandbox?: SandboxPort | (() => SandboxPort);
   /** Journal path for the run store. Omitted means an in-memory store. */
   readonly file?: string;
   readonly transcript?: string;
+  /** How the factory picks the model. `auto` follows the vault, `replay` records, `live` demands a
+   * key. Defaults to `auto`. */
+  readonly mode?: ProviderMode;
+  /** Read the vault, injectable so a test drives the keyed path with no key on the machine. */
+  readonly readVaultEntry?: (path?: string) => VaultEntry | null;
+  /** Where one line per real turn goes. Defaults to stderr, so a driver can read the run's turns. */
+  readonly note?: (line: string) => void;
   readonly now?: () => number;
 }
 
@@ -94,21 +97,24 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
   const cancelled = new Set<string>();
   const inflight: Array<Promise<unknown>> = [];
   const transcript = options.transcript ?? DEFAULT_TRANSCRIPT;
+  const vaultEntry = options.readVaultEntry ?? readVault;
 
   /** One entry per reader waiting for an append; `stream()` adds and drops its own. */
   const waiters = new Set<() => void>();
 
-  async function providerFor(): Promise<ProviderPort> {
-    if (options.provider !== undefined) return await options.provider();
-    const turns = await readTranscript(transcript);
-    const block = turnForTool(turns, "bash");
-    if (block === undefined) {
-      throw new ProviderTurnError(
-        "provider_malformed_tool_call",
-        `the replay transcript holds no bash call: ${transcript}`,
-      );
-    }
-    return new ReplayProvider(turnsInBlock(block));
+  /** This run's provider, from the factory's choice. The prompt is the model's user message. */
+  async function providerFor(prompt: string): Promise<ProviderPort> {
+    if (options.provider !== undefined) return await options.provider(prompt);
+    const choice = chooseProvider({
+      mode: options.mode ?? "auto",
+      vault: vaultEntry(),
+      transcript,
+    });
+    return await createProviderPort(choice, {
+      prompt,
+      destructive: destructiveTool,
+      ...(options.note === undefined ? {} : { note: options.note }),
+    });
   }
 
   /** Resolves on the next append, or as soon as `signal` aborts. */
@@ -196,7 +202,7 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
           ? injected()
           : (injected ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT })));
       const run = (async () => {
-        const provider = await providerFor();
+        const provider = await providerFor(prompt);
         return await runRunLoop(
           {
             sandbox,

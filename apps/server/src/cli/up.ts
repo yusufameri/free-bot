@@ -6,6 +6,12 @@
  * already in its fragment. A person opens that URL and the page is armed: they type a prompt, start
  * a real run, answer the approval card, and watch it finish. Nothing is copied out of a log.
  *
+ * The model is the vault's. The launcher asks for `auto` by default, which means a key in
+ * `~/.freebot/provider.env` makes every run call a real model and no key replays the committed
+ * transcript; `--live` refuses to start without a key and `--replay` records on purpose. The chosen
+ * provider is named on stderr, without the key, so an operator and an evidence driver both know
+ * which one ran.
+ *
  * Ctrl-C stops both listeners and then removes the sandbox containers this launch created. The loop
  * removes its own on every path it can reach; a signal reaches none of them, so the record lives
  * here (see `reaping-sandbox.ts`).
@@ -15,7 +21,15 @@
  */
 
 import { startServer } from "../index.ts";
+import {
+  type ChoiceDescription,
+  chooseProvider,
+  describeChoice,
+  MissingKeyError,
+  providerLine,
+} from "../provider.ts";
 import { createRunService } from "../run-service.ts";
+import { describeVault, readVault } from "../vault.ts";
 import { pageUrl, parseUpArgs, UP_USAGE, type UpArgs } from "./args.ts";
 import { LaunchSandboxes } from "./reaping-sandbox.ts";
 
@@ -24,21 +38,26 @@ export interface Up {
   readonly url: string;
   readonly apiPort: number;
   readonly tunnelPort: number;
+  /** What the run's model is: the endpoint, the model id, and whether a key is in play. */
+  readonly provider: ChoiceDescription;
   /** Stop the servers, then remove every container this launch created. 0 only when none survived. */
   stop(): Promise<number>;
 }
 
 export function startUp(args: UpArgs): Up {
   const sandboxes = new LaunchSandboxes();
+  const vault = readVault();
+  const choice = chooseProvider({ mode: args.providerMode, vault });
   const server = startServer({
     tunnelPort: args.tunnelPort,
     apiPort: args.apiPort,
-    service: createRunService({ sandbox: () => sandboxes.port() }),
+    service: createRunService({ sandbox: () => sandboxes.port(), mode: args.providerMode }),
   });
   return {
     url: pageUrl(server.apiPort, server.token),
     apiPort: server.apiPort,
     tunnelPort: server.tunnelPort,
+    provider: describeChoice(choice),
     async stop() {
       server.stop();
       const { removed, surviving } = await sandboxes.reap();
@@ -79,6 +98,13 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   try {
     up = startUp(args);
   } catch (error) {
+    if (error instanceof MissingKeyError) {
+      console.error(`freebot up: ${error.message}`);
+      console.error(
+        "freebot up: put FREEBOT_BYOK_KEY in that file, or drop --live to replay the transcript",
+      );
+      return 2;
+    }
     console.error(
       `freebot up: cannot listen on 127.0.0.1: ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -88,6 +114,11 @@ export async function main(argv: readonly string[]): Promise<number | null> {
 
   console.error(
     `freebot up: page and run on 127.0.0.1:${up.apiPort}, tunnel on 127.0.0.1:${up.tunnelPort}`,
+  );
+  const vault = describeVault();
+  console.error(`freebot up: model mode ${args.providerMode}, ${providerLine(up.provider)}`);
+  console.error(
+    `freebot up: vault ${vault.path} ${vault.present ? `present, mode ${vault.mode ?? "unknown"}` : "absent"}`,
   );
   console.error(
     "freebot up: the operator token rides the URL's fragment and is printed nowhere else",

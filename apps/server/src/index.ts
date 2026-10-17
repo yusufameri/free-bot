@@ -39,9 +39,12 @@ export function startServer(options: ServerOptions = {}): Server {
   let api: ReturnType<typeof startApiServer>;
   try {
     // One run authority: the operator API, the page and the page's stream all drive this instance.
+    // This entrypoint states `replay` on purpose. It is the peer the evidence drivers boot, and a
+    // golden run must never bill a provider or vary with the machine's vault (order 9). The
+    // operator's entrypoint is `bun run up`, which asks the vault and gets the real model.
     api = startApiServer({
       port: options.apiPort ?? 0,
-      service: options.service ?? createRunService(),
+      service: options.service ?? createRunService({ mode: "replay" }),
     });
   } catch (error) {
     // A port this process cannot take must not leave the tunnel leg listening behind it.

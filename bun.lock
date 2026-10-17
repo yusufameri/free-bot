@@ -28,6 +28,7 @@
         "@freebot/core": "workspace:*",
         "@freebot/pi-bridge": "workspace:*",
         "@freebot/protocol": "workspace:*",
+        "@freebot/providers": "workspace:*",
         "@freebot/review": "workspace:*",
         "@freebot/sandbox": "workspace:*",
         "@orpc/client": "1.15.7",

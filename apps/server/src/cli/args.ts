@@ -5,7 +5,15 @@
  * function of this one record. A port defaults to 0, which asks the OS for a free one: two launches
  * then cannot collide, and a port the operator pins that is already taken fails loudly instead of
  * silently moving somewhere they did not ask for.
+ *
+ * `--live` and `--replay` decide the model, and neither carries a secret: `live` demands the vault's
+ * key and refuses to start without one, `replay` records, and the default `auto` follows the vault.
+ * The mode is the one flag an evidence driver may need to pin, because a driver that asserts a
+ * recorded turn needs the recorded provider (order 9), so `FREEBOT_PROVIDER` sets the default for
+ * anything that spawns the launcher without a flag.
  */
+
+import type { ProviderMode } from "../provider.ts";
 
 export interface UpArgs {
   /** The page and its stream. 0 asks the OS for a free port. */
@@ -14,6 +22,8 @@ export interface UpArgs {
   readonly tunnelPort: number;
   /** Open the printed URL in the operator's browser. */
   readonly open: boolean;
+  /** How the run's model is chosen. */
+  readonly providerMode: ProviderMode;
   /** Print the usage and exit. */
   readonly help: boolean;
 }
@@ -26,15 +36,29 @@ export const UP_USAGE = [
   "",
   "flags:",
   "  --no-open          print the URL, do not open a browser",
+  "  --live             use the key in ~/.freebot/provider.env, and refuse to start without one",
+  "  --replay           replay the committed transcript instead of calling a model",
   "  --api-port <n>     the page and its stream (default 0, a free port)",
   "  --tunnel-port <n>  the tunnel leg (default 0, a free port)",
   "  -h, --help         print this",
+  "",
+  "The model defaults to the vault: a key there makes every run call a real model, and no key",
+  "replays the transcript. FREEBOT_PROVIDER=live|replay|auto sets that default for a started",
+  "process, which is how an evidence driver pins the recorded provider.",
   "",
   "Ctrl-C stops the servers and removes the sandbox containers this launch created.",
 ].join("\n");
 
 /** A caller's own mistake, reported with the usage rather than as a crash. */
 export class UpArgError extends Error {}
+
+/** The mode `FREEBOT_PROVIDER` names, or null when it names nothing this launcher knows. */
+export function envProviderMode(
+  env: Record<string, string | undefined> = process.env,
+): ProviderMode | null {
+  const value = env.FREEBOT_PROVIDER;
+  return value === "auto" || value === "live" || value === "replay" ? value : null;
+}
 
 function port(value: string | undefined, flag: string): number {
   if (value === undefined) throw new UpArgError(`${flag} needs a port number`);
@@ -45,11 +69,15 @@ function port(value: string | undefined, flag: string): number {
   return parsed;
 }
 
-export function parseUpArgs(argv: readonly string[]): UpArgs {
+export function parseUpArgs(
+  argv: readonly string[],
+  env: Record<string, string | undefined> = process.env,
+): UpArgs {
   const args: UpArgs = {
     apiPort: 0,
     tunnelPort: 0,
     open: true,
+    providerMode: envProviderMode(env) ?? "auto",
     help: argv.includes("--help") || argv.includes("-h"),
   };
   let next: UpArgs = args;
@@ -64,6 +92,12 @@ export function parseUpArgs(argv: readonly string[]): UpArgs {
         break;
       case "--open":
         next = { ...next, open: true };
+        break;
+      case "--live":
+        next = { ...next, providerMode: "live" };
+        break;
+      case "--replay":
+        next = { ...next, providerMode: "replay" };
         break;
       case "--api-port":
         next = { ...next, apiPort: port(argv[index + 1], flag) };
