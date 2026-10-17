@@ -6,8 +6,9 @@
  * `Location:`/DNS-rebinding attack can make the attacker's hostname resolve to 127.0.0.1. Three
  * structural checks cover that, each refusing with its own code so a caller can tell them apart:
  *
- * 1. `host_not_allowed`: the `Host` header must name loopback. Answered before any credential is
- *    read, so a rebound request is refused without the token being compared against anything.
+ * 1. `host_not_allowed`: the `Host` header must name an allowed hostname (loopback, or loopback
+ *    plus `host.docker.internal` on the tunnel leg). Answered before any credential is read, so a
+ *    rebound request is refused without the token being compared against anything.
  * 2. `origin_not_allowed`: an `Origin` header that is present must be a loopback http(s) origin.
  *    A browser sends `Origin` on cross-origin requests and on same-origin non-GET requests, so a
  *    foreign page cannot reach the API with its own origin attached; `Origin: null` is refused
@@ -42,6 +43,12 @@ export interface AuthRefusal {
 /** The hostnames a loopback-bound server answers to. A foreign one is a rebinding attempt. */
 const LOOPBACK_HOSTNAMES = new Set(["127.0.0.1", "localhost", "::1"]);
 
+/**
+ * The tunnel leg adds the in-sandbox agent, which reaches it as `host.docker.internal` through the
+ * TCP relay and holds no token, to the loopback set.
+ */
+export const TUNNEL_HOSTNAMES = new Set([...LOOPBACK_HOSTNAMES, "host.docker.internal"]);
+
 const LOOPBACK_ORIGIN_PROTOCOLS = new Set(["http:", "https:"]);
 
 /** A fresh 256-bit token per launch, url-safe so it can ride a WebSocket query string. */
@@ -60,16 +67,19 @@ export function hostnameOf(host: string): string {
   return colon === -1 ? value : value.slice(0, colon);
 }
 
-export function checkHost(host: string | null): AuthRefusal | null {
+export function checkHost(
+  host: string | null,
+  allowedHostnames: ReadonlySet<string> = LOOPBACK_HOSTNAMES,
+): AuthRefusal | null {
   if (host === null || host === "") {
     return { code: "host_not_allowed", status: 403, message: "no Host header" };
   }
   const hostname = hostnameOf(host);
-  if (LOOPBACK_HOSTNAMES.has(hostname)) return null;
+  if (allowedHostnames.has(hostname)) return null;
   return {
     code: "host_not_allowed",
     status: 403,
-    message: `Host ${hostname} is not loopback`,
+    message: `Host ${hostname} is not allowed`,
   };
 }
 
@@ -81,7 +91,11 @@ export function checkOrigin(origin: string | null): AuthRefusal | null {
   } catch {
     return { code: "origin_not_allowed", status: 403, message: `Origin ${origin} is not a URL` };
   }
-  if (!LOOPBACK_ORIGIN_PROTOCOLS.has(url.protocol) || !LOOPBACK_HOSTNAMES.has(url.hostname)) {
+  // `url.hostname` keeps an IPv6 literal's brackets, so read it the way the Host check does.
+  if (
+    !LOOPBACK_ORIGIN_PROTOCOLS.has(url.protocol) ||
+    !LOOPBACK_HOSTNAMES.has(hostnameOf(url.hostname))
+  ) {
     return {
       code: "origin_not_allowed",
       status: 403,

@@ -10,6 +10,7 @@ import {
   mintToken,
   presentedToken,
   refusalResponse,
+  TUNNEL_HOSTNAMES,
 } from "./auth.ts";
 
 const TOKEN = "dG9rZW4tdW5kZXItdGVzdA";
@@ -134,6 +135,15 @@ describe("the Host check", () => {
     }
   });
 
+  test("refuses the tunnel leg's allowance unless the caller passes it", () => {
+    expect(checkHost("host.docker.internal:5173")?.code).toBe("host_not_allowed");
+    expect(checkHost("host.docker.internal:5173", TUNNEL_HOSTNAMES)).toBeNull();
+    expect(checkHost("host.docker.internal.evil.example", TUNNEL_HOSTNAMES)?.code).toBe(
+      "host_not_allowed",
+    );
+    expect(checkHost("127.0.0.1:5173", TUNNEL_HOSTNAMES)).toBeNull();
+  });
+
   test("refuses a missing Host header", () => {
     expect(checkHost(null)?.code).toBe("host_not_allowed");
     expect(checkHost("")?.code).toBe("host_not_allowed");
@@ -153,6 +163,7 @@ describe("the Origin check", () => {
       "http://127.0.0.1:3000",
       "http://localhost:5173",
       "https://localhost:8443",
+      "http://[::1]:3000",
     ]) {
       expect(checkOrigin(origin)).toBeNull();
     }
@@ -161,6 +172,7 @@ describe("the Origin check", () => {
   test("refuses a foreign origin", () => {
     expect(checkOrigin("http://evil.example")?.code).toBe("origin_not_allowed");
     expect(checkOrigin("https://evil.example:443")?.code).toBe("origin_not_allowed");
+    expect(checkOrigin("http://[::2]:3000")?.code).toBe("origin_not_allowed");
   });
 
   test("refuses the opaque and non-http origins a browser can send", () => {
