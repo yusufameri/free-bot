@@ -20,6 +20,7 @@
  * | matching grant tombstoned by rewind | `grant_tombstoned: grant <id> tombstoned by <reason>` |
  * | stored actionHash disagrees with its content | `grant_forged: grant <id> hash does not match its content` |
  * | args not canonicalizable | `malformed_action: <canonicalization error>` |
+ * | the human refused this action | `user_denied: the user denied action <hash>` |
  * | any store failure | `grant_store_error: <message>` |
  */
 
@@ -37,6 +38,12 @@ export const DENY_CODES = {
   GRANT_TOMBSTONED: "grant_tombstoned",
   GRANT_FORGED: "grant_forged",
   MALFORMED_ACTION: "malformed_action",
+  /**
+   * A human answered no to this action. Distinct from `no_grant`, which means nobody was asked:
+   * an answer is a decision the control plane already holds, so a consumer can render "you denied
+   * this" rather than asking again.
+   */
+  USER_DENIED: "user_denied",
   GRANT_STORE_ERROR: "grant_store_error",
 } as const;
 
@@ -47,6 +54,12 @@ export interface GrantPolicyOptions {
   tools?: readonly string[];
   /** Clock override for tests. Defaults to Date.now. */
   now?: () => number;
+  /**
+   * Action hashes a human refused. A refused action denies `user_denied` unless a live grant
+   * authorizes it, which is how a later allow overrides an earlier no. The control plane owns the
+   * set: it adds a hash when a parked call is denied and removes one when a parked call is allowed.
+   */
+  refusals?: { has(actionHash: string): boolean };
 }
 
 function deny(code: DenyCode, detail: string): ToolGateDecision {
@@ -64,6 +77,7 @@ function messageOf(error: unknown): string {
 export function createGrantPolicy(store: GrantStore, options: GrantPolicyOptions = {}): ToolGate {
   const governed = options.tools === undefined ? undefined : new Set(options.tools);
   const now = options.now ?? Date.now;
+  const refusals = options.refusals;
 
   return (call: ToolCallContext): ToolGateDecision => {
     try {
@@ -95,6 +109,10 @@ export function createGrantPolicy(store: GrantStore, options: GrantPolicyOptions
       if (chosen !== undefined) {
         store.consume(chosen.id, call.toolCallId, at);
         return { allow: true };
+      }
+
+      if (refusals?.has(callHash) === true) {
+        return deny(DENY_CODES.USER_DENIED, `the user denied action ${callHash}`);
       }
 
       const latest = candidates.at(-1);

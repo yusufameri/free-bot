@@ -29,7 +29,7 @@ describe("the rejection list", () => {
       "missing payload",
       "payload field of the wrong type",
       "denial without a reason code",
-      "reason code outside the nine",
+      "reason code outside the ten",
       "denial without a detail",
       "action hash that is not v1:sha256:<64 hex>",
       "grant state outside the four",

@@ -70,6 +70,7 @@ const streamScoped = <const K extends keyof typeof STREAM_PAYLOADS>(
 export const runStartedMessage = runScoped("run.started", EVENT_PAYLOADS["run.started"]);
 export const runFinishedMessage = runScoped("run.finished", EVENT_PAYLOADS["run.finished"]);
 export const runFailedMessage = runScoped("run.failed", EVENT_PAYLOADS["run.failed"]);
+export const runStatusMessage = runScoped("run.status", EVENT_PAYLOADS["run.status"]);
 export const turnStartedMessage = runScoped("turn.started", EVENT_PAYLOADS["turn.started"]);
 export const turnEndedMessage = runScoped("turn.ended", EVENT_PAYLOADS["turn.ended"]);
 export const messageTextDeltaMessage = runScoped(
@@ -105,6 +106,7 @@ const eventMessages = [
   runStartedMessage,
   runFinishedMessage,
   runFailedMessage,
+  runStatusMessage,
   turnStartedMessage,
   turnEndedMessage,
   messageTextDeltaMessage,
