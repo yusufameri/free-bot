@@ -1,0 +1,20 @@
+feature: providers, the live half (outside the gate)
+command: bun packages/providers/scripts/smoke.ts <baseUrl> <model>
+  baseUrl and model come from FREEBOT_BYOK_BASE_URL and FREEBOT_BYOK_MODEL
+when: 2026-10-17T19:52Z
+git sha: 86da80c0febc587517de2994ee2222e80531f29a
+key: read by Pi's own !command out of ~/.freebot/provider.env; no key value in this file or in the
+  smoke's environment, and the smoke's report carries keyPresent as a boolean
+
+providers smoke: mode=live
+connection: baseUrl=https://api.commandcode.ai/provider/v1 provider=byok model=deepseek/deepseek-v4.1-flash keyPresent=true
+capability flags (from the observed turn, never from the model name):
+  toolCalling: strong
+  streaming: true
+  structuredOutput: unknown
+  contextWindow: 128000
+  note: native tool call(s): freebot_smoke_echo
+  note: structured output unknown: path not exercised
+  note: execution freebot_smoke_echo: ran clean
+  note: structured output path not exercised: a Pi prompt request carries no response_format, and the key lives in the vault, which this probe does not read
+PASS providers smoke: mode=live toolCalling=strong
