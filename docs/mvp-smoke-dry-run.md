@@ -2,8 +2,9 @@
 
 Status: PASS. 60/60 harness checks at commit `7ce8f5e`, run by `bun spikes/mvp-smoke/run.ts`.
 Artifacts: `packages/verify/artifacts/mvp-smoke/7ce8f5e/` (assert.txt, decision-table.txt,
-seq-audit.txt, frames/, logs.txt, and copies of the four JSONL logs). The run needs Docker and
-Chrome; it needs no provider key and no BYOK secret.
+seq-audit.txt, frames/, logs.txt, and the three JSONL log copies the run reads back; the grant
+ledger's final state is in seq-audit.txt). The run needs Docker and Chrome; it needs no provider key
+and no BYOK secret.
 
 STUB DISCLOSURE: the decision source in this run is the keyless scripted stub
 `spikes/forge-test-a/stub-model.ts`. No provider, no BYOK key, no live-model traffic. Gate G1
@@ -163,7 +164,7 @@ deferred by standing order 12, as in U0.10.
   only that a gated call reaches the human and a ledger denial does not.
 - The JSONL appends are `appendFileSync`, not fsync-atomic. A SIGKILL at the wrong instant could
   tear the last line of `frames.jsonl` or `display.jsonl`; both logs fail loudly at reload
-  (`JSON.parse` or the `SeqLog` append outcome), it would not fail silently. This run avoids the
+  (`JSON.parse` or the `SeqLog` append outcome), so it would not fail silently. This run avoids the
   window structurally: the kill lands inside a 3-second tool call with no frames arriving, and the
   harness asserts the step-3 card is the last display frame before it fires.
 - The display stream carries host-minted dense seqs (1..38), the U0.10 page contract unchanged; the
