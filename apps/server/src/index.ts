@@ -1,11 +1,8 @@
 import { app } from "./app";
+import { startTunnelServer } from "./tunnel";
 
 export { app };
 
-const server = Bun.serve({
-  hostname: "127.0.0.1",
-  port: Number(Bun.env.PORT ?? 0),
-  fetch: app.fetch,
-});
+const server = startTunnelServer({ port: Number(Bun.env.PORT ?? 0) });
 
 console.log(`listening on http://127.0.0.1:${server.port}`);

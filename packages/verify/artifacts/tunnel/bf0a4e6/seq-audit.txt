@@ -1,0 +1,30 @@
+seq audit: one monotonic sequence from one event log, killed and rejoined twice
+timestamp: 2026-10-17T07:19:13.618Z
+git sha: bf0a4e67b8351cb1db3d7f160f2042ddd7850ff9
+
+scenario a: tunnel relay SIGKILLed mid-burst
+  frames logged: 124 (seq 1..124)
+  gaps: 0 []
+  duplicates: 0 []
+  suppressed at ingest (replayed frames the log already held): 0 []
+  gap events (refused, healed by resend): 0 []
+  rejected payloads: 0
+  kill point: last seq at kill 33; 91 frames arrived after the kill instant
+  rejoin last_seen_seq: 33 (log watermark at kill: 33)
+  pi pid: 25 (starttime 373664 -> unchanged)
+  agent pid: 47 -> 47
+  audit invariant: OK (zero gaps, zero duplicates)
+
+scenario b: tunnel agent SIGKILLed mid-tool-call
+  frames logged: 124 (seq 1..124)
+  gaps: 0 []
+  duplicates: 0 []
+  suppressed at ingest (replayed frames the log already held): 0 []
+  gap events (refused, healed by resend): 0 []
+  rejected payloads: 0
+  kill point: last seq at kill 77; 47 frames arrived after the kill instant
+  rejoin last_seen_seq: 0 (log watermark at kill: 77)
+  pi pid: 25 (starttime 374079 -> 374079)
+  agent pid: 46 -> 98
+  audit invariant: OK (zero gaps, zero duplicates)
+

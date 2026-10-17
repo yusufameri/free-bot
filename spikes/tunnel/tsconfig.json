@@ -1,0 +1,4 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["kill-rejoin.ts", "stub-model.ts", "tcp-relay.ts", "echo-ext.ts"]
+}
