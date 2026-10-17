@@ -287,6 +287,9 @@ export function mountThread(config: {
         card.dataset.toolCall ?? "",
         card.querySelector(".status")?.textContent ?? "",
       ]),
+      outputShown: [...threadEl.querySelectorAll<HTMLElement>(".tool-card")].map(
+        (card) => card.querySelector<HTMLElement>(".output-details")?.hidden === false,
+      ),
       approvals: [...threadEl.querySelectorAll<HTMLElement>(".approval-card")].map(
         (card) => card.dataset.decision ?? null,
       ),

@@ -216,7 +216,7 @@ async function release(cdp: Cdp, sessionId: string): Promise<void> {
 }
 
 /** The facts read straight from the DOM by the driver, independent of the page's own hook. */
-type DomFacts = { frames: number; lastSeq: number; statuses: string[] };
+type DomFacts = { frames: number; lastSeq: number; statuses: string[]; outputs: boolean[] };
 
 async function domFacts(cdp: Cdp, sessionId: string): Promise<DomFacts> {
   return evalJson<DomFacts>(
@@ -226,6 +226,8 @@ async function domFacts(cdp: Cdp, sessionId: string): Promise<DomFacts> {
       frames: document.querySelectorAll('#thread .frame[data-seq]').length,
       lastSeq: Math.max(0, ...[...document.querySelectorAll('#thread .frame[data-seq]')].map((e) => Number(e.dataset.seq))),
       statuses: [...document.querySelectorAll('#thread .tool-card .status')].map((e) => e.textContent),
+      outputs: [...document.querySelectorAll('#thread .tool-card')]
+        .map((card) => card.querySelector('.output-details')?.hidden === false),
     })`,
   );
 }
@@ -286,8 +288,8 @@ async function capture(
   );
   log.check(
     `frame ${name}: the driver's DOM read agrees with the page's facts hook`,
-    [dom.frames, dom.lastSeq, dom.statuses],
-    [after.frameCount, after.lastSeq, after.cards.map(([, status]) => status)],
+    [dom.frames, dom.lastSeq, dom.statuses, dom.outputs],
+    [after.frameCount, after.lastSeq, after.cards.map(([, status]) => status), after.outputShown],
   );
   for (const claim of spec.claims) {
     log.check(`frame ${name}: claim - ${claim.label}`, claim.holds(after), true);

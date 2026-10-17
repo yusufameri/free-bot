@@ -27,6 +27,7 @@ const INTENDED: Array<[string, FrameFacts]> = [
       frameCount: 0,
       turns: 0,
       cards: [],
+      outputShown: [],
       approvals: [],
       deltas: [],
       resume: null,
@@ -41,6 +42,7 @@ const INTENDED: Array<[string, FrameFacts]> = [
       frameCount: 8,
       turns: 1,
       cards: [],
+      outputShown: [],
       approvals: [],
       deltas: ["turn-1-chunk-0 "],
       resume: null,
@@ -55,6 +57,7 @@ const INTENDED: Array<[string, FrameFacts]> = [
       frameCount: 10,
       turns: 1,
       cards: [["call_spike_1", "running"]],
+      outputShown: [false],
       approvals: [],
       deltas: ["turn-1-chunk-0 "],
       resume: null,
@@ -69,6 +72,7 @@ const INTENDED: Array<[string, FrameFacts]> = [
       frameCount: 33,
       turns: 2,
       cards: [["call_spike_1", "done"]],
+      outputShown: [true],
       approvals: [],
       deltas: ["turn-1-chunk-0 "],
       resume: 33,
@@ -86,6 +90,7 @@ const INTENDED: Array<[string, FrameFacts]> = [
         ["call_spike_1", "done"],
         ["call_spike_2", "awaiting approval"],
       ],
+      outputShown: [true, false],
       approvals: [null],
       deltas: ["turn-1-chunk-0 "],
       resume: 33,
@@ -103,6 +108,7 @@ const INTENDED: Array<[string, FrameFacts]> = [
         ["call_spike_1", "done"],
         ["call_spike_2", "running"],
       ],
+      outputShown: [true, false],
       approvals: ["allow"],
       deltas: ["turn-1-chunk-0 "],
       resume: 33,
@@ -121,6 +127,7 @@ const INTENDED: Array<[string, FrameFacts]> = [
         ["call_spike_2", "done"],
         ["call_spike_3", "done"],
       ],
+      outputShown: [true, true, true],
       approvals: ["allow"],
       deltas: ["spike exchange complete."],
       resume: 33,
@@ -138,6 +145,7 @@ const INTENDED: Array<[string, FrameFacts]> = [
         ["call_spike_1", "done"],
         ["call_spike_2", "denied"],
       ],
+      outputShown: [true, false],
       approvals: ["deny"],
       deltas: ["turn-2-chunk-0 "],
       resume: null,
@@ -191,6 +199,14 @@ describe("captions", () => {
     ]);
   });
 
+  test("the done caption fails when a finished card's output block is still closed", () => {
+    const done = INTENDED[6]?.[1];
+    if (done === undefined) throw new Error("missing intended facts");
+    expect(unmetClaims(specFor("07-done"), { ...done, outputShown: [true, false, true] })).toEqual([
+      "every tool card's output in a collapsible block",
+    ]);
+  });
+
   test("the pending caption fails on a frame whose approval is already decided", () => {
     const allowed = INTENDED[5]?.[1];
     if (allowed === undefined) throw new Error("missing intended facts");
@@ -206,7 +222,7 @@ describe("describeFacts", () => {
     const pending = INTENDED[4]?.[1];
     if (pending === undefined) throw new Error("missing intended facts");
     expect(describeFacts(pending)).toBe(
-      'last seq 55 · done false · turns 2 · cards [call_spike_1:done call_spike_2:awaiting approval] · approvals [pending] · resume 33 · stream end - · text "turn-1-chunk-0 "',
+      'last seq 55 · done false · turns 2 · cards [call_spike_1:done call_spike_2:awaiting approval] · output blocks [open,closed] · approvals [pending] · resume 33 · stream end - · text "turn-1-chunk-0 "',
     );
   });
 });

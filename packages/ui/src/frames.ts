@@ -19,6 +19,11 @@ export interface FrameFacts {
   turns: number;
   /** `[toolCallId, status]` per tool-call card, in DOM order. */
   cards: Array<[string, string]>;
+  /**
+   * Per tool-call card, in DOM order: whether its `.output-details` collapsible is unhidden, so the
+   * card's literal output is on the page rather than behind a closed disclosure.
+   */
+  outputShown: boolean[];
   /** Per approval card: `"allow"`, `"deny"`, or `null` while the card waits. */
   approvals: Array<string | null>;
   /** Assistant text, one entry per delta node. */
@@ -83,12 +88,14 @@ export function unmetClaims(spec: FrameSpec, facts: FrameFacts): string[] {
 /** One readable line for the artifact, so a reader can see what each frame documented. */
 export function describeFacts(facts: FrameFacts): string {
   const cards = facts.cards.map(([call, status]) => `${call}:${status}`).join(" ");
+  const outputs = facts.outputShown.map((shown) => (shown ? "open" : "closed")).join(",");
   const approvals = facts.approvals.map((decision) => decision ?? "pending").join(",");
   return [
     `last seq ${facts.lastSeq}`,
     `done ${facts.done}`,
     `turns ${facts.turns}`,
     `cards [${cards}]`,
+    `output blocks [${outputs}]`,
     `approvals [${approvals}]`,
     `resume ${facts.resume ?? "-"}`,
     `stream end ${facts.streamEnd ?? "-"}`,
@@ -193,11 +200,19 @@ export const FRAME_SPECS: readonly FrameSpec[] = [
   },
   {
     name: "07-done",
-    caption: "The run finished: every message rendered once, the terminal marker is on screen.",
+    caption:
+      "The run finished: every message rendered once, every tool card's output in a collapsible block, the terminal marker on screen, and no card left running.",
     claims: [
       { label: "the run reported done", holds: (f) => f.done },
       { label: "the terminal marker is rendered", holds: (f) => f.streamEnd === "stream complete" },
       { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        label: "every tool card's output in a collapsible block",
+        holds: (f) =>
+          f.cards.length > 0 &&
+          f.outputShown.length === f.cards.length &&
+          f.outputShown.every((shown) => shown),
+      },
       { label: "no card is left running", holds: (f) => !hasStatus(f, "running") },
     ],
     visible: "#thread .run-finished",
