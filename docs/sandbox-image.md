@@ -38,7 +38,7 @@ The build asserts two things and fails closed on both: the installed `pi --versi
 just version-numbered.
 
 Rebuild outcome, reported as measured. A second build of the same Dockerfile produced a different
-image Id (`sha256:57ea864e…`) but a byte-identical RootFS layer set: all seven layer digests match,
+image Id (`sha256:c4748f67…`) but a byte-identical RootFS layer set: all seven layer digests match,
 including the `npm` install layer, which means the installed files are identical down to their
 tarball timestamps. The Id differs because the image config carries build timestamps.
 `digest.txt` records both. So the reproducible identity of this image is its layer set, and the
