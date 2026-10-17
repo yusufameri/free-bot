@@ -1,0 +1,5 @@
+call_step_1	bash	allow	via=policy_auto_grant	grant=grant-1	
+call_step_2	bash	allow	via=page_allow_once	grant=grant-2	
+call_step_3	bash	allow	via=policy_auto_grant	grant=grant-3	
+call_step_4	bash	grant_consumed	via=policy	grant=-	grant_consumed: grant grant-2 consumed by call_step_2
+call_step_5	bash	user_denied	via=page_deny	grant=-	user_denied: the page denied the approval card

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>freebot web-stream spike</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto; padding: 24px 28px 80px; max-width: 900px;
+    font: 15px/1.5 -apple-system, "Segoe UI", sans-serif; color: #16181d; background: #fbfbfa;
+  }
+  header { position: sticky; top: 0; background: #fbfbfa; padding: 8px 0 12px; border-bottom: 1px solid #e4e4e0; }
+  header h1 { font-size: 16px; margin: 0 0 4px; }
+  .meta { display: flex; gap: 16px; font-size: 13px; color: #5b5e66; }
+  #resume { margin: 12px 0; padding: 8px 12px; background: #eef6ee; border: 1px solid #b9d8b9; border-radius: 6px;
+    font-size: 14px; color: #1c5c1c; }
+  #error { margin: 12px 0; padding: 8px 12px; background: #fdecec; border: 1px solid #e5a3a3; border-radius: 6px;
+    font-size: 14px; color: #8c1d1d; font-weight: 600; }
+  #stream > .frame { display: block; margin: 6px 0; }
+  .turn { margin-top: 18px; }
+  .turn-title { font-size: 14px; text-transform: uppercase; letter-spacing: 0.06em; color: #5b5e66; margin: 0 0 4px; }
+  .assistant { padding-left: 12px; }
+  .delta { white-space: pre-wrap; }
+  .tool-card { border: 1px solid #d8d8d2; border-radius: 8px; padding: 10px 12px; background: #fff; }
+  .tool-card .cmd { display: block; font-size: 13px; margin-bottom: 6px; }
+  .tool-card .status { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #8a6d1a; }
+  .tool-card.finished .status { color: #1c5c1c; }
+  .tool-card.destructive { border-color: #e0b34d; background: #fffdf4; }
+  .tool-card .output { margin: 8px 0 0; padding: 8px; background: #f4f4f1; border-radius: 6px; font-size: 13px;
+    white-space: pre-wrap; min-height: 0; }
+  .tool-card .output:empty { display: none; }
+  .approval-card { border: 2px solid #e0b34d; border-radius: 8px; padding: 12px; background: #fffdf4; }
+  .approval-card.resolved { border-color: #b9d8b9; background: #f4faf4; }
+  .approval-card .approval-result { font-weight: 600; color: #1c5c1c; }
+  .approval-card[data-decision="deny"] .approval-result { color: #8c1d1d; }
+  .approval-actions { margin-top: 10px; display: flex; gap: 10px; }
+  .approval-actions button { font: inherit; font-size: 14px; padding: 6px 14px; border-radius: 6px;
+    border: 1px solid #b6b6b0; background: #fff; cursor: pointer; }
+  .approval-actions .allow-once { background: #1c5c1c; border-color: #1c5c1c; color: #fff; }
+  .approval-actions button:disabled { opacity: 0.5; cursor: default; }
+  .turn-end, .tool-result, .approval-resolved, .stream-end {
+    font-size: 12px; color: #8b8e96; padding-left: 12px;
+  }
+  .stream-end { font-weight: 600; color: #1c5c1c; }
+</style>
+</head>
+<body>
+<header>
+  <h1>freebot web-stream spike</h1>
+  <div class="meta">
+    <span id="conn">connecting</span>
+    <span id="lastseq">last seq 0</span>
+    <span id="dups">duplicates ignored: 0</span>
+  </div>
+</header>
+<div id="resume" hidden></div>
+<div id="error" hidden></div>
+<main id="stream"></main>
+<script type="module" src="/bundle.js"></script>
+</body>
+</html>
