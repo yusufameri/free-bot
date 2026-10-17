@@ -1,0 +1,20 @@
+{
+  "name": "freebot",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "lint": "biome check .",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "bun test",
+    "verify": "bun packages/verify/run.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@types/bun": "~1.2.5",
+    "typescript": "^5.6.0"
+  }
+}
