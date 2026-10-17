@@ -13,6 +13,7 @@ directory per feature and git short sha. The row records the commit the artifact
 | review-grants | `bun test packages/review && bun packages/review/src/scenario.ts` | unit-test-verified | `packages/verify/artifacts/review-grants/c8efced/assert.txt` | c8efcedebc75151a6dacb210f3c29f74328698c2 | 2026-10-17 |
 | tunnel spike | `bun spikes/tunnel/kill-rejoin.ts` | spike-verified (34/34 checks, both kill scenarios: zero gaps, zero duplicates, stable pi pid) | `packages/verify/artifacts/tunnel/bf0a4e6/assert.txt` | bf0a4e67b8351cb1db3d7f160f2042ddd7850ff9 | 2026-10-17 |
 | browser containment spike | `bash spikes/browser-containment/run.sh` | spike-verified (7/7 browser probes inside the default-deny netns, UDP attributed by port bucket) | `packages/verify/artifacts/containment-browser/27cf9de/probes.txt` | 27cf9dee665547356177d8c0ce3d39b2c8f623b9 | 2026-10-17 |
+| web-stream spike | `bun spikes/web-stream/run.ts` | spike-verified (59/59 CDP checks, both approval paths, reconnect resume with duplicate ignored, 12 frame captures) | `packages/verify/artifacts/web-stream/35bd852/assert.txt` | 35bd8529a9b1f7986052838a8e4adbab2d901267 | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, the pi-bridge client, and the
 sandbox image pin. The scaffold row covers workspace shape, typecheck, the `apps/server` health test,
