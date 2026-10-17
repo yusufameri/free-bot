@@ -25,6 +25,11 @@
       "name": "@freebot/server",
       "version": "0.0.0",
       "dependencies": {
+        "@freebot/core": "workspace:*",
+        "@freebot/pi-bridge": "workspace:*",
+        "@freebot/protocol": "workspace:*",
+        "@freebot/review": "workspace:*",
+        "@freebot/sandbox": "workspace:*",
         "hono": "^4.6.0",
       },
     },

@@ -26,25 +26,32 @@ interface SocketData {
   lastSeenSeq: number;
 }
 
-export interface TunnelServer {
+export interface TunnelServer<TFrame = PiInboundFrame> {
   port: number;
-  log: SeqLog<PiInboundFrame>;
+  log: SeqLog<TFrame>;
   stop(): void;
 }
 
-function send(
+function send<F>(
   ws: Bun.ServerWebSocket<SocketData>,
-  message: TunnelControlMessage | StreamMessage<PiInboundFrame>,
+  message: TunnelControlMessage | StreamMessage<F>,
 ): void {
   ws.send(JSON.stringify(message));
 }
 
-function frameMessage(entry: SeqFrame<PiInboundFrame>): StreamMessage<PiInboundFrame> {
+function frameMessage<F>(entry: SeqFrame<F>): StreamMessage<F> {
   return { kind: "frame", seq: entry.seq, frame: entry.frame };
 }
 
-export function startTunnelServer(options: { port?: number } = {}): TunnelServer {
-  const log = new SeqLog<PiInboundFrame>();
+/**
+ * Serve one event log over `/tunnel`, `/stream` and `/events`. The log is injected when the control
+ * plane already owns one (a run's v1 messages), so the stream and the run loop read and write the
+ * same buffer rather than two that can drift; the default is a fresh log of Pi frames.
+ */
+export function startTunnelServer<F = PiInboundFrame>(
+  options: { port?: number; log?: SeqLog<F> } = {},
+): TunnelServer<F> {
+  const log: SeqLog<F> = options.log ?? new SeqLog<F>();
 
   const http = new Hono();
   http.route("/", app);
@@ -128,7 +135,7 @@ export function startTunnelServer(options: { port?: number } = {}): TunnelServer
       return;
     }
     const seq = envelope.seq;
-    const outcome = log.append(seq, envelope.frame as PiInboundFrame);
+    const outcome = log.append(seq, envelope.frame as F);
     switch (outcome) {
       case "appended":
         server.publish(CLIENT_TOPIC, JSON.stringify({ kind: "frame", seq, frame: envelope.frame }));
