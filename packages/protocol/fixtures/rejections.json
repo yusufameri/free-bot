@@ -210,7 +210,7 @@
   {
     "name": "unknown key on a command input (strict)",
     "schema": "start_run",
-    "input": { "prompt": "hi", "extra": 1 },
+    "input": { "prompt": "hi", "botId": "bot-local", "threadId": "thread-1", "extra": 1 },
     "error": "Unrecognized key: \"extra\""
   },
   {
@@ -234,13 +234,25 @@
   {
     "name": "absolute file path",
     "schema": "read_file",
-    "input": { "path": "/etc/passwd" },
+    "input": { "botId": "bot-local", "path": "/etc/passwd" },
     "error": "path must be relative to /workspace without .. segments"
   },
   {
     "name": "parent-directory traversal",
     "schema": "read_file",
-    "input": { "path": "a/../../b" },
+    "input": { "botId": "bot-local", "path": "a/../../b" },
     "error": "path must be relative to /workspace without .. segments"
+  },
+  {
+    "name": "a bot id that is not one path segment",
+    "schema": "read_file",
+    "input": { "botId": "../../etc", "path": "a.txt" },
+    "error": "an id is lower-case letters, digits and dashes"
+  },
+  {
+    "name": "a workspace read that names no bot",
+    "schema": "read_file",
+    "input": { "path": "a.txt" },
+    "error": "Invalid input: expected string, received undefined"
   }
 ]

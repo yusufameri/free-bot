@@ -12,10 +12,32 @@
  */
 
 import { z } from "zod";
-import { cursorSeqSchema, eventMessageSchema, runIdSchema } from "./envelope.ts";
+import { cursorSeqSchema, eventMessageSchema, runIdSchema, tsSchema } from "./envelope.ts";
+import { runStatusValueSchema } from "./events.ts";
 
 /** The one filesystem root the API addresses. */
 export const WORKSPACE_ROOT = "/workspace";
+
+/**
+ * A Bot id or a thread id. Both are path segments in the operator's own filesystem: a Bot's
+ * workspace directory and a thread's run journal are named by their id, so the contract refuses an
+ * id that is not one segment, before any handler turns it into a path.
+ */
+const idSchema = z
+  .string()
+  .regex(/^[a-z0-9][a-z0-9-]{0,63}$/, "an id is lower-case letters, digits and dashes");
+
+/** The id of one Bot. It keys the Bot's workspace directory. */
+export const botIdSchema = idSchema;
+
+/** The id of one thread. It keys the thread's run journal. */
+export const threadIdSchema = idSchema;
+
+/** The longest name a Bot can carry. The sidebar renders it in one row. */
+export const BOT_NAME_MAX = 60;
+
+/** The longest title a thread can carry. The thread list renders it in one row. */
+export const THREAD_TITLE_MAX = 120;
 
 /** A path relative to `WORKSPACE_ROOT`: no leading slash, no `..` segment, not empty. */
 export const workspacePathSchema = z
@@ -37,9 +59,15 @@ export const GET_EVENTS_MAX_LIMIT = 1000;
  * Begin a run. The prompt becomes `run.started.payload.prompt`, so a replayed log is
  * self-describing. The response returns before the run does anything: the run's progress arrives
  * as events, and `run.finished` / `run.failed` end it.
+ *
+ * A run names the Bot it belongs to and the thread it appends to, and both records exist before
+ * this call returns: the service refuses a Bot or thread it does not hold rather than minting one
+ * behind the caller's back. Two runs in one thread are two runs of one conversation.
  */
 export const startRunInput = z.strictObject({
   prompt: z.string().min(1),
+  botId: botIdSchema,
+  threadId: threadIdSchema,
 });
 
 export const startRunOutput = z.object({
@@ -99,6 +127,84 @@ export const denyOutput = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Bots and threads: the two records a run belongs to
+// ---------------------------------------------------------------------------
+
+/**
+ * One Bot as the contract reports it. `threadCount` is what the sidebar shows beside the name, and
+ * it is computed from the thread records rather than stored, so the two can never disagree.
+ */
+export const botSchema = z.object({
+  botId: botIdSchema,
+  name: z.string().min(1),
+  createdAt: tsSchema,
+  threadCount: z.number().int().nonnegative(),
+});
+
+export type Bot = z.infer<typeof botSchema>;
+
+/**
+ * One run as the thread's history reports it: what the conversation was asked, and where it got to.
+ * The status is the seven-value model the stream already carries in `run.status` payloads.
+ */
+export const runSummarySchema = z.object({
+  runId: runIdSchema,
+  prompt: z.string(),
+  status: runStatusValueSchema,
+  startedAt: tsSchema,
+});
+
+export type RunSummary = z.infer<typeof runSummarySchema>;
+
+/**
+ * One thread and the conversation in it. A thread holds many runs and lasts: it is not recreated per
+ * run, and its `runs` are the record that survives a restart. This is what the thread list renders,
+ * and what the restart evidence reads back before and after the server stops.
+ */
+export const threadSchema = z.object({
+  threadId: threadIdSchema,
+  botId: botIdSchema,
+  title: z.string().min(1),
+  createdAt: tsSchema,
+  runs: z.array(runSummarySchema),
+});
+
+export type Thread = z.infer<typeof threadSchema>;
+
+/** Every Bot, in creation order. */
+export const listBotsInput = z.strictObject({});
+
+export const listBotsOutput = z.object({
+  bots: z.array(botSchema),
+});
+
+/**
+ * Create a Bot. The id is minted by the server, because the id is the key of the Bot's workspace
+ * directory and two callers that both picked one would collide on the filesystem.
+ */
+export const createBotInput = z.strictObject({
+  name: z.string().min(1).max(BOT_NAME_MAX),
+});
+
+export const createBotOutput = botSchema;
+
+export const listThreadsInput = z.strictObject({
+  botId: botIdSchema,
+});
+
+export const listThreadsOutput = z.object({
+  threads: z.array(threadSchema),
+});
+
+/** Create a thread in a Bot. A title is optional; the thread list shows it when there is one. */
+export const createThreadInput = z.strictObject({
+  botId: botIdSchema,
+  title: z.string().min(1).max(THREAD_TITLE_MAX).optional(),
+});
+
+export const createThreadOutput = threadSchema;
+
+// ---------------------------------------------------------------------------
 // /workspace files
 // ---------------------------------------------------------------------------
 
@@ -117,8 +223,9 @@ export const fileEntrySchema = z.object({
 
 export type FileEntry = z.infer<typeof fileEntrySchema>;
 
-/** List one directory. The default `"."` is the workspace root. */
+/** List one directory of a Bot's workspace. The default `"."` is the workspace root. */
 export const listFilesInput = z.strictObject({
+  botId: botIdSchema,
   path: workspacePathSchema.default("."),
 });
 
@@ -127,8 +234,9 @@ export const listFilesOutput = z.object({
   entries: z.array(fileEntrySchema),
 });
 
-/** Read one UTF-8 text file. Binary content is refused, never mangled. */
+/** Read one UTF-8 text file of a Bot's workspace. Binary content is refused, never mangled. */
 export const readFileInput = z.strictObject({
+  botId: botIdSchema,
   path: workspacePathSchema,
 });
 
@@ -175,6 +283,10 @@ export const READ_FILE_MAX_BYTES = 262_144;
 export const API_OPERATIONS = {
   start_run: { input: startRunInput, output: startRunOutput },
   cancel_run: { input: cancelRunInput, output: cancelRunOutput },
+  list_bots: { input: listBotsInput, output: listBotsOutput },
+  create_bot: { input: createBotInput, output: createBotOutput },
+  list_threads: { input: listThreadsInput, output: listThreadsOutput },
+  create_thread: { input: createThreadInput, output: createThreadOutput },
   get_events: { input: getEventsInput, output: getEventsOutput },
   approve: { input: approveInput, output: approveOutput },
   deny: { input: denyInput, output: denyOutput },

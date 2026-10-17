@@ -7,6 +7,8 @@ import { describe, expect, test } from "bun:test";
 import {
   API_OPERATION_NAMES,
   API_OPERATIONS,
+  botIdSchema,
+  BOT_NAME_MAX,
   type EventMessage,
   GET_EVENTS_MAX_LIMIT,
   getEventsOutput,
@@ -14,6 +16,8 @@ import {
   READ_FILE_MAX_BYTES,
   readFileInput,
   startRunInput,
+  threadSchema,
+  THREAD_TITLE_MAX,
   WORKSPACE_READ_ERRORS,
   WORKSPACE_READ_REFUSALS,
   workspacePathSchema,
@@ -24,13 +28,17 @@ const HASH = `v1:sha256:${"c".repeat(64)}`;
 
 /** One valid input per operation. The map is typed against the registry, so a new op must add one. */
 const validInputs: Record<(typeof API_OPERATION_NAMES)[number], unknown> = {
-  start_run: { prompt: "summarize /workspace" },
+  start_run: { prompt: "summarize /workspace", botId: "bot-local", threadId: "thread-1" },
   cancel_run: { runId: "run-1" },
+  list_bots: {},
+  create_bot: { name: "Local Bot" },
+  list_threads: { botId: "bot-local" },
+  create_thread: { botId: "bot-local" },
   get_events: { lastSeq: 0 },
   approve: { approvalId: "ap-1" },
   deny: { approvalId: "ap-1" },
-  list_files: {},
-  read_file: { path: "notes/todo.md" },
+  list_files: { botId: "bot-local" },
+  read_file: { botId: "bot-local", path: "notes/todo.md" },
 };
 
 describe("operation registry", () => {
@@ -38,6 +46,10 @@ describe("operation registry", () => {
     expect(API_OPERATION_NAMES).toEqual([
       "start_run",
       "cancel_run",
+      "list_bots",
+      "create_bot",
+      "list_threads",
+      "create_thread",
       "get_events",
       "approve",
       "deny",
@@ -91,14 +103,73 @@ describe("workspace paths", () => {
 
   test("a .. segment is refused at the head, middle, and tail", () => {
     for (const path of ["../secrets", "a/../../b", "a/.."]) {
-      expect(readFileInput.safeParse({ path }).success).toBe(false);
+      expect(readFileInput.safeParse({ botId: "bot-local", path }).success).toBe(false);
     }
-    expect(readFileInput.safeParse({ path: "..foo/bar" }).success).toBe(true);
+    expect(readFileInput.safeParse({ botId: "bot-local", path: "..foo/bar" }).success).toBe(true);
   });
 
   test("list_files defaults to the workspace root and an empty path is refused", () => {
-    expect(listFilesInput.parse({})).toEqual({ path: "." });
-    expect(listFilesInput.safeParse({ path: "" }).success).toBe(false);
+    expect(listFilesInput.parse({ botId: "bot-local" })).toEqual({ botId: "bot-local", path: "." });
+    expect(listFilesInput.safeParse({ botId: "bot-local", path: "" }).success).toBe(false);
+  });
+});
+
+describe("bots and threads", () => {
+  test("an id is one path segment, because it keys a directory", () => {
+    expect(botIdSchema.parse("bot-local")).toBe("bot-local");
+    for (const id of ["../../etc", "a/b", "", "Bot-Local", "-lead", "a".repeat(65)]) {
+      expect(botIdSchema.safeParse(id).success).toBe(false);
+    }
+  });
+
+  test("a Bot carries its name, when it was made, and how many threads it holds", () => {
+    expect(API_OPERATIONS.create_bot.input.parse({ name: "Local Bot" })).toEqual({
+      name: "Local Bot",
+    });
+    expect(API_OPERATIONS.create_bot.input.safeParse({ name: "" }).success).toBe(false);
+    expect(
+      API_OPERATIONS.create_bot.input.safeParse({ name: "x".repeat(BOT_NAME_MAX + 1) }).success,
+    ).toBe(false);
+    expect(
+      API_OPERATIONS.list_bots.output.parse({
+        bots: [{ botId: "bot-local", name: "Local Bot", createdAt: TS, threadCount: 2 }],
+      }).bots[0]?.threadCount,
+    ).toBe(2);
+  });
+
+  test("a thread is a conversation: its runs, oldest first, each with its status", () => {
+    const thread = threadSchema.parse({
+      threadId: "thread-1",
+      botId: "bot-local",
+      title: "First",
+      createdAt: TS,
+      runs: [
+        { runId: "run-1", prompt: "write a note", status: "done", startedAt: TS },
+        { runId: "run-2", prompt: "again", status: "awaiting_approval", startedAt: TS + 1 },
+      ],
+    });
+    expect(thread.runs.map((run) => run.status)).toEqual(["done", "awaiting_approval"]);
+    expect(
+      threadSchema.safeParse({
+        ...thread,
+        runs: [{ runId: "run-1", prompt: "x", status: "finished", startedAt: TS }],
+      }).success,
+    ).toBe(false);
+  });
+
+  test("a thread title is optional on create and bounded when it is given", () => {
+    expect(API_OPERATIONS.create_thread.input.parse({ botId: "bot-local" })).toEqual({
+      botId: "bot-local",
+    });
+    expect(
+      API_OPERATIONS.create_thread.input.safeParse({ botId: "bot-local", title: "Chat" }).success,
+    ).toBe(true);
+    expect(
+      API_OPERATIONS.create_thread.input.safeParse({
+        botId: "bot-local",
+        title: "x".repeat(THREAD_TITLE_MAX + 1),
+      }).success,
+    ).toBe(false);
   });
 });
 

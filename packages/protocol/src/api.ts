@@ -3,9 +3,10 @@
  *
  * This is the slice a server can implement and a client can call today: three unary run procedures
  * (`start_run`, `cancel_run`, `get_run`), one subscription (`subscribe_events`) that yields the
- * log's messages in seq order, and the workspace's two reads (`list_files`, `read_file`). `dto.ts`
- * stays the source of truth for the shapes it already owns; this file wires those schemas into oRPC
- * and adds only the shapes oRPC needs that did not exist.
+ * named thread's log in seq order, the two records a run belongs to (`list_bots`, `create_bot`,
+ * `list_threads`, `create_thread`), and the workspace's two reads (`list_files`, `read_file`).
+ * `dto.ts` stays the source of truth for the shapes it already owns; this file wires those schemas
+ * into oRPC and adds only the shapes oRPC needs that did not exist.
  *
  * Auth is not here either. The token gate and the Origin/Host allowlist live in the Hono/Bun layer
  * (apps/server), because they are transport facts, not API facts. Nothing in this contract carries
@@ -21,12 +22,21 @@ import { z } from "zod";
 import {
   cancelRunInput,
   cancelRunOutput,
+  createBotInput,
+  createBotOutput,
+  createThreadInput,
+  createThreadOutput,
+  listBotsInput,
+  listBotsOutput,
   listFilesInput,
   listFilesOutput,
+  listThreadsInput,
+  listThreadsOutput,
   readFileInput,
   readFileOutput,
   startRunInput,
   startRunOutput,
+  threadIdSchema,
   type WorkspaceReadRefusal,
 } from "./dto.ts";
 import { cursorSeqSchema, eventMessageSchema, runIdSchema, tsSchema } from "./envelope.ts";
@@ -85,8 +95,13 @@ export type GetRunOutput = z.infer<typeof getRunOutput>;
  * Subscribe from a watermark. The stream yields exactly the log's messages with `seq > lastSeq`, in
  * seq order, replaying what the log already holds before it goes live. `0` means "from the
  * beginning". The same counter serves `get_events` over HTTP, so a client may interleave both.
+ *
+ * The subscription names the thread it is watching, because a log belongs to a thread: one log per
+ * thread is what makes a conversation's seq space its own, and what lets the page show one
+ * conversation at a time. Each thread's seq starts at 1, so a cursor is only meaningful with it.
  */
 export const subscribeEventsInput = z.strictObject({
+  threadId: threadIdSchema,
   lastSeq: cursorSeqSchema,
 });
 
@@ -95,6 +110,18 @@ export type SubscribeEventsInput = z.infer<typeof subscribeEventsInput>;
 // ---------------------------------------------------------------------------
 // Workspace files
 // ---------------------------------------------------------------------------
+
+/**
+ * The two refusals the Bot and thread arms raise, each with the status the wire answers with. A
+ * caller that names a Bot or a thread the server does not hold is told which one, by name, rather
+ * than getting an empty list back that reads as "this Bot has no threads".
+ */
+export const BOT_ERRORS = {
+  bot_not_found: { status: 404, message: "no such Bot" },
+  thread_not_found: { status: 404, message: "no such thread" },
+} as const;
+
+export type BotRefusal = keyof typeof BOT_ERRORS;
 
 /**
  * The named refusals a `list_files` or `read_file` call can end in, each with the status the wire
@@ -114,19 +141,40 @@ export const WORKSPACE_READ_ERRORS = {
 } as const satisfies Record<WorkspaceReadRefusal, { status: number; message: string }>;
 
 /**
- * List one directory of the Bot's workspace, or read one file from it. Both read the Bot's own
- * directory on the host, which is the path its container sees as `/workspace`, so what comes back
- * is what the computer wrote rather than a copy taken at some other time.
+ * List one directory of a Bot's workspace, or read one file from it. Both read the named Bot's own
+ * directory on the host, which is the path its container sees as `/workspace`, so what comes back is
+ * what that Bot's computer wrote rather than a copy taken at some other time. The Bot is named on
+ * every call: the workspace is per Bot, so a read without one would be a read of a Bot nobody named.
  */
 export const listFilesProcedure = oc
   .input(listFilesInput)
   .output(listFilesOutput)
-  .errors(WORKSPACE_READ_ERRORS);
+  .errors({ ...WORKSPACE_READ_ERRORS, ...BOT_ERRORS });
 
 export const readFileProcedure = oc
   .input(readFileInput)
   .output(readFileOutput)
-  .errors(WORKSPACE_READ_ERRORS);
+  .errors({ ...WORKSPACE_READ_ERRORS, ...BOT_ERRORS });
+
+const listBotsProcedure = oc.input(listBotsInput).output(listBotsOutput).errors(BOT_ERRORS);
+
+const createBotProcedure = oc.input(createBotInput).output(createBotOutput).errors(BOT_ERRORS);
+
+const listThreadsProcedure = oc.input(listThreadsInput).output(listThreadsOutput).errors(BOT_ERRORS);
+
+const createThreadProcedure = oc
+  .input(createThreadInput)
+  .output(createThreadOutput)
+  .errors(BOT_ERRORS);
+
+const startRunProcedure = oc.input(startRunInput).output(startRunOutput).errors(BOT_ERRORS);
+
+const subscribeEventsProcedure = oc
+  .input(subscribeEventsInput)
+  .output(eventIterator(eventMessageSchema))
+  .errors(BOT_ERRORS);
+
+const getRunProcedure = oc.input(getRunInput).output(getRunOutput).errors(BOT_ERRORS);
 
 export type ListFilesOutput = z.infer<typeof listFilesOutput>;
 export type ReadFileOutput = z.infer<typeof readFileOutput>;
@@ -138,27 +186,40 @@ export type ReadFileOutput = z.infer<typeof readFileOutput>;
 /**
  * The contract router. Keys are the oRPC procedure names, which are also their paths.
  *
- * The five operations `dto.ts` declares beyond these six (`get_events`, `approve`, `deny`) stay out
- * until each has a handler; a contract arm with no implementation would type a call the server
- * cannot answer.
+ * A Bot is a record, a thread is a record, and a run belongs to both: `list_bots` and `list_threads`
+ * are how a surface learns the two ids a run needs, and `create_bot` and `create_thread` are how it
+ * makes them. No arm infers a Bot or a thread from context, because the two ids are what the run
+ * path is keyed by.
+ *
+ * The operations `dto.ts` declares beyond these (`get_events`, `approve`, `deny`) stay out until
+ * each has a handler; a contract arm with no implementation would type a call the server cannot
+ * answer.
  */
 export const apiContract = {
-  start_run: oc.input(startRunInput).output(startRunOutput),
+  start_run: startRunProcedure,
   cancel_run: oc.input(cancelRunInput).output(cancelRunOutput),
-  get_run: oc.input(getRunInput).output(getRunOutput),
-  subscribe_events: oc.input(subscribeEventsInput).output(eventIterator(eventMessageSchema)),
+  get_run: getRunProcedure,
+  subscribe_events: subscribeEventsProcedure,
+  list_bots: listBotsProcedure,
+  create_bot: createBotProcedure,
+  list_threads: listThreadsProcedure,
+  create_thread: createThreadProcedure,
   list_files: listFilesProcedure,
   read_file: readFileProcedure,
 };
 
 export type ApiContract = typeof apiContract;
 
-/** The six procedure names, for a caller that needs to enumerate them. */
+/** Every procedure name, for a caller that needs to enumerate them. */
 export const API_PROCEDURES = [
   "start_run",
   "cancel_run",
   "get_run",
   "subscribe_events",
+  "list_bots",
+  "create_bot",
+  "list_threads",
+  "create_thread",
   "list_files",
   "read_file",
 ] as const;

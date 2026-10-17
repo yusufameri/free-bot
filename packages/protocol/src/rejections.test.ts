@@ -12,7 +12,7 @@ const row = (name: string) => rows.find((entry) => entry.name === name);
 
 describe("the rejection list", () => {
   test("every case is refused with exactly the recorded literal", () => {
-    expect(rows.length).toBe(23);
+    expect(rows.length).toBe(25);
     expect(rows.filter((entry) => !entry.ok)).toEqual([]);
   });
 
@@ -41,6 +41,8 @@ describe("the rejection list", () => {
       "event page over the cap",
       "absolute file path",
       "parent-directory traversal",
+      "a bot id that is not one path segment",
+      "a workspace read that names no bot",
     ]);
   });
 
