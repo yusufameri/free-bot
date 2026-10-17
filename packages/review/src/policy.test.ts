@@ -191,7 +191,7 @@ describe("fail-closed denials", () => {
     });
   });
 
-  test("the six fail-closed flows carry six distinct codes", async () => {
+  test("the fail-closed and refusal flows carry distinct codes", async () => {
     const codes = new Set<string>();
 
     const unknown = new GrantStore();
@@ -235,6 +235,17 @@ describe("fail-closed denials", () => {
     await decide(consumedGate, "bash", ECHO_HI, "call_1");
     codes.add(codeOf(await decide(consumedGate, "bash", ECHO_HI, "call_2")));
 
+    const refused = new GrantStore();
+    codes.add(
+      codeOf(
+        await decide(
+          createGrantPolicy(refused, { now: () => T0, refusals: new Set([ECHO_HI_HASH]) }),
+          "bash",
+          ECHO_HI,
+        ),
+      ),
+    );
+
     expect([...codes].sort()).toEqual([
       "grant_consumed",
       "grant_expired",
@@ -242,7 +253,42 @@ describe("fail-closed denials", () => {
       "grant_tombstoned",
       "no_grant",
       "unknown_tool",
+      "user_denied",
     ]);
+  });
+});
+
+describe("a resolved human denial", () => {
+  test("a refused action denies user_denied, and the reason is a literal", async () => {
+    const gate = createGrantPolicy(new GrantStore(), {
+      now: () => T0,
+      refusals: new Set([ECHO_HI_HASH]),
+    });
+    expect(await decide(gate, "bash", ECHO_HI)).toEqual({
+      allow: false,
+      reason: `user_denied: the user denied action ${ECHO_HI_HASH}`,
+    });
+  });
+
+  test("the same call with no refusal says no_grant, so the two are distinguishable", async () => {
+    const gate = createGrantPolicy(new GrantStore(), { now: () => T0 });
+    expect(await decide(gate, "bash", ECHO_HI)).toEqual({
+      allow: false,
+      reason: `no_grant: no grant for action ${ECHO_HI_HASH}`,
+    });
+  });
+
+  test("a later allow overrides the refusal: a live grant authorizes the refused action", async () => {
+    const store = new GrantStore();
+    const refusals = new Set([ECHO_HI_HASH]);
+    const gate = createGrantPolicy(store, { now: () => T0, refusals });
+    store.issue({ toolName: "bash", args: ECHO_HI, ttlMs: 60_000, now: T0 });
+    expect(await decide(gate, "bash", ECHO_HI)).toEqual({ allow: true });
+    refusals.delete(ECHO_HI_HASH);
+    expect(await decide(gate, "bash", ECHO_HI, "call_2")).toEqual({
+      allow: false,
+      reason: "grant_consumed: grant grant-1 consumed by call_1",
+    });
   });
 });
 

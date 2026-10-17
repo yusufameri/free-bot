@@ -23,8 +23,12 @@ export const ACTION_HASH_PATTERN = /^v1:sha256:[0-9a-f]{64}$/;
 export const actionHashSchema = z.string().regex(ACTION_HASH_PATTERN);
 
 /**
- * The nine denial codes, verbatim from packages/review `DENY_CODES`. A gate that denies always
+ * The ten denial codes, verbatim from packages/review `DENY_CODES`. A gate that denies always
  * names exactly one; `events.test.ts` fails if this list and the authority ever diverge.
+ *
+ * `user_denied` is the deliberate refusal: a human answered no to a parked call. It is distinct
+ * from `no_grant`, which says nobody was asked yet, so a consumer can tell "the user said no" from
+ * "consent is missing" without reading the approval stream.
  */
 export const DENY_CODES = [
   "unknown_tool",
@@ -35,6 +39,7 @@ export const DENY_CODES = [
   "grant_tombstoned",
   "grant_forged",
   "malformed_action",
+  "user_denied",
   "grant_store_error",
 ] as const;
 
@@ -65,6 +70,25 @@ export type GrantRef = z.infer<typeof grantRefSchema>;
 // Run and turn boundaries
 // ---------------------------------------------------------------------------
 
+/**
+ * The seven run statuses, verbatim from packages/core `RUN_STATUSES`. packages/core owns the
+ * lifecycle and the transition table; this list exists so the wire can carry a status without
+ * importing the model, and `events.test.ts` fails if the two ever diverge.
+ */
+export const RUN_STATUS_VALUES = [
+  "queued",
+  "running",
+  "awaiting_approval",
+  "paused",
+  "done",
+  "failed",
+  "cancelled",
+] as const;
+
+export const runStatusValueSchema = z.enum(RUN_STATUS_VALUES);
+
+export type RunStatusValue = z.infer<typeof runStatusValueSchema>;
+
 /** One user-requested run begins. `prompt` makes a replayed log self-describing. */
 export const runStartedPayload = z.object({
   prompt: z.string(),
@@ -76,6 +100,20 @@ export const runFinishedPayload = z.object({});
 /** The run ended without completing. `reason` is free text until the error taxonomy lands. */
 export const runFailedPayload = z.object({
   reason: z.string().min(1),
+});
+
+/**
+ * Where the run is: the one kind that says "this run parked", "this run resumed", "this run was
+ * cancelled", or "this run is paused", which the twelve-kind vocabulary could not say.
+ *
+ * `runId` repeats the envelope's own field on purpose. The envelope stays the single source for
+ * `seq`, `ts`, and the run a message belongs to. This copy lets a consumer that holds a bare
+ * payload address its run, the way `dto.ts` reuses payload schemas outside an envelope. It is
+ * additive in v1 and cannot change an existing shape.
+ */
+export const runStatusPayload = z.object({
+  runId: z.string().min(1),
+  status: runStatusValueSchema,
 });
 
 /** One model turn starts inside the run, counted 1..n the way the spike counted turns. */
@@ -213,6 +251,7 @@ export const EVENT_PAYLOADS = {
   "run.started": runStartedPayload,
   "run.finished": runFinishedPayload,
   "run.failed": runFailedPayload,
+  "run.status": runStatusPayload,
   "turn.started": turnStartedPayload,
   "turn.ended": turnEndedPayload,
   "message.text.delta": messageTextDeltaPayload,

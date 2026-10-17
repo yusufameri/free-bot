@@ -3,6 +3,7 @@ export type BotId = string;
 
 export * from "./run-errors.ts";
 export * from "./run-events.ts";
+export * from "./run-loop.ts";
 export * from "./run-status.ts";
 export * from "./run-store.ts";
 export * from "./run-usage.ts";

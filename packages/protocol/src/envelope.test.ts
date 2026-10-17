@@ -25,6 +25,7 @@ const runExamples: { [K in EventType]: EventPayloads[K] } = {
   "run.started": { prompt: "count the files in /workspace" },
   "run.finished": {},
   "run.failed": { reason: "pi exited 1" },
+  "run.status": { runId: RUN, status: "awaiting_approval" },
   "turn.started": { turn: 1 },
   "turn.ended": { turn: 1 },
   "message.text.delta": { text: "hello " },
@@ -112,6 +113,7 @@ describe("taxonomy", () => {
       "run.started",
       "run.finished",
       "run.failed",
+      "run.status",
       "turn.started",
       "turn.ended",
       "message.text.delta",
@@ -142,7 +144,7 @@ describe("rejections", () => {
     expect(result.success).toBe(false);
     const message = result.success ? "" : result.error.issues[0]?.message;
     expect(message).toBe(
-      "Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'",
+      "Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'run.status' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'",
     );
   });
 
@@ -231,7 +233,7 @@ describe("rejections", () => {
     expect(issues).toContain("Too small: expected string to have >=1 characters");
   });
 
-  test("a reason code outside the nine is refused", () => {
+  test("a reason code outside the ten is refused", () => {
     const result = safeParseMessage({
       ...runMessage("tool_call.decision"),
       payload: { toolCallId: "call_1", allow: false, code: "vibes", detail: "no" },
@@ -239,7 +241,7 @@ describe("rejections", () => {
     expect(result.success).toBe(false);
     const issues = result.success ? [] : result.error.issues.map((issue) => issue.message);
     expect(issues).toContain(
-      'Invalid option: expected one of "unknown_tool"|"no_grant"|"grant_mismatch"|"grant_expired"|"grant_consumed"|"grant_tombstoned"|"grant_forged"|"malformed_action"|"grant_store_error"',
+      'Invalid option: expected one of "unknown_tool"|"no_grant"|"grant_mismatch"|"grant_expired"|"grant_consumed"|"grant_tombstoned"|"grant_forged"|"malformed_action"|"user_denied"|"grant_store_error"',
     );
   });
 
