@@ -84,6 +84,15 @@ export function governedTools(): string[] {
 }
 
 /**
+ * Whether the gate governs one tool by name, which is what the provider adapter stamps on a call
+ * the model asked for. Fail-closed: a name this table does not hold is governed, so a tool can
+ * never reach the sandbox ungoverned by being unknown here.
+ */
+export function destructiveTool(toolName: string): boolean {
+  return RUN_TOOLS.find((tool) => tool.name === toolName)?.destructive ?? true;
+}
+
+/**
  * The sandbox port over the landed Docker adapter. One container per run, from the pinned image,
  * destroyed on every path. `delete` on a handle this port never created is a no-op here, because
  * the loop calls `destroy` even when `create` threw.

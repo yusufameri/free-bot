@@ -24,6 +24,14 @@ import {
 } from "@freebot/sandbox";
 import { DockerRunSandbox, RUN_UNIT } from "../run-ports.ts";
 
+/**
+ * How long a container that is on its way out is allowed to take. A run's own `destroy` runs as the
+ * run settles, which can be a moment after the page renders its last frame, so a launch that reaps
+ * in between would find the container still listed and report a leak that is not one.
+ */
+const REAP_ATTEMPTS = 8;
+const REAP_BACKOFF_MS = 250;
+
 export interface ReapResult {
   /** Container names this launch created and removed. */
   readonly removed: readonly string[];
@@ -83,7 +91,7 @@ export class LaunchSandboxes {
             // Whether it is really gone is the check below, not docker's exit code.
           }
         }
-        if (await exists(name)) surviving.push(containerName(name));
+        if (await stillThere(name)) surviving.push(containerName(name));
         else {
           removed.push(containerName(name));
           port.forget(name);
@@ -92,6 +100,21 @@ export class LaunchSandboxes {
     }
     return { removed, surviving };
   }
+}
+
+/**
+ * Whether `docker ps -a` still knows the container named for this sandbox.
+ *
+ * A container the run itself is removing is listed for a moment after its last usage, so "still
+ * there" is only a leak once it stays there. A container that really is wedged is reported after
+ * this bounded wait, so the check stays truthful in both directions.
+ */
+async function stillThere(name: string): Promise<boolean> {
+  for (let attempt = 0; attempt < REAP_ATTEMPTS; attempt++) {
+    if (!(await exists(name))) return false;
+    await Bun.sleep(REAP_BACKOFF_MS);
+  }
+  return await exists(name);
 }
 
 /** Whether `docker ps -a` still knows the container named for this sandbox. */

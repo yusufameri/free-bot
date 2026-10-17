@@ -4,9 +4,12 @@
  *
  * Real: the pinned sandbox image and a real container from it, the loop, the gate and the grant
  * ledger, the execution of the approved call inside the container, the run store, and the
- * seq-ordered log. Replayed: the model's turns, read out of the committed Pi transcript, because
- * gate G1 parks the keyed provider. The human's two answers are scripted here; a later unit drives
- * them from the surface through the approve and deny routes.
+ * seq-ordered log. Replayed: the model's turns, read out of the committed Pi transcript. This is
+ * the recorded half of the run loop's evidence, and it stays recorded on purpose: it proves the
+ * gate, the ledger and the container against a fixed turn, which a live model cannot (order 9). The
+ * live half is `packages/verify/scripts/keyed-run.ts`, which drives `bun run up` and the page and
+ * asserts the model's own turns. The human's two answers are scripted here; the keyed driver answers
+ * them from the page's own buttons.
  *
  * Run from the repo root: bun apps/server/src/run-loop-live.ts
  */
