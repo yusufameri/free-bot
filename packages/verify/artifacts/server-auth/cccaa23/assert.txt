@@ -1,0 +1,43 @@
+feature: server-auth
+command: bun apps/server/scripts/verify.ts
+timestamp: 2026-10-17T19:34:27.020Z
+git sha: cccaa23f46b411824191e928e97e1ca683c27574
+git sha short: cccaa23
+branch: u2.1-one-run-path
+runtime: bun 1.2.5 on darwin arm64
+pinned image: freebot-sandbox:u0.6
+transcript: packages/pi-bridge/fixtures/rpc-handshake.jsonl
+
+PASS bun run typecheck
+PASS bun run lint
+PASS bun test apps/server -> Ran 63 tests across 7 files. [403.00ms]
+PASS token printed once at boot: 43 url-safe chars
+PASS the tunnel leg still announces its port for bun run verify: listening on http://127.0.0.1:56314
+PASS bound loopback only: bun 95179 yusufameri 5u IPv4 0x36cb75217e0fb7ba 0t0 TCP 127.0.0.1:56315 (LISTEN)
+PASS a LAN address cannot reach it: http://10.0.0.203:56315/healthz -> The operation timed out.
+PASS POST /rpc/start_run with no token -> 401 token_missing
+PASS POST /rpc/start_run with a wrong token -> 401 token_mismatch
+PASS POST /rpc/start_run from a foreign Origin -> 403 origin_not_allowed
+PASS POST /rpc/start_run with a rebound Host -> 403 host_not_allowed
+PASS POST /rpc/start_run with the printed token -> 200
+PASS the allowed arm started a run: {"json":{"runId":"run-1"}}
+PASS GET /healthz stays a liveness probe -> 200 {"status":"ok","service":"freebot-server"}
+PASS GET /events on the tunnel leg with a rebound Host -> 403 host_not_allowed
+PASS GET /audit on the tunnel leg with a rebound Host -> 403 host_not_allowed
+PASS GET /events on the tunnel leg as the in-sandbox agent -> 200
+PASS the agent's read returns the real log body: {"last_seq":0,"count":0,"reply_is_exact":true,"frames":[]}
+PASS GET /audit on the tunnel leg as the in-sandbox agent -> 200
+PASS the agent's audit read returns the real audit body: {"firstSeq":null,"lastSeq":0,"count":0,"gaps":[],"duplicates":[],"suppressedAtIngest":[],"gapEvents":[],"rejected":0}
+PASS oRPC round trip: start_run + get_run -> {"runId":"run-2","status":"running","prompt":"verify the control plane","startedAt":1792265666332,"endedAt":null,"lastSeq":4}
+PASS both runs parked, one per run id: run-1,run-2
+PASS the page's stream is dense from seq 1 to 32 (32 frames), all v1
+PASS the replayed log starts with the matrix run and carries the round-trip run: run-1 then run-2
+PASS both runs put their own terminal frames in the log: run-1,run-2
+PASS each answered card produced the user_denied decision the fold exists for: [{"toolCallId":"call_stub_11","allow":false,"code":"user_denied","detail":"the user denied action v1:sha256:d905edbe16f0a62ccb21abcd4068be8c82aa8c19bddb6c91153426d5c715f521"},{"toolCallId":"call_stub_11","allow":false,"code":"user_denied","detail":"the user denied action v1:sha256:d905edbe16f0a62ccb21abcd4068be8c82aa8c19bddb6c91153426d5c715f521"}]
+PASS the oRPC stream saw the same log, dense from seq 1 to 32: run.started,run.status,turn.started,tool_call.requested,approval.requested,approval.resolved,tool_call.decision,tool_call.result,turn.ended,message.text.delta,run.finished
+PASS get_run reports the finished run: {"runId":"run-2","status":"finished","prompt":"verify the control plane","startedAt":1792265666332,"endedAt":1792265666690,"lastSeq":32}
+PASS both runs destroyed their own container: the label's container set is what it was before them (0 -> 0)
+PASS the token appears exactly once in the server's output (1): only the operator line carries it
+PASS refusals logged without the token: [auth] refused code=token_missing method=POST path=/rpc/start_run | [auth] refused code=token_mismatch method=POST path=/rpc/start_run | [auth] refused code=origin_not_allowed method=POST path=/rpc/start_run | [auth] refused code=host_not_allowed method=POST path=/rpc/start_run | [auth] refused code=host_not_allowed method=GET path=/events | [auth] refused code=host_not_allowed method=GET path=/audit
+
+PASS server-auth
