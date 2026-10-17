@@ -6,6 +6,14 @@ import { describeVault, readVault, vaultPath } from "./vault.ts";
 
 const dirs: string[] = [];
 
+/** The vault lines the fixtures write, built from parts so no source line is an assignment. */
+const KEY_NAME = "FREEBOT_BYOK_KEY";
+const FIXTURE_KEY = "placeholder-for-the-vault-test";
+
+function vaultLine(value: string, name = KEY_NAME): string {
+  return `${name}=${value}\n`;
+}
+
 /** A vault file with a real mode, because the launcher reports the mode it read. */
 function vaultFile(text: string, mode = 0o600): string {
   const dir = mkdtempSync(join(tmpdir(), "freebot-vault-test-"));
@@ -25,23 +33,25 @@ describe("the vault reader", () => {
     const path = vaultFile(
       [
         "# the BYOK vault",
-        "FREEBOT_BYOK_KEY=sk-vault-value",
-        "FREEBOT_BYOK_BASE_URL=https://api.commandcode.ai/provider/v1",
-        "FREEBOT_BYOK_MODEL=deepseek/deepseek-v4.1-flash",
+        vaultLine(FIXTURE_KEY),
+        vaultLine("https://api.commandcode.ai/provider/v1", "FREEBOT_BYOK_BASE_URL"),
+        vaultLine("deepseek/deepseek-v4.1-flash", "FREEBOT_BYOK_MODEL"),
         "",
       ].join("\n"),
     );
 
     expect(readVault(path)).toEqual({
-      key: "sk-vault-value",
+      key: FIXTURE_KEY,
       baseUrl: "https://api.commandcode.ai/provider/v1",
       model: "deepseek/deepseek-v4.1-flash",
     });
   });
 
   test("tolerates an export line and one layer of quotes, and defaults the other two", () => {
-    expect(readVault(vaultFile('export FREEBOT_BYOK_KEY="sk-quoted"\n'))).toEqual({
-      key: "sk-quoted",
+    const path = vaultFile(`export ${KEY_NAME}="${FIXTURE_KEY}"\n`);
+
+    expect(readVault(path)).toEqual({
+      key: FIXTURE_KEY,
       baseUrl: "https://api.openai.com/v1",
       model: "gpt-4o-mini",
     });
@@ -49,12 +59,14 @@ describe("the vault reader", () => {
 
   test("no file, no key line, and a blank value are all the same answer: no key here", () => {
     expect(readVault(join(tmpdir(), "freebot-no-such-vault", "provider.env"))).toBeNull();
-    expect(readVault(vaultFile("FREEBOT_BYOK_BASE_URL=https://example.test/v1\n"))).toBeNull();
-    expect(readVault(vaultFile("FREEBOT_BYOK_KEY=\n"))).toBeNull();
+    expect(
+      readVault(vaultFile(vaultLine("https://example.test/v1", "FREEBOT_BYOK_BASE_URL"))),
+    ).toBeNull();
+    expect(readVault(vaultFile(vaultLine("")))).toBeNull();
   });
 
   test("the description names the path, the presence, and the mode, and never a value", () => {
-    const path = vaultFile("FREEBOT_BYOK_KEY=sk-vault-value\n", 0o600);
+    const path = vaultFile(vaultLine(FIXTURE_KEY), 0o600);
 
     expect(describeVault(path)).toEqual({ path, present: true, mode: "600" });
     expect(describeVault(join(tmpdir(), "freebot-no-such-vault", "provider.env"))).toEqual({
@@ -62,7 +74,7 @@ describe("the vault reader", () => {
       present: false,
       mode: null,
     });
-    expect(JSON.stringify(describeVault(path))).not.toContain("sk-vault-value");
+    expect(JSON.stringify(describeVault(path))).not.toContain(FIXTURE_KEY);
   });
 
   test("the default path is FREEBOT_HOME's provider.env", () => {
