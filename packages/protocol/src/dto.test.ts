@@ -11,8 +11,11 @@ import {
   GET_EVENTS_MAX_LIMIT,
   getEventsOutput,
   listFilesInput,
+  READ_FILE_MAX_BYTES,
   readFileInput,
   startRunInput,
+  WORKSPACE_READ_ERRORS,
+  WORKSPACE_READ_REFUSALS,
   workspacePathSchema,
 } from "./index.ts";
 
@@ -62,6 +65,20 @@ describe("operation registry", () => {
 describe("workspace paths", () => {
   test("a path under /workspace is accepted", () => {
     expect(workspacePathSchema.parse("src/a.ts")).toBe("src/a.ts");
+  });
+
+  test("the refusal vocabulary is the seven names the surface branches on", () => {
+    expect(WORKSPACE_READ_REFUSALS).toEqual([
+      "absolute_path",
+      "parent_traversal",
+      "symlink_escape",
+      "path_not_found",
+      "not_a_directory",
+      "not_a_file",
+      "binary_file",
+    ]);
+    expect(WORKSPACE_READ_ERRORS.symlink_escape.status).toBe(403);
+    expect(READ_FILE_MAX_BYTES).toBe(262_144);
   });
 
   test("an absolute path is refused with the literal reason", () => {

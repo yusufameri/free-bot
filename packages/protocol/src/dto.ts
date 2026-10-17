@@ -115,6 +115,8 @@ export const fileEntrySchema = z.object({
   mtimeMs: z.number().int().nonnegative(),
 });
 
+export type FileEntry = z.infer<typeof fileEntrySchema>;
+
 /** List one directory. The default `"."` is the workspace root. */
 export const listFilesInput = z.strictObject({
   path: workspacePathSchema.default("."),
@@ -138,6 +140,32 @@ export const readFileOutput = z.object({
   /** True when the file exceeds the read cap and `text` holds a prefix. */
   truncated: z.boolean(),
 });
+
+/**
+ * The named refusals a workspace read can end in. A read never returns partial bytes for a refusal:
+ * the caller gets one of these names as the wire error's code, so a surface can branch on the
+ * reason instead of matching an error string.
+ *
+ * `absolute_path` and `parent_traversal` are also refused by `workspacePathSchema` before a handler
+ * runs; a reader that is called below the schema refuses them again under these names, because a
+ * boundary that fires once is a boundary that can be bypassed.
+ */
+export const WORKSPACE_READ_REFUSALS = [
+  "absolute_path",
+  "parent_traversal",
+  "symlink_escape",
+  "path_not_found",
+  "not_a_directory",
+  "not_a_file",
+  "binary_file",
+] as const;
+
+export const workspaceReadRefusalSchema = z.enum(WORKSPACE_READ_REFUSALS);
+
+export type WorkspaceReadRefusal = z.infer<typeof workspaceReadRefusalSchema>;
+
+/** The most bytes one `read_file` returns. A larger file comes back as a prefix with `truncated`. */
+export const READ_FILE_MAX_BYTES = 262_144;
 
 // ---------------------------------------------------------------------------
 // The operation registry

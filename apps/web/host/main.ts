@@ -1,6 +1,8 @@
 /**
  * The apps/web host: connect, hand every message to the shared thread model, and let it render.
- * Everything else (the model, the DOM contract) lives in `@freebot/ui`.
+ * The Library tab is the same host's second view of the same Bot: it reads the workspace through the
+ * oRPC route surface, with the operator token the page was opened with. Everything else (the two
+ * models, the DOM contract) lives in `@freebot/ui`.
  *
  * Two peers, one page. The fixture server (`apps/web/scripts/server.ts`) is the dev peer: no token,
  * one committed replay. The real server serves this page and its stream, and its stream is gated by
@@ -12,8 +14,14 @@
  * fixture page renders exactly the page it rendered before this unit.
  */
 
-import type { Message } from "../../../packages/protocol/src/index.ts";
+import { createORPCClient } from "@orpc/client";
+import { RPCLink } from "@orpc/client/fetch";
+import type { ContractRouterClient } from "@orpc/contract";
+import type { apiContract, Message } from "../../../packages/protocol/src/index.ts";
+import { exposeLibraryFacts, mountLibrary } from "../../../packages/ui/browser/library.ts";
 import { type Connection, exposeFacts, mountThread } from "../../../packages/ui/browser/render.ts";
+
+type ApiClient = ContractRouterClient<typeof apiContract>;
 
 const params = new URLSearchParams(location.search);
 const fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
@@ -24,9 +32,40 @@ const autoAnswer = auto === "allow" || auto === "deny" ? auto : null;
 const operator = document.querySelector<HTMLFormElement>("#operator");
 const promptInput = document.querySelector<HTMLInputElement>("#prompt");
 const startButton = document.querySelector<HTMLButtonElement>("#start");
-if (token !== null && operator !== null) operator.hidden = false;
 
 let socket: WebSocket | null = null;
+
+/** The page's own workspace reads, over the same routes a client uses, with its operator token. */
+const api: ApiClient | null =
+  token === null
+    ? null
+    : createORPCClient<ApiClient>(
+        new RPCLink({
+          url: `${location.origin}/rpc`,
+          headers: { authorization: `Bearer ${token}` },
+        }),
+      );
+
+const library = mountLibrary({
+  calls: {
+    list: async (path) => {
+      if (api === null) throw new Error("the Library needs the operator token");
+      return await api.list_files({ path });
+    },
+    read: async (path) => {
+      if (api === null) throw new Error("the Library needs the operator token");
+      return await api.read_file({ path });
+    },
+  },
+  onTab: (tab) => showOperator(tab === "conversation"),
+});
+exposeLibraryFacts(library);
+
+/** The prompt box is operator mode on the conversation tab, and nothing else. */
+function showOperator(visible: boolean): void {
+  if (operator !== null) operator.hidden = token === null || !visible;
+}
+showOperator(true);
 
 const handle = mountThread({
   autoAnswer,

@@ -7,7 +7,10 @@
  */
 
 import { describe, expect, test } from "bun:test";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ProviderPort, SandboxPort } from "@freebot/core";
+import type { SandboxSpec } from "@freebot/sandbox";
 import { createRunService } from "./run-service.ts";
 
 const unusedSandbox: SandboxPort = {
@@ -81,5 +84,31 @@ describe("one log for every run the service starts", () => {
     expect(seen[0]?.length).toBeGreaterThan(0);
     expect(seen[0]).toEqual(seen[1]);
     expect(seen[0]?.every((seq, index) => seq === index + 1)).toBe(true);
+  });
+});
+
+describe("the Bot's workspace", () => {
+  test("every run mounts the service's workspace directory at /workspace", async () => {
+    const specs: SandboxSpec[] = [];
+    const service = createRunService({
+      workspace: join(tmpdir(), "freebot-run-service-ws"),
+      sandbox: {
+        async create(spec) {
+          specs.push(spec);
+        },
+        async execute() {
+          throw new Error("this test starts no tool call");
+        },
+        async destroy() {},
+      },
+      provider: () => immediateProvider,
+    });
+
+    service.start("one");
+    await service.idle();
+
+    expect(specs.map((spec) => spec.mounts)).toEqual([
+      [{ host: service.workspace.root, container: "/workspace" }],
+    ]);
   });
 });

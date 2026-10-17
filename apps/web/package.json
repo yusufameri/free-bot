@@ -8,5 +8,10 @@
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.node.json",
     "fixtures": "bun scripts/fixture.ts",
     "capture": "bun scripts/capture.ts"
+  },
+  "dependencies": {
+    "@freebot/protocol": "workspace:*",
+    "@orpc/client": "1.15.7",
+    "@orpc/contract": "1.15.7"
   }
 }

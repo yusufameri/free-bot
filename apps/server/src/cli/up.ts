@@ -38,6 +38,8 @@ export interface Up {
   readonly url: string;
   readonly apiPort: number;
   readonly tunnelPort: number;
+  /** The Bot's workspace on the host, which every run mounts at `/workspace`. */
+  readonly workspace: string;
   /** What the run's model is: the endpoint, the model id, and whether a key is in play. */
   readonly provider: ChoiceDescription;
   /** Stop the servers, then remove every container this launch created. 0 only when none survived. */
@@ -51,12 +53,18 @@ export function startUp(args: UpArgs): Up {
   const server = startServer({
     tunnelPort: args.tunnelPort,
     apiPort: args.apiPort,
-    service: createRunService({ sandbox: () => sandboxes.port(), mode: args.providerMode }),
+    service: createRunService({
+      sandbox: () => sandboxes.port(),
+      mode: args.providerMode,
+      ...(args.workspace === null ? {} : { workspace: args.workspace }),
+    }),
   });
+  const workspace = server.service.workspace.root;
   return {
     url: pageUrl(server.apiPort, server.token),
     apiPort: server.apiPort,
     tunnelPort: server.tunnelPort,
+    workspace,
     provider: describeChoice(choice),
     async stop() {
       server.stop();
@@ -120,6 +128,7 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   console.error(
     `freebot up: vault ${vault.path} ${vault.present ? `present, mode ${vault.mode ?? "unknown"}` : "absent"}`,
   );
+  console.error(`freebot up: workspace ${up.workspace} mounted at /workspace, kept across runs`);
   console.error(
     "freebot up: the operator token rides the URL's fragment and is printed nowhere else",
   );

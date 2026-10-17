@@ -24,6 +24,8 @@ export interface UpArgs {
   readonly open: boolean;
   /** How the run's model is chosen. */
   readonly providerMode: ProviderMode;
+  /** The Bot's workspace on the host, or null for this Bot's default directory. */
+  readonly workspace: string | null;
   /** Print the usage and exit. */
   readonly help: boolean;
 }
@@ -46,6 +48,10 @@ export const UP_USAGE = [
   "replays the transcript. FREEBOT_PROVIDER=live|replay|auto sets that default for a started",
   "process, which is how an evidence driver pins the recorded provider.",
   "",
+  "The Bot's workspace is a host directory, mounted into every run at /workspace, so the files a",
+  "run writes outlive it. It defaults to ~/.freebot/bots/bot-local/workspace and FREEBOT_WORKSPACE",
+  "moves it, which is how an evidence driver starts from an empty one.",
+  "",
   "Ctrl-C stops the servers and removes the sandbox containers this launch created.",
 ].join("\n");
 
@@ -58,6 +64,12 @@ export function envProviderMode(
 ): ProviderMode | null {
   const value = env.FREEBOT_PROVIDER;
   return value === "auto" || value === "live" || value === "replay" ? value : null;
+}
+
+/** The workspace `FREEBOT_WORKSPACE` names, or null for this Bot's default directory. */
+export function envWorkspace(env: Record<string, string | undefined> = process.env): string | null {
+  const value = env.FREEBOT_WORKSPACE;
+  return value === undefined || value === "" ? null : value;
 }
 
 function port(value: string | undefined, flag: string): number {
@@ -78,6 +90,7 @@ export function parseUpArgs(
     tunnelPort: 0,
     open: true,
     providerMode: envProviderMode(env) ?? "auto",
+    workspace: envWorkspace(env),
     help: argv.includes("--help") || argv.includes("-h"),
   };
   let next: UpArgs = args;

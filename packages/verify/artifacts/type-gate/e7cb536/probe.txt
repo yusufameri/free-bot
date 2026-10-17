@@ -1,0 +1,105 @@
+type gate probe
+command: bun packages/verify/scripts/type-gate.ts
+timestamp: 2026-10-17T22:59:39.179Z
+git sha: e7cb5369a26073bb4046f8deaf7b1becc6e3d96c
+git sha short: e7cb536
+branch: u4.1-workspace-files
+include, root tsconfig.json: ["packages/*/src/**/*.ts","packages/*/src/**/*.tsx","packages/*/scripts/**/*.ts","packages/*/scripts/**/*.tsx","packages/verify/*.ts","apps/*/src/**/*.ts","apps/*/src/**/*.tsx","apps/*/scripts/**/*.ts","apps/*/scripts/**/*.tsx"]
+include, pre-widening: ["packages/*/src/**/*.ts","packages/verify/*.ts","apps/*/src/**/*.ts"]
+
+== clean tree ==
+$ bun run typecheck
+exit 0
+$ tsc -p tsconfig.json
+ok   the restored tree passes the root typecheck
+
+== coverage census ==
+ok   the root include is exactly the nine patterns this gate ships
+program files: 131 widened, 111 pre-widening
+ok   the widening grew the program
+ok   in program: apps/server/src/app.ts
+ok   in program: apps/web/scripts/capture.ts
+ok   in program: apps/web/scripts/fixture.ts
+ok   in program: apps/web/scripts/fixture.test.ts
+ok   in program: apps/web/scripts/server.ts
+ok   in program: apps/web/scripts/thread.test.ts
+ok   in program: packages/core/src/run-store.ts
+ok   in program: packages/core/src/run-store.test.ts
+ok   in program: packages/pi-bridge/scripts/smoke.ts
+ok   in program: packages/protocol/scripts/verify.ts
+ok   in program: packages/providers/scripts/evidence.ts
+ok   in program: packages/verify/run.ts
+ok   packages/*/src/**/*.tsx reaches a real .tsx file
+ok   packages/*/scripts/**/*.tsx reaches a real .tsx file
+ok   apps/*/src/**/*.tsx reaches a real .tsx file
+ok   apps/*/scripts/**/*.tsx reaches a real .tsx file
+unreached .ts/.tsx files under packages/ and apps/: 5
+  apps/web/host/main.ts
+  packages/pi-bridge/extension/smoke-echo.ts
+  packages/sandbox/image/replay-ext.ts
+  packages/ui/browser/library.ts
+  packages/ui/browser/render.ts
+ok   the blind set is exactly the documented set
+
+== the hole, owned by the pre-widening include ==
+$ git status --porcelain -- <probe paths>
+?? apps/web/scripts/__type-gate-probe.ts
+?? apps/web/scripts/__type-gate-probe.tsx
+?? packages/protocol/scripts/__type-gate-probe.ts
+$ tsc -p tsconfig.type-gate-legacy.json   (all three deliberate errors are in the tree)
+exit 0
+ok   the pre-widening include accepts all three deliberate errors
+ok   the pre-widening include does not reach apps/web/scripts/__type-gate-probe.tsx
+ok   the pre-widening include does not reach apps/web/scripts/__type-gate-probe.ts
+ok   the pre-widening include does not reach packages/protocol/scripts/__type-gate-probe.ts
+
+== probe: .tsx under apps/web (apps/web/scripts/__type-gate-probe.tsx) ==
+$ bun run typecheck
+exit 2
+apps/web/scripts/__type-gate-probe.tsx(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+$ tsc -p tsconfig.json
+ok   .tsx under apps/web: the root typecheck fails
+ok   .tsx under apps/web: the failure names the file
+ok   .tsx under apps/web: the failure is a type error
+$ bun run typecheck (probe file removed)
+exit 0
+$ tsc -p tsconfig.json
+ok   .tsx under apps/web: the restored tree passes
+
+== probe: .ts under apps/web/scripts (apps/web/scripts/__type-gate-probe.ts) ==
+$ bun run typecheck
+exit 2
+apps/web/scripts/__type-gate-probe.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+$ tsc -p tsconfig.json
+ok   .ts under apps/web/scripts: the root typecheck fails
+ok   .ts under apps/web/scripts: the failure names the file
+ok   .ts under apps/web/scripts: the failure is a type error
+$ bun run typecheck (probe file removed)
+exit 0
+$ tsc -p tsconfig.json
+ok   .ts under apps/web/scripts: the restored tree passes
+
+== probe: a package script (packages/protocol/scripts/__type-gate-probe.ts) ==
+$ bun run typecheck
+exit 2
+packages/protocol/scripts/__type-gate-probe.ts(1,7): error TS2322: Type 'string' is not assignable to type 'number'.
+$ tsc -p tsconfig.json
+ok   a package script: the root typecheck fails
+ok   a package script: the failure names the file
+ok   a package script: the failure is a type error
+$ bun run typecheck (probe file removed)
+exit 0
+$ tsc -p tsconfig.json
+ok   a package script: the restored tree passes
+
+== after ==
+$ bun run typecheck
+exit 0
+$ tsc -p tsconfig.json
+ok   the tree passes with every probe file removed
+ok   the probe left no residue
+
+== summary ==
+38/38 checks passed
+
+PASS type-gate

@@ -21,6 +21,8 @@ export interface Server {
   apiPort: number;
   /** The token this launch accepts. Printed once by the entrypoint, never logged per request. */
   token: string;
+  /** The one run authority both listeners drive, so a launcher can read its workspace. */
+  service: RunService;
   /** Close both listeners. */
   stop(): void;
 }
@@ -55,6 +57,7 @@ export function startServer(options: ServerOptions = {}): Server {
     tunnelPort: tunnel.port,
     apiPort: api.port,
     token: api.token,
+    service: api.service,
     stop: () => {
       api.stop();
       tunnel.stop();

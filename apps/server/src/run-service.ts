@@ -9,6 +9,11 @@
  * before it launches the loop, so a cancel or a read that arrives in the same tick as `start` sees
  * the run the caller just asked for. The action is the loop's; this file only supplies ports.
  *
+ * The service also owns the Bot's workspace, which is the one thing a run leaves behind. Its
+ * container is destroyed on every path, so `start` mounts this Bot's host directory at `/workspace`,
+ * and `listFiles` and `readFile` read that same directory back for the Library. The lifetime rule,
+ * the scoping rules, and the limits are in `docs/files-surface.md`.
+ *
  * The model is real when the vault holds a key. `mode` defaults to `auto`, which asks the vault and
  * falls back to the replay transcript on a keyless machine, so the launcher's page gets the model
  * and a keyless machine still runs. The entrypoints the evidence drivers read state `replay`, so a
@@ -17,7 +22,7 @@
  */
 
 import { type ProviderPort, RunStore, runRunLoop, type SandboxPort, SeqLog } from "@freebot/core";
-import type { EventMessage } from "@freebot/protocol";
+import type { EventMessage, ListFilesOutput, ReadFileOutput } from "@freebot/protocol";
 import { GrantStore } from "@freebot/review";
 import { DockerAdapter } from "@freebot/sandbox";
 import {
@@ -34,11 +39,20 @@ import {
   destructiveTool,
   type PendingApprovals,
   RUN_UNIT,
+  RUN_WORKSPACE,
   runToolDefinitions,
 } from "./run-ports.ts";
-import { readVault, type VaultEntry } from "./vault.ts";
+import { freebotHome, readVault, type VaultEntry } from "./vault.ts";
+import {
+  botWorkspacePath,
+  createWorkspaceReader,
+  type WorkspaceReader,
+} from "./workspace-files.ts";
 
 const RUN_IDLE_TTL_MS = 300_000;
+
+/** The one Bot this server has. The workspace on disk is this Bot's, and it outlives its runs. */
+export const BOT_ID = "bot-local";
 
 /**
  * Suffixes this launch's sandbox names. The run id is `run-<n>` per process, and the sandbox is
@@ -58,6 +72,9 @@ export interface RunServiceOptions {
   /** Journal path for the run store. Omitted means an in-memory store. */
   readonly file?: string;
   readonly transcript?: string;
+  /** The Bot's workspace on the host, mounted into every run at `/workspace`. Defaults to this
+   * Bot's own directory under the freebot home. */
+  readonly workspace?: string;
   /** How the factory picks the model. `auto` follows the vault, `replay` records, `live` demands a
    * key. Defaults to `auto`. */
   readonly mode?: ProviderMode;
@@ -73,6 +90,8 @@ export interface RunService {
   readonly store: RunStore;
   readonly grants: GrantStore;
   readonly approvals: PendingApprovals;
+  /** The Bot's workspace reader: the directory every run of this Bot mounts at `/workspace`. */
+  readonly workspace: WorkspaceReader;
   /** Begin a run. Returns before the loop does anything; progress arrives in the log. */
   start(prompt: string): { runId: string };
   cancel(runId: string): boolean;
@@ -80,6 +99,10 @@ export interface RunService {
   events(lastSeq: number, limit?: number): { messages: EventMessage[]; lastSeq: number };
   /** The log's messages after `lastSeq`, in seq order, then live until `signal` aborts. */
   stream(lastSeq: number, signal: AbortSignal | undefined): AsyncGenerator<EventMessage>;
+  /** One directory of the Bot's workspace, refused by name when it is not one. */
+  listFiles(path: string): Promise<ListFilesOutput>;
+  /** One UTF-8 file of the Bot's workspace, refused by name when it is not one. */
+  readFile(path: string): Promise<ReadFileOutput>;
   /** Readers currently waiting for an append. Zero once every socket has gone away. */
   readonly subscribers: number;
   /** Resolves once every run this service started has settled. */
@@ -98,6 +121,9 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
   const inflight: Array<Promise<unknown>> = [];
   const transcript = options.transcript ?? DEFAULT_TRANSCRIPT;
   const vaultEntry = options.readVaultEntry ?? readVault;
+  const workspace = createWorkspaceReader(
+    options.workspace ?? botWorkspacePath(freebotHome(), BOT_ID),
+  );
 
   /** One entry per reader waiting for an append; `stream()` adds and drops its own. */
   const waiters = new Set<() => void>();
@@ -172,6 +198,7 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     grants,
     approvals,
     stream,
+    workspace,
 
     get subscribers() {
       return waiters.size;
@@ -219,7 +246,14 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
             threadId: `thread-${runId}`,
             botId: "bot-local",
             prompt,
-            sandbox: { name: `${runId}-${LAUNCH_TAG}`, idleTtlMs: RUN_IDLE_TTL_MS },
+            sandbox: {
+              name: `${runId}-${LAUNCH_TAG}`,
+              idleTtlMs: RUN_IDLE_TTL_MS,
+              // The Bot's workspace is the container's `/workspace`. A run's container is destroyed
+              // when the run ends, so the files a run produced would go with it; the mount is what
+              // makes them outlive the run, and it is why the Library has anything to show.
+              mounts: [{ host: workspace.root, container: RUN_WORKSPACE }],
+            },
             tools: runToolDefinitions(),
           },
         );
@@ -243,6 +277,9 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
       const bounded = limit === undefined ? page : page.slice(0, limit);
       return { messages: bounded.map((entry) => entry.frame), lastSeq: log.lastSeq };
     },
+
+    listFiles: (path) => workspace.list(path),
+    readFile: (path) => workspace.read(path),
 
     idle: async () => {
       await Promise.allSettled(inflight);
