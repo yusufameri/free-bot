@@ -86,6 +86,7 @@ unary endpoint and the stream read the same log.
 - Seq epochs across a server restart are out of scope; `firstSeq` 1 is asserted, not a general
   contract yet.
 - The stub model is keyless and scripted. The live keyed run parks on Gate 1 (no BYOK key).
-- The container's network policy is not constrained here; containment is U0.6's probe
-  (`docs/containment-spike.md`), and this image is spike-only until U0.6's recipe lands.
+- The container image is the spike-only recipe in `spikes/tunnel/Dockerfile`. U0.6 has since
+  landed the real one at `packages/sandbox/image/Dockerfile`, which supersedes it when the tunnel
+  is integrated for real. Network containment is U0.6's and U0.5's probe, not this spike's.
 - No auth on `/tunnel`, one agent at a time by convention, not by check.

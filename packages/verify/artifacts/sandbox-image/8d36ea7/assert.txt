@@ -1,0 +1,70 @@
+sandbox image replay + key scan
+date: 2026-10-17T06:52:40Z
+
+commands:
+  1. docker build --platform linux/arm64 -t freebot-sandbox:u0.6 -f packages/sandbox/image/Dockerfile packages/sandbox/image  (exit 0)
+  2. docker run --name freebot-u0.6-replay1 -e SANDBOX_IMAGE_DIGEST=sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8 -v packages/sandbox/image:/image:ro -v <artifact>:/out freebot-sandbox:u0.6 node /image/replay.mjs /out/replay1.jsonl
+  3. docker run --name freebot-u0.6-replay2 ... /out/replay2.jsonl
+  4. docker run --rm ... freebot-sandbox:u0.6 node /image/compare.mjs /out/replay1.jsonl /out/replay2.jsonl  (exit 0)
+  5. docker build ... -t freebot-sandbox:u0.6-rebuild ...  (exit 0)
+  6. docker run --name freebot-u0.6-keyscan -i -v packages/sandbox/image:/image:ro -v <artifact>:/out freebot-sandbox:u0.6 sh /image/probe.sh < /tmp/freebot-keyscan/provider.env  (exit 0)
+
+recorded identity:
+  node base tag: node:24.22.0-bookworm-slim
+  node base digest: sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+  pi version: 1.3.0
+  image Id: sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8
+  rebuild image Id: sha256:c4748f675316528a1e26045afcc9022d8127b34365586ffc2738c4bc6ddf4115
+  rebuild identical image Id: no
+  rebuild layer digest sets identical: yes
+
+normalization for replay equality (compare.mjs):
+  every frame is re-serialized with object keys sorted, then the keys id, timestamp,
+  durationMs, sessionId, toolCallId and parentToolCallId are removed wherever they appear.
+  Those are the values that cannot be equal across two processes: correlation ids, tool
+  call ids, the generated session id, clocks, and measured durations. Every other field,
+  including frame order, must match exactly. pi_command and the header's pi_version and
+  image_digest are compared without dropping anything.
+
+results:
+  replay1: exit code recorded above, transcript packages/verify/artifacts/sandbox-image/8d36ea7/replay1.jsonl (      33 lines)
+  replay2: exit code recorded above, transcript packages/verify/artifacts/sandbox-image/8d36ea7/replay2.jsonl (      33 lines)
+  pi version in both headers: "pi_version":"1.3.0"
+  image digest in both headers: "image_digest":"sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8"
+  keyscan canary hits: CANARY HITS: 0
+  keyscan probe result: PROBE RESULT: PASS
+
+compare output:
+PASS pi version is 1.3.0 (got 1.3.0)
+PASS image digest passed in (sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8)
+PASS get_state: success
+PASS get_state: stub-1 selected from models.json
+PASS prompt: accepted
+PASS prompt: disposition started
+PASS run: agent_settled arrived
+PASS tool: replay_echo executed with the stub argument
+PASS tool: replay_echo start frame emitted
+PASS tool: result reached the model
+PASS shutdown: stdin close exits pi cleanly (exit 0)
+PASS pi stderr is empty (0 lines)
+PASS pi version is 1.3.0 (got 1.3.0)
+PASS image digest passed in (sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8)
+PASS get_state: success
+PASS get_state: stub-1 selected from models.json
+PASS prompt: accepted
+PASS prompt: disposition started
+PASS run: agent_settled arrived
+PASS tool: replay_echo executed with the stub argument
+PASS tool: replay_echo start frame emitted
+PASS tool: result reached the model
+PASS shutdown: stdin close exits pi cleanly (exit 0)
+PASS pi stderr is empty (0 lines)
+PASS run1 pi_version is 1.3.0 (1.3.0)
+PASS run2 pi_version is 1.3.0 (1.3.0)
+PASS image_digest equal across runs (sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8)
+PASS run headers identical (pi version, digest, node, platform, command line)
+PASS event count equal (run1 32, run2 32)
+PASS event sequences equal after normalization (32 lines)
+PASS transcripts are not empty
+
+RESULT: PASS
