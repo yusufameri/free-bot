@@ -1,0 +1,85 @@
+{
+  "toolGates": [
+    {
+      "dialogId": "f5b01190-c47b-40e1-99c3-91eba4cfc786",
+      "toolName": "bash",
+      "outcome": "deny",
+      "reason": "no_grant: no grant for action v1:sha256:979ed0df3542a3eee2f5f206b161c70ce0f663ef1d77803967b5f26bd496c7fe"
+    },
+    {
+      "dialogId": "eb28232c-43d1-4c99-b9fb-77609d240d55",
+      "toolName": "bash",
+      "outcome": "deny",
+      "reason": "grant_mismatch: args differ from grant grant-1 for tool bash"
+    },
+    {
+      "dialogId": "bdb3a895-8662-48ce-a51f-1c2a02e9cb5d",
+      "toolName": "write",
+      "outcome": "deny",
+      "reason": "grant_expired: grant grant-2 expired at 2026-10-17T07:47:07.748Z"
+    },
+    {
+      "dialogId": "8aca5174-c392-4247-9b11-f2d4207ab2ad",
+      "toolName": "bash",
+      "outcome": "allow"
+    },
+    {
+      "dialogId": "95faf19f-44bc-44d2-97e3-edeeb3487193",
+      "toolName": "bash",
+      "outcome": "deny",
+      "reason": "grant_consumed: grant grant-3 consumed by call_d_1"
+    },
+    {
+      "dialogId": "14633af5-16b3-4f06-af59-df1c2151a8ad",
+      "toolName": "bash",
+      "outcome": "deny",
+      "reason": "grant_tombstoned: grant grant-4 tombstoned by rewind:0"
+    },
+    {
+      "dialogId": "d38f8dbd-800d-4885-bb96-1a509d30e110",
+      "toolName": "write",
+      "outcome": "deny",
+      "reason": "grant_forged: grant grant-5 hash does not match its content"
+    },
+    {
+      "dialogId": "d2920b66-53d8-4c33-ac56-b7ca2ea84c39",
+      "toolName": "spike_unknown",
+      "outcome": "deny",
+      "reason": "unknown_tool: spike_unknown is not a governed tool"
+    },
+    {
+      "dialogId": "2184d07b-5c44-42f7-84d1-cb88e870d5bb",
+      "toolName": "bash",
+      "outcome": "allow"
+    },
+    {
+      "dialogId": "d7ea424d-a9cf-47dd-9afd-64cee60adf9e",
+      "toolName": "bash",
+      "outcome": "deny",
+      "reason": "grant_consumed: grant grant-7 consumed by call_h_1"
+    },
+    {
+      "dialogId": "bf14c4b7-3ad6-4783-a494-b7ecaa1033b4",
+      "toolName": "write",
+      "outcome": "allow"
+    },
+    {
+      "dialogId": "79b4e281-1c67-4df3-94e7-42295c184b16",
+      "toolName": "bash",
+      "outcome": "deny",
+      "reason": "gate handler threw: simulated policy explosion (host producer threw)"
+    },
+    {
+      "dialogId": "990a50cd-ad7c-472e-9c1b-7963be9ff792",
+      "toolName": "bash",
+      "outcome": "deny",
+      "reason": "grant_mismatch: args differ from grant grant-7 for tool bash"
+    }
+  ],
+  "protocolErrors": 0,
+  "piPid": "24",
+  "piVersion": "1.3.0",
+  "seqMinted": 239,
+  "acked": 237,
+  "gateRequests": 13
+}

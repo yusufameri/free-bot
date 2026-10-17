@@ -1,0 +1,14 @@
+seq audit: one monotonic sequence, one durable log, composer killed and restarted mid-gated-call
+timestamp: 2026-10-17T07:48:11.406Z
+git sha: a46071ce2b0108ad5d1d650a3a55ba4225520ced
+
+frames logged: 239 (seq 1..239)
+gaps: 0 []
+duplicates: 0 []
+suppressed at ingest: 0 []
+gap events (refused, healed by resend): 0 []
+rejected payloads: 0
+watermark at kill: 226; the fresh composer reloaded the same log
+observer stream: gaps [], duplicates []
+audit invariant: OK (zero gaps, zero duplicates)
+

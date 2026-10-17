@@ -1,0 +1,4 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["unknown-tool.ts", "composer.ts", "gateway.ts", "stub-model.ts", "run.ts"]
+}
