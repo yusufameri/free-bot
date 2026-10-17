@@ -164,6 +164,8 @@ export function createLogPort(options: {
   readonly runId: string;
   readonly noteSeq: (seq: number) => void;
   readonly now?: () => number;
+  /** Fired after an append lands, so a reader waiting on the log can wake. */
+  readonly onAppend?: () => void;
 }): LogPort {
   const now = options.now ?? Date.now;
   let seq = options.log.lastSeq;
@@ -185,6 +187,7 @@ export function createLogPort(options: {
       }
       seq = next;
       options.noteSeq(next);
+      options.onAppend?.();
       return next;
     },
   };
