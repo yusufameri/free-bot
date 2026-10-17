@@ -2,8 +2,10 @@
 /**
  * The U2.3 evidence driver: one command, one URL, the whole click.
  *
- * The peer is the real launcher, `bun run up --no-open`, spawned exactly as a person runs it. The
- * driver takes the URL the launcher printed, opens that URL in headless Chrome over CDP, and drives
+ * The peer is the real launcher, `bun run up --no-open`, spawned the way a person runs it, with
+ * `FREEBOT_PROVIDER=replay` pinned in that spawn so the model's turns are the committed transcript
+ * the assertions below are written for. The driver takes the URL the launcher printed, opens that URL
+ * in headless Chrome over CDP, and drives
  * the click a person would: type a prompt, start the run, watch the tool-call card, answer the
  * approval card, reach the terminal frame. Nothing about the URL is constructed here, which is what
  * makes this evidence about the printed URL rather than about a URL that happens to work.
@@ -15,8 +17,8 @@
  *
  * Real: the launcher, both listeners, the gate, the loop, the run store, the log, the container from
  * the pinned image, the page and its stream, the reap. Replayed: the model's turns, from
- * packages/pi-bridge/fixtures/rpc-handshake.jsonl, because gate G1 parks the keyed provider. Pinned:
- * the sandbox image.
+ * packages/pi-bridge/fixtures/rpc-handshake.jsonl, because this driver pins the replay provider so a
+ * recorded turn is what its assertions hold. Pinned: the sandbox image.
  *
  * Run from the repo root: bun packages/verify/scripts/launch.ts
  */
@@ -47,6 +49,9 @@ const SECOND_PROMPT = "run one gated command, on the second launch";
 const THIRD_PROMPT = "run one gated command, on the third launch";
 const COMMAND = 'bash {"command":"echo native-should-not-run"}';
 const OUTPUT = "native-should-not-run\n";
+/** The header subtitle, asserted as rendered text so the claim cannot drift from the copy. */
+const SUBTITLE =
+  "One thread. Local run. A real model when the vault holds a key, the committed replay when it does not.";
 
 let artifactsDir = "";
 
@@ -435,14 +440,16 @@ async function waitForMatch(read: () => string, match: RegExp, timeoutMs: number
   throw new Error(`no line matching ${match} within ${timeoutMs}ms; saw:\n${read().slice(-800)}`);
 }
 
-/** `bun run up`, exactly as a person types it. */
+/** `bun run up`, exactly as a person types it, with the replay provider pinned in its environment. */
 async function launch(
   extra: readonly string[],
   env: Record<string, string | undefined> = {},
 ): Promise<Launched> {
   const proc = Bun.spawn(["bun", "run", "up", ...extra], {
     cwd: root,
-    env: { ...process.env, ...env },
+    // `bun run up` defaults to `auto` and follows the vault, so with a key it calls a real model and
+    // this driver's recorded-turn assertions fail. Pin the path they were written for.
+    env: { ...process.env, FREEBOT_PROVIDER: "replay", ...env },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -672,6 +679,11 @@ async function openArmed(cdp: Cdp, log: Log, launch: Launched, label: string): P
     `${label}: the connection is live`,
     await evalJson(cdp, sessionId, "document.querySelector('#conn').textContent"),
     "connected",
+  );
+  log.check(
+    `${label}: the header's subtitle is the copy that holds in both provider modes`,
+    await evalJson(cdp, sessionId, "document.querySelector('header p').textContent"),
+    SUBTITLE,
   );
   return sessionId;
 }
@@ -961,7 +973,7 @@ async function main(): Promise<number> {
   log.note(`# launch live-ui frames - ${new Date().toISOString()}`);
   log.note(`worktree ${root}  head ${sha}  branch ${branch}`);
   log.note(
-    "DRIVER DISCLOSURE: the model's turns are replayed from packages/pi-bridge/fixtures/rpc-handshake.jsonl (gate G1 parks the keyed provider) and the sandbox is the pinned image. The launcher, both listeners, the gate, the loop, the run store, the log, the container, the page, its stream and the reap are real.",
+    "DRIVER DISCLOSURE: the driver pins FREEBOT_PROVIDER=replay in every launch it spawns, so the model's turns are the committed transcript at packages/pi-bridge/fixtures/rpc-handshake.jsonl and the launcher's own keyed default is exercised by packages/verify/scripts/keyed-run.ts instead. The sandbox is the pinned image. The launcher, both listeners, the gate, the loop, the run store, the log, the container, the page, its stream and the reap are real.",
   );
   log.note(
     "WHY THREE LAUNCHES: a launch parks only its first run. Once a run is allowed, the landed ledger holds that action's grant, and the same call again is refused as grant_consumed rather than parked (packages/review/src/policy.ts). So the parked state that shutdown needs, and the two answered states, are each driven from a launch that has not answered that action yet.",
