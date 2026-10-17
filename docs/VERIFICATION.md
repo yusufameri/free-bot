@@ -16,6 +16,7 @@ directory per feature and git short sha. The row records the commit the artifact
 | forge test A | `bun spikes/forge-test-a/run.ts` | spike-verified (91/91 checks: matrix a–i plus positive controls and a throwing handler, every row read by literal in-VM canary reads, seq 1..239 with zero gaps and zero duplicates across a SIGKILLed composer; keyless stub model) | `packages/verify/artifacts/forge-test-a/a46071c/assert.txt` | a46071ce2b0108ad5d1d650a3a55ba4225520ced | 2026-10-17 |
 | web-stream spike | `bun spikes/web-stream/run.ts` | spike-verified (59/59 CDP checks, both approval paths, reconnect resume with duplicate ignored, 12 frame captures) | `packages/verify/artifacts/web-stream/35bd852/assert.txt` | 35bd8529a9b1f7986052838a8e4adbab2d901267 | 2026-10-17 |
 | protocol | `bun packages/protocol/scripts/verify.ts` | unit-test-verified (90 tests: envelope round-trip and rejection per kind, DTO strictness per operation, all nine deny codes plus the allow path routed through the real `packages/review` gate into `tool_call.decision` payloads, grant lifecycle against its ledger, and the literal U0.10 fixture accepted under v1; 23 rejection cases with literal zod text; replay demo through `SeqLog` reports gaps 0 [], duplicates 0 [] and prints the strip-before-persist boundary) | `packages/verify/artifacts/protocol/efa0211/assert.txt` | efa021145e43002596f183381cac6b37826cf165 | 2026-10-17 |
+| server auth + oRPC control plane | `bun apps/server/scripts/verify.ts` | unit-test-verified (47 tests: the refusal matrix per code, the oRPC contract over HTTP, a real WebSocket subscribe with replay-then-live ordering, the resume path, and subscription release; plus 20 checks against a really launched `apps/server/src/index.ts` on ephemeral ports: the 401/403/200 matrix as literal lines, one oRPC round trip, one streamed event, the loopback-only bind, the token printed exactly once, and no token in any log line or in the artifact) | `packages/verify/artifacts/server-auth/a283113/assert.txt` | a283113825c13f82039aaff0e99209e57f637d28 | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, the pi-bridge client, and the
 sandbox image pin. The scaffold row covers workspace shape, typecheck, the `apps/server` health test,
@@ -48,7 +49,13 @@ sandbox image plus U0.3's dialog intercept and U0.8's ledger behind one host com
 scenario rows (no grant, mismatch, expired, consumed, tombstoned, forged, unknown tool, native bash
 and file-write positive controls, a throwing handler, and a SIGKILLed control plane mid-gated-call)
 each verified by a literal read of a canary path inside the container rather than by the gate's
-return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. Every later feature
+return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. The server-auth row covers U1.3's
+control-plane slice: 47 tests over the refusal matrix, the oRPC round trip, a real WebSocket
+subscribe with replay-then-live ordering, the resume path, and the release of a closed socket's
+subscription, plus 20 artifact checks read from a really launched `apps/server/src/index.ts` (the
+token printed once, the 401/403/200 matrix as literal lines, one oRPC call, one streamed event, the
+loopback-only bind, and a redaction check that fails the run rather than commit a token). Its threat
+model, check order, token lifecycle, and explicit non-goals live in `docs/server-auth.md`. Every later feature
 gets its own row when its script
 lands.
 lands.

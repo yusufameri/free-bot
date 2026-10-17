@@ -1,0 +1,30 @@
+feature: server-auth
+command: bun apps/server/scripts/verify.ts
+timestamp: 2026-10-17T14:29:53.927Z
+git sha: a283113825c13f82039aaff0e99209e57f637d28
+git sha short: a283113
+branch: u1.3-server-auth
+runtime: bun 1.2.5 on darwin arm64
+
+PASS bun run typecheck
+PASS bun run lint
+PASS bun test apps/server -> Ran 47 tests across 4 files. [311.00ms]
+PASS token printed once at boot: 43 url-safe chars
+PASS the tunnel leg still announces its port for bun run verify: listening on http://127.0.0.1:53763
+PASS bound loopback only: bun 53585 yusufameri 5u IPv4 0x5c437c6173a8acf0 0t0 TCP 127.0.0.1:53764 (LISTEN)
+PASS a LAN address cannot reach it: http://10.0.0.203:53764/healthz -> The operation timed out.
+PASS POST /rpc/start_run with no token -> 401 token_missing
+PASS POST /rpc/start_run with a wrong token -> 401 token_mismatch
+PASS POST /rpc/start_run from a foreign Origin -> 403 origin_not_allowed
+PASS POST /rpc/start_run with a rebound Host -> 403 host_not_allowed
+PASS POST /rpc/start_run with the printed token -> 200
+PASS the allowed arm minted a run: {"json":{"runId":"run_1efc63c2-6d7f-4714-a3d8-eb116a1f3e9d"}}
+PASS GET /healthz stays a liveness probe -> 200 {"status":"ok","service":"freebot-server"}
+PASS oRPC round trip: start_run + get_run -> {"runId":"run_9c78d65d-b776-4466-ac68-d9725e6ad0fc","status":"running","prompt":"verify the control plane","startedAt":1792247393795,"endedAt":null,"lastSeq":2}
+PASS websocket stream seq 1,2,3: run.started,run.started,run.failed
+PASS the replay covers both runs in order: run_1efc63c2-6d7f-4714-a3d8-eb116a1f3e9d then run_9c78d65d-b776-4466-ac68-d9725e6ad0fc
+PASS the live event is the cancel's run.failed: {"v":1,"seq":3,"ts":1792247393819,"runId":"run_9c78d65d-b776-4466-ac68-d9725e6ad0fc","type":"run.failed","payload":{"reason":"cancelled by operator"}}
+PASS the token appears exactly once in the server's output (1): only the operator line carries it
+PASS refusals logged without the token: [auth] refused code=token_missing method=POST path=/rpc/start_run | [auth] refused code=token_mismatch method=POST path=/rpc/start_run | [auth] refused code=origin_not_allowed method=POST path=/rpc/start_run | [auth] refused code=host_not_allowed method=POST path=/rpc/start_run
+
+PASS server-auth
