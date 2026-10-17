@@ -1,0 +1,36 @@
+feature: server-auth
+command: bun apps/server/scripts/verify.ts
+timestamp: 2026-10-17T15:01:24.028Z
+git sha: 0744562bf0e7027a8c8b56cf0eda78572d0a66ae
+git sha short: 0744562
+branch: u1.3-server-auth
+runtime: bun 1.2.5 on darwin arm64
+
+PASS bun run typecheck
+PASS bun run lint
+PASS bun test apps/server -> Ran 55 tests across 5 files. [333.00ms]
+PASS token printed once at boot: 43 url-safe chars
+PASS the tunnel leg still announces its port for bun run verify: listening on http://127.0.0.1:58444
+PASS bound loopback only: bun 81961 yusufameri 5u IPv4 0x5c437c6173a8acf0 0t0 TCP 127.0.0.1:58445 (LISTEN)
+PASS a LAN address cannot reach it: http://10.0.0.203:58445/healthz -> The operation timed out.
+PASS POST /rpc/start_run with no token -> 401 token_missing
+PASS POST /rpc/start_run with a wrong token -> 401 token_mismatch
+PASS POST /rpc/start_run from a foreign Origin -> 403 origin_not_allowed
+PASS POST /rpc/start_run with a rebound Host -> 403 host_not_allowed
+PASS POST /rpc/start_run with the printed token -> 200
+PASS the allowed arm minted a run: {"json":{"runId":"run_c0102f9a-40e3-4753-bd74-77cebae76a9e"}}
+PASS GET /healthz stays a liveness probe -> 200 {"status":"ok","service":"freebot-server"}
+PASS GET /events on the tunnel leg with a rebound Host -> 403 host_not_allowed
+PASS GET /audit on the tunnel leg with a rebound Host -> 403 host_not_allowed
+PASS GET /events on the tunnel leg as the in-sandbox agent -> 200
+PASS the agent's read returns the real log body: {"last_seq":0,"count":0,"reply_is_exact":true,"frames":[]}
+PASS GET /audit on the tunnel leg as the in-sandbox agent -> 200
+PASS the agent's audit read returns the real audit body: {"firstSeq":null,"lastSeq":0,"count":0,"gaps":[],"duplicates":[],"suppressedAtIngest":[],"gapEvents":[],"rejected":0}
+PASS oRPC round trip: start_run + get_run -> {"runId":"run_fbe0c981-72d2-4d79-9bf7-7c0ea6867f50","status":"running","prompt":"verify the control plane","startedAt":1792249283894,"endedAt":null,"lastSeq":2}
+PASS websocket stream seq 1,2,3: run.started,run.started,run.failed
+PASS the replay covers both runs in order: run_c0102f9a-40e3-4753-bd74-77cebae76a9e then run_fbe0c981-72d2-4d79-9bf7-7c0ea6867f50
+PASS the live event is the cancel's run.failed: {"v":1,"seq":3,"ts":1792249283920,"runId":"run_fbe0c981-72d2-4d79-9bf7-7c0ea6867f50","type":"run.failed","payload":{"reason":"cancelled by operator"}}
+PASS the token appears exactly once in the server's output (1): only the operator line carries it
+PASS refusals logged without the token: [auth] refused code=token_missing method=POST path=/rpc/start_run | [auth] refused code=token_mismatch method=POST path=/rpc/start_run | [auth] refused code=origin_not_allowed method=POST path=/rpc/start_run | [auth] refused code=host_not_allowed method=POST path=/rpc/start_run | [auth] refused code=host_not_allowed method=GET path=/events | [auth] refused code=host_not_allowed method=GET path=/audit
+
+PASS server-auth
