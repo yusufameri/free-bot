@@ -51,6 +51,11 @@ echo "[run] building $image (linux/arm64)"
 docker build --platform linux/arm64 -t "$image" spikes/containment
 
 echo "[run] starting throwaway proxy on 127.0.0.1:$proxy_port"
+if lsof -nP -iTCP:"$proxy_port" -sTCP:LISTEN >/dev/null 2>&1; then
+  echo "[run] port $proxy_port is already in use; stop that listener or set CONTAINMENT_PROXY_PORT"
+  lsof -nP -iTCP:"$proxy_port" -sTCP:LISTEN
+  exit 1
+fi
 PROXY_PORT="$proxy_port" PROXY_BIND=127.0.0.1 bun spikes/containment/proxy.ts >"$proxy_log" 2>&1 &
 proxy_pid=$!
 cleanup() {
@@ -73,7 +78,19 @@ if [ "$health" != "ok" ]; then
   cat "$proxy_log"
   exit 1
 fi
-echo "[run] proxy healthy"
+# The health check alone can be answered by a stale listener; require this run's
+# proxy to be alive and to have logged its own bind.
+if ! kill -0 "$proxy_pid" 2>/dev/null; then
+  echo "[run] proxy process $proxy_pid is not running; log follows"
+  cat "$proxy_log"
+  exit 1
+fi
+if ! grep -q "proxy listening on 127.0.0.1:$proxy_port" "$proxy_log"; then
+  echo "[run] proxy log has no bind line for port $proxy_port; log follows"
+  cat "$proxy_log"
+  exit 1
+fi
+echo "[run] proxy healthy (pid $proxy_pid, bound $proxy_port)"
 
 echo "[run] container probes (cap-add NET_ADMIN, NET_RAW dropped, no privileged)"
 set +e
