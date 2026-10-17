@@ -1,13 +1,16 @@
 # The root type gate
 
-Status: PASS. 33/33 probe checks green at commit `28d8de0`, driven by
+Status: PASS. 38/38 probe checks green at commit `21c263d`, driven by
 `bun packages/verify/scripts/type-gate.ts`, with the transcript under
-`packages/verify/artifacts/type-gate/28d8de0/probe.txt`. Verdict: type-check-only.
+`packages/verify/artifacts/type-gate/21c263d/probe.txt`. Verdict: type-check-only.
 
 `bun run typecheck` is the cheap gate every unit, every PR and CI runs. Until this unit it was blind
 to 14 source files and to every `.tsx` file in the repo. It now covers each workspace's `src` and
-`scripts` directories in both extensions. This closes follow-up 1 of `docs/web-shell.md`, which
-parked the React and Next.js port on exactly this change.
+`scripts` directories in both extensions. At this commit the widened include reaches 16 files the
+pre-widening one does not, 105 repo files against 89. The two beyond U1.5's measurement are this
+unit's own probe script and `apps/server/scripts/verify.ts`, which landed on `main` while this branch
+waited. This closes follow-up 1 of `docs/web-shell.md`, which parked the React and Next.js port on
+exactly this change.
 
 ## The include, before and after
 
@@ -33,10 +36,11 @@ apps/*/scripts/**/*.ts
 apps/*/scripts/**/*.tsx
 ```
 
-The program goes from 82 to 97 repo files. The widened gate exits 0, so none of the 14 newly covered
-files had a type error waiting. `tsconfig.base.json` gains `jsx: "preserve"` in the same change. It
-transforms nothing under `noEmit`, and it is the value the port's Next.js config needs, so a `.tsx`
-file parses in the root program and in `apps/web`'s configs alike.
+The program went from 82 to 97 repo files when this landed, and measures 89 to 105 at this commit.
+The widened gate exits 0 at each head, so none of the newly covered files had a type error waiting.
+`tsconfig.base.json` gains `jsx: "preserve"` in the same change. It transforms nothing under
+`noEmit`, and it is the value the port's Next.js config needs, so a `.tsx` file parses in the root
+program and in `apps/web`'s configs alike.
 
 ## Two traps in the pattern list
 
@@ -44,13 +48,17 @@ file parses in the root program and in `apps/web`'s configs alike.
 `packages/*/src/**/*.{ts,tsx}` matches nothing, and because the other patterns still match, the gate
 exits 0 over a program that shrank. The first draft of this change had that bug and `bun run
 typecheck` reported exit 0. Each extension therefore gets its own line. The census below is what
-catches this class of mistake, since no exit code can.
+catches this class of mistake, since no exit code can: it compares the include against the nine
+patterns it ships, pattern for pattern, and measures a real `.tsx` file in each `.tsx` family.
 
 **Patterns decide the roots, imports decide the rest.** A file outside every pattern is still
 checked when an included file imports it. `packages/pi-bridge/extension/tool-gate.ts` sits outside
 `src` and `scripts` and is in the program because `packages/pi-bridge/src/gate.test.ts` imports it.
-The gate's real coverage is the patterns plus everything reachable from them, which is why the
-census diffs the program against the tree instead of trusting the pattern list.
+`spikes/web-stream/envelope.ts` was already in the pre-widening program, reached from
+`packages/protocol/src/spike-compat.test.ts`, and `spikes/web-stream/map.ts` joins it at this head,
+reached from `packages/protocol/scripts/spike-fixture.ts`. The gate's real coverage is the patterns
+plus everything reachable from them, which is why the census diffs the program against the tree
+instead of trusting the pattern list.
 
 ## What each project checks
 
@@ -60,7 +68,7 @@ census diffs the program against the tree instead of trusting the pattern list.
 | `packages/*/src` | `packages/*/tsconfig.json` | narrower than the root gate; a package's own config never covered its `scripts` |
 | `apps/web/host`, `packages/ui/browser`, `packages/ui/src` | `apps/web/tsconfig.json` | DOM lib, and it excludes `*.test.ts` |
 | `apps/web/scripts`, `packages/ui/src` | `apps/web/tsconfig.node.json` | no DOM lib |
-| `spikes/*` | `spikes/*/tsconfig.json` | outside the root gate by design |
+| `spikes/*` | `spikes/*/tsconfig.json` | an unimported spike file is outside the root gate; an imported one is checked transitively |
 
 The per-app configs stay the stricter gate for their own surface, and `apps/web`'s two run as a
 preflight in `apps/web/scripts/capture.ts`.
@@ -92,8 +100,10 @@ It writes `packages/verify/artifacts/type-gate/<short-sha>/probe.txt` and exits 
 failed check. Per run it does all of this against the real gate, `bun run typecheck`.
 
 1. The clean tree passes.
-2. A census compares the program against the tree. It asserts 12 named files are in the program,
-   that the program grew, and that the unreached set is exactly the four above.
+2. A census compares the program against the tree. It asserts the root include is exactly the nine
+   patterns above, measures a temporary `.tsx` file in each of the four `.tsx` families, asserts 12
+   named files are in the program, that the program grew, and that the unreached set is exactly the
+   four above.
 3. Three deliberate errors, one per covered location, are placed in the tree together. The
    pre-widening include accepts all three and does not reach them.
 4. Each error alone makes the root typecheck fail and names its file. The file is removed and the
@@ -105,8 +115,9 @@ script, which are the three blind spots the U1.5 review measured.
 
 ## Limits
 
-- No `.tsx` file exists in the repo yet. `.tsx` coverage is proven by the probe's own file, not by a
-  real component, so the first component the port adds is the first true exercise of it.
+- No `.tsx` file exists in the repo yet. `.tsx` coverage is proven by four temporary files the probe
+  writes, one per `.tsx` pattern family, which shows each pattern matches. It does not show that a
+  real component typechecks, so the first component the port adds is the first true exercise of that.
 - `jsx: "preserve"` parses JSX but does not type it. JSX element typing needs the React types, which
   arrive with the port. Today a `.tsx` file containing JSX would fail the root gate for that reason.
 - The probe mutates the tree for a few seconds per case and restores it. It asserts afterwards that
@@ -129,3 +140,7 @@ script, which are the three blind spots the U1.5 review measured.
    `apps/*/src` is checked by the root gate as soon as React types are installed. A component under
    `apps/web/host` or a Next.js `app/` directory needs the DOM-aware project, so the port either
    lands components under `apps/web/src` or extends the include with a DOM-aware project of its own.
+5. `packages/verify/run.ts` runs the root typecheck only, so `apps/web/host` and
+   `packages/ui/browser` are gated only when a human drives `apps/web/scripts/capture.ts`, whose
+   preflight runs the app's own configs. Add a step to `packages/verify/run.ts` that shell-calls the
+   app's typecheck, so the DOM surface is covered by CI and not only by a capture run.
