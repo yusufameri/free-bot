@@ -1,0 +1,135 @@
+# web-shell key-state frames — 2026-10-17T14:42:41.860Z
+worktree /Users/yusufameri/projects/free-bot-u1.5/  head 326cf65
+DRIVER DISCLOSURE: the surface renders committed fixtures of the recorded U0.10 smoke session. No model, no provider, no key, localhost only (order 9).
+ok - preflight: apps/web typechecks against its own tsconfig: 0
+
+## path: allow once (with a mid-stream kill and rejoin)
+hold_before 9,11,34,59; drop_at 33; fixture head 90
+ok - idle: the connection is live: "connected"
+ok - frame 01-idle: the page held still across the capture: "{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null}"
+ok - frame 01-idle: the element the caption is about is inside the captured pixels (#idle-note): [true,0]
+ok - frame 01-idle: the driver's DOM read agrees with the page's facts hook: [0,0,[]]
+ok - frame 01-idle: claim - no message is rendered: true
+ok - frame 01-idle: claim - no resume banner: true
+ok - frame 01-idle: claim - the run has not finished: true
+frame 01-idle: frames/01-idle-1792248163684.png (19200 bytes, sha256 83d5c0825d0e586a7c9c58bdbac52e42ae7bd2ad36db55b521d4dd1760088c24) — last seq 0 · done false · turns 0 · cards [] · approvals [] · resume - · stream end - · text ""
+ok - frame 02-streaming: the page held still across the capture: "{\"lastSeq\":8,\"done\":false,\"frameCount\":8,\"turns\":1,\"cards\":[],\"approvals\":[],\"deltas\":[\"turn-1-chunk-0 \",\"turn-1-chunk-1 \",\"turn-1-chunk-2 \",\"turn-1-chunk-3 \",\"turn-1-chunk-4 \",\"turn-1-chunk-5 \"],\"resume\":null,\"streamEnd\":null}"
+ok - frame 02-streaming: the element the caption is about is inside the captured pixels (#thread .delta): [true,0]
+ok - frame 02-streaming: the driver's DOM read agrees with the page's facts hook: [8,8,[]]
+ok - frame 02-streaming: claim - assistant text has begun: true
+ok - frame 02-streaming: claim - no tool call has been announced yet: true
+ok - frame 02-streaming: claim - no approval is pending: true
+ok - frame 02-streaming: claim - the run has not finished: true
+frame 02-streaming: frames/02-streaming-1792248165104.png (31456 bytes, sha256 2368c770ae7ba2afff3d7dab61812bbd6907030f6e712dbd74605f76c8c19ab3) — last seq 8 · done false · turns 1 · cards [] · approvals [] · resume - · stream end - · text "turn-1-chunk-5 " — scrolled to [...document.querySelectorAll('#thread .delta')].at(-1).scrollIntoView({ block: 'center' })
+ok - tool-running: the card shows the literal command: "spike_echo {\"note\":\"one\",\"delay_ms\":200}"
+ok - frame 03-tool-running: the page held still across the capture: "{\"lastSeq\":10,\"done\":false,\"frameCount\":10,\"turns\":1,\"cards\":[[\"call_spike_1\",\"running\"]],\"approvals\":[],\"deltas\":[\"turn-1-chunk-0 \",\"turn-1-chunk-1 \",\"turn-1-chunk-2 \",\"turn-1-chunk-3 \",\"turn-1-chunk-4 \",\"turn-1-chunk-5 \"],\"resume\":null,\"streamEnd\":null}"
+ok - frame 03-tool-running: the element the caption is about is inside the captured pixels (#thread .tool-card): [true,0]
+ok - frame 03-tool-running: the driver's DOM read agrees with the page's facts hook: [10,10,["running"]]
+ok - frame 03-tool-running: claim - a tool card shows running: true
+ok - frame 03-tool-running: claim - no card has produced a result yet: true
+ok - frame 03-tool-running: claim - no approval is pending: true
+ok - frame 03-tool-running: claim - the run has not finished: true
+frame 03-tool-running: frames/03-tool-running-1792248165223.png (38838 bytes, sha256 451ffb872057727e046417a8c46d0f754a40ddbef759f0e428d46f790262b0b7) — last seq 10 · done false · turns 1 · cards [call_spike_1:running] · approvals [] · resume - · stream end - · text "turn-1-chunk-5 " — scrolled to document.querySelector('#thread .tool-card').scrollIntoView({ block: 'center' })
+ok - resume: the banner names the seq the page had: "resumed from seq 33"
+ok - resume: exactly one element for the replayed seq: 1
+ok - resume: the duplicate was counted and ignored: "duplicates ignored: 1"
+ok - resume: the frame count still equals the last seq: true
+ok - frame 04-resumed-after-kill: the page held still across the capture: "{\"lastSeq\":33,\"done\":false,\"frameCount\":33,\"turns\":2,\"cards\":[[\"call_spike_1\",\"done\"]],\"approvals\":[],\"deltas\":[\"turn-1-chunk-0 \",\"turn-1-chunk-1 \",\"turn-1-chunk-2 \",\"turn-1-chunk-3 \",\"turn-1-chunk-4 \",\"turn-1-chunk-5 \",\"turn-2-chunk-0 \",\"turn-2-chunk-1 \",\"turn-2-chunk-2 \",\"turn-2-chunk-3 \",\"turn-2-chunk-4 \",\"turn-2-chunk-5 \",\"turn-2-chunk-6 \",\"turn-2-chunk-7 \",\"turn-2-chunk-8 \",\"turn-2-chunk-9 \",\"turn-2-chunk-10 \",\"turn-2-chunk-11 \",\"turn-2-chunk-12 \",\"turn-2-chunk-13 \",\"turn-2-chunk-14 \",\"turn-2-chunk-15 \",\"turn-2-chunk-16 \",\"turn-2-chunk-17 \",\"turn-2-chunk-18 \",\"turn-2-chunk-19 \"],\"resume\":33,\"streamEnd\":null}"
+ok - frame 04-resumed-after-kill: the element the caption is about is inside the captured pixels (#resume): [true,0]
+ok - frame 04-resumed-after-kill: the driver's DOM read agrees with the page's facts hook: [33,33,["done"]]
+ok - frame 04-resumed-after-kill: claim - the resume banner is shown: true
+ok - frame 04-resumed-after-kill: claim - one rendered message per seq (no double render): true
+ok - frame 04-resumed-after-kill: claim - the run has not finished: true
+frame 04-resumed-after-kill: frames/04-resumed-after-kill-1792248166732.png (81357 bytes, sha256 93728140e2c17e893da48849632ebf97606b6d25844100d38eca81fa8db2136b) — last seq 33 · done false · turns 2 · cards [call_spike_1:done] · approvals [] · resume 33 · stream end - · text "turn-2-chunk-19 " — scrolled to document.querySelector('#resume').scrollIntoView({ block: 'center' })
+ok - approval: the card shows the exact gated command: "spike_echo {\"note\":\"two\",\"delay_ms\":200}"
+ok - approval: the buttons are the two real answers: ["Allow once","Deny"]
+ok - frame 05-approval-pending: the page held still across the capture: "{\"lastSeq\":55,\"done\":false,\"frameCount\":55,\"turns\":2,\"cards\":[[\"call_spike_1\",\"done\"],[\"call_spike_2\",\"awaiting approval\"]],\"approvals\":[null],\"deltas\":[\"turn-1-chunk-0 \",\"turn-1-chunk-1 \",\"turn-1-chunk-2 \",\"turn-1-chunk-3 \",\"turn-1-chunk-4 \",\"turn-1-chunk-5 \",\"turn-2-chunk-0 \",\"turn-2-chunk-1 \",\"turn-2-chunk-2 \",\"turn-2-chunk-3 \",\"turn-2-chunk-4 \",\"turn-2-chunk-5 \",\"turn-2-chunk-6 \",\"turn-2-chunk-7 \",\"turn-2-chunk-8 \",\"turn-2-chunk-9 \",\"turn-2-chunk-10 \",\"turn-2-chunk-11 \",\"turn-2-chunk-12 \",\"turn-2-chunk-13 \",\"turn-2-chunk-14 \",\"turn-2-chunk-15 \",\"turn-2-chunk-16 \",\"turn-2-chunk-17 \",\"turn-2-chunk-18 \",\"turn-2-chunk-19 \",\"turn-2-chunk-20 \",\"turn-2-chunk-21 \",\"turn-2-chunk-22 \",\"turn-2-chunk-23 \",\"turn-2-chunk-24 \",\"turn-2-chunk-25 \",\"turn-2-chunk-26 \",\"turn-2-chunk-27 \",\"turn-2-chunk-28 \",\"turn-2-chunk-29 \",\"turn-2-chunk-30 \",\"turn-2-chunk-31 \",\"turn-2-chunk-32 \",\"turn-2-chunk-33 \",\"turn-2-chunk-34 \",\"turn-2-chunk-35 \",\"turn-2-chunk-36 \",\"turn-2-chunk-37 \",\"turn-2-chunk-38 \",\"turn-2-chunk-39 \"],\"resume\":33,\"streamEnd\":null}"
+ok - frame 05-approval-pending: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
+ok - frame 05-approval-pending: the driver's DOM read agrees with the page's facts hook: [55,55,["done","awaiting approval"]]
+ok - frame 05-approval-pending: claim - one approval card is waiting: true
+ok - frame 05-approval-pending: claim - the governed card waits for the answer: true
+ok - frame 05-approval-pending: claim - the run has not finished: true
+frame 05-approval-pending: frames/05-approval-pending-1792248167810.png (102656 bytes, sha256 618561b67216a8d24a347701d9e845ccdf2dba7981f0cff23542aeea87af78c6) — last seq 55 · done false · turns 2 · cards [call_spike_1:done call_spike_2:awaiting approval] · approvals [pending] · resume 33 · stream end - · text "turn-2-chunk-39 " — scrolled to document.querySelector('#thread .approval-card').scrollIntoView({ block: 'center' })
+ok - post-approval: the card renders the decided state: "allowed once"
+ok - post-approval: the grant was issued and recorded: "grant grant-ap-call_spike_2: issued"
+ok - frame 06-post-approval: the page held still across the capture: "{\"lastSeq\":58,\"done\":false,\"frameCount\":58,\"turns\":2,\"cards\":[[\"call_spike_1\",\"done\"],[\"call_spike_2\",\"running\"]],\"approvals\":[\"allow\"],\"deltas\":[\"turn-1-chunk-0 \",\"turn-1-chunk-1 \",\"turn-1-chunk-2 \",\"turn-1-chunk-3 \",\"turn-1-chunk-4 \",\"turn-1-chunk-5 \",\"turn-2-chunk-0 \",\"turn-2-chunk-1 \",\"turn-2-chunk-2 \",\"turn-2-chunk-3 \",\"turn-2-chunk-4 \",\"turn-2-chunk-5 \",\"turn-2-chunk-6 \",\"turn-2-chunk-7 \",\"turn-2-chunk-8 \",\"turn-2-chunk-9 \",\"turn-2-chunk-10 \",\"turn-2-chunk-11 \",\"turn-2-chunk-12 \",\"turn-2-chunk-13 \",\"turn-2-chunk-14 \",\"turn-2-chunk-15 \",\"turn-2-chunk-16 \",\"turn-2-chunk-17 \",\"turn-2-chunk-18 \",\"turn-2-chunk-19 \",\"turn-2-chunk-20 \",\"turn-2-chunk-21 \",\"turn-2-chunk-22 \",\"turn-2-chunk-23 \",\"turn-2-chunk-24 \",\"turn-2-chunk-25 \",\"turn-2-chunk-26 \",\"turn-2-chunk-27 \",\"turn-2-chunk-28 \",\"turn-2-chunk-29 \",\"turn-2-chunk-30 \",\"turn-2-chunk-31 \",\"turn-2-chunk-32 \",\"turn-2-chunk-33 \",\"turn-2-chunk-34 \",\"turn-2-chunk-35 \",\"turn-2-chunk-36 \",\"turn-2-chunk-37 \",\"turn-2-chunk-38 \",\"turn-2-chunk-39 \"],\"resume\":33,\"streamEnd\":null}"
+ok - frame 06-post-approval: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
+ok - frame 06-post-approval: the driver's DOM read agrees with the page's facts hook: [58,58,["done","running"]]
+ok - frame 06-post-approval: claim - the approval card shows the allow decision: true
+ok - frame 06-post-approval: claim - the governed card is no longer waiting: true
+ok - frame 06-post-approval: claim - no approval is still waiting: true
+ok - frame 06-post-approval: claim - the run has not finished: true
+frame 06-post-approval: frames/06-post-approval-1792248168038.png (106958 bytes, sha256 ff277697b9f4d1ced9047f7d137198410c4ef1b044a2789cd33d6524644570f4) — last seq 58 · done false · turns 2 · cards [call_spike_1:done call_spike_2:running] · approvals [allow] · resume 33 · stream end - · text "turn-2-chunk-39 " — scrolled to document.querySelector('#thread .approval-card').scrollIntoView({ block: 'center' })
+ok - done: the page reported the run finished: true
+ok - done: one rendered message per seq: 90
+ok - done: the fixture's whole log was rendered: 90
+ok - done: every tool card reached a terminal status: [["call_spike_1","done"],["call_spike_2","done"],["call_spike_3","done"]]
+ok - done: no stream error: true
+ok - frame 07-done: the page held still across the capture: "{\"lastSeq\":90,\"done\":true,\"frameCount\":90,\"turns\":4,\"cards\":[[\"call_spike_1\",\"done\"],[\"call_spike_2\",\"done\"],[\"call_spike_3\",\"done\"]],\"approvals\":[\"allow\"],\"deltas\":[\"turn-1-chunk-0 \",\"turn-1-chunk-1 \",\"turn-1-chunk-2 \",\"turn-1-chunk-3 \",\"turn-1-chunk-4 \",\"turn-1-chunk-5 \",\"turn-2-chunk-0 \",\"turn-2-chunk-1 \",\"turn-2-chunk-2 \",\"turn-2-chunk-3 \",\"turn-2-chunk-4 \",\"turn-2-chunk-5 \",\"turn-2-chunk-6 \",\"turn-2-chunk-7 \",\"turn-2-chunk-8 \",\"turn-2-chunk-9 \",\"turn-2-chunk-10 \",\"turn-2-chunk-11 \",\"turn-2-chunk-12 \",\"turn-2-chunk-13 \",\"turn-2-chunk-14 \",\"turn-2-chunk-15 \",\"turn-2-chunk-16 \",\"turn-2-chunk-17 \",\"turn-2-chunk-18 \",\"turn-2-chunk-19 \",\"turn-2-chunk-20 \",\"turn-2-chunk-21 \",\"turn-2-chunk-22 \",\"turn-2-chunk-23 \",\"turn-2-chunk-24 \",\"turn-2-chunk-25 \",\"turn-2-chunk-26 \",\"turn-2-chunk-27 \",\"turn-2-chunk-28 \",\"turn-2-chunk-29 \",\"turn-2-chunk-30 \",\"turn-2-chunk-31 \",\"turn-2-chunk-32 \",\"turn-2-chunk-33 \",\"turn-2-chunk-34 \",\"turn-2-chunk-35 \",\"turn-2-chunk-36 \",\"turn-2-chunk-37 \",\"turn-2-chunk-38 \",\"turn-2-chunk-39 \",\"turn-3-chunk-0 \",\"turn-3-chunk-1 \",\"turn-3-chunk-2 \",\"turn-3-chunk-3 \",\"turn-3-chunk-4 \",\"turn-3-chunk-5 \",\"turn-3-chunk-6 \",\"turn-3-chunk-7 \",\"turn-3-chunk-8 \",\"turn-3-chunk-9 \",\"turn-3-chunk-10 \",\"turn-3-chunk-11 \",\"turn-4-chunk-0 \",\"turn-4-chunk-1 \",\"turn-4-chunk-2 \",\"turn-4-chunk-3 \",\"turn-4-chunk-4 \",\"turn-4-chunk-5 \",\"turn-4-chunk-6 \",\"turn-4-chunk-7 \",\"spike exchange complete.\"],\"resume\":33,\"streamEnd\":\"stream complete\"}"
+ok - frame 07-done: the element the caption is about is inside the captured pixels (#thread .run-finished): [true,0]
+ok - frame 07-done: the driver's DOM read agrees with the page's facts hook: [90,90,["done","done","done"]]
+ok - frame 07-done: claim - the run reported done: true
+ok - frame 07-done: claim - the terminal marker is rendered: true
+ok - frame 07-done: claim - one rendered message per seq: true
+ok - frame 07-done: claim - no card is left running: true
+frame 07-done: frames/07-done-1792248169574.png (101222 bytes, sha256 1a3793834fcb78f8753b4c206880e011df35c67c0bc771f1f96d43ebde36256d) — last seq 90 · done true · turns 4 · cards [call_spike_1:done call_spike_2:done call_spike_3:done] · approvals [allow] · resume 33 · stream end stream complete · text "spike exchange complete." — scrolled to document.querySelector('#thread .run-finished').scrollIntoView({ block: 'center' })
+ok - the allow path answered the gate once: ["allow"]
+RESULT: PASS (62/62) — allow path
+
+## path: deny
+hold_before 59; fixture head 88
+ok - deny: the card renders the decided state: "denied"
+ok - deny: the governed call produced no output: ""
+ok - deny: the denial reason names the gate code: "decision call_spike_2: deny (no_grant)"
+ok - the deny path answered the gate once: ["deny"]
+ok - frame 08-denied: the page held still across the capture: "{\"lastSeq\":58,\"done\":false,\"frameCount\":58,\"turns\":2,\"cards\":[[\"call_spike_1\",\"done\"],[\"call_spike_2\",\"denied\"]],\"approvals\":[\"deny\"],\"deltas\":[\"turn-1-chunk-0 \",\"turn-1-chunk-1 \",\"turn-1-chunk-2 \",\"turn-1-chunk-3 \",\"turn-1-chunk-4 \",\"turn-1-chunk-5 \",\"turn-2-chunk-0 \",\"turn-2-chunk-1 \",\"turn-2-chunk-2 \",\"turn-2-chunk-3 \",\"turn-2-chunk-4 \",\"turn-2-chunk-5 \",\"turn-2-chunk-6 \",\"turn-2-chunk-7 \",\"turn-2-chunk-8 \",\"turn-2-chunk-9 \",\"turn-2-chunk-10 \",\"turn-2-chunk-11 \",\"turn-2-chunk-12 \",\"turn-2-chunk-13 \",\"turn-2-chunk-14 \",\"turn-2-chunk-15 \",\"turn-2-chunk-16 \",\"turn-2-chunk-17 \",\"turn-2-chunk-18 \",\"turn-2-chunk-19 \",\"turn-2-chunk-20 \",\"turn-2-chunk-21 \",\"turn-2-chunk-22 \",\"turn-2-chunk-23 \",\"turn-2-chunk-24 \",\"turn-2-chunk-25 \",\"turn-2-chunk-26 \",\"turn-2-chunk-27 \",\"turn-2-chunk-28 \",\"turn-2-chunk-29 \",\"turn-2-chunk-30 \",\"turn-2-chunk-31 \",\"turn-2-chunk-32 \",\"turn-2-chunk-33 \",\"turn-2-chunk-34 \",\"turn-2-chunk-35 \",\"turn-2-chunk-36 \",\"turn-2-chunk-37 \",\"turn-2-chunk-38 \",\"turn-2-chunk-39 \"],\"resume\":null,\"streamEnd\":null}"
+ok - frame 08-denied: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
+ok - frame 08-denied: the driver's DOM read agrees with the page's facts hook: [58,58,["done","denied"]]
+ok - frame 08-denied: claim - the approval card shows the deny decision: true
+ok - frame 08-denied: claim - a tool card shows denied: true
+ok - frame 08-denied: claim - the run has not finished: true
+frame 08-denied: frames/08-denied-1792248173265.png (105851 bytes, sha256 9bac8131aca176a1fce56ca94773bd6b113f8847a1bce67cbf06f7c05b4610f4) — last seq 58 · done false · turns 2 · cards [call_spike_1:done call_spike_2:denied] · approvals [deny] · resume - · stream end - · text "turn-2-chunk-39 " — scrolled to document.querySelector('#thread .approval-card').scrollIntoView({ block: 'center' })
+RESULT: PASS (10/10) — deny path
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+pairs compared: 28 (8 frames)
+
+## frame index
+name → sha256 → asserted DOM facts → caption
+01-idle → 83d5c0825d0e586a7c9c58bdbac52e42ae7bd2ad36db55b521d4dd1760088c24 → last seq 0 · done false · turns 0 · cards [] · approvals [] · resume - · stream end - · text "" → Connected, no message rendered yet, and the stream has not started.
+  claims: no message is rendered; no resume banner; the run has not finished
+  unmet claims: []
+02-streaming → 2368c770ae7ba2afff3d7dab61812bbd6907030f6e712dbd74605f76c8c19ab3 → last seq 8 · done false · turns 1 · cards [] · approvals [] · resume - · stream end - · text "turn-1-chunk-5 " → Assistant text arriving token by token, before the first tool call is announced.
+  claims: assistant text has begun; no tool call has been announced yet; no approval is pending; the run has not finished
+  unmet claims: []
+03-tool-running → 451ffb872057727e046417a8c46d0f754a40ddbef759f0e428d46f790262b0b7 → last seq 10 · done false · turns 1 · cards [call_spike_1:running] · approvals [] · resume - · stream end - · text "turn-1-chunk-5 " → A tool-call card is running: the command and its args are shown, the result has not arrived.
+  claims: a tool card shows running; no card has produced a result yet; no approval is pending; the run has not finished
+  unmet claims: []
+04-resumed-after-kill → 93728140e2c17e893da48849632ebf97606b6d25844100d38eca81fa8db2136b → last seq 33 · done false · turns 2 · cards [call_spike_1:done] · approvals [] · resume 33 · stream end - · text "turn-2-chunk-19 " → Reconnected after the stream dropped: the resume banner names the last seq the page had, and the replayed seq did not render twice.
+  claims: the resume banner is shown; one rendered message per seq (no double render); the run has not finished
+  unmet claims: []
+05-approval-pending → 618561b67216a8d24a347701d9e845ccdf2dba7981f0cff23542aeea87af78c6 → last seq 55 · done false · turns 2 · cards [call_spike_1:done call_spike_2:awaiting approval] · approvals [pending] · resume 33 · stream end - · text "turn-2-chunk-39 " → A governed call is parked: the card waits, the approval card names the exact command, and the stream is frozen at the gate.
+  claims: one approval card is waiting; the governed card waits for the answer; the run has not finished
+  unmet claims: []
+06-post-approval → ff277697b9f4d1ced9047f7d137198410c4ef1b044a2789cd33d6524644570f4 → last seq 58 · done false · turns 2 · cards [call_spike_1:done call_spike_2:running] · approvals [allow] · resume 33 · stream end - · text "turn-2-chunk-39 " → Allowed once: the approval card shows the decision, the grant is issued, and the governed call is running.
+  claims: the approval card shows the allow decision; the governed card is no longer waiting; no approval is still waiting; the run has not finished
+  unmet claims: []
+07-done → 1a3793834fcb78f8753b4c206880e011df35c67c0bc771f1f96d43ebde36256d → last seq 90 · done true · turns 4 · cards [call_spike_1:done call_spike_2:done call_spike_3:done] · approvals [allow] · resume 33 · stream end stream complete · text "spike exchange complete." → The run finished: every message rendered once, the terminal marker is on screen.
+  claims: the run reported done; the terminal marker is rendered; one rendered message per seq; no card is left running
+  unmet claims: []
+08-denied → 9bac8131aca176a1fce56ca94773bd6b113f8847a1bce67cbf06f7c05b4610f4 → last seq 58 · done false · turns 2 · cards [call_spike_1:done call_spike_2:denied] · approvals [deny] · resume - · stream end - · text "turn-2-chunk-39 " → Denied: the refusal is recorded on the approval card, the governed card shows denied with no output, and the run has not reached its end.
+  claims: the approval card shows the deny decision; a tool card shows denied; the run has not finished
+  unmet claims: []
+ok - frames: one committed PNG per key state: 8
+frame artifact: frames/01-idle-1792248163684.png (19200 bytes)
+frame artifact: frames/02-streaming-1792248165104.png (31456 bytes)
+frame artifact: frames/03-tool-running-1792248165223.png (38838 bytes)
+frame artifact: frames/04-resumed-after-kill-1792248166732.png (81357 bytes)
+frame artifact: frames/05-approval-pending-1792248167810.png (102656 bytes)
+frame artifact: frames/06-post-approval-1792248168038.png (106958 bytes)
+frame artifact: frames/07-done-1792248169574.png (101222 bytes)
+frame artifact: frames/08-denied-1792248173265.png (105851 bytes)
+
+chrome Chrome/155.0.8059.84; deterministic replay of committed fixtures, localhost only, no model
+RESULT: PASS (75/75)

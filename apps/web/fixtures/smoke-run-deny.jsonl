@@ -1,0 +1,88 @@
+{"v":1,"seq":1,"ts":1792221550000,"runId":"run-smoke-a","type":"run.started","payload":{"prompt":"smoke: the recorded three-step task"}}
+{"v":1,"seq":2,"ts":1792221550005,"runId":"run-smoke-a","type":"turn.started","payload":{"turn":1}}
+{"v":1,"seq":3,"ts":1792221550010,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-1-chunk-0 "}}
+{"v":1,"seq":4,"ts":1792221550015,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-1-chunk-1 "}}
+{"v":1,"seq":5,"ts":1792221550020,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-1-chunk-2 "}}
+{"v":1,"seq":6,"ts":1792221550025,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-1-chunk-3 "}}
+{"v":1,"seq":7,"ts":1792221550030,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-1-chunk-4 "}}
+{"v":1,"seq":8,"ts":1792221550035,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-1-chunk-5 "}}
+{"v":1,"seq":9,"ts":1792221550040,"runId":"run-smoke-a","type":"tool_call.requested","payload":{"toolCallId":"call_spike_1","toolName":"spike_echo","command":"spike_echo {\"note\":\"one\",\"delay_ms\":200}","destructive":false}}
+{"v":1,"seq":10,"ts":1792221550045,"runId":"run-smoke-a","type":"tool_call.decision","payload":{"toolCallId":"call_spike_1","allow":true}}
+{"v":1,"seq":11,"ts":1792221550050,"runId":"run-smoke-a","type":"tool_call.result","payload":{"toolCallId":"call_spike_1","ok":true,"denied":false,"output":"echo: one","durationMs":201}}
+{"v":1,"seq":12,"ts":1792221550055,"runId":"run-smoke-a","type":"turn.ended","payload":{"turn":1}}
+{"v":1,"seq":13,"ts":1792221550060,"runId":"run-smoke-a","type":"turn.started","payload":{"turn":2}}
+{"v":1,"seq":14,"ts":1792221550065,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-0 "}}
+{"v":1,"seq":15,"ts":1792221550070,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-1 "}}
+{"v":1,"seq":16,"ts":1792221550075,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-2 "}}
+{"v":1,"seq":17,"ts":1792221550080,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-3 "}}
+{"v":1,"seq":18,"ts":1792221550085,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-4 "}}
+{"v":1,"seq":19,"ts":1792221550090,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-5 "}}
+{"v":1,"seq":20,"ts":1792221550095,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-6 "}}
+{"v":1,"seq":21,"ts":1792221550100,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-7 "}}
+{"v":1,"seq":22,"ts":1792221550105,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-8 "}}
+{"v":1,"seq":23,"ts":1792221550110,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-9 "}}
+{"v":1,"seq":24,"ts":1792221550115,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-10 "}}
+{"v":1,"seq":25,"ts":1792221550120,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-11 "}}
+{"v":1,"seq":26,"ts":1792221550125,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-12 "}}
+{"v":1,"seq":27,"ts":1792221550130,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-13 "}}
+{"v":1,"seq":28,"ts":1792221550135,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-14 "}}
+{"v":1,"seq":29,"ts":1792221550140,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-15 "}}
+{"v":1,"seq":30,"ts":1792221550145,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-16 "}}
+{"v":1,"seq":31,"ts":1792221550150,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-17 "}}
+{"v":1,"seq":32,"ts":1792221550155,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-18 "}}
+{"v":1,"seq":33,"ts":1792221550160,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-19 "}}
+{"v":1,"seq":34,"ts":1792221550165,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-20 "}}
+{"v":1,"seq":35,"ts":1792221550170,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-21 "}}
+{"v":1,"seq":36,"ts":1792221550175,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-22 "}}
+{"v":1,"seq":37,"ts":1792221550180,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-23 "}}
+{"v":1,"seq":38,"ts":1792221550185,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-24 "}}
+{"v":1,"seq":39,"ts":1792221550190,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-25 "}}
+{"v":1,"seq":40,"ts":1792221550195,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-26 "}}
+{"v":1,"seq":41,"ts":1792221550200,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-27 "}}
+{"v":1,"seq":42,"ts":1792221550205,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-28 "}}
+{"v":1,"seq":43,"ts":1792221550210,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-29 "}}
+{"v":1,"seq":44,"ts":1792221550215,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-30 "}}
+{"v":1,"seq":45,"ts":1792221550220,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-31 "}}
+{"v":1,"seq":46,"ts":1792221550225,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-32 "}}
+{"v":1,"seq":47,"ts":1792221550230,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-33 "}}
+{"v":1,"seq":48,"ts":1792221550235,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-34 "}}
+{"v":1,"seq":49,"ts":1792221550240,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-35 "}}
+{"v":1,"seq":50,"ts":1792221550245,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-36 "}}
+{"v":1,"seq":51,"ts":1792221550250,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-37 "}}
+{"v":1,"seq":52,"ts":1792221550255,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-38 "}}
+{"v":1,"seq":53,"ts":1792221550260,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-2-chunk-39 "}}
+{"v":1,"seq":54,"ts":1792221550265,"runId":"run-smoke-a","type":"tool_call.requested","payload":{"toolCallId":"call_spike_2","toolName":"spike_echo","command":"spike_echo {\"note\":\"two\",\"delay_ms\":200}","destructive":true}}
+{"v":1,"seq":55,"ts":1792221550270,"runId":"run-smoke-a","type":"approval.requested","payload":{"approvalId":"ap-call_spike_2","toolCallId":"call_spike_2","command":"spike_echo {\"note\":\"two\",\"delay_ms\":200}","actionHash":"v1:sha256:2adc5e1730b51d9ff4985d24d64898cdaa80a195cd948fbd3f474c9eed376fed","expiresAt":1792221610270}}
+{"v":1,"seq":56,"ts":1792221550275,"runId":"run-smoke-a","type":"approval.resolved","payload":{"approvalId":"ap-call_spike_2","decision":"deny"}}
+{"v":1,"seq":57,"ts":1792221550280,"runId":"run-smoke-a","type":"tool_call.decision","payload":{"toolCallId":"call_spike_2","allow":false,"code":"no_grant","detail":"no grant: the approval card was denied"}}
+{"v":1,"seq":58,"ts":1792221550285,"runId":"run-smoke-a","type":"tool_call.result","payload":{"toolCallId":"call_spike_2","ok":false,"denied":true,"output":"denied: user denied approval","durationMs":null}}
+{"v":1,"seq":59,"ts":1792221550290,"runId":"run-smoke-a","type":"turn.ended","payload":{"turn":2}}
+{"v":1,"seq":60,"ts":1792221550295,"runId":"run-smoke-a","type":"turn.started","payload":{"turn":3}}
+{"v":1,"seq":61,"ts":1792221550300,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-0 "}}
+{"v":1,"seq":62,"ts":1792221550305,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-1 "}}
+{"v":1,"seq":63,"ts":1792221550310,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-2 "}}
+{"v":1,"seq":64,"ts":1792221550315,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-3 "}}
+{"v":1,"seq":65,"ts":1792221550320,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-4 "}}
+{"v":1,"seq":66,"ts":1792221550325,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-5 "}}
+{"v":1,"seq":67,"ts":1792221550330,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-6 "}}
+{"v":1,"seq":68,"ts":1792221550335,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-7 "}}
+{"v":1,"seq":69,"ts":1792221550340,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-8 "}}
+{"v":1,"seq":70,"ts":1792221550345,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-9 "}}
+{"v":1,"seq":71,"ts":1792221550350,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-10 "}}
+{"v":1,"seq":72,"ts":1792221550355,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-3-chunk-11 "}}
+{"v":1,"seq":73,"ts":1792221550360,"runId":"run-smoke-a","type":"tool_call.requested","payload":{"toolCallId":"call_spike_3","toolName":"spike_echo","command":"spike_echo {\"note\":\"three\",\"delay_ms\":200}","destructive":false}}
+{"v":1,"seq":74,"ts":1792221550365,"runId":"run-smoke-a","type":"tool_call.decision","payload":{"toolCallId":"call_spike_3","allow":true}}
+{"v":1,"seq":75,"ts":1792221550370,"runId":"run-smoke-a","type":"tool_call.result","payload":{"toolCallId":"call_spike_3","ok":true,"denied":false,"output":"echo: three","durationMs":211}}
+{"v":1,"seq":76,"ts":1792221550375,"runId":"run-smoke-a","type":"turn.ended","payload":{"turn":3}}
+{"v":1,"seq":77,"ts":1792221550380,"runId":"run-smoke-a","type":"turn.started","payload":{"turn":4}}
+{"v":1,"seq":78,"ts":1792221550385,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-4-chunk-0 "}}
+{"v":1,"seq":79,"ts":1792221550390,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-4-chunk-1 "}}
+{"v":1,"seq":80,"ts":1792221550395,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-4-chunk-2 "}}
+{"v":1,"seq":81,"ts":1792221550400,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-4-chunk-3 "}}
+{"v":1,"seq":82,"ts":1792221550405,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-4-chunk-4 "}}
+{"v":1,"seq":83,"ts":1792221550410,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-4-chunk-5 "}}
+{"v":1,"seq":84,"ts":1792221550415,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-4-chunk-6 "}}
+{"v":1,"seq":85,"ts":1792221550420,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"turn-4-chunk-7 "}}
+{"v":1,"seq":86,"ts":1792221550425,"runId":"run-smoke-a","type":"message.text.delta","payload":{"text":"spike exchange complete."}}
+{"v":1,"seq":87,"ts":1792221550430,"runId":"run-smoke-a","type":"turn.ended","payload":{"turn":4}}
+{"v":1,"seq":88,"ts":1792221550435,"runId":"run-smoke-a","type":"run.finished","payload":{}}
