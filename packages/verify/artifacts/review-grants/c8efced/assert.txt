@@ -1,0 +1,140 @@
+feature: review-grants
+command: bun test packages/review && bun packages/review/src/scenario.ts && bun run lint && bun run typecheck && bun run verify
+timestamp: 2026-10-17T07:06:23Z
+git sha: c8efcedebc75151a6dacb210f3c29f74328698c2
+git sha short: c8efced
+branch: u0.8-grants
+runtime: bun 1.2.5 on Darwin arm64
+
+the fail-closed proof is layers deep, each asserted against literal expected values:
+  - policy.test.ts drives every denial path through the real store and gate and pins the
+    exact reason string per code; two gates over one store race one grant and exactly one
+    allow comes back.
+  - store.test.ts proves append-only versions, replay equivalence, rewind boundary
+    precision, and JSONL reload reproducing the exact log.
+  - grants.test.ts pins the SHA-256 of a known action and the normalization table:
+    key order normalized, array order kept, undefined/NaN/-0/non-plain-objects refused.
+  - scenario.ts is the hand-driven transcript below: allow once, then every denial code
+    in order, then a reload and a two-gate race.
+
+=== bun test packages/review ===
+bun test v1.2.5 (013fdddc)
+
+packages/review/src/store.test.ts:
+(pass) issue > appends the full v1 record shape
+(pass) issue > assigns ascending seq and refuses a duplicate id (issue-once) [0.58ms]
+(pass) issue > refuses an empty tool name and a non-positive ttl [0.05ms]
+(pass) issue > refuses args that are not canonical JSON
+(pass) append-only log > consume appends a version and leaves the issue version untouched [0.14ms]
+(pass) append-only log > replay derives the same state from the log [0.07ms]
+(pass) append-only log > grants() returns current versions only, ascending by seq [0.05ms]
+(pass) consume > refuses a second consume of the same grant [0.04ms]
+(pass) consume > refuses an unknown grant
+(pass) consume > refuses an expired grant at the boundary instant [0.06ms]
+(pass) rewind > tombstones exactly the grants past the rewind point [0.02ms]
+(pass) rewind > is idempotent: a second rewind over the same point appends nothing [0.11ms]
+(pass) rewind > keeps consumption history and removes authority [0.01ms]
+(pass) rewind > refuses a negative rewind point [0.01ms]
+(pass) jsonl persistence > round-trips the full append history through text
+(pass) jsonl persistence > keeps append order line by line [0.04ms]
+(pass) jsonl persistence > fails closed on a malformed line, naming it
+(pass) jsonl persistence > loads back from a file with identical state [0.67ms]
+
+packages/review/src/policy.test.ts:
+(pass) allow-once semantics > allows the granted action once and consumes its grant [0.42ms]
+(pass) allow-once semantics > two grants for one action allow twice, in seq order [0.16ms]
+(pass) allow-once semantics > key-order variants of the granted args still match
+(pass) allow-once semantics > is legal to assign the policy to the pi-bridge ToolGate contract
+(pass) fail-closed denials > unknown tool: outside the governed list, even with a grant [0.08ms]
+(pass) fail-closed denials > no grant: the tool has never been granted [0.08ms]
+(pass) fail-closed denials > grant mismatch: a grant for the tool exists, none for these args [0.06ms]
+(pass) fail-closed denials > expired: valid strictly before expiresAt, denied at it [0.12ms]
+(pass) fail-closed denials > tombstoned: a rewind past the grant removes its authority [0.10ms]
+(pass) fail-closed denials > forged: a record whose hash disagrees with its content never authorizes [0.09ms]
+(pass) fail-closed denials > malformed action: args that are not canonical JSON [0.07ms]
+(pass) fail-closed denials > store failure denies instead of propagating [0.14ms]
+(pass) fail-closed denials > the six fail-closed flows carry six distinct codes [0.28ms]
+(pass) shared store > two policy instances over one store cannot double-spend a grant [0.17ms]
+(pass) shared store > a reloaded store keeps enforcing consumption [0.12ms]
+
+packages/review/src/grants.test.ts:
+(pass) canonical JSON > sorts object keys at every level [0.06ms]
+(pass) canonical JSON > keeps array order
+(pass) canonical JSON > number text forms collapse through JS number semantics
+(pass) canonical JSON > treats a __proto__ key as data [0.08ms]
+(pass) canonical JSON > refuses undefined, naming its path
+(pass) canonical JSON > refuses NaN and Infinity [0.07ms]
+(pass) canonical JSON > refuses -0
+(pass) canonical JSON > refuses non-JSON types
+(pass) canonical JSON > refuses non-plain objects
+(pass) canonical JSON > refuses array holes
+(pass) canonical JSON > refuses an empty tool name
+(pass) canonical action hash > pins the digest of a known action
+(pass) canonical action hash > key-order variants of equal args hash identically, nested included
+(pass) canonical action hash > array order is not normalized: reordered args hash differently
+(pass) canonical action hash > different args under one tool hash differently
+(pass) canonical action hash > the same args under different tools hash differently
+(pass) canonical action hash > unicode is not normalized: NFC and NFD strings differ [0.05ms]
+(pass) grant record parsing > accepts a valid record and canonicalizes its args
+(pass) grant record parsing > rejects a non-object
+(pass) grant record parsing > rejects unknown fields [0.06ms]
+(pass) grant record parsing > rejects a hash that does not match the scheme [0.09ms]
+(pass) grant record parsing > rejects an expiry at or before issue time
+(pass) grant record parsing > rejects non-JSON args
+(pass) recomputeActionHash > reproduces the hash of a consistent record and exposes a forged one
+
+ 57 pass
+ 0 fail
+ 100 expect() calls
+Ran 57 tests across 3 files. [18.00ms]
+
+=== bun packages/review/src/scenario.ts ===
+review grants scenario, clock starts at 2026-10-17T12:00:00.000Z
+
+issue grant-1: bash {"command":"echo hi"} ttl=60000ms -> seq=1 hash=v1:sha256:0b07de4a30385177b5d5b2de52ca057887ecb38d536e7d2094df21deb5f80d63
+PASS  first identical call is allowed and consumes grant-1
+      observed: {"allow":true}
+PASS  grant-1 now names its consumer
+      observed: "call_1"
+PASS  second identical call is denied
+      observed: {"allow":false,"reason":"grant_consumed: grant grant-1 consumed by call_1"}
+PASS  same tool with different args is denied
+      observed: {"allow":false,"reason":"grant_mismatch: args differ from grant grant-1 for tool bash"}
+PASS  tool that was never granted is denied
+      observed: {"allow":false,"reason":"no_grant: no grant for action v1:sha256:7bbe54134d3aa1f7fe019e33d76f6ade33d6ea27f7ca637eb9801456fc489410"}
+issue grant-2: bash {"command":"echo ttl"} ttl=1000ms -> seq=2 hash=v1:sha256:04e732df81e693fa33e9e95001140c5acee67809ebe1ec720abaf3d01c34cce9
+PASS  grant denied at its expiresAt instant
+      observed: {"allow":false,"reason":"grant_expired: grant grant-2 expired at 2026-10-17T12:00:01.000Z"}
+issue grant-3: bash {"command":"echo rewound"} ttl=60000ms -> seq=3 hash=v1:sha256:56fb1daeb2e3c1b252335b66f8ddca1ec6f0a85bb927d72d3492bb7971bf9ec8
+rewind to seq 2 tombstones: grant-3
+PASS  grant past the rewind point is denied
+      observed: {"allow":false,"reason":"grant_tombstoned: grant grant-3 tombstoned by rewind:2"}
+PASS  ungoverned tool is denied
+      observed: {"allow":false,"reason":"unknown_tool: web_fetch is not a governed tool"}
+PASS  record whose hash disagrees with its content is denied
+      observed: {"allow":false,"reason":"grant_forged: grant grant-9 hash does not match its content"}
+jsonl log is 5 lines
+PASS  reload from jsonl reproduces the exact log and state
+      observed: {"logIdentical":true,"stateIdentical":true}
+PASS  two gates over one store: exactly one allow
+      observed: [{"allow":true},{"allow":false,"reason":"grant_consumed: grant grant-1 consumed by call_a"}]
+
+RESULT: PASS (11/11 steps)
+
+=== bun run lint ===
+$ biome check .
+Checked 66 files in 16ms. No fixes applied.
+
+=== bun run typecheck ===
+$ tsc -p tsconfig.json
+
+=== bun run verify ===
+$ bun packages/verify/run.ts
+PASS step typecheck ($ tsc -p tsconfig.json)
+PASS step tests (bun test v1.2.5 (013fdddc))
+PASS step scaffold-shape (scaffold shape ok: 9 packages, 5 apps, every package extends tsconfig.base.json)
+PASS step healthz (GET /healthz -> 200 {"status":"ok","service":"freebot-server"})
+artifact: packages/verify/artifacts/scaffold/c8efced/assert.txt
+PASS scaffold
+
+RESULT: PASS   (bun test 57 pass / scenario 11 of 11 steps / lint clean / typecheck clean / verify green)
