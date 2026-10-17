@@ -1,0 +1,135 @@
+# mvp smoke dry run (U0.11) — 2026-10-17T10:59:43.535Z
+worktree /Users/yusufameri/projects/free-bot-u0.11/  branch u0.11-smoke-dry  head 333323c (333323c666cdf4bfea377fe972879be6683f3218)
+STUB DISCLOSURE: the decision source in this run is the keyless scripted stub spikes/forge-test-a/stub-model.ts. No provider, no BYOK key, no live-model traffic. Gate G1 parks the keyed run (U0.12), which replaces only the decision source.
+
+## preflight
+ok - preflight: docker engine reachable: 0
+docker server 28.3.2
+ok - preflight: pi binary present: true
+ok - preflight: chrome present: true
+ok - preflight: spikes/mvp-smoke typecheck: 0
+
+## images
+ok - base image is the pinned sandbox image (U0.6 recipe): "sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"
+base image id sha256:1df3cfeabffe594c6d41e2f17c70f43e1dba41ddee45199657fad31ae56255c6
+derived image id sha256:6ba3ea5361b37b4417c6ca7638dac344e15fed9e71319d4c796d029025b5c7df (spikes/mvp-smoke/Dockerfile)
+chrome Chrome/155.0.8059.84
+
+## idle
+ok - idle: zero frames rendered: 0
+ok - idle: no resume banner yet: null
+ok - frame 01-idle: page facts at the capture: [["lastSeq",0],["done",false],["turns",0],["cards",[]],["approvals",[]],["resume",null],["streamEnd",null]]
+ok - frame 01-idle: the page held still across the capture: "{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null}"
+frame 01-idle: frames/01-idle-1792234785668.png (16828 bytes, sha256 146f1bae15fe3ed28bda0c64519648fdb684c6aaf853c3c8e9a3428b717026f5) — last seq 0 · done false · turns 0 · cards [] · approvals [] · resume - · stream end - · text ""
+
+## container, supervisor, agent
+ok - in-VM pi version: "1.3.0"
+pi pid 38
+
+## step 1: harmless call through the real gate
+ok - step 1: card command literal: "bash {\"command\":\"echo one\"}"
+ok - step 1: card output literal: "one\n"
+ok - step 1: gate decision: "allow"
+ok - step 1: decision came from the auto-grant policy path: "policy_auto_grant"
+ok - frame 02-streaming: page facts at the capture: [["done",false],["cards",[["call_step_1","done"]]],["approvals",[]],["resume",null],["streamEnd",null]]
+frame 02-streaming: frames/02-streaming-1792234786802.png (30081 bytes, sha256 946d4b0088990dc45ca050ca4c4d6ed501d54457cd64aa6e9c3579329b9cc2c2) — last seq 9 · done false · turns 2 · cards [call_step_1:done] · approvals [] · resume - · stream end - · text "bash "
+
+## step 2: destructive call gated on the page's approval
+ok - approval: state awaits an answer: true
+ok - approval: card shows the gated command literal: "bash {\"command\":\"rm -f /scratch/task/doomed.txt\"}"
+ok - approval: buttons literal: ["Allow once","Deny"]
+ok - approval: the destructive card waits: "awaiting approval"
+ok - approval: no decision recorded while the card is pending: false
+ok - approval: stream frozen at the gate seq: [11,11]
+ok - frame 03-approval-pending: page facts at the capture: [["lastSeq",11],["done",false],["turns",2],["cards",[["call_step_1","done"],["call_step_2","awaiting approval"]]],["approvals",[null]],["resume",null],["streamEnd",null]]
+ok - frame 03-approval-pending: the page held still across the capture: "{\"lastSeq\":11,\"done\":false,\"frameCount\":11,\"turns\":2,\"cards\":[[\"call_step_1\",\"done\"],[\"call_step_2\",\"awaiting approval\"]],\"approvals\":[null],\"deltas\":[\"calling \",\"bash \",\"calling \",\"bash \"],\"resume\":null,\"streamEnd\":null}"
+frame 03-approval-pending: frames/03-approval-pending-1792234787604.png (48815 bytes, sha256 97530c02f47d5ccbff7254179ab7dca5c4d98d3dd1c44736e46ae8c8a1db7fa1) — last seq 11 · done false · turns 2 · cards [call_step_1:done call_step_2:awaiting approval] · approvals [pending] · resume - · stream end - · text "bash "
+
+## allow once: the page's answer is the grant
+ok - resolved: decision text literal: "allowed once"
+ok - step 2: gate decision: "allow"
+ok - step 2: allow minted by the page answer: "page_allow_once"
+ok - step 2: the grant is consumed exactly once, by call_step_2: "call_step_2"
+ok - step 2: in-VM side effect observed (host read through docker exec): "ABSENT"
+ok - frame 04-post-approval: page facts at the capture: [["done",false],["approvals",["allow"]],["resume",null],["streamEnd",null]]
+frame 04-post-approval: frames/04-post-approval-1792234787773.png (63339 bytes, sha256 8cf8c3cc5582c066517104c92e2c99327b6aedadd4a263bbe4bd9848a88879d5) — last seq 18 · done false · turns 3 · cards [call_step_1:done call_step_2:done call_step_3:running] · approvals [allow] · resume - · stream end - · text "bash "
+
+## kill/rejoin: relay SIGKILLed mid-task, composer restarts with the same logs
+ok - kill: the step-3 card is the last display frame (quiet stream at the kill): 18
+ok - step 3: gate decision before the kill: "allow"
+ok - kill: the step-3 tool is in flight at the kill: true
+kill point: relay and composer SIGKILLed; pi log last seq 58; page display last seq 18
+pre-kill composer tail: [composer] decision id=gate-1 tool=bash call=call_step_1 code=allow via=policy_auto_grant | [composer] page answer approvalId=gate-2 decision=allow | [composer] decision id=gate-2 tool=bash call=call_step_2 code=allow via=page_allow_once | [composer] decision id=gate-3 tool=bash call=call_step_3 code=allow via=policy_auto_grant
+ok - resume: banner text literal: "resumed from seq 18"
+ok - resume: page state carries the resume point: 18
+ok - resume: no duplicate display frames after rejoin: 0
+ok - frame 05-kill-rejoin-resumed: page facts at the capture: [["done",false],["approvals",["allow"]],["resume",18],["streamEnd",null]]
+frame 05-kill-rejoin-resumed: frames/05-kill-rejoin-resumed-1792234788127.png (66337 bytes, sha256 d038f53723004c41dab12677657cea04f574cdf6301aaabae9f774afe32e2ee4) — last seq 18 · done false · turns 3 · cards [call_step_1:done call_step_2:done call_step_3:running] · approvals [allow] · resume 18 · stream end - · text "bash "
+
+## after rejoin: the task continues on the same log
+ok - step 3: card output literal: "two\n"
+ok - step 4 repeat: gate decision code: "grant_consumed"
+ok - step 4 repeat: the denial names the consuming call: true
+ok - step 4 repeat: the ledger denial offered no approval card (count before and after): [1,1]
+ok - step 4 repeat: the re-created file is untouched (a silent re-run would have removed it): "doomed-again"
+
+## page deny path: the human refuses the second destructive call
+ok - deny: state awaits the second answer: true
+ok - deny: decision text literal: "denied"
+ok - deny: the display stream parks after the refusal, before the terminal frames: 35
+ok - frame 06-denied: page facts at the capture: [["lastSeq",35],["done",false],["turns",6],["cards",[["call_step_1","done"],["call_step_2","done"],["call_step_3","done"],["call_step_4","denied"],["call_step_5","denied"]]],["approvals",["allow","deny"]],["resume",18],["streamEnd",null]]
+ok - frame 06-denied: the page held still across the capture: "{\"lastSeq\":35,\"done\":false,\"frameCount\":35,\"turns\":6,\"cards\":[[\"call_step_1\",\"done\"],[\"call_step_2\",\"done\"],[\"call_step_3\",\"done\"],[\"call_step_4\",\"denied\"],[\"call_step_5\",\"denied\"]],\"approvals\":[\"allow\",\"deny\"],\"deltas\":[\"calling \",\"bash \",\"calling \",\"bash \",\"calling \",\"bash \",\"calling \",\"bash \",\"calling \",\"bash \"],\"resume\":18,\"streamEnd\":null}"
+frame 06-denied: frames/06-denied-1792234791813.png (106219 bytes, sha256 4def8267c019e12ae2076cea479f4da862960dae1334e588ac719a3d3f148a59) — last seq 35 · done false · turns 6 · cards [call_step_1:done call_step_2:done call_step_3:done call_step_4:denied call_step_5:denied] · approvals [allow,deny] · resume 18 · stream end - · text "bash "
+ok - step 5 deny: gate decision code: "user_denied"
+ok - step 5 deny: refusal came from the page: "page_deny"
+ok - step 5 deny: in-VM side effect observed (doomed2.txt intact): "doomed-2"
+
+## stream end: the parked turn finishes once its plan is queued
+ok - done: terminal marker literal: "stream complete"
+ok - done: frame count equals last seq: 38
+ok - done: no stream error: null
+ok - done: no duplicate display frames in the whole run: 0
+ok - done: tool card statuses literal: [["call_step_1","done"],["call_step_2","done"],["call_step_3","done"],["call_step_4","denied"],["call_step_5","denied"]]
+ok - done: both approvals resolved on the page: ["allow","deny"]
+ok - done: rendered display seqs are dense 1..N: []
+ok - frame 07-done: page facts at the capture: [["lastSeq",38],["done",true],["turns",6],["cards",[["call_step_1","done"],["call_step_2","done"],["call_step_3","done"],["call_step_4","denied"],["call_step_5","denied"]]],["approvals",["allow","deny"]],["resume",18],["streamEnd","stream complete"]]
+ok - frame 07-done: the page held still across the capture: "{\"lastSeq\":38,\"done\":true,\"frameCount\":38,\"turns\":6,\"cards\":[[\"call_step_1\",\"done\"],[\"call_step_2\",\"done\"],[\"call_step_3\",\"done\"],[\"call_step_4\",\"denied\"],[\"call_step_5\",\"denied\"]],\"approvals\":[\"allow\",\"deny\"],\"deltas\":[\"calling \",\"bash \",\"calling \",\"bash \",\"calling \",\"bash \",\"calling \",\"bash \",\"calling \",\"bash \",\"script complete.\"],\"resume\":18,\"streamEnd\":\"stream complete\"}"
+frame 07-done: frames/07-done-1792234792048.png (110770 bytes, sha256 0fe3a3e0f9ada17c2400c586234b76d6eef3aa3ed03a283a664d0ce9214e960d) — last seq 38 · done true · turns 6 · cards [call_step_1:done call_step_2:done call_step_3:done call_step_4:denied call_step_5:denied] · approvals [allow,deny] · resume 18 · stream end stream complete · text "script complete."
+
+## seq audit across the kill
+ok - audit: frame log starts at seq 1: 1
+ok - audit: the display log ends at the page's last seq: 38
+ok - audit: gaps in the pi frame log: []
+ok - audit: duplicates in the pi frame log: []
+ok - audit: gaps in local re-read of frames.jsonl: []
+ok - audit: duplicates in local re-read of frames.jsonl: []
+ok - audit: gaps in the display log: []
+ok - audit: duplicates in the display log: []
+ok - audit: every minted pi seq reached the durable log: [106,106]
+minted 106, logged 106 (seq 1..106); suppressed at ingest [] (lost-ack window after the rejoin); rejected 0; display 38 frames (seq 1..38)
+in-VM pi version at the summary: 1.3.0; gate requests 5
+ok - kill: the agent reopened the tunnel after the SIGKILL: true
+ok - kill: the rejoin named a last_seen_seq: true
+ok - kill: the rejoin was not the first attach: true
+agent rejoin line: [agent] tunnel open last_seen_seq=58 reconnects=1
+agent replay after rejoin: (none)
+
+## decision table
+call_step_1 tool=bash code=allow via=policy_auto_grant grant=grant-1 reason=-
+call_step_2 tool=bash code=allow via=page_allow_once grant=grant-2 reason=-
+call_step_3 tool=bash code=allow via=policy_auto_grant grant=grant-3 reason=-
+call_step_4 tool=bash code=grant_consumed via=policy grant=- reason=grant_consumed: grant grant-2 consumed by call_step_2
+call_step_5 tool=bash code=user_denied via=page_deny grant=- reason=user_denied: the page denied the approval card
+ok - decisions: one gate decision per scripted call, in order: [["call_step_1","allow"],["call_step_2","allow"],["call_step_3","allow"],["call_step_4","grant_consumed"],["call_step_5","user_denied"]]
+ok - grants: one grant per allowed call, each consumed exactly once: [{"id":"grant-1","consumedBy":"call_step_1"},{"id":"grant-2","consumedBy":"call_step_2"},{"id":"grant-3","consumedBy":"call_step_3"}]
+ok - frames: the seven key states, captured in order: ["01-idle","02-streaming","03-approval-pending","04-post-approval","05-kill-rejoin-resumed","06-denied","07-done"]
+ok - frames: every committed frame differs from every other in its page facts (pairwise): []
+ok - frames: one PNG on disk per capture: 7
+frame artifact: frames/01-idle-1792234785668.png (16828 bytes, sha256 146f1bae15fe3ed28bda0c64519648fdb684c6aaf853c3c8e9a3428b717026f5, last seq 0)
+frame artifact: frames/02-streaming-1792234786802.png (30081 bytes, sha256 946d4b0088990dc45ca050ca4c4d6ed501d54457cd64aa6e9c3579329b9cc2c2, last seq 9)
+frame artifact: frames/03-approval-pending-1792234787604.png (48815 bytes, sha256 97530c02f47d5ccbff7254179ab7dca5c4d98d3dd1c44736e46ae8c8a1db7fa1, last seq 11)
+frame artifact: frames/04-post-approval-1792234787773.png (63339 bytes, sha256 8cf8c3cc5582c066517104c92e2c99327b6aedadd4a263bbe4bd9848a88879d5, last seq 18)
+frame artifact: frames/05-kill-rejoin-resumed-1792234788127.png (66337 bytes, sha256 d038f53723004c41dab12677657cea04f574cdf6301aaabae9f774afe32e2ee4, last seq 18)
+frame artifact: frames/06-denied-1792234791813.png (106219 bytes, sha256 4def8267c019e12ae2076cea479f4da862960dae1334e588ac719a3d3f148a59, last seq 35)
+frame artifact: frames/07-done-1792234792048.png (110770 bytes, sha256 0fe3a3e0f9ada17c2400c586234b76d6eef3aa3ed03a283a664d0ce9214e960d, last seq 38)
+RESULT: PASS (75/75)

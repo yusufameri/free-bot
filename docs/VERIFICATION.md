@@ -15,7 +15,10 @@ directory per feature and git short sha. The row records the commit the artifact
 | browser containment spike | `bash spikes/browser-containment/run.sh` | spike-verified (7/7 browser probes inside the default-deny netns, UDP attributed by port bucket) | `packages/verify/artifacts/containment-browser/27cf9de/probes.txt` | 27cf9dee665547356177d8c0ce3d39b2c8f623b9 | 2026-10-17 |
 | forge test A | `bun spikes/forge-test-a/run.ts` | spike-verified (91/91 checks: matrix a–i plus positive controls and a throwing handler, every row read by literal in-VM canary reads, seq 1..239 with zero gaps and zero duplicates across a SIGKILLed composer; keyless stub model) | `packages/verify/artifacts/forge-test-a/a46071c/assert.txt` | a46071ce2b0108ad5d1d650a3a55ba4225520ced | 2026-10-17 |
 | web-stream spike | `bun spikes/web-stream/run.ts` | spike-verified (59/59 CDP checks, both approval paths, reconnect resume with duplicate ignored, 12 frame captures) | `packages/verify/artifacts/web-stream/35bd852/assert.txt` | 35bd8529a9b1f7986052838a8e4adbab2d901267 | 2026-10-17 |
+| mvp smoke dry run | `bun spikes/mvp-smoke/run.ts` | spike-verified (75/75 checks: the whole pipeline keyless end to end, approval allow and deny through the real grant gate, a mid-task relay+composer SIGKILL with page resume, zero gaps and zero duplicates across both logs, and seven committed frames asserted pairwise-distinct in the page facts they captured; keyless stub model) | `packages/verify/artifacts/mvp-smoke/333323c/assert.txt` | 333323c666cdf4bfea377fe972879be6683f3218 | 2026-10-17 |
 | protocol | `bun packages/protocol/scripts/verify.ts` | unit-test-verified (90 tests: envelope round-trip and rejection per kind, DTO strictness per operation, all nine deny codes plus the allow path routed through the real `packages/review` gate into `tool_call.decision` payloads, grant lifecycle against its ledger, and the literal U0.10 fixture accepted under v1; 23 rejection cases with literal zod text; replay demo through `SeqLog` reports gaps 0 [], duplicates 0 [] and prints the strip-before-persist boundary) | `packages/verify/artifacts/protocol/efa0211/assert.txt` | efa021145e43002596f183381cac6b37826cf165 | 2026-10-17 |
+| core run model | `bun packages/core/src/run-evidence.ts` | unit-test-verified (66 core tests over the seven statuses and their fourteen legal transitions, both idempotency cases, replay refusals, torn-journal repair, integer nano-USD money and the spend-cap compare; plus a 45-check evidence run that drives the smoke's lifecycle through the landed `SeqLog`, kills the journal's writer with a torn last line, reopens converged mid-step, rejoins at the seq after the kill on attempt 2, and reaches done through two parks; `freebot doctor` prints 4 PASS / 1 FAIL, the FAIL being the provider key gate G1 parks) | `packages/verify/artifacts/core-run-model/ba092ab/assert.txt` | ba092ab0ec1dc0e5c870d56b00b6d2351852d124 | 2026-10-17 |
+| sandbox-provider | `bun test packages/sandbox/src/docker.test.ts` | unit-test-verified (Docker integration is the live surface: create from the pinned image, exec/upload/download, tunnel echo, snapshot/resume, idle-kill, label-scoped sweep against decoys; the suite skips itself where the pinned arm64 image is absent, so CI runs it as a skip and this artifact is the local run; no UI, so no live-ui claim) | `packages/verify/artifacts/sandbox-provider/dc875b3/assert.txt` | dc875b31769843ebd3b743fc8a68b3f43566b35f | 2026-10-17 |
 | web chat surface | `bun apps/web/scripts/capture.ts` | live-ui-verified (75/75 CDP checks in headless Chrome 155: the eight key states with their DOM facts read before and after each capture and failing if they moved, every caption's claims evaluated against those facts, every caption's element asserted inside the captured viewport, and 28 pairwise distinctness comparisons with zero collisions; committed-fixture replay only, no model, no key) | `packages/verify/artifacts/web-shell/326cf65/assert.txt` | 326cf65d9613d7cbb24550d09d8dd5302239f7d8 | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, the pi-bridge client, and the
@@ -49,7 +52,18 @@ sandbox image plus U0.3's dialog intercept and U0.8's ledger behind one host com
 scenario rows (no grant, mismatch, expired, consumed, tombstoned, forged, unknown tool, native bash
 and file-write positive controls, a throwing handler, and a SIGKILLed control plane mid-gated-call)
 each verified by a literal read of a canary path inside the container rather than by the gate's
-return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. Every later feature
-gets its own row when its script
-lands.
+return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. The mvp smoke dry
+run row covers the U0.11 composition of the whole Phase 0 pipeline under one command: the pinned
+image plus the landed tool-gate extension, the U0.7 tunnel, the U0.8 ledger and policy, and the
+U0.10 page, driven by the keyless stub model through one approval allow, one page denial, a ledger
+`grant_consumed` repeat, and a mid-task SIGKILL of the relay and the composer with a page resume
+from its last display seq; its shape, limits, and follow-ups are in `docs/mvp-smoke-dry-run.md`.
+The sandbox-provider row covers U1.2's frozen `SandboxProvider` surface and the Docker adapter: spec
+validation, the capability truth table and the typed unsupported paths in `packages/sandbox`'s unit
+tests, plus ten Docker integration tests that create a sandbox from the pinned image, exec (buffered,
+streamed, detached), round-trip 4096 bytes through upload/download, echo a link frame through
+`tunnel()`, reach an in-sandbox port through `exposePort`, snapshot/stop/resume and restore from the
+snapshot, kill an idle sandbox on its ttl, and remove exactly this unit's containers while two decoy
+containers survive; its semantics, typed gaps, and follow-ups are in `docs/sandbox-provider.md`.
+Every later feature gets its own row when its script
 lands.
