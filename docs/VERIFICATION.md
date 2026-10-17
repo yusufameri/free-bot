@@ -9,6 +9,7 @@ directory per feature and git short sha. The row records the commit the artifact
 | pi-rpc-spike | `bun spikes/pi-rpc/drive.ts` | spike-verified (39/39 assertions, keyless stub model, no test suite exists for it) | `packages/verify/artifacts/pi-rpc/e203adf/assert.txt` | e203adffa3e8dd0ce047b42216d7414fd1838c15 | 2026-10-17 |
 | pi-bridge | `bun run verify && bun test packages/pi-bridge && bun packages/pi-bridge/scripts/smoke.ts` | unit-test-verified (replay transport, fail-closed gate tests; live keyed smoke parks without BYOK key) | `packages/verify/artifacts/pi-bridge/a67bc72/assert.txt` | a67bc7248a9b0b04552f748dd683f86f35d3a19d | 2026-10-17 |
 | containment spike | `bash spikes/containment/run.sh` | unit-test-verified | `packages/verify/artifacts/containment/57a229d/probes.txt` | 57a229d8291ed58fcb7d291e29a9109e78d1a0bd | 2026-10-16 |
+| tunnel spike | `bun spikes/tunnel/kill-rejoin.ts` | spike-verified (34/34 checks, both kill scenarios: zero gaps, zero duplicates, stable pi pid) | `packages/verify/artifacts/tunnel/bf0a4e6/assert.txt` | bf0a4e67b8351cb1db3d7f160f2042ddd7850ff9 | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, and the pi-bridge client. The
 scaffold row covers workspace shape, typecheck, the `apps/server` health test, and a real HTTP probe
@@ -22,5 +23,8 @@ port, DoH, IP literals) produced by a rerunnable script; its limits are stated i
 (frame parsing against the frozen transcript, session correlation and ordered events, fail-closed
 gate paths), all green in `bun run verify`, plus the smoke's parked path. Its live keyed smoke (one
 real gated tool call) is unobserved while gate G1 parks. Rationale and citations live in
-`docs/pi-rpc-spike.md` and `docs/pi-bridge.md`. Every later feature gets its own row when its script
+`docs/pi-rpc-spike.md` and `docs/pi-bridge.md`. The tunnel row covers the U0.7 spike's 34 harness
+checks (relay SIGKILL and agent SIGKILL over a real WebSocket, truncated-frame refusals, `/events`
+vs `/stream` byte equality) plus the `SeqLog`/tunnel unit tests; the audit invariant, pid evidence,
+and limits are in `docs/tunnel-spike.md`. Every later feature gets its own row when its script
 lands.
