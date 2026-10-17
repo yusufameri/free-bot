@@ -1,0 +1,84 @@
+{"seq":1,"type":"turn_start","payload":{"turn":1}}
+{"seq":2,"type":"message_delta","payload":{"text":"turn-1-chunk-0 "}}
+{"seq":3,"type":"message_delta","payload":{"text":"turn-1-chunk-1 "}}
+{"seq":4,"type":"message_delta","payload":{"text":"turn-1-chunk-2 "}}
+{"seq":5,"type":"message_delta","payload":{"text":"turn-1-chunk-3 "}}
+{"seq":6,"type":"message_delta","payload":{"text":"turn-1-chunk-4 "}}
+{"seq":7,"type":"message_delta","payload":{"text":"turn-1-chunk-5 "}}
+{"seq":8,"type":"tool_call","payload":{"toolCallId":"call_spike_1","toolName":"spike_echo","command":"spike_echo {\"note\":\"one\",\"delay_ms\":200}","destructive":false}}
+{"seq":9,"type":"tool_result","payload":{"toolCallId":"call_spike_1","ok":true,"denied":false,"output":"echo: one","durationMs":201}}
+{"seq":10,"type":"turn_end","payload":{"turn":1}}
+{"seq":11,"type":"turn_start","payload":{"turn":2}}
+{"seq":12,"type":"message_delta","payload":{"text":"turn-2-chunk-0 "}}
+{"seq":13,"type":"message_delta","payload":{"text":"turn-2-chunk-1 "}}
+{"seq":14,"type":"message_delta","payload":{"text":"turn-2-chunk-2 "}}
+{"seq":15,"type":"message_delta","payload":{"text":"turn-2-chunk-3 "}}
+{"seq":16,"type":"message_delta","payload":{"text":"turn-2-chunk-4 "}}
+{"seq":17,"type":"message_delta","payload":{"text":"turn-2-chunk-5 "}}
+{"seq":18,"type":"message_delta","payload":{"text":"turn-2-chunk-6 "}}
+{"seq":19,"type":"message_delta","payload":{"text":"turn-2-chunk-7 "}}
+{"seq":20,"type":"message_delta","payload":{"text":"turn-2-chunk-8 "}}
+{"seq":21,"type":"message_delta","payload":{"text":"turn-2-chunk-9 "}}
+{"seq":22,"type":"message_delta","payload":{"text":"turn-2-chunk-10 "}}
+{"seq":23,"type":"message_delta","payload":{"text":"turn-2-chunk-11 "}}
+{"seq":24,"type":"message_delta","payload":{"text":"turn-2-chunk-12 "}}
+{"seq":25,"type":"message_delta","payload":{"text":"turn-2-chunk-13 "}}
+{"seq":26,"type":"message_delta","payload":{"text":"turn-2-chunk-14 "}}
+{"seq":27,"type":"message_delta","payload":{"text":"turn-2-chunk-15 "}}
+{"seq":28,"type":"message_delta","payload":{"text":"turn-2-chunk-16 "}}
+{"seq":29,"type":"message_delta","payload":{"text":"turn-2-chunk-17 "}}
+{"seq":30,"type":"message_delta","payload":{"text":"turn-2-chunk-18 "}}
+{"seq":31,"type":"message_delta","payload":{"text":"turn-2-chunk-19 "}}
+{"seq":32,"type":"message_delta","payload":{"text":"turn-2-chunk-20 "}}
+{"seq":33,"type":"message_delta","payload":{"text":"turn-2-chunk-21 "}}
+{"seq":34,"type":"message_delta","payload":{"text":"turn-2-chunk-22 "}}
+{"seq":35,"type":"message_delta","payload":{"text":"turn-2-chunk-23 "}}
+{"seq":36,"type":"message_delta","payload":{"text":"turn-2-chunk-24 "}}
+{"seq":37,"type":"message_delta","payload":{"text":"turn-2-chunk-25 "}}
+{"seq":38,"type":"message_delta","payload":{"text":"turn-2-chunk-26 "}}
+{"seq":39,"type":"message_delta","payload":{"text":"turn-2-chunk-27 "}}
+{"seq":40,"type":"message_delta","payload":{"text":"turn-2-chunk-28 "}}
+{"seq":41,"type":"message_delta","payload":{"text":"turn-2-chunk-29 "}}
+{"seq":42,"type":"message_delta","payload":{"text":"turn-2-chunk-30 "}}
+{"seq":43,"type":"message_delta","payload":{"text":"turn-2-chunk-31 "}}
+{"seq":44,"type":"message_delta","payload":{"text":"turn-2-chunk-32 "}}
+{"seq":45,"type":"message_delta","payload":{"text":"turn-2-chunk-33 "}}
+{"seq":46,"type":"message_delta","payload":{"text":"turn-2-chunk-34 "}}
+{"seq":47,"type":"message_delta","payload":{"text":"turn-2-chunk-35 "}}
+{"seq":48,"type":"message_delta","payload":{"text":"turn-2-chunk-36 "}}
+{"seq":49,"type":"message_delta","payload":{"text":"turn-2-chunk-37 "}}
+{"seq":50,"type":"message_delta","payload":{"text":"turn-2-chunk-38 "}}
+{"seq":51,"type":"message_delta","payload":{"text":"turn-2-chunk-39 "}}
+{"seq":52,"type":"tool_call","payload":{"toolCallId":"call_spike_2","toolName":"spike_echo","command":"spike_echo {\"note\":\"two\",\"delay_ms\":200}","destructive":true}}
+{"seq":53,"type":"approval_request","payload":{"approvalId":"ap-call_spike_2","toolCallId":"call_spike_2","command":"spike_echo {\"note\":\"two\",\"delay_ms\":200}"}}
+{"seq":54,"type":"approval_resolved","payload":{"approvalId":"ap-call_spike_2","decision":null}}
+{"seq":55,"type":"tool_result","payload":{"toolCallId":"call_spike_2","ok":true,"denied":false,"output":"echo: two","durationMs":211}}
+{"seq":56,"type":"turn_end","payload":{"turn":2}}
+{"seq":57,"type":"turn_start","payload":{"turn":3}}
+{"seq":58,"type":"message_delta","payload":{"text":"turn-3-chunk-0 "}}
+{"seq":59,"type":"message_delta","payload":{"text":"turn-3-chunk-1 "}}
+{"seq":60,"type":"message_delta","payload":{"text":"turn-3-chunk-2 "}}
+{"seq":61,"type":"message_delta","payload":{"text":"turn-3-chunk-3 "}}
+{"seq":62,"type":"message_delta","payload":{"text":"turn-3-chunk-4 "}}
+{"seq":63,"type":"message_delta","payload":{"text":"turn-3-chunk-5 "}}
+{"seq":64,"type":"message_delta","payload":{"text":"turn-3-chunk-6 "}}
+{"seq":65,"type":"message_delta","payload":{"text":"turn-3-chunk-7 "}}
+{"seq":66,"type":"message_delta","payload":{"text":"turn-3-chunk-8 "}}
+{"seq":67,"type":"message_delta","payload":{"text":"turn-3-chunk-9 "}}
+{"seq":68,"type":"message_delta","payload":{"text":"turn-3-chunk-10 "}}
+{"seq":69,"type":"message_delta","payload":{"text":"turn-3-chunk-11 "}}
+{"seq":70,"type":"tool_call","payload":{"toolCallId":"call_spike_3","toolName":"spike_echo","command":"spike_echo {\"note\":\"three\",\"delay_ms\":200}","destructive":false}}
+{"seq":71,"type":"tool_result","payload":{"toolCallId":"call_spike_3","ok":true,"denied":false,"output":"echo: three","durationMs":211}}
+{"seq":72,"type":"turn_end","payload":{"turn":3}}
+{"seq":73,"type":"turn_start","payload":{"turn":4}}
+{"seq":74,"type":"message_delta","payload":{"text":"turn-4-chunk-0 "}}
+{"seq":75,"type":"message_delta","payload":{"text":"turn-4-chunk-1 "}}
+{"seq":76,"type":"message_delta","payload":{"text":"turn-4-chunk-2 "}}
+{"seq":77,"type":"message_delta","payload":{"text":"turn-4-chunk-3 "}}
+{"seq":78,"type":"message_delta","payload":{"text":"turn-4-chunk-4 "}}
+{"seq":79,"type":"message_delta","payload":{"text":"turn-4-chunk-5 "}}
+{"seq":80,"type":"message_delta","payload":{"text":"turn-4-chunk-6 "}}
+{"seq":81,"type":"message_delta","payload":{"text":"turn-4-chunk-7 "}}
+{"seq":82,"type":"message_delta","payload":{"text":"spike exchange complete."}}
+{"seq":83,"type":"turn_end","payload":{"turn":4}}
+{"seq":84,"type":"stream_end","payload":{}}

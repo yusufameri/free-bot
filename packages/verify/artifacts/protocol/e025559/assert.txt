@@ -1,0 +1,120 @@
+feature: protocol
+command: bun packages/protocol/scripts/verify.ts
+timestamp: 2026-10-17T08:16:07.924Z
+git sha: e0255593449fb75bb5c2a397018b8da423dd6090
+git sha short: e025559
+branch: u1.1-protocol
+runtime: bun 1.2.5 on darwin arm64
+
+step lint: PASS
+step typecheck: PASS
+step typecheck-protocol-scripts: PASS
+step tests: PASS
+step spike-compat: PASS
+step spike-fixture: PASS
+step rejections: PASS
+step replay: PASS
+
+--- step spike-compat (output) ---
+
+bun test v1.2.5 (013fdddc)
+packages/protocol/src/spike-compat.test.ts:
+(pass) the fixture is the recorded spike traffic > 84 frames, dense seq, four turns, one gated call [1.38ms]
+(pass) every spike frame maps into v1 > the run boundary is synthesized once, and the answered placeholder resolves [0.09ms]
+(pass) every spike frame maps into v1 > the kind counts match the recorded frames [0.06ms]
+(pass) every spike frame maps into v1 > the mapped seqs are dense from 1 [0.05ms]
+(pass) every spike frame maps into v1 > every mapped message parses and round-trips under v1 [5.54ms]
+(pass) every spike frame maps into v1 > the spike's own field values survive byte for byte [0.51ms]
+(pass) the approval the spike proved, both paths > the recorded request becomes an approval.requested with the real action hash [0.25ms]
+(pass) the approval the spike proved, both paths > allow resolves the placeholder with an issued grant, deny resolves it with none [0.28ms]
+(pass) the approval the spike proved, both paths > an unanswered placeholder maps to the pending state alone [0.19ms]
+ 9 pass
+ 0 fail
+ 208 expect() calls
+Ran 9 tests across 1 files. [42.00ms]
+
+--- step spike-fixture (output) ---
+
+PASS  fixture matches a fresh run of the spike mapper
+      packages/protocol/fixtures/spike-display-frames-a.jsonl: 84 frames
+
+--- rejection list (22 cases, case + literal first issue) ---
+
+PASS  message    unknown kind
+      Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'
+PASS  message    missing kind
+      Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'
+PASS  message    wrong version tag
+      Invalid input: expected 1
+PASS  message    missing seq
+      Invalid input: expected number, received undefined
+PASS  message    seq 0
+      Too small: expected number to be >0
+PASS  message    non-integer seq
+      Invalid input: expected int, received number
+PASS  message    seq as a string
+      Invalid input: expected number, received string
+PASS  message    run-scoped message without a runId
+      Invalid input: expected string, received undefined
+PASS  message    missing payload
+      Invalid input: expected object, received undefined
+PASS  message    payload field of the wrong type
+      Invalid input: expected string, received number
+PASS  message    denial without a reason code
+      Invalid option: expected one of "unknown_tool"|"no_grant"|"grant_mismatch"|"grant_expired"|"grant_consumed"|"grant_tombstoned"|"grant_forged"|"malformed_action"|"grant_store_error"
+PASS  message    reason code outside the nine
+      Invalid option: expected one of "unknown_tool"|"no_grant"|"grant_mismatch"|"grant_expired"|"grant_consumed"|"grant_tombstoned"|"grant_forged"|"malformed_action"|"grant_store_error"
+PASS  message    action hash that is not v1:sha256:<64 hex>
+      Invalid string: must match pattern /^v1:sha256:[0-9a-f]{64}$/
+PASS  message    grant state outside the four
+      Invalid discriminator value. Expected 'issued' | 'consumed' | 'expired' | 'rewound'
+PASS  message    consumed grant without its consumer
+      Invalid input: expected string, received undefined
+PASS  message    negative resume point
+      Too small: expected number to be >=0
+PASS  start_run  unknown key on a command input (strict)
+      Unrecognized key: "extra"
+PASS  approve    unknown key on an approval answer (strict)
+      Unrecognized key: "extra"
+PASS  get_events negative event cursor
+      Too small: expected number to be >=0
+PASS  get_events event page over the cap
+      Too big: expected number to be <=1000
+PASS  read_file  absolute file path
+      path must be relative to /workspace without .. segments
+PASS  read_file  parent-directory traversal
+      path must be relative to /workspace without .. segments
+
+--- replay demo (packages/protocol/scripts/replay-spike.ts) ---
+
+feature: protocol
+command: bun packages/protocol/scripts/replay-spike.ts
+timestamp: 2026-10-17T08:16:07.854Z
+git sha short: e025559
+fixture: packages/protocol/fixtures/spike-display-frames-a.jsonl
+
+frames: 84; mapped messages: 85 (run.started synthesized, one answered placeholder resolved)
+
+  seq 30 -> appended
+  seq 30 replayed (echo_last=1) -> duplicate
+  seq 31 never arrived: seq 32 -> gap (expected 31, got 32)
+  resend from 31: seq 31 -> appended
+  seq 32 again -> appended
+
+ingest outcomes: {"appended":85,"duplicate":1,"gap":1,"rejected":0}
+frames refused by the v1 schema before ingest: 1
+resume from last_seen_seq=30: 55 messages, seq 31..85
+
+seq audit (packages/core SeqLog, recomputed from the stored entries):
+  frames logged: 85 (seq 1..85)
+  gaps: 0 []
+  duplicates: 0 []
+  suppressed at ingest (replayed frames the log already held): 1 [30]
+  gap events (refused, healed by resend): 1 [31<-32]
+  rejected payloads: 1
+  observer counts: appended 85, duplicate 1, gap 1
+  audit invariant: OK (zero gaps, zero duplicates)
+
+PASS replay: 85 frames ingested, 1 duplicate suppressed, 1 gap refused and healed, 1 rejected
+
+PASS protocol
