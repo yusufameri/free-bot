@@ -275,21 +275,21 @@ p3_buckets="$(buckets_since "$b_common")"
 p3_dom_bytes="$(wc -c <"$LAST_DOM" | tr -d ' ')"
 p3_png="$(png_size "$LAST_PNG")"
 if [ "$LAST_RC" -ne 0 ] || ! grep -q "$PUBLIC_MARKER" "$LAST_DOM" 2>/dev/null; then
-  record p3 PASS "denied: no page content (dom $p3_dom_bytes bytes, screenshot bytes=$p3_png; a failed navigation writes no capture) after ${LAST_MS}ms; udp buckets +443/+53/+other = $p3_buckets (the /53 half is the browser's own resolver attempts, dropped by the ruleset; each drop surfaces as ERR_ACCESS_DENIED to the browser); netlog: $(netlog_errors "$WORK/p3-nav-public-denied.netlog.json")"
+  record p3 PASS "denied: no page content (dom $p3_dom_bytes bytes, screenshot bytes=$p3_png; a failed navigation writes no capture) after ${LAST_MS}ms; udp buckets +443/+53/+other = $p3_buckets (the /53 part is the browser's own resolver attempts, dropped by the ruleset; each drop surfaces as ERR_ACCESS_DENIED to the browser); netlog: $(netlog_errors "$WORK/p3-nav-public-denied.netlog.json")"
 else
   record p3 FAIL "navigation to $PUBLIC_URL succeeded without a proxy: exit=$LAST_RC after ${LAST_MS}ms"
 fi
 echo
 
 # -------------------------------------------- p4: adversarial IP literal, nav
-echo "--- p4: navigation to $IP_LITERAL with --no-proxy-server (no DNS involved; Chromium races QUIC and TCP)"
+echo "--- p4: navigation to $IP_LITERAL with --no-proxy-server (no DNS involved; the fallback TCP connect is what blackholes)"
 b_common="$(buckets_now)"
 run_chrome p4-nav-ip-denied 200000 "${CHROME_FLAGS_NO_PROXY[@]}" -- "$IP_LITERAL"
 p4_buckets="$(buckets_since "$b_common")"
 p4_dom_bytes="$(wc -c <"$LAST_DOM" | tr -d ' ')"
 p4_png="$(png_size "$LAST_PNG")"
 if [ "$LAST_RC" -ne 0 ] || ! grep -q "<html" "$LAST_DOM" 2>/dev/null; then
-  record p4 PASS "denied: no page content (dom $p4_dom_bytes bytes, screenshot bytes=$p4_png) after ${LAST_MS}ms; udp buckets +443/+53/+other = $p4_buckets (the browser races QUIC and TCP on this navigation; the QUIC half lands in /443, the /53 half is its own background lookups); netlog QUIC: $(netlog_quic_facts "$WORK/p4-nav-ip-denied.netlog.json"); netlog: $(netlog_errors "$WORK/p4-nav-ip-denied.netlog.json")"
+  record p4 PASS "denied: no page content (dom $p4_dom_bytes bytes, screenshot bytes=$p4_png) after ${LAST_MS}ms; udp buckets +443/+53/+other = $p4_buckets (the /53 part is the browser's own background lookups, dropped by the ruleset; this navigation opens no QUIC path of its own, and the netlog QUIC facts sit next to the numbers); netlog QUIC: $(netlog_quic_facts "$WORK/p4-nav-ip-denied.netlog.json"); netlog: $(netlog_errors "$WORK/p4-nav-ip-denied.netlog.json")"
 else
   record p4 FAIL "IP-literal navigation succeeded without a proxy: exit=$LAST_RC after ${LAST_MS}ms"
 fi
@@ -311,7 +311,7 @@ fi
 echo
 echo "  note: every wall in this arm is the kernel's, and the buckets are read per arm so the browser's own"
 echo "  background traffic cannot be mistaken for the probe's: the DoH fetches and the DNS-requiring fetch"
-echo "  want UDP (/53), the IP-literal fetches want TCP plus a QUIC race (/443), and none of it leaves."
+echo "  fail on UDP sends to port 53, the IP-literal fetches fail on TCP connect attempts, and none of it leaves."
 echo
 
 # ---------------------------------------------------------------- p6: --disable-quic
