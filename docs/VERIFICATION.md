@@ -12,6 +12,7 @@ directory per feature and git short sha. The row records the commit the artifact
 | sandbox image pin + replay + key scan | `bash packages/sandbox/image/run.sh` | unit-test-verified (two in-image replays equal after normalization, 0 canary hits) | `packages/verify/artifacts/sandbox-image/8d36ea7/assert.txt` | 8d36ea72a1dc1577d8f120e93e5858c666d8a71d | 2026-10-17 |
 | review-grants | `bun test packages/review && bun packages/review/src/scenario.ts` | unit-test-verified | `packages/verify/artifacts/review-grants/c8efced/assert.txt` | c8efcedebc75151a6dacb210f3c29f74328698c2 | 2026-10-17 |
 | tunnel spike | `bun spikes/tunnel/kill-rejoin.ts` | spike-verified (34/34 checks, both kill scenarios: zero gaps, zero duplicates, stable pi pid) | `packages/verify/artifacts/tunnel/bf0a4e6/assert.txt` | bf0a4e67b8351cb1db3d7f160f2042ddd7850ff9 | 2026-10-17 |
+| browser containment spike | `bash spikes/browser-containment/run.sh` | spike-verified (7/7 browser probes inside the default-deny netns, UDP attributed by port bucket) | `packages/verify/artifacts/containment-browser/27cf9de/probes.txt` | 27cf9dee665547356177d8c0ce3d39b2c8f623b9 | 2026-10-17 |
 | forge test A | `bun spikes/forge-test-a/run.ts` | spike-verified (91/91 checks: matrix a–i plus positive controls and a throwing handler, every row read by literal in-VM canary reads, seq 1..239 with zero gaps and zero duplicates across a SIGKILLed composer; keyless stub model) | `packages/verify/artifacts/forge-test-a/a46071c/assert.txt` | a46071ce2b0108ad5d1d650a3a55ba4225520ced | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, the pi-bridge client, and the
@@ -35,10 +36,17 @@ fail-closed gate whose denial codes are asserted distinct against literal values
 in `docs/review-grants.md`. The tunnel row covers the U0.7 spike's 34 harness checks (relay SIGKILL
 and agent SIGKILL over a real WebSocket, truncated-frame refusals, `/events` vs `/stream` byte
 equality) plus the `SeqLog`/tunnel unit tests; the audit invariant, pid evidence, and limits are in
-`docs/tunnel-spike.md`. The forge test A row covers U0.9's composed gate: the pinned sandbox image
-plus U0.3's dialog intercept and U0.8's ledger behind one host composer, with eleven scenario rows
-(no grant, mismatch, expired, consumed, tombstoned, forged, unknown tool, native bash and file-write
-positive controls, a throwing handler, and a SIGKILLed control plane mid-gated-call) each verified by
-a literal read of a canary path inside the container rather than by the gate's return value; its
-shape, limits, and follow-ups are in `docs/forge-test-a.md`. Every later feature gets its own row when its script
+`docs/tunnel-spike.md`. The browser containment row covers headless Chromium inside the U0.4 netns
+across seven arms (two proxied controls, adversarial public-URL and IP-literal navigations, an
+in-page page of five DoH and IP-literal attempts, a forced-QUIC pair read from the udp/443 bucket,
+and the resolver guard), with every arm's UDP attributed by counter-only port buckets and the
+denials rendered into four screenshots; rationale and limits live in
+`docs/browser-containment-spike.md`. The forge test A row covers U0.9's composed gate: the pinned
+sandbox image plus U0.3's dialog intercept and U0.8's ledger behind one host composer, with eleven
+scenario rows (no grant, mismatch, expired, consumed, tombstoned, forged, unknown tool, native bash
+and file-write positive controls, a throwing handler, and a SIGKILLed control plane mid-gated-call)
+each verified by a literal read of a canary path inside the container rather than by the gate's
+return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. Every later feature
+gets its own row when its script
+lands.
 lands.

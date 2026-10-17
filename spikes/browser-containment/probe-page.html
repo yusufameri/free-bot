@@ -1,0 +1,123 @@
+<!doctype html>
+<!-- In-page denial probe for the browser-containment spike. Loaded by Chromium
+     from file:// (so the document itself needs no network) with the page's own
+     JavaScript attempting to reach the outside world. Every fetch uses
+     `mode: "no-cors"` on purpose: a resolution to an opaque response is
+     indistinguishable from a network failure, but a *successful* no-cors fetch
+     resolves while a denied one rejects, so "did the packet path work" is
+     exactly what each row reports, without CORS noise. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FreeBot browser containment: in-page denial probe</title>
+<style>
+  body { background: #101418; color: #e6edf3; font: 15px/1.5 "DejaVu Sans Mono", monospace; margin: 24px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #8b949e; margin-bottom: 16px; }
+  #verdict { display: inline-block; padding: 10px 18px; font-size: 22px; font-weight: bold; border-radius: 6px; margin: 8px 0 20px; }
+  #verdict.contained { background: #1f6f3f; color: #d3f9d8; }
+  #verdict.escaped { background: #a4262c; color: #ffe3e3; }
+  #verdict.pending { background: #7a5c00; color: #fff3bf; }
+  table { border-collapse: collapse; }
+  td, th { border: 1px solid #30363d; padding: 6px 10px; text-align: left; vertical-align: top; }
+  th { color: #8b949e; font-weight: normal; }
+  .denied { color: #7ee787; }
+  .reached { color: #ff7b72; font-weight: bold; }
+  .pending { color: #e3b341; }
+  #foot { color: #8b949e; margin-top: 18px; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>FreeBot browser containment: in-page denial probe</h1>
+<div class="sub">headless Chromium, no proxy flags (or proxy flags as noted in the run header) &mdash; every attempt below is JavaScript inside this page</div>
+<div id="verdict" class="pending">RUNNING&hellip;</div>
+<table>
+  <thead>
+    <tr><th>id</th><th>attempt</th><th>result</th><th>observed</th><th>ms</th></tr>
+  </thead>
+  <tbody id="rows"></tbody>
+</table>
+<div id="foot"></div>
+<script>
+/* The four attempts the brief names: an in-page fetch to a DoH endpoint, to an
+   IP literal, to a public hostname (which needs a resolver), plus an image load
+   to an IP literal because IMG goes through a different loader than fetch. */
+const ATTEMPTS = [
+  { id: "doh-ip-literal",  kind: "fetch", url: "https://1.1.1.1/dns-query?dns=AAABAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB", headers: { accept: "application/dns-message" } },
+  { id: "doh-hostname",    kind: "fetch", url: "https://cloudflare-dns.com/dns-query?dns=AAABAAABAAAAAAAAA3d3dwdleGFtcGxlA2NvbQAAAQAB", headers: { accept: "application/dns-message" } },
+  { id: "http-ip-literal", kind: "fetch", url: "http://1.1.1.1/" },
+  { id: "public-hostname", kind: "fetch", url: "https://example.com/" },
+  { id: "img-ip-literal",  kind: "img",   url: "https://1.1.1.1/" },
+];
+
+const rowsBody = document.getElementById("rows");
+const verdictEl = document.getElementById("verdict");
+const foot = document.getElementById("foot");
+const started = Date.now();
+const results = new Map();
+
+function renderRow(attempt, state, observed, ms) {
+  let row = document.getElementById(`row-${attempt.id}`);
+  if (!row) {
+    row = document.createElement("tr");
+    row.id = `row-${attempt.id}`;
+    row.innerHTML = "<td></td><td></td><td></td><td></td><td></td>";
+    rowsBody.appendChild(row);
+    row.children[0].textContent = attempt.id;
+    row.children[1].textContent = `${attempt.kind} ${attempt.url}`;
+  }
+  const [stateCell, observedCell, msCell] = [row.children[2], row.children[3], row.children[4]];
+  stateCell.textContent = state;
+  stateCell.className = state.toLowerCase();
+  observedCell.textContent = observed;
+  msCell.textContent = String(ms);
+}
+
+function attemptOne(attempt) {
+  const t0 = Date.now();
+  return new Promise((resolve) => {
+    const done = (state, observed) => {
+      const ms = Date.now() - t0;
+      results.set(attempt.id, { state, observed, ms });
+      renderRow(attempt, state, observed, ms);
+      updateVerdict();
+      resolve();
+    };
+    if (attempt.kind === "img") {
+      const img = new Image();
+      img.onload = () => done("REACHED", `image loaded (${img.naturalWidth}x${img.naturalHeight})`);
+      img.onerror = () => done("DENIED", "img error event (no bytes)");
+      img.src = attempt.url;
+      return;
+    }
+    fetch(attempt.url, { mode: "no-cors", headers: attempt.headers || {} }).then(
+      () => done("REACHED", "no-cors fetch resolved (opaque response; network path worked)"),
+      (error) => done("DENIED", `${error?.name ? error.name : "Error"}: ${error?.message ? error.message : String(error)}`),
+    );
+  });
+}
+
+function updateVerdict() {
+  const settled = results.size;
+  const reached = [...results.values()].filter((r) => r.state === "REACHED").length;
+  const pending = ATTEMPTS.length - settled;
+  if (settled < ATTEMPTS.length) {
+    verdictEl.className = "pending";
+    verdictEl.textContent = `RUNNING\u2026 ${settled}/${ATTEMPTS.length} settled, ${pending} pending`;
+    return;
+  }
+  verdictEl.className = reached === 0 ? "contained" : "escaped";
+  verdictEl.textContent = reached === 0
+    ? `CONTAINED \u2014 all ${ATTEMPTS.length} in-page attempts denied`
+    : `ESCAPED \u2014 ${reached}/${ATTEMPTS.length} attempts reached the network`;
+  document.title = reached === 0 ? "VERDICT CONTAINED" : "VERDICT ESCAPED";
+  foot.textContent = `all attempts settled in ${Date.now() - started} ms; kernel counters for this run are in probes.txt`;
+}
+
+Promise.all(ATTEMPTS.map(attemptOne)).then(() => {
+  // One extra paint so a screenshot taken right after allSettled shows the final banner.
+  requestAnimationFrame(() => requestAnimationFrame(() => { document.body.dataset.probeDone = "1"; }));
+});
+</script>
+</body>
+</html>
