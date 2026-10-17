@@ -13,7 +13,13 @@ import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { type AddressInfo, createServer, type Server, type Socket } from "node:net";
 import { Duplex, PassThrough, type Readable, type Writable } from "node:stream";
 import { type SupervisorToAgent, splitLines } from "@freebot/sandbox-agent";
-import { dockerCli, dockerFailure, dockerOutcome, spawnDockerCli } from "./docker-cli.ts";
+import {
+  collectDockerOutcome,
+  dockerCli,
+  dockerFailure,
+  dockerOutcome,
+  spawnDockerCli,
+} from "./docker-cli.ts";
 import { ensurePinnedImage } from "./image.ts";
 import {
   type DetachedExec,
@@ -86,6 +92,7 @@ function envFlags(env: Readonly<Record<string, string>> | undefined): string[] {
   return Object.entries(env ?? {}).flatMap(([key, value]) => ["-e", `${key}=${value}`]);
 }
 
+/** Buffered collection for the stream path, which is caller-owned and deliberately unbounded. */
 function collect(child: ChildProcessWithoutNullStreams): Promise<ExecResult> {
   const stdout: Buffer[] = [];
   const stderr: Buffer[] = [];
@@ -234,14 +241,16 @@ export class DockerAdapter implements SandboxProvider {
       ...cmd,
     ];
     const child = spawnDockerCli(args);
-    const result = collect(child);
+    if (options.stream === true) {
+      return { stdout: child.stdout, stderr: child.stderr, result: collect(child) };
+    }
+    const outcome = await collectDockerOutcome(child);
+    if (outcome.timedOut) throw dockerFailure(args, outcome);
     if (options.detached === true) {
-      const outcome = await result;
       if (outcome.exitCode !== 0) throw dockerFailure(args, outcome);
       return { started: true };
     }
-    if (options.stream === true) return { stdout: child.stdout, stderr: child.stderr, result };
-    return result;
+    return { exitCode: outcome.exitCode, stdout: outcome.stdout, stderr: outcome.stderr };
   }
 
   async upload(handle: SandboxHandle, localPath: string, remotePath: string): Promise<void> {

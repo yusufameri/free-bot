@@ -119,9 +119,11 @@ Errors are typed, and the message is literal and assertable.
 | `docker_cli` | CLI boundary | non-zero exit or timeout, with docker's own stderr and the argument vector in the message |
 | `link_error` | `tunnel` | no supervisor port file, no handshake, or a first line that is not an `attached` frame |
 
-`exec` does not throw for a command that ran and failed: the exit code is data in `ExecResult`.
-Every CLI call is bounded (120s; 600s for a first image build), so a stuck daemon becomes a
-`docker_cli` error instead of a hang.
+`exec` does not throw for a command that ran and failed: the exit code is data in `ExecResult`. A
+buffered or detached `exec` is bounded like every other call (120s; 600s for a first image build), so a
+stuck daemon becomes a `docker_cli` error instead of a hang. A streamed `exec` is the one unbounded
+call: its lifetime is the command's, nothing here kills it, and its `result` settles when the command
+itself exits.
 
 ## The tunnel
 

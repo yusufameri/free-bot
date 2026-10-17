@@ -11,6 +11,8 @@ export interface DockerOutcome {
   readonly exitCode: number;
   readonly stdout: Buffer;
   readonly stderr: Buffer;
+  /** The deadline fired and the child was killed; the exit code is this boundary's `-1`, not docker's. */
+  readonly timedOut: boolean;
 }
 
 export function dockerBinary(): string {
@@ -24,12 +26,15 @@ export function dockerBinary(): string {
 export const DOCKER_CLI_TIMEOUT_MS = 120_000;
 export const DOCKER_BUILD_TIMEOUT_MS = 600_000;
 
-/** Run the CLI to completion. Never throws; callers decide which exit codes are failures. */
-export function dockerOutcome(
-  args: readonly string[],
+/**
+ * Collect a spawned CLI process under a deadline. On expiry the child is killed and the outcome is
+ * marked `timedOut`, with the marker appended to stderr so docker's own text stays in the message.
+ * Never throws; callers decide which outcomes are failures.
+ */
+export function collectDockerOutcome(
+  child: ChildProcessWithoutNullStreams,
   timeoutMs: number = DOCKER_CLI_TIMEOUT_MS,
 ): Promise<DockerOutcome> {
-  const child = spawn(dockerBinary(), [...args], { stdio: "pipe" });
   const stdout: Buffer[] = [];
   const stderr: Buffer[] = [];
   child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
@@ -38,18 +43,31 @@ export function dockerOutcome(
     let settled = false;
     const timer = setTimeout(() => {
       child.kill();
-      finish(-1, `timed out after ${timeoutMs}ms`);
+      finish(-1, `timed out after ${timeoutMs}ms`, true);
     }, timeoutMs);
-    const finish = (exitCode: number, tail?: string) => {
+    const finish = (exitCode: number, tail?: string, timedOut = false) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       if (tail !== undefined) stderr.push(Buffer.from(tail));
-      resolve({ exitCode, stdout: Buffer.concat(stdout), stderr: Buffer.concat(stderr) });
+      resolve({
+        exitCode,
+        stdout: Buffer.concat(stdout),
+        stderr: Buffer.concat(stderr),
+        timedOut,
+      });
     };
     child.on("error", (error) => finish(-1, `spawn failed: ${error.message}`));
     child.on("close", (code) => finish(code ?? -1));
   });
+}
+
+/** Run the CLI to completion. Never throws; callers decide which exit codes are failures. */
+export function dockerOutcome(
+  args: readonly string[],
+  timeoutMs: number = DOCKER_CLI_TIMEOUT_MS,
+): Promise<DockerOutcome> {
+  return collectDockerOutcome(spawn(dockerBinary(), [...args], { stdio: "pipe" }), timeoutMs);
 }
 
 /** Run the CLI and fail loudly on a non-zero exit or a timeout. Returns trimmed stdout. */
