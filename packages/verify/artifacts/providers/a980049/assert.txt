@@ -1,0 +1,89 @@
+feature: providers
+command: bun packages/providers/scripts/evidence.ts
+timestamp: 2026-10-17T14:52:28.638Z
+git sha: a980049d0d892f15bbe92d8ead42aab9a2ca239c
+git sha short: a980049
+branch: u1.6-providers
+runtime: bun 1.2.5 on darwin arm64
+
+step lint: PASS
+step typecheck: PASS
+step typecheck-providers: PASS
+step tests: PASS
+step verify: PASS
+step smoke-replay: PASS
+step live-probe: PARKED (G1 BYOK key absent)
+step verify-scope: removed the scaffold artifact dir this run wrote (outside this unit's artifact scope)
+
+PASS providers gates
+step key-scan: PASS (0 key values in this artifact and packages/providers)
+
+== capability flags, replay mode [replay] ==
+fixture: packages/pi-bridge/fixtures/rpc-handshake.jsonl
+connection (from the recording): provider=stub model=stub-1 baseUrl=http://127.0.0.1:63501/v1 keyPresent=false
+[replay] toolCalling: strong
+[replay] streaming: true
+[replay] structuredOutput: unknown
+[replay] contextWindow: 128000
+[replay] note: native tool call(s): gated_echo
+[replay] note: structured output unknown: path not exercised
+[replay] note: execution gated_echo: ran clean
+[replay] observed turn: toolCalls=1 names=gated_echo textDeltas=1 toolCallDeltas=2 assistantMessages=2 executions=gated_echo:ok settled=true
+[replay] commands written: {"id":"models-1","type":"get_available_models"} | {"id":"turn-echo","type":"prompt","message":"spike: call gated_echo"}
+
+== malformed tool-call shapes [replay] ==
+[replay] arguments: well-formed object -> args={"text":"hi"} repairs=[]
+[replay] arguments: arguments arrive as an object -> args={"text":"hi"} repairs=[arguments arrived as an object, not a string]
+[replay] arguments: absent arguments -> args={} repairs=[absent arguments read as {}]
+[replay] arguments: blank arguments -> args={} repairs=[absent arguments read as {}]
+[replay] arguments: fenced object -> args={"text":"hi"} repairs=[markdown fence stripped]
+[replay] arguments: prose before the object -> args={"text":"hi"} repairs=[surrounding text dropped, first JSON object kept]
+[replay] arguments: two objects back to back -> args={"a":1} repairs=[surrounding text dropped, first JSON object kept]
+[replay] arguments: escaped quotes inside a string -> args={"text":"say \"hi\""} repairs=[]
+[replay] arguments: trailing comma -> ProviderMalformedToolCallError toolName=freebot_smoke_echo reason="the JSON object in the arguments did not parse: JSON Parse error: Property name must be a string literal" rawArguments="{\"text\":\"hi\",}"
+[replay] arguments: bare array -> ProviderMalformedToolCallError toolName=freebot_smoke_echo reason="arguments are not a JSON object" rawArguments="[1,2]"
+[replay] arguments: truncated object -> ProviderMalformedToolCallError toolName=freebot_smoke_echo reason="arguments are an incomplete JSON object" rawArguments="{\"text\":\"hi"
+[replay] arguments: no JSON at all -> ProviderMalformedToolCallError toolName=freebot_smoke_echo reason="arguments contain no JSON object" rawArguments="text=hi"
+[replay] arguments: a number -> ProviderMalformedToolCallError toolName=freebot_smoke_echo reason="arguments are neither a string nor an object: number" rawArguments="42"
+
+== client error shapes, scripted transport [replay] ==
+[replay] status 400 -> ProviderHttpError
+[replay] status 401 -> ProviderAuthError
+[replay] status 403 -> ProviderAuthError
+[replay] status 404 -> ProviderHttpError
+[replay] status 429 -> ProviderRateLimitError
+[replay] status 500 -> ProviderHttpError
+[replay] status 503 -> ProviderHttpError
+[replay] error: 401 credential rejected -> ProviderAuthError status=401 detail=auth rejected (401): Incorrect API key provided
+[replay] error: 403 forbidden -> ProviderAuthError status=403 detail=auth rejected (403): Project is disabled
+[replay] error: 429 with a retry-after header -> ProviderRateLimitError status=429 retryAfterMs=2000 detail=rate limited (429): Rate limit reached
+[replay] error: 429 with a body retry_after -> ProviderRateLimitError status=429 retryAfterMs=3000 detail=rate limited (429): slow down
+[replay] error: 500 without a message -> ProviderHttpError status=500 body="{\"error\":{}}"
+[replay] error: refusal on the message -> ProviderRefusalError finishReason=stop raw="I cannot help."
+[replay] error: refusal by finish_reason -> ProviderRefusalError finishReason=content_filter raw="blocked"
+[replay] error: malformed tool call -> ProviderMalformedToolCallError toolName=freebot_smoke_echo reason="arguments are an incomplete JSON object" rawArguments="{\"text\":\"hi"
+[replay] error: a body that is not JSON -> ProviderTransportError detail=response body is not JSON: JSON Parse error: Unexpected identifier "gateway"
+[replay] error: a stream whose argument deltas never form JSON -> ProviderMalformedToolCallError toolName=freebot_smoke_echo reason="JSON Parse error: Unexpected EOF" rawArguments="{\"text\":"
+[replay] error: deadline -> ProviderTimeoutError timeoutMs=20
+
+== structured fallback: prompt and parse [replay] ==
+[replay] fallback: bare JSON tool call -> tool_call freebot_smoke_echo args={"text":"hi"}
+[replay] fallback: fenced JSON with prose around it -> tool_call freebot_smoke_echo args={"text":"hi"} repairs=[surrounding text dropped, first JSON object kept]
+[replay] fallback: the {name, arguments} spelling -> tool_call freebot_smoke_echo args={"text":"hi"} repairs=[read {name, arguments} instead of {tool, arguments}]
+[replay] fallback: tool null with text -> text "nothing to do" (no tool needed)
+[replay] fallback: prose only -> failed reason="no JSON object in the reply" raw="Nope, I only chat."
+[replay] fallback: truncated JSON -> failed reason="the reply's JSON object is incomplete" raw="{\"tool\":\"freebot_smoke_echo\",\"arguments\":{\"text\":\"hi\""
+[replay] fallback: JSON with no tool key -> failed reason="the JSON object carried no tool key" raw="{\"text\":\"hi\"}"
+[replay] fallback: arguments as a string, not an object -> failed reason="the tool arguments did not parse: malformed tool call for freebot_smoke_echo: arguments contain no JSON object" raw="{\"tool\":\"freebot_smoke_echo\",\"arguments\":\"hi\"}"
+[replay] parse "{\"tool\":\"freebot_smoke_echo\",\"arguments\":{\"text\":\"hi\"}}" -> tool_call
+[replay] parse "Sure:\n```json\n{\"tool\":\"freebot_smoke_echo\",\"arguments\":{\"text\":\"hi\"}}\n```\nDone." -> tool_call
+[replay] parse "{\"name\":\"freebot_smoke_echo\",\"arguments\":{\"text\":\"hi\"}}" -> tool_call
+[replay] parse "{\"tool\":null,\"text\":\"nothing to do\"}" -> text
+[replay] parse "Nope, I only chat." -> invalid
+[replay] parse "{\"tool\":\"freebot_smoke_echo\",\"arguments\":{\"text\":\"hi\"" -> invalid
+[replay] parse "{\"text\":\"hi\"}" -> invalid
+[replay] parse "{\"tool\":\"freebot_smoke_echo\",\"arguments\":\"hi\"}" -> invalid
+
+== live probe [live] ==
+parked: G1 BYOK key absent (presence-only check; no key was read, requested, or logged)
+live command once the key exists: bun packages/providers/scripts/smoke.ts <baseUrl> <model>
