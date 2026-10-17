@@ -324,7 +324,8 @@ p6a_buckets="$(buckets_since "$b_common")"
 p6a_ms="$LAST_MS"
 p6a_samples="$(wc -l <"$WORK/p6a.cmdline" | tr -d ' ')"
 p6a_dom_bytes="$(wc -c <"$LAST_DOM" | tr -d ' ')"
-p6a_cmdline_flag="$(grep -c -- '--disable-quic' "$WORK/p6a.cmdline" || true)"
+p6a_cmdline_flag="$(grep -c -- '--disable-quic' "$WORK/p6a.cmdline" 2>/dev/null || true)"
+[ -z "$p6a_cmdline_flag" ] && p6a_cmdline_flag=0
 p6a_quic="$(netlog_quic_facts "$WORK/p6a-quic-forced.netlog.json")"
 p6a_net_flag="$(grep '^NETSERVICE:' "$WORK/p6a.cmdline" 2>/dev/null | grep -c -- '--disable-quic' || true)"
 b_common="$(buckets_now)"
@@ -333,11 +334,14 @@ p6b_buckets="$(buckets_since "$b_common")"
 p6b_ms="$LAST_MS"
 p6b_samples="$(wc -l <"$WORK/p6b.cmdline" | tr -d ' ')"
 p6b_dom_bytes="$(wc -c <"$LAST_DOM" | tr -d ' ')"
-p6b_cmdline_flag="$(grep -c -- '--disable-quic' "$WORK/p6b.cmdline" || true)"
+p6b_cmdline_flag="$(grep -c -- '--disable-quic' "$WORK/p6b.cmdline" 2>/dev/null || true)"
+[ -z "$p6b_cmdline_flag" ] && p6b_cmdline_flag=0
 p6b_quic="$(netlog_quic_facts "$WORK/p6b-quic-forced-disabled.netlog.json")"
 p6b_net_flag="$(grep '^NETSERVICE:' "$WORK/p6b.cmdline" 2>/dev/null | grep -c -- '--disable-quic' || true)"
 p6a_443="$(printf '%s' "$p6a_buckets" | sed 's|+\([0-9]*\)/+.*|\1|')"
 p6b_443="$(printf '%s' "$p6b_buckets" | sed 's|+\([0-9]*\)/+.*|\1|')"
+case "$p6a_443" in ''|*[!0-9]*) p6a_443=0 ;; esac
+case "$p6b_443" in ''|*[!0-9]*) p6b_443=0 ;; esac
 if [ "$p6a_443" -gt 0 ] && [ "$p6a_dom_bytes" -eq 0 ] && [ "$p6a_cmdline_flag" -eq 0 ] && [ "$p6b_443" -eq 0 ] && [ "$p6b_dom_bytes" -eq 0 ] && [ "$p6b_cmdline_flag" -gt 0 ]; then
   record p6 PASS "QUIC is denied at the kernel and --disable-quic removes the attempt. Without it: the forced navigation emitted $p6a_443 datagrams to udp/443 inside ${p6a_ms}ms (bucket +443/+53/+other = $p6a_buckets; the /53 packets are the browser's own lookups), rendered nothing, and the netlog records QUIC failures:$p6a_quic; its real Chromium process cmdline (sampled $p6a_samples times) does not carry --disable-quic ($p6a_cmdline_flag). With it: the identical navigation emitted 0 datagrams to udp/443 (+443/+53/+other = $p6b_buckets, the /53 remainder is the same background lookups during ${p6b_ms}ms of denied TCP), rendered nothing, netlog QUIC:$p6b_quic, and --disable-quic is present in the real process cmdline ($p6b_cmdline_flag of $p6b_samples samples; network-service cmdline carries it $p6b_net_flag times)."
 else
