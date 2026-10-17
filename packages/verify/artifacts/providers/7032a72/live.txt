@@ -1,8 +1,8 @@
 feature: providers, the live half (outside the gate)
 command: bun packages/providers/scripts/smoke.ts <baseUrl> <model>
   baseUrl and model come from FREEBOT_BYOK_BASE_URL and FREEBOT_BYOK_MODEL
-when: 2026-10-17T19:52Z
-git sha: 86da80c0febc587517de2994ee2222e80531f29a
+when: 2026-10-17T19:58Z
+git sha: 7032a72c9c7c01e2cc35f103e9c42c7b6dad8f66
 key: read by Pi's own !command out of ~/.freebot/provider.env; no key value in this file or in the
   smoke's environment, and the smoke's report carries keyPresent as a boolean
 

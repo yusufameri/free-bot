@@ -6,9 +6,10 @@ adapter the Phase 1 MVP runs Pi-in-sandbox on. Interface and error types live in
 against the strictest adapter (boat: screen, suspend, fork), not against Docker, so E2B and boat
 fill in capabilities without a redesign.
 
-Artifact: `packages/verify/artifacts/sandbox-provider/86da80c/assert.txt`, produced by
-`bun test packages/sandbox/src/docker.test.ts` at commit `86da80c0febc587517de2994ee2222e80531f29a` on
-branch `u2.2-test-isolation`. U1.2's run of the same suite is `4f44e98/assert.txt`.
+Artifact: `packages/verify/artifacts/sandbox-provider/7032a72/assert.txt`, produced by
+`bun test packages/sandbox/src/docker.test.ts` at commit `7032a72c9c7c01e2cc35f103e9c42c7b6dad8f66` on
+branch `u2.2-test-isolation` (the merge with U2.1's run path). U1.2's run of the same suite is
+`4f44e98/assert.txt`.
 
 ## Running the integration suite
 

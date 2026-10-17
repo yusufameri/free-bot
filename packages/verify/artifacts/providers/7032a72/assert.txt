@@ -1,8 +1,8 @@
 feature: providers
 command: bun packages/providers/scripts/evidence.ts
-timestamp: 2026-10-17T19:53:26.621Z
-git sha: 86da80c0febc587517de2994ee2222e80531f29a
-git sha short: 86da80c
+timestamp: 2026-10-17T19:57:33.385Z
+git sha: 7032a72c9c7c01e2cc35f103e9c42c7b6dad8f66
+git sha short: 7032a72
 branch: u2.2-test-isolation
 runtime: bun 1.2.5 on darwin arm64
 
