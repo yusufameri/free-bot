@@ -1,0 +1,23 @@
+{
+  "pi": {
+    "firstSeq": 1,
+    "lastSeq": 106,
+    "count": 106,
+    "gaps": [],
+    "duplicates": [],
+    "suppressedAtIngest": [],
+    "gapEvents": [],
+    "rejected": 0
+  },
+  "display": {
+    "firstSeq": 1,
+    "lastSeq": 38,
+    "count": 38,
+    "gaps": [],
+    "duplicates": [],
+    "suppressedAtIngest": [],
+    "gapEvents": [],
+    "rejected": 0
+  },
+  "minted": 106
+}

@@ -15,6 +15,7 @@ directory per feature and git short sha. The row records the commit the artifact
 | browser containment spike | `bash spikes/browser-containment/run.sh` | spike-verified (7/7 browser probes inside the default-deny netns, UDP attributed by port bucket) | `packages/verify/artifacts/containment-browser/27cf9de/probes.txt` | 27cf9dee665547356177d8c0ce3d39b2c8f623b9 | 2026-10-17 |
 | forge test A | `bun spikes/forge-test-a/run.ts` | spike-verified (91/91 checks: matrix a–i plus positive controls and a throwing handler, every row read by literal in-VM canary reads, seq 1..239 with zero gaps and zero duplicates across a SIGKILLed composer; keyless stub model) | `packages/verify/artifacts/forge-test-a/a46071c/assert.txt` | a46071ce2b0108ad5d1d650a3a55ba4225520ced | 2026-10-17 |
 | web-stream spike | `bun spikes/web-stream/run.ts` | spike-verified (59/59 CDP checks, both approval paths, reconnect resume with duplicate ignored, 12 frame captures) | `packages/verify/artifacts/web-stream/35bd852/assert.txt` | 35bd8529a9b1f7986052838a8e4adbab2d901267 | 2026-10-17 |
+| mvp smoke dry run | `bun spikes/mvp-smoke/run.ts` | spike-verified (60/60 checks: the whole pipeline keyless end to end, approval allow and deny through the real grant gate, a mid-task relay+composer SIGKILL with page resume, zero gaps and zero duplicates across both logs; keyless stub model) | `packages/verify/artifacts/mvp-smoke/7ce8f5e/assert.txt` | 7ce8f5e959bf816819b671089999e22b0537f8cb | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, the pi-bridge client, and the
 sandbox image pin. The scaffold row covers workspace shape, typecheck, the `apps/server` health test,
@@ -47,7 +48,11 @@ sandbox image plus U0.3's dialog intercept and U0.8's ledger behind one host com
 scenario rows (no grant, mismatch, expired, consumed, tombstoned, forged, unknown tool, native bash
 and file-write positive controls, a throwing handler, and a SIGKILLed control plane mid-gated-call)
 each verified by a literal read of a canary path inside the container rather than by the gate's
-return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. Every later feature
-gets its own row when its script
-lands.
+return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. The mvp smoke dry
+run row covers the U0.11 composition of the whole Phase 0 pipeline under one command: the pinned
+image plus the landed tool-gate extension, the U0.7 tunnel, the U0.8 ledger and policy, and the
+U0.10 page, driven by the keyless stub model through one approval allow, one page denial, a ledger
+`grant_consumed` repeat, and a mid-task SIGKILL of the relay and the composer with a page resume
+from its last display seq; its shape, limits, and follow-ups are in `docs/mvp-smoke-dry-run.md`.
+Every later feature gets its own row when its script
 lands.

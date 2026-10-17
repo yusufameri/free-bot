@@ -1,0 +1,38 @@
+{"seq":1,"type":"turn_start","payload":{"turn":1}}
+{"seq":2,"type":"message_delta","payload":{"text":"calling "}}
+{"seq":3,"type":"message_delta","payload":{"text":"bash "}}
+{"seq":4,"type":"tool_call","payload":{"toolCallId":"call_step_1","toolName":"bash","command":"bash {\"command\":\"echo one\"}","destructive":false}}
+{"seq":5,"type":"tool_result","payload":{"toolCallId":"call_step_1","ok":true,"denied":false,"output":"one\n","durationMs":6}}
+{"seq":6,"type":"turn_end","payload":{"turn":1}}
+{"seq":7,"type":"turn_start","payload":{"turn":2}}
+{"seq":8,"type":"message_delta","payload":{"text":"calling "}}
+{"seq":9,"type":"message_delta","payload":{"text":"bash "}}
+{"seq":10,"type":"tool_call","payload":{"toolCallId":"call_step_2","toolName":"bash","command":"bash {\"command\":\"rm -f /scratch/task/doomed.txt\"}","destructive":true}}
+{"seq":11,"type":"approval_request","payload":{"approvalId":"gate-2","toolCallId":"call_step_2","command":"bash {\"command\":\"rm -f /scratch/task/doomed.txt\"}"}}
+{"seq":12,"type":"approval_resolved","payload":{"approvalId":"gate-2","decision":"allow"}}
+{"seq":13,"type":"tool_result","payload":{"toolCallId":"call_step_2","ok":true,"denied":false,"output":"(no output)","durationMs":3}}
+{"seq":14,"type":"turn_end","payload":{"turn":2}}
+{"seq":15,"type":"turn_start","payload":{"turn":3}}
+{"seq":16,"type":"message_delta","payload":{"text":"calling "}}
+{"seq":17,"type":"message_delta","payload":{"text":"bash "}}
+{"seq":18,"type":"tool_call","payload":{"toolCallId":"call_step_3","toolName":"bash","command":"bash {\"command\":\"sleep 3 && echo two\"}","destructive":false}}
+{"seq":19,"type":"tool_result","payload":{"toolCallId":"call_step_3","ok":true,"denied":false,"output":"two\n","durationMs":3019}}
+{"seq":20,"type":"turn_end","payload":{"turn":3}}
+{"seq":21,"type":"turn_start","payload":{"turn":4}}
+{"seq":22,"type":"message_delta","payload":{"text":"calling "}}
+{"seq":23,"type":"message_delta","payload":{"text":"bash "}}
+{"seq":24,"type":"tool_call","payload":{"toolCallId":"call_step_4","toolName":"bash","command":"bash {\"command\":\"rm -f /scratch/task/doomed.txt\"}","destructive":true}}
+{"seq":25,"type":"tool_result","payload":{"toolCallId":"call_step_4","ok":false,"denied":true,"output":"","durationMs":null}}
+{"seq":26,"type":"turn_end","payload":{"turn":4}}
+{"seq":27,"type":"turn_start","payload":{"turn":5}}
+{"seq":28,"type":"message_delta","payload":{"text":"calling "}}
+{"seq":29,"type":"message_delta","payload":{"text":"bash "}}
+{"seq":30,"type":"tool_call","payload":{"toolCallId":"call_step_5","toolName":"bash","command":"bash {\"command\":\"rm -f /scratch/task/doomed2.txt\"}","destructive":true}}
+{"seq":31,"type":"approval_request","payload":{"approvalId":"gate-5","toolCallId":"call_step_5","command":"bash {\"command\":\"rm -f /scratch/task/doomed2.txt\"}"}}
+{"seq":32,"type":"approval_resolved","payload":{"approvalId":"gate-5","decision":"deny"}}
+{"seq":33,"type":"tool_result","payload":{"toolCallId":"call_step_5","ok":false,"denied":true,"output":"","durationMs":null}}
+{"seq":34,"type":"turn_end","payload":{"turn":5}}
+{"seq":35,"type":"turn_start","payload":{"turn":6}}
+{"seq":36,"type":"message_delta","payload":{"text":"script complete."}}
+{"seq":37,"type":"turn_end","payload":{"turn":6}}
+{"seq":38,"type":"stream_end","payload":{}}

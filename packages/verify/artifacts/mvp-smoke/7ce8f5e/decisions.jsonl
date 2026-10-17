@@ -1,0 +1,5 @@
+{"at":1792224814169,"requestId":"gate-1","toolCallId":"call_step_1","toolName":"bash","args":{"command":"echo one"},"allow":true,"code":"allow","reason":"","via":"policy_auto_grant","grantId":"grant-1"}
+{"at":1792224815060,"requestId":"gate-2","toolCallId":"call_step_2","toolName":"bash","args":{"command":"rm -f /scratch/task/doomed.txt"},"allow":true,"code":"allow","reason":"","via":"page_allow_once","grantId":"grant-2"}
+{"at":1792224815166,"requestId":"gate-3","toolCallId":"call_step_3","toolName":"bash","args":{"command":"sleep 3 && echo two"},"allow":true,"code":"allow","reason":"","via":"policy_auto_grant","grantId":"grant-3"}
+{"at":1792224818308,"requestId":"gate-4","toolCallId":"call_step_4","toolName":"bash","args":{"command":"rm -f /scratch/task/doomed.txt"},"allow":false,"code":"grant_consumed","reason":"grant_consumed: grant grant-2 consumed by call_step_2","via":"policy","grantId":null}
+{"at":1792224818457,"requestId":"gate-5","toolCallId":"call_step_5","toolName":"bash","args":{"command":"rm -f /scratch/task/doomed2.txt"},"allow":false,"code":"user_denied","reason":"user_denied: the page denied the approval card","via":"page_deny","grantId":null}

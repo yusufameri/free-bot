@@ -1,0 +1,34 @@
+## supervisor.log
+[supervisor] listening host=127.0.0.1 port=35683
+[supervisor] agent attached acked=0 replay=0 last_seq=0
+[supervisor] boot ok pi_pid=39
+[supervisor] prompt sent id=prompt-1
+[supervisor] gate ask id=gate-1 tool=bash
+[supervisor] gate answer id=gate-1 tool=bash
+[supervisor] gate ask id=gate-2 tool=bash
+[supervisor] gate answer id=gate-2 tool=bash
+[supervisor] gate ask id=gate-3 tool=bash
+[supervisor] gate answer id=gate-3 tool=bash
+[supervisor] gate ask id=gate-4 tool=bash
+[supervisor] gate answer id=gate-4 tool=bash
+[supervisor] gate ask id=gate-5 tool=bash
+[supervisor] gate answer id=gate-5 tool=bash
+[supervisor] pi settled seq=106
+
+## agent.log
+[agent] supervisor link open
+[agent] attached acked=0 supervisor_last_seq=0
+[agent] tunnel open last_seen_seq=0 reconnects=0
+[agent] tunnel closed; reconnecting in 250ms
+[agent] tunnel open last_seen_seq=58 reconnects=1
+
+## composer.log
+[composer] listening port=53225
+[composer] pi frames loaded n=58 last_seq=58; display n=18 last_seq=18; grants=3
+[composer] page attached last_seen_seq=18 display_last_seq=18
+[composer] agent attached last_seen_seq=58 log_last_seq=58
+[composer] decision id=gate-4 tool=bash call=call_step_4 code=grant_consumed via=policy reason=grant_consumed: grant grant-2 consumed by call_step_2
+[composer] page answer approvalId=gate-5 decision=deny
+[composer] decision id=gate-5 tool=bash call=call_step_5 code=user_denied via=page_deny reason=user_denied: the page denied the approval card
+## relay.log
+[relay] listening on 0.0.0.0:53226 -> 127.0.0.1:53225
