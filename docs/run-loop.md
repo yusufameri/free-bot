@@ -128,17 +128,14 @@ Driving a run to completion over these routes is proven with a fake sandbox in
 
 U1.3 landed after this unit's brief was written and carries its own run surface: `control-plane.ts`
 mints `run.started` and a cancel with its own run table over its own `SeqLog`, and `router.ts`
-implements `start_run`, `cancel_run`, `get_run` and `subscribe_events` behind the auth gate. That is
-the placeholder this unit was expected to replace, and the two surfaces are now both present, which
-is the wrong end state.
+implements `start_run`, `cancel_run`, `get_run` and `subscribe_events` behind the auth gate. That was
+the placeholder this unit was expected to replace, and for one unit's duration both surfaces were
+present.
 
-The resolution this unit did NOT take, because it would rewrite another unit's landed proof: the
-loop's ports should sit behind that control plane, with `ControlPlane.startRun` calling the loop
-instead of minting its own events, `subscribe_events` reading the loop's one log, and the approve and
-deny operations answered by the consent port. The Hono routes here then go away entirely. Doing it
-means changing U1.3's `control-plane.ts`, `router.ts` and their tests, which is a decision for the
-coordinator with the review in hand, not a silent edit inside this PR. Until then, one run has two
-ways to be started and only this one executes anything.
+U2.1 performed the resolution: `control-plane.ts` and the Hono `runRoutes` are deleted, the oRPC
+router drives `RunService` directly, and the page's own stream is a second transport over the same
+log. The Hono table under "The endpoints" below is historical. `docs/one-run-path.md` is the current
+record.
 
 ## What the evidence run proves
 
@@ -178,8 +175,9 @@ survives until the run removes it itself.
   neither, and a keyed provider is what makes the check meaningful.
 - **The gate's allow carries no grant id**, so `tool_call.decision` cannot name the grant it consumed.
   `docs/protocol.md` already carries this follow-up.
-- **`packages/ui` renders no run status.** The additive kind needed one arm in `thread.ts`'s
-  exhaustive reducer or the root typecheck fails, and that arm applies the message and renders
-  nothing. The surface that shows a run's status adopts the payload.
+- **`packages/ui` renders no grant lifecycle or turn marker for a live run.** The `run.status` arm
+  this unit noted as missing was added in U2.1: the page now renders the run's own transitions, so a
+  parked run does not look frozen. `grant.lifecycle` frames are emitted by no landed producer, so the
+  page's arm for them renders nothing yet.
 - **oRPC.** The routes are the DTO shapes over HTTP; the `@orpc/contract` wiring is the mechanical
   pass `docs/protocol.md` names.

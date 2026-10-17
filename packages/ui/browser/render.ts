@@ -251,6 +251,15 @@ export function mountThread(config: {
         threadEl.append(marker);
         break;
       }
+      case "run.status": {
+        // The run's own transition. Without this arm the frame is applied to the model and rendered
+        // nowhere, so a run parked at the gate looks like a run that froze.
+        const marker = el("div", "frame run-status", `run ${message.payload.status}`);
+        marker.dataset.seq = String(message.seq);
+        marker.dataset.runStatus = message.payload.status;
+        threadEl.append(marker);
+        break;
+      }
       case "run.finished": {
         const marker = el("div", "frame run-finished", "stream complete");
         marker.dataset.seq = String(message.seq);

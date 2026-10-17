@@ -39,6 +39,15 @@ page in the operator's browser, or any process that can make the browser resolve
 `GET /healthz` runs check 1 only. It answers a liveness question with two constant fields and no
 state, and the launcher's first question about the server is whether it is up.
 
+The page's markup (`GET /` and `GET /main.js`) also runs check 1 only. It is static markup carrying no
+run state and no credential, and the token the page needs it cannot receive as a header on a browser
+navigation. U2.1 gives the page that token through the **URL fragment**
+(`http://127.0.0.1:<port>/#token=<token>`), which a browser never sends to a server, and the page
+copies it into the query string of its `/events` upgrade, where check 3 reads it like any other
+WebSocket leg. The consequence, stated plainly: what a page request discloses without a token is this
+app's own HTML and JavaScript, which any local process could read from the repository anyway.
+`docs/one-run-path.md` carries the rest.
+
 The tunnel leg runs the same order on its HTTP reads (`/events`, `/audit`, `/healthz`) with
 `TUNNEL_HOSTNAMES`, and check 2 on its two WebSocket upgrades. It runs no token check, for the reason
 given under "Two listeners, two gates".
@@ -55,8 +64,10 @@ header value.
   script asserts the token appears exactly once in the server's whole output, that no `[auth]` line
   carries it, and refuses to write an artifact containing it.
 - **Accepted** as `Authorization: Bearer <token>` on `POST /rpc`, and as `?token=` on the
-  `ws://…/rpc-ws` upgrade, because a browser cannot set headers on a WebSocket. The query is read
-  only on that path.
+  `ws://…/rpc-ws` and `ws://…/events` upgrades, because a browser cannot set headers on a WebSocket.
+  The query is read only on those two paths.
+- **Presented by the page** through its URL fragment, which no server ever receives, and forwarded
+  from there into the `/events` query string. See the page paragraph above.
 - **Replaced** every launch: the process mints a new one, so a token from a previous run is refused.
 - **Injected**, when a launcher already holds one: `startApiServer({ token })`. A launcher that
   injects a token does not print it. This is the seam the Electron preload uses to hand the token to
@@ -74,8 +85,10 @@ header value.
   could otherwise read the log. Its HTTP reads carry the `Host` check with that allowance, because a
   rebound page's `fetch` to its own hostname is same-origin: it sends no `Origin` and CORS does not
   apply, so `Host` is the only control that covers those reads.
-- The **API leg** (`api-server.ts`, `API_PORT`): `POST /rpc`, `ws://…/rpc-ws`, `/healthz`. The full
-  gate. The agent never holds the operator token, so the sandbox cannot drive the operator's API.
+- The **API leg** (`api-server.ts`, `API_PORT`): `POST /rpc`, `ws://…/rpc-ws`, `ws://…/events`, the
+  page markup (`GET /`, `GET /main.js`), `/healthz`. The full gate on every path that can start a run
+  or read the log; the `Host` check alone on the static page and on liveness. The agent never holds
+  the operator token, so the sandbox cannot drive the operator's API.
 
 The tunnel leg carries **no token**, by design: the sandbox must not hold the operator's token, and
 what `/events` and `/audit` serve is the seq log its own frames fill, so a token there would be a
