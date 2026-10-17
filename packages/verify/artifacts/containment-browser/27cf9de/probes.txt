@@ -1,0 +1,154 @@
+feature: browser containment spike (headless Chromium inside default-deny netns, proxy-only egress)
+command: bash spikes/browser-containment/run.sh
+timestamp: 2026-10-17T07:23:52Z
+git sha: 27cf9dee665547356177d8c0ce3d39b2c8f623b9
+git sha short: 27cf9de
+branch: u0.5-browser-containment
+host: Darwin 24.3.0 arm64
+docker client: 28.3.2 darwin/arm64
+docker server: 28.3.2 linux/arm64 kernel 6.10.14-linuxkit
+docker platform: Docker Desktop | engine 28.3.2 | aarch64 | 6.10.14-linuxkit
+image: freebot-browser-containment-spike:27cf9de (FROM --platform=linux/arm64 debian:bookworm-slim + chromium nftables curl dnsutils python3 fonts)
+browser: Chromium 155.0.8059.79
+capabilities: --cap-add=NET_ADMIN, --cap-drop=NET_RAW (NET_RAW is in Docker's default set; nothing here needs it). --privileged: no.
+network: docker default bridge, --add-host=host.docker.internal:host-gateway
+kernel policy: nft table inet freebot_containment, output hook policy drop, applied by spikes/browser-containment/entrypoint.sh (copy of the U0.4 entrypoint)
+proxy: bun spikes/browser-containment/proxy.ts (copy of the U0.4 throwaway proxy) on 127.0.0.1:8788 (host), resolves DNS itself
+origin: bun spikes/browser-containment/origin.ts on 127.0.0.1:9109 (host), the page served by us for the through-proxy control
+
+--- container browser probes (docker run, exit 0) ---
+=== containment policy ===
+proxy host: host.docker.internal (192.168.65.254:8788)
+capabilities (effective, of this process):
+CapEff:	00000000a80415fb
+capabilities decoded: CHOWN, DAC_OVERRIDE, FOWNER, FSETID, KILL, SETGID, SETUID, SETPCAP, NET_BIND_SERVICE, NET_ADMIN, SYS_CHROOT, MKNOD, AUDIT_WRITE, SETFCAP
+=== nft ruleset after entrypoint ===
+table inet freebot_containment {
+	chain output {
+		type filter hook output priority filter; policy drop;
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 drop comment "docker embedded dns"
+		oifname "lo" counter packets 0 bytes 0 accept comment "loopback"
+		ip daddr 192.168.65.254 tcp dport 8788 ct state established,related,new counter packets 0 bytes 0 accept comment "egress proxy only"
+		meta l4proto 17 counter packets 0 bytes 0 drop comment "all udp including quic"
+	}
+}
+=== end containment policy ===
+=== browser containment probes ===
+public target: https://example.com (marker: Example Domain)
+host origin: http://localhost:9109/host-origin (served by origin.ts on the host, reached through the proxy)
+ip literal: https://1.1.1.1/
+proxy: http://host.docker.internal:8788
+chromium: Chromium 155.0.8059.79 built on Debian GNU/Linux 12 (bookworm)
+flags, working arms: --headless=new --no-sandbox --disable-dev-shm-usage --disable-background-networking --hide-scrollbars --window-size=1280,900 --proxy-server=http://host.docker.internal:8788 --host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE host.docker.internal --disable-quic --proxy-bypass-list=<-loopback>
+flags, adversarial arms: --headless=new --no-sandbox --disable-dev-shm-usage --disable-background-networking --hide-scrollbars --window-size=1280,900 --no-proxy-server
+attribution buckets (counter-only rules ahead of the drop rule): udp/443 QUIC, udp/53 DNS, other UDP
+
+environment: no *_proxy variables set (checked 8 names); the browser gets its proxy from command-line flags only
+
+--- p1: https://example.com through the proxy
+PROBE(p1) PASS  proxied https://example.com rendered after 671ms; DOM contains 'Example Domain'; screenshot /out/p1-proxied-public.png (68132 bytes); udp buckets for the arm +443/+53/+other = +0/+0/+0
+
+--- p2: host-served origin through the proxy (loopback proxied too)
+PROBE(p2) PASS  host origin rendered through the proxy after 325ms; screenshot /out/p2-proxied-host-origin.png (30240 bytes); udp buckets for the arm +443/+53/+other = +0/+0/+0
+
+--- p3: navigation to https://example.com with --no-proxy-server
+PROBE(p3) PASS  denied: no page content (dom 0 bytes, screenshot bytes=0; a failed navigation writes no capture) after 212ms; udp buckets +443/+53/+other = +0/+63/+0 (the /53 part is the browser's own resolver attempts, dropped by the ruleset; each drop surfaces as ERR_ACCESS_DENIED to the browser); netlog:      69 "net_error":-10;     36 "net_error":-137;     29 "net_error":-105;      6 "net_error":-109;      2 "net_error":-3;
+
+--- p4: navigation to https://1.1.1.1/ with --no-proxy-server (no DNS involved; the fallback TCP connect is what blackholes)
+PROBE(p4) PASS  denied: no page content (dom 0 bytes, screenshot bytes=0) after 136343ms; udp buckets +443/+53/+other = +0/+174/+0 (the /53 part is the browser's own background lookups, dropped by the ruleset; this navigation opens no QUIC path of its own, and the netlog QUIC facts sit next to the numbers); netlog QUIC:  none; netlog:     174 "net_error":-10;    100 "net_error":-137;     90 "net_error":-105;     24 "net_error":-109;     15 "net_error":-118;      2 "net_error":-3;
+
+--- p5: in-page JS attempts (DoH x2, IP literal, public host, image) with --no-proxy-server
+PROBE(p5) PASS  all in-page attempts denied after 135229ms; rows: doh-hostname=DENIED(TypeError: Failed to fetch; 10ms); public-hostname=DENIED(TypeError: Failed to fetch; 10ms); http-ip-literal=DENIED(TypeError: Failed to fetch; 134905ms); doh-ip-literal=DENIED(TypeError: Failed to fetch; 134906ms); img-ip-literal=DENIED(img error event (no bytes); 134905ms); udp buckets +443/+53/+other = +0/+192/+0; screenshot /out/p5-inpage-denied.png (92808 bytes); netlog QUIC:  none; netlog:     192 "net_error":-10;    111 "net_error":-137;    103 "net_error":-105;     31 "net_error":-118;     20 "net_error":-109;      2 "net_error":-3;
+
+  note: every wall in this arm is the kernel's, and the buckets are read per arm so the browser's own
+  background traffic cannot be mistaken for the probe's: the DoH fetches and the DNS-requiring fetch
+  fail on UDP sends to port 53, the IP-literal fetches fail on TCP connect attempts, and none of it leaves.
+
+--- p6: forced QUIC at https://1.1.1.1/, twice: without --disable-quic, then with it
+         (read from the udp/443 bucket; flag presence checked in the real process; gate between arms)
+  quiescence before p6a: 0 chromium processes
+PROBE(p6) PASS  QUIC is denied at the kernel and --disable-quic removes the attempt. Without it: the forced navigation emitted 3 datagrams to udp/443 inside 204ms (bucket +443/+53/+other = +3/+42/+0; the /53 packets are the browser's own lookups), rendered nothing, and the netlog records QUIC failures: ERR_QUIC_HANDSHAKE_FAILED x5;; its real Chromium process cmdline (sampled 4 times) does not carry --disable-quic (0). With it: the identical navigation emitted 0 datagrams to udp/443 (+443/+53/+other = +0/+96/+0, the /53 remainder is the same background lookups during 134771ms of denied TCP), rendered nothing, netlog QUIC: none, and --disable-quic is present in the real process cmdline (2108 of 2109 samples; network-service cmdline carries it 1 times).
+  quiescence after p6b: before-arm 0, waited 0x0.1s, after-arm 0 chromium processes
+
+--- p7: the same in-page page with --host-resolver-rules=MAP * ~NOTFOUND (no proxy flags)
+PROBE(p7) PASS  with the resolver guard on, the same attempt set is denied after 323ms and emits nothing at all: udp buckets +443/+53/+other = +0/+0/+0 and the whole-UDP counter +0 (without the guard, p5's buckets were +443/+53/+other = +0/+192/+0), because the guard answers every non-excluded name and IP literal with NOTFOUND before any socket is opened; rows: doh-ip-literal=DENIED(TypeError: Failed to fetch; 3ms); doh-hostname=DENIED(TypeError: Failed to fetch; 3ms); http-ip-literal=DENIED(TypeError: Failed to fetch; 3ms); public-hostname=DENIED(TypeError: Failed to fetch; 3ms); img-ip-literal=DENIED(img error event (no bytes); 3ms); screenshot /out/p7-inpage-resolver-guard.png (87184 bytes)
+
+=== notes ===
+the browser never sees a *_proxy variable; every working arm passes its proxy via --proxy-server, every adversarial arm via --no-proxy-server
+chromium runs with --no-sandbox because this container's process is root; the containment under test is the netns ruleset, which --no-sandbox cannot bypass
+p2 exists because Chromium implicitly bypasses the proxy for loopback; --proxy-bypass-list=<-loopback> is what makes a proxy-local service reachable at all
+the udp/443 and udp/53 buckets are counter-only rules ahead of the drop rule; they attribute packets, they do not decide them
+===
+
+=== nft counters after probes ===
+table inet freebot_containment {
+	chain output {
+		type filter hook output priority filter; policy drop;
+		udp dport != { 53, 443 } counter packets 0 bytes 0 comment "bucket_udp_other"
+		udp dport 53 counter packets 567 bytes 38010 comment "bucket_udp53"
+		udp dport 443 counter packets 3 bytes 3834 comment "bucket_udp443"
+		ip daddr 127.0.0.11 counter packets 0 bytes 0 drop comment "docker embedded dns"
+		oifname "lo" counter packets 0 bytes 0 accept comment "loopback"
+		ip daddr 192.168.65.254 tcp dport 8788 ct state established,related,new counter packets 193 bytes 50636 accept comment "egress proxy only"
+		meta l4proto 17 counter packets 570 bytes 41844 drop comment "all udp including quic"
+	}
+}
+=== end counters ===
+
+probes failed: 0 of 7
+RESULT: PASS
+--- end container browser probes ---
+
+--- proxy log (host side; the dial lines are the proxy resolving DNS itself) ---
+proxy listening on 127.0.0.1:8788
+proxy dial clients2.google.com:80 -> 142.251.218.142:80 (family 4)
+proxy dial redirector.gvt1.com:443 -> 142.251.218.142:443 (family 4)
+proxy dial redirector.gvt1.com:443 -> 142.251.218.142:443 (family 4)
+proxy dial accounts.google.com:443 -> 142.250.141.84:443 (family 4)
+proxy dial update.googleapis.com:443 -> 142.251.218.206:443 (family 4)
+proxy dial example.com:443 -> 172.66.147.243:443 (family 4)
+proxy dial example.com:443 -> 172.66.147.243:443 (family 4)
+proxy dial update.googleapis.com:443 -> 142.251.218.206:443 (family 4)
+proxy dial example.com:443 -> 172.66.147.243:443 (family 4)
+proxy dial accounts.google.com:443 -> 142.250.141.84:443 (family 4)
+proxy dial redirector.gvt1.com:443 -> 142.251.218.142:443 (family 4)
+proxy dial edgedl.me.gvt1.com:80 -> 34.104.35.123:80 (family 4)
+proxy dial rr4---sn-bvvbaxivnuxqjvhj5nu-n4v6.gvt1.com:443 -> 50.151.219.23:443 (family 4)
+proxy dial clients2.google.com:80 -> 142.251.218.142:80 (family 4)
+proxy dial redirector.gvt1.com:443 -> 142.251.218.142:443 (family 4)
+proxy dial redirector.gvt1.com:443 -> 142.251.218.142:443 (family 4)
+proxy dial accounts.google.com:443 -> 142.250.141.84:443 (family 4)
+proxy dial update.googleapis.com:443 -> 142.251.218.206:443 (family 4)
+proxy dial localhost:9109 -> 127.0.0.1:9109 (family 4)
+proxy dial localhost:9109 -> 127.0.0.1:9109 (family 4)
+proxy dial update.googleapis.com:443 -> 142.251.218.206:443 (family 4)
+proxy dial accounts.google.com:443 -> 142.250.141.84:443 (family 4)
+proxy dial redirector.gvt1.com:443 -> 142.251.218.142:443 (family 4)
+--- end proxy log ---
+
+--- origin log (host side) ---
+origin listening on 127.0.0.1:9109
+--- end origin log ---
+
+--- screenshots written by the container into the artifact volume ---
+p1-proxied-public.png 68132 bytes
+p2-proxied-host-origin.png 30240 bytes
+p5-inpage-denied.png 92808 bytes
+p7-inpage-resolver-guard.png 87184 bytes
+--- end screenshots ---
+
+--- probe summary ---
+PROBE(p1) PASS  proxied https://example.com rendered after 671ms; DOM contains 'Example Domain'; screenshot /out/p1-proxied-public.png (68132 bytes); udp buckets for the arm +443/+53/+other = +0/+0/+0
+PROBE(p2) PASS  host origin rendered through the proxy after 325ms; screenshot /out/p2-proxied-host-origin.png (30240 bytes); udp buckets for the arm +443/+53/+other = +0/+0/+0
+PROBE(p3) PASS  denied: no page content (dom 0 bytes, screenshot bytes=0; a failed navigation writes no capture) after 212ms; udp buckets +443/+53/+other = +0/+63/+0 (the /53 part is the browser's own resolver attempts, dropped by the ruleset; each drop surfaces as ERR_ACCESS_DENIED to the browser); netlog:      69 "net_error":-10;     36 "net_error":-137;     29 "net_error":-105;      6 "net_error":-109;      2 "net_error":-3;
+PROBE(p4) PASS  denied: no page content (dom 0 bytes, screenshot bytes=0) after 136343ms; udp buckets +443/+53/+other = +0/+174/+0 (the /53 part is the browser's own background lookups, dropped by the ruleset; this navigation opens no QUIC path of its own, and the netlog QUIC facts sit next to the numbers); netlog QUIC:  none; netlog:     174 "net_error":-10;    100 "net_error":-137;     90 "net_error":-105;     24 "net_error":-109;     15 "net_error":-118;      2 "net_error":-3;
+PROBE(p5) PASS  all in-page attempts denied after 135229ms; rows: doh-hostname=DENIED(TypeError: Failed to fetch; 10ms); public-hostname=DENIED(TypeError: Failed to fetch; 10ms); http-ip-literal=DENIED(TypeError: Failed to fetch; 134905ms); doh-ip-literal=DENIED(TypeError: Failed to fetch; 134906ms); img-ip-literal=DENIED(img error event (no bytes); 134905ms); udp buckets +443/+53/+other = +0/+192/+0; screenshot /out/p5-inpage-denied.png (92808 bytes); netlog QUIC:  none; netlog:     192 "net_error":-10;    111 "net_error":-137;    103 "net_error":-105;     31 "net_error":-118;     20 "net_error":-109;      2 "net_error":-3;
+PROBE(p6) PASS  QUIC is denied at the kernel and --disable-quic removes the attempt. Without it: the forced navigation emitted 3 datagrams to udp/443 inside 204ms (bucket +443/+53/+other = +3/+42/+0; the /53 packets are the browser's own lookups), rendered nothing, and the netlog records QUIC failures: ERR_QUIC_HANDSHAKE_FAILED x5;; its real Chromium process cmdline (sampled 4 times) does not carry --disable-quic (0). With it: the identical navigation emitted 0 datagrams to udp/443 (+443/+53/+other = +0/+96/+0, the /53 remainder is the same background lookups during 134771ms of denied TCP), rendered nothing, netlog QUIC: none, and --disable-quic is present in the real process cmdline (2108 of 2109 samples; network-service cmdline carries it 1 times).
+PROBE(p7) PASS  with the resolver guard on, the same attempt set is denied after 323ms and emits nothing at all: udp buckets +443/+53/+other = +0/+0/+0 and the whole-UDP counter +0 (without the guard, p5's buckets were +443/+53/+other = +0/+192/+0), because the guard answers every non-excluded name and IP literal with NOTFOUND before any socket is opened; rows: doh-ip-literal=DENIED(TypeError: Failed to fetch; 3ms); doh-hostname=DENIED(TypeError: Failed to fetch; 3ms); http-ip-literal=DENIED(TypeError: Failed to fetch; 3ms); public-hostname=DENIED(TypeError: Failed to fetch; 3ms); img-ip-literal=DENIED(img error event (no bytes); 3ms); screenshot /out/p7-inpage-resolver-guard.png (87184 bytes)
+
+proxy dial lines: 3 for example.com, 2 for localhost:9109
+proxy dial example.com:443 -> 172.66.147.243:443 (family 4)
+proxy dial localhost:9109 -> 127.0.0.1:9109 (family 4)
+
+RESULT: PASS (7/7 probes, 4 screenshots, proxy dial lines present for both the public target and the host origin)
+
