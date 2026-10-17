@@ -1,180 +1,85 @@
 /**
- * The run endpoints, driven through the routes with a fake sandbox and a fake provider: no Docker,
- * no model, no key. The gate, the ledger, the run store and the log are the real ones, so the test
- * proves the endpoint wiring and not a stand-in for it.
+ * The run service's own contract: one log and one run store serve every run it starts.
+ *
+ * The surface tests live in `router.test.ts` (over oRPC) and `api-server.test.ts` (over the
+ * transports). What is left here is the property those two cannot show: two runs that start in the
+ * same tick share one seq space, which is what one log for the whole service means.
  */
 
 import { describe, expect, test } from "bun:test";
 import type { ProviderPort, SandboxPort } from "@freebot/core";
-import type { Message } from "@freebot/protocol";
-import { createRunService, runRoutes } from "./run-service.ts";
+import { createRunService } from "./run-service.ts";
 
-const AT = 1_700_000_000_000;
+const unusedSandbox: SandboxPort = {
+  async create() {},
+  async execute() {
+    throw new Error("this test starts no tool call");
+  },
+  async destroy() {},
+};
 
-function fakeSandbox(ran: string[]): SandboxPort {
-  return {
-    async create() {},
-    async execute(call) {
-      ran.push(call.toolCallId);
-      return {
-        toolCallId: call.toolCallId,
-        toolName: call.toolName,
-        ok: true,
-        denied: false,
-        output: "one\n",
-        durationMs: 2,
-      };
-    },
-    async destroy() {},
-  };
-}
-
-const provider: ProviderPort = {
-  async next(input) {
-    if (input.turn === 1) {
-      return {
-        text: ["checking"],
-        toolCalls: [
-          {
-            toolCallId: "call_1",
-            toolName: "bash",
-            args: { command: "echo one" },
-            destructive: true,
-          },
-        ],
-      };
-    }
-    return { text: ["done"], toolCalls: [] };
+/** One turn of text and no call, so a run finishes in the fewest frames it can. */
+const immediateProvider: ProviderPort = {
+  async next() {
+    return { text: ["ok"], toolCalls: [] };
   },
 };
 
-async function until(predicate: () => Promise<boolean>, label: string): Promise<void> {
-  const deadline = Date.now() + 2_000;
-  while (Date.now() < deadline) {
-    if (await predicate()) return;
-    await Bun.sleep(10);
-  }
-  throw new Error(`timed out waiting for ${label}`);
-}
+const idleSandbox: SandboxPort = {
+  async create() {},
+  async execute() {
+    throw new Error("this test starts no tool call");
+  },
+  async destroy() {},
+};
 
-async function page(routes: ReturnType<typeof runRoutes>): Promise<Message[]> {
-  const response = await routes.request("/runs/events?last_seq=0");
-  const body = (await response.json()) as { messages: Message[] };
-  return body.messages;
-}
+describe("one log for every run the service starts", () => {
+  test("two runs started in the same tick share one seq space and both finish", async () => {
+    const service = createRunService({ sandbox: idleSandbox, provider: () => immediateProvider });
 
-describe("the run endpoints", () => {
-  test("a run parks, an approval over the route resolves it, and the run finishes", async () => {
-    const ran: string[] = [];
-    const service = createRunService({
-      sandbox: fakeSandbox(ran),
-      provider: () => provider,
-      now: () => AT,
+    const first = service.start("one");
+    const second = service.start("two");
+    await service.idle();
+
+    expect(service.store.get(first.runId)?.status).toBe("done");
+    expect(service.store.get(second.runId)?.status).toBe("done");
+
+    const frames = service.log.since(0).map((entry) => entry.frame);
+    expect(frames.every((frame, index) => frame.seq === index + 1)).toBe(true);
+    expect([...new Set(frames.map((frame) => frame.runId))].sort()).toEqual([
+      first.runId,
+      second.runId,
+    ]);
+    expect(service.log.audit()).toMatchObject({
+      firstSeq: 1,
+      count: frames.length,
+      gaps: [],
+      duplicates: [],
+      rejected: 0,
     });
-    const routes = runRoutes(service);
+  });
 
-    const started = await routes.request("/runs", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: "echo one" }),
+  test("two subscribers both see every frame, in seq order", async () => {
+    const service = createRunService({ sandbox: unusedSandbox, provider: () => immediateProvider });
+    const controller = new AbortController();
+    const seen: number[][] = [[], []];
+    const pumps = seen.map(async (list) => {
+      for await (const message of service.stream(0, controller.signal)) list.push(message.seq);
     });
-    expect(started.status).toBe(202);
-    const { runId } = (await started.json()) as { runId: string };
-    expect(runId).toBe("run-1");
 
-    await until(
-      async () => (await page(routes)).some((message) => message.type === "approval.requested"),
-      "the run to park",
-    );
-    const parked = (await page(routes)).find((message) => message.type === "approval.requested");
-    if (parked === undefined || parked.type !== "approval.requested") {
-      throw new Error("no approval.requested frame");
+    const { runId } = service.start("one");
+    await service.idle();
+
+    const deadline = Date.now() + 2_000;
+    while (Date.now() < deadline && !seen.every((list) => list.length === service.log.lastSeq)) {
+      await Bun.sleep(10);
     }
-    expect(parked.payload.command).toBe('bash {"command":"echo one"}');
-    expect(service.approvals.pending()).toEqual([`${runId}:call_1`]);
+    controller.abort();
+    await Promise.all(pumps);
 
-    const approved = await routes.request(`/approvals/${runId}:call_1/allow`, { method: "POST" });
-    expect(approved.status).toBe(202);
-    await service.idle();
-
-    expect(ran).toEqual(["call_1"]);
     expect(service.store.get(runId)?.status).toBe("done");
-    expect((await page(routes)).map((message) => message.type)).toEqual([
-      "run.started",
-      "run.status",
-      "turn.started",
-      "message.text.delta",
-      "tool_call.requested",
-      "approval.requested",
-      "run.status",
-      "approval.resolved",
-      "run.status",
-      "tool_call.decision",
-      "tool_call.result",
-      "turn.ended",
-      "turn.started",
-      "message.text.delta",
-      "turn.ended",
-      "run.finished",
-      "run.status",
-    ]);
-  });
-
-  test("a denial over the route records the refusal, and the re-ask reports user_denied", async () => {
-    const service = createRunService({
-      sandbox: fakeSandbox([]),
-      provider: () => provider,
-      now: () => AT,
-    });
-    const routes = runRoutes(service);
-    await routes.request("/runs", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: "echo one" }),
-    });
-    await until(
-      async () => (await page(routes)).some((message) => message.type === "approval.requested"),
-      "the run to park",
-    );
-
-    const denied = await routes.request("/approvals/run-1:call_1/deny", { method: "POST" });
-    expect(denied.status).toBe(202);
-    await service.idle();
-
-    const decisions = (await page(routes))
-      .filter((message) => message.type === "tool_call.decision")
-      .map((message) => (message.type === "tool_call.decision" ? message.payload : null));
-    expect(decisions).toEqual([
-      {
-        toolCallId: "call_1",
-        allow: false,
-        code: "user_denied",
-        detail: expect.stringContaining("the user denied action v1:sha256:"),
-      },
-    ]);
-    expect(service.store.get("run-1")?.status).toBe("done");
-  });
-
-  test("the boundary refuses a bad command and an unknown approval", async () => {
-    const service = createRunService({ sandbox: fakeSandbox([]), provider: () => provider });
-    const routes = runRoutes(service);
-    const bad = await routes.request("/runs", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: "", extra: 1 }),
-    });
-    expect(bad.status).toBe(400);
-    expect(await routes.request("/approvals/nope/allow", { method: "POST" })).toHaveProperty(
-      "status",
-      404,
-    );
-    expect(await routes.request("/runs/events?last_seq=0")).toHaveProperty("status", 200);
-  });
-
-  test("cancelling a run the service never started is refused, not reported as done", async () => {
-    const service = createRunService({ sandbox: fakeSandbox([]), provider: () => provider });
-    const routes = runRoutes(service);
-    const response = await routes.request("/runs/run-nope/cancel", { method: "POST" });
-    expect(await response.json()).toEqual({ runId: "run-nope", cancelled: false });
+    expect(seen[0]?.length).toBeGreaterThan(0);
+    expect(seen[0]).toEqual(seen[1]);
+    expect(seen[0]?.every((seq, index) => seq === index + 1)).toBe(true);
   });
 });

@@ -158,19 +158,25 @@ export function createReviewGate(
  * The log port over one `SeqLog`. The seq, the timestamp and the run id are stamped here, at the one
  * place that appends, so no second counter exists and the run's durable position always equals the
  * log's tail.
+ *
+ * The seq is read from the log at append time rather than seeded from it when the port is built.
+ * One service serves every run from one log, so two runs that start in the same tick would otherwise
+ * both hold a counter starting at the same slot, and the log would refuse the second one's frames as
+ * duplicates. The log's own `lastSeq` is the only counter there is. See `run-service.test.ts`.
  */
 export function createLogPort(options: {
   readonly log: SeqLog<EventMessage>;
   readonly runId: string;
   readonly noteSeq: (seq: number) => void;
   readonly now?: () => number;
+  /** Fired after an append lands, so a reader waiting on the log can wake. */
+  readonly onAppend?: () => void;
 }): LogPort {
   const now = options.now ?? Date.now;
-  let seq = options.log.lastSeq;
 
   return {
     append<K extends EventType>(type: K, payload: EventPayloads[K]): number {
-      const next = seq + 1;
+      const next = options.log.lastSeq + 1;
       const message = {
         v: 1,
         seq: next,
@@ -183,8 +189,8 @@ export function createLogPort(options: {
       if (outcome !== "appended") {
         throw new Error(`the log refused frame ${next}: ${outcome}`);
       }
-      seq = next;
       options.noteSeq(next);
+      options.onAppend?.();
       return next;
     },
   };
