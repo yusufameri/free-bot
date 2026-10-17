@@ -108,7 +108,7 @@ function hasStatus(facts: FrameFacts, status: string): boolean {
 export const FRAME_SPECS: readonly FrameSpec[] = [
   {
     name: "01-idle",
-    caption: "Connected, nothing rendered yet: the stream has not started.",
+    caption: "Connected, no message rendered yet, and the stream has not started.",
     claims: [
       { label: "no message is rendered", holds: (f) => f.frameCount === 0 },
       { label: "no resume banner", holds: (f) => f.resume === null },
