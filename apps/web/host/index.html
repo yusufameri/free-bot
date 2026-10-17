@@ -96,6 +96,47 @@
     border: 1px solid #1f5c1f; background: #1f5c1f; color: #fff; cursor: pointer;
   }
   #operator button:disabled { opacity: 0.45; cursor: default; }
+  body[data-tab="library"] #operator { display: none; }
+  #tabs { display: flex; gap: 6px; margin: 12px 0 0; }
+  .tab {
+    font: inherit; font-size: 13px; padding: 6px 14px; border-radius: 999px;
+    border: 1px solid #d4d4ce; background: #fff; color: #5c6068; cursor: pointer;
+  }
+  .tab[data-active="true"] { background: #1b1d22; border-color: #1b1d22; color: #fff; }
+  #library-note { margin: 14px 0 0; font-size: 12.5px; color: #6b6f78; }
+  #library-status { margin: 10px 0 0; font-size: 13px; color: #83878f; }
+  #library-status:empty { margin: 0; }
+  #library-list { margin-top: 12px; }
+  .library-pinned {
+    display: flex; align-items: baseline; gap: 8px; width: 100%; text-align: left;
+    font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; padding: 9px 11px;
+    border: 1px solid #c8cdc4; border-radius: 8px; background: #f0f4ee; cursor: pointer;
+  }
+  .library-pinned-note { font: 12px/1.5 ui-sans-serif, -apple-system, sans-serif; color: #6b6f78; }
+  .library-group-title {
+    margin: 18px 0 6px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: #83878f;
+  }
+  .library-group { list-style: none; margin: 0; padding: 0; }
+  .library-entry {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%;
+    text-align: left; font: inherit; font-size: 13.5px; padding: 8px 11px; margin-bottom: 4px;
+    border: 1px solid #dcdcd6; border-radius: 8px; background: #fff; cursor: pointer;
+  }
+  .library-entry[data-kind="dir"] { font-weight: 600; }
+  .library-size { font-size: 12px; color: #83878f; font-variant-numeric: tabular-nums; }
+  #library-view { margin-top: 18px; }
+  #library-view-path {
+    margin: 0; font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: #5c6068;
+  }
+  #library-view-text {
+    margin: 6px 0 0; padding: 10px; background: #f4f4f1; border-radius: 6px;
+    font: 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap;
+  }
+  #library-view-refused {
+    margin: 6px 0 0; padding: 9px 12px; border: 1px solid #e3a1a1; border-radius: 8px;
+    background: #fdeeee; color: #8d1d1d; font-size: 13px; font-weight: 600;
+  }
 </style>
 </head>
 <body>
@@ -112,11 +153,25 @@
   </header>
   <div id="resume" hidden></div>
   <div id="error" hidden></div>
+  <nav id="tabs">
+    <button id="tab-conversation" class="tab" type="button" data-tab="conversation" data-active="true" aria-current="true">Conversation</button>
+    <button id="tab-library" class="tab" type="button" data-tab="library" data-active="false" aria-current="false">Library</button>
+  </nav>
   <form id="operator" hidden>
     <input id="prompt" type="text" placeholder="what should the bot do?" autocomplete="off">
     <button id="start" type="submit">Start run</button>
   </form>
   <main id="thread"><p class="idle" id="idle-note">Waiting for the run to start.</p></main>
+  <section id="library" hidden data-library-state="idle">
+    <p id="library-note"></p>
+    <p id="library-status" data-library-status="idle"></p>
+    <div id="library-list"></div>
+    <section id="library-view" hidden>
+      <p id="library-view-path" data-path=""></p>
+      <pre id="library-view-text" data-path=""></pre>
+      <p id="library-view-refused" hidden data-refusal=""></p>
+    </section>
+  </section>
 </div>
 <script type="module" src="/main.js"></script>
 </body>

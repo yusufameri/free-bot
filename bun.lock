@@ -40,6 +40,11 @@
     "apps/web": {
       "name": "@freebot/web",
       "version": "0.0.0",
+      "dependencies": {
+        "@freebot/protocol": "workspace:*",
+        "@orpc/client": "1.15.7",
+        "@orpc/contract": "1.15.7",
+      },
     },
     "packages/connectors": {
       "name": "@freebot/connectors",
@@ -98,6 +103,9 @@
     "packages/ui": {
       "name": "@freebot/ui",
       "version": "0.0.0",
+      "dependencies": {
+        "@freebot/protocol": "workspace:*",
+      },
     },
     "packages/verify": {
       "name": "@freebot/verify",
