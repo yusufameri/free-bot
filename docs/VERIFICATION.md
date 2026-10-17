@@ -15,6 +15,7 @@ directory per feature and git short sha. The row records the commit the artifact
 | browser containment spike | `bash spikes/browser-containment/run.sh` | spike-verified (7/7 browser probes inside the default-deny netns, UDP attributed by port bucket) | `packages/verify/artifacts/containment-browser/27cf9de/probes.txt` | 27cf9dee665547356177d8c0ce3d39b2c8f623b9 | 2026-10-17 |
 | forge test A | `bun spikes/forge-test-a/run.ts` | spike-verified (91/91 checks: matrix a–i plus positive controls and a throwing handler, every row read by literal in-VM canary reads, seq 1..239 with zero gaps and zero duplicates across a SIGKILLed composer; keyless stub model) | `packages/verify/artifacts/forge-test-a/a46071c/assert.txt` | a46071ce2b0108ad5d1d650a3a55ba4225520ced | 2026-10-17 |
 | web-stream spike | `bun spikes/web-stream/run.ts` | spike-verified (59/59 CDP checks, both approval paths, reconnect resume with duplicate ignored, 12 frame captures) | `packages/verify/artifacts/web-stream/35bd852/assert.txt` | 35bd8529a9b1f7986052838a8e4adbab2d901267 | 2026-10-17 |
+| sandbox-provider | `bun test packages/sandbox/src/docker.test.ts` | unit-test-verified (Docker integration is the live surface: create from the pinned image, exec/upload/download, tunnel echo, snapshot/resume, idle-kill, label-scoped sweep against decoys; no UI, so no live-ui claim) | `packages/verify/artifacts/sandbox-provider/83058fe/assert.txt` | 83058feee4b6c191b697b3cfae098253d1f0189c | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, the pi-bridge client, and the
 sandbox image pin. The scaffold row covers workspace shape, typecheck, the `apps/server` health test,
@@ -47,7 +48,14 @@ sandbox image plus U0.3's dialog intercept and U0.8's ledger behind one host com
 scenario rows (no grant, mismatch, expired, consumed, tombstoned, forged, unknown tool, native bash
 and file-write positive controls, a throwing handler, and a SIGKILLed control plane mid-gated-call)
 each verified by a literal read of a canary path inside the container rather than by the gate's
-return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. Every later feature
-gets its own row when its script
+return value; its shape, limits, and follow-ups are in `docs/forge-test-a.md`. The sandbox-provider row
+covers U1.2's frozen `SandboxProvider` surface and the Docker adapter: spec validation, the
+capability truth table and the typed unsupported paths in `packages/sandbox`'s unit tests, plus ten
+Docker integration tests that create a sandbox from the pinned image, exec (buffered, streamed,
+detached), round-trip 4096 bytes through upload/download, echo a link frame through `tunnel()`, reach
+an in-sandbox port through `exposePort`, snapshot/stop/resume and restore from the snapshot, kill an
+idle sandbox on its ttl, and remove exactly this unit's containers while two decoy containers
+survive; its semantics, typed gaps, and follow-ups are in `docs/sandbox-provider.md`. Every later
+feature gets its own row when its script
 lands.
 lands.
