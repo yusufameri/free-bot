@@ -1,8 +1,10 @@
 # The web chat surface (U1.5)
 
-Status: PASS. 75/75 harness checks green at commit `326cf65`, driven by
+Status: PASS. 76/76 harness checks green at commit `2f23017`, driven by
 `bun apps/web/scripts/capture.ts`, with eight committed key-state frames under
-`packages/verify/artifacts/web-shell/761eca9/`. Verdict: live-ui-verified.
+`packages/verify/artifacts/web-shell/2f23017/`. Verdict: live-ui-verified. That run follows the
+merge-forward of `main` and adds one claim (every tool card's output open in its collapsible); the
+earlier `326cf65` run stays as history, and all eight sha256 values are identical between the two.
 
 `apps/web` was a README-only placeholder; it is now the surface a user sees. One thread renders
 streaming assistant text, tool-call cards and approval cards from the landed protocol DTOs, over a
@@ -60,7 +62,7 @@ U0.11's denial frame quietly became a second copy of its terminal frame.
 | `04-resumed-after-kill` | Reconnected mid-turn: the resume banner names seq 33, the replayed seq rendered once. |
 | `05-approval-pending` | A governed call parked: the card waits, the approval card names the exact command, the stream frozen at seq 55. |
 | `06-post-approval` | Allowed once: the decided card, the issued grant, the governed call running. |
-| `07-done` | The run finished: all 90 messages rendered, the terminal marker, no card left running. |
+| `07-done` | The run finished: all 90 messages rendered, every tool card's output open in its collapsible, the terminal marker, no card left running. |
 | `08-denied` | Denied: the refusal on the approval card, the governed card denied with no output, the run not yet ended. |
 
 ## How the evidence is produced
@@ -80,8 +82,9 @@ PR.
 
 Order 12 asks for a recording rather than stills. No assembler exists on this host (no ffmpeg, no
 ImageMagick), so this unit ships the frame sequence plus the harness that regenerates it, and names
-the exemption here rather than dropping it silently. The PNGs are content-stable: all eight hashes are
-identical between the two runs of this harness, so a re-run reproduces the frames byte for byte.
+the exemption here rather than dropping it silently. The PNGs are content-stable: all eight sha256
+values are identical across the committed runs (`326cf65` and `2f23017`), so a re-run reproduces the
+frames byte for byte.
 
 ## Deliberately missing
 
