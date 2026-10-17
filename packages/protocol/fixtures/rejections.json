@@ -10,13 +10,13 @@
       "type": "tool_execution_start",
       "payload": {}
     },
-    "error": "Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'"
+    "error": "Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'run.status' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'"
   },
   {
     "name": "missing kind",
     "schema": "message",
     "input": { "v": 1, "seq": 1, "ts": 1792221550000, "runId": "run-1", "payload": {} },
-    "error": "Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'"
+    "error": "Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'run.status' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'"
   },
   {
     "name": "wrong version tag",
@@ -118,10 +118,10 @@
       "type": "tool_call.decision",
       "payload": { "toolCallId": "call_1", "allow": false }
     },
-    "error": "Invalid option: expected one of \"unknown_tool\"|\"no_grant\"|\"grant_mismatch\"|\"grant_expired\"|\"grant_consumed\"|\"grant_tombstoned\"|\"grant_forged\"|\"malformed_action\"|\"grant_store_error\""
+    "error": "Invalid option: expected one of \"unknown_tool\"|\"no_grant\"|\"grant_mismatch\"|\"grant_expired\"|\"grant_consumed\"|\"grant_tombstoned\"|\"grant_forged\"|\"malformed_action\"|\"user_denied\"|\"grant_store_error\""
   },
   {
-    "name": "reason code outside the nine",
+    "name": "reason code outside the ten",
     "schema": "message",
     "input": {
       "v": 1,
@@ -131,7 +131,7 @@
       "type": "tool_call.decision",
       "payload": { "toolCallId": "call_1", "allow": false, "code": "vibes", "detail": "no" }
     },
-    "error": "Invalid option: expected one of \"unknown_tool\"|\"no_grant\"|\"grant_mismatch\"|\"grant_expired\"|\"grant_consumed\"|\"grant_tombstoned\"|\"grant_forged\"|\"malformed_action\"|\"grant_store_error\""
+    "error": "Invalid option: expected one of \"unknown_tool\"|\"no_grant\"|\"grant_mismatch\"|\"grant_expired\"|\"grant_consumed\"|\"grant_tombstoned\"|\"grant_forged\"|\"malformed_action\"|\"user_denied\"|\"grant_store_error\""
   },
   {
     "name": "denial without a detail",

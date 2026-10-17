@@ -1,10 +1,11 @@
 /**
  * Taxonomy behavior: the deny codes and the grant lifecycle come from packages/review verbatim
  * rather than from a copy that can drift, and every decision the real gate can return (the allow
- * path and all nine denials) becomes a valid v1 payload.
+ * path and all ten denials) becomes a valid v1 payload.
  */
 
 import { describe, expect, test } from "bun:test";
+import { RUN_STATUSES } from "@freebot/core";
 import {
   canonicalActionHash,
   createGrantPolicy,
@@ -19,6 +20,9 @@ import {
   GRANT_STATES,
   grantLifecyclePayload,
   grantStateSchema,
+  RUN_STATUS_VALUES,
+  runStatusPayload,
+  runStatusValueSchema,
   toolCallDecisionPayload,
 } from "./index.ts";
 
@@ -124,6 +128,16 @@ const DENIALS: Array<{ code: DenyCode; detail: string; decide: () => Decision }>
     decide: () => gate(new GrantStore())({ command: "echo hi", at: Number.POSITIVE_INFINITY }),
   },
   {
+    code: "user_denied",
+    detail: `the user denied action ${ECHO_HASH}`,
+    decide: () =>
+      createGrantPolicy(new GrantStore(), {
+        tools: ["bash"],
+        now: () => AT,
+        refusals: new Set([ECHO_HASH]),
+      })({ toolCallId: CALL, toolName: "bash", args: ECHO }),
+  },
+  {
     code: "grant_store_error",
     detail: "ledger unavailable",
     decide: () => gate(new BrokenStore())(ECHO),
@@ -131,7 +145,7 @@ const DENIALS: Array<{ code: DenyCode; detail: string; decide: () => Decision }>
 ];
 
 describe("deny codes", () => {
-  test("the nine codes match packages/review in value and order", () => {
+  test("the ten codes match packages/review in value and order", () => {
     expect(DENY_CODES).toEqual([
       "unknown_tool",
       "no_grant",
@@ -141,6 +155,7 @@ describe("deny codes", () => {
       "grant_tombstoned",
       "grant_forged",
       "malformed_action",
+      "user_denied",
       "grant_store_error",
     ]);
     expect(DENY_CODES.join(",")).toBe(Object.values(REVIEW_DENY_CODES).join(","));
@@ -253,5 +268,27 @@ describe("grant lifecycle", () => {
         reason: "rewind:12",
       }),
     ).toEqual({ state: "expired", grantId: "g1", actionHash: HASH, at: 2 });
+  });
+});
+
+describe("run status", () => {
+  test("the seven statuses match packages/core in value and order", () => {
+    expect(RUN_STATUS_VALUES).toEqual([...RUN_STATUSES]);
+  });
+
+  test("the payload parses and carries the run id beside the status", () => {
+    expect(runStatusPayload.parse({ runId: "run-1", status: "awaiting_approval" })).toEqual({
+      runId: "run-1",
+      status: "awaiting_approval",
+    });
+  });
+
+  test("a status the seven-state model does not have is refused", () => {
+    const result = runStatusValueSchema.safeParse("sleeping");
+    expect(result.success).toBe(false);
+    const issues = result.success ? [] : result.error.issues.map((issue) => issue.message);
+    expect(issues).toContain(
+      'Invalid option: expected one of "queued"|"running"|"awaiting_approval"|"paused"|"done"|"failed"|"cancelled"',
+    );
   });
 });

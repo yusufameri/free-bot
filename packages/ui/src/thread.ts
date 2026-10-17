@@ -166,6 +166,11 @@ function applyEvent(state: ThreadState, message: EventMessage): ThreadState {
       return { ...base, done: true, awaiting: null };
     case "run.failed":
       return { ...base, failed: message.payload.reason };
+    case "run.status":
+      // The run's status is carried but not rendered yet. The arm exists so the stream's new kind
+      // applies instead of hitting the exhaustive default below; the surface that shows a run's
+      // status adopts the payload in the unit that renders it.
+      return base;
     case "turn.started":
       return {
         ...base,
