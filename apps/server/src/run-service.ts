@@ -45,6 +45,14 @@ const DEFAULT_TRANSCRIPT = join(
 
 const RUN_IDLE_TTL_MS = 300_000;
 
+/**
+ * Suffixes this launch's sandbox names. The run id is `run-<n>` per process, and the sandbox is
+ * named from it, so a container a hard-killed launch left behind would collide with the next
+ * launch's `run-1` and its run would fail as `sandbox_unavailable`. The user-visible run id stays
+ * readable; only the container name carries this tag.
+ */
+const LAUNCH_TAG = Math.random().toString(36).slice(2, 10);
+
 export interface RunServiceOptions {
   /** Inject a provider, for a test or for the keyed path once G1 clears. */
   readonly provider?: () => ProviderPort | Promise<ProviderPort>;
@@ -201,7 +209,7 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
             threadId: `thread-${runId}`,
             botId: "bot-local",
             prompt,
-            sandbox: { name: runId, idleTtlMs: RUN_IDLE_TTL_MS },
+            sandbox: { name: `${runId}-${LAUNCH_TAG}`, idleTtlMs: RUN_IDLE_TTL_MS },
             tools: runToolDefinitions(),
           },
         );
