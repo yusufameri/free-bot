@@ -1,13 +1,15 @@
 # The root type gate
 
-Status: PASS. 38/38 probe checks green at commit `9877569`, driven by
+Status: PASS. 38/38 probe checks green at commit `2c9b605`, driven by
 `bun packages/verify/scripts/type-gate.ts`, with the transcript under
-`packages/verify/artifacts/type-gate/9877569/probe.txt`. Verdict: type-check-only.
+`packages/verify/artifacts/type-gate/2c9b605/probe.txt`. Verdict: type-check-only. That commit is the
+merge of `main` at `0a7b527` (U1.7's run loop); the counts below were re-measured there rather than
+carried over from the pre-merge head.
 
 `bun run typecheck` is the cheap gate every unit, every PR and CI runs. Until this unit it was blind
 to 14 source files and to every `.tsx` file in the repo. It now covers each workspace's `src` and
 `scripts` directories in both extensions. At this commit the widened include reaches 16 files the
-pre-widening one does not, 105 repo files against 89. The two beyond U1.5's measurement are this
+pre-widening one does not, 112 repo files against 96. The two beyond U1.5's measurement are this
 unit's own probe script and `apps/server/scripts/verify.ts`, which landed on `main` while this branch
 waited. This closes follow-up 1 of `docs/web-shell.md`, which parked the React and Next.js port on
 exactly this change.
@@ -36,7 +38,7 @@ apps/*/scripts/**/*.ts
 apps/*/scripts/**/*.tsx
 ```
 
-The program went from 82 to 97 repo files when this landed, and measures 89 to 105 at this commit.
+The program went from 82 to 97 repo files when this landed, and measures 96 to 112 at this commit.
 The widened gate exits 0 at each head, so none of the newly covered files had a type error waiting.
 `tsconfig.base.json` gains `jsx: "preserve"` in the same change. It transforms nothing under
 `noEmit`, and it is the value the port's Next.js config needs, so a `.tsx` file parses in the root
