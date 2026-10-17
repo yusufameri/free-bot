@@ -1,0 +1,114 @@
+feature: tunnel kill/rejoin (Pi in a container over the wire, one seq, one log)
+command: bun spikes/tunnel/kill-rejoin.ts
+timestamp: 2026-10-17T07:19:13.618Z
+git sha: bf0a4e67b8351cb1db3d7f160f2042ddd7850ff9
+git sha short: bf0a4e6
+branch: u0.7-tunnel
+runtime: bun 1.2.5 on darwin arm64, docker 28.3.2 aarch64 6.10.14-linuxkit
+image: freebot-tunnel-spike:bf0a4e6 sha256:c2122db0bbc4a2b3b1f2dd4cd84ee2bba0487f6408e0be0cae5984a3e67a4d83
+
+ok   preflight: docker engine up (28.3.2 aarch64 6.10.14-linuxkit)
+ok   preflight: node_modules present (bun install) (found)
+ok   preflight: spike typecheck ()
+ok   preflight: docker build (#9 DONE 0.0s)
+
+--- scenario a ---
+transcript: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-tunnel-a-NxtybG/transcript-a.jsonl
+ok   log has zero gaps ([])
+ok   log has zero duplicates ([])
+ok   log starts at seq 1 (firstSeq 1)
+ok   observer stream has zero gaps ([])
+ok   observer stream has zero duplicates ([])
+ok   one sequence, 1..N, across the whole run (logged 124, lastSeq 124, delivered 124)
+ok   the stream is exactly 1..N in order (124 frames)
+ok   the kill landed mid-stream (last seq at kill 33, 91 frames arrived after the kill instant)
+ok   no payload was refused during the run (0)
+ok   a 3+ step exchange ran (3 tool calls)
+ok   the unary endpoint and the stream share one log (GET /events?last_seen_seq=33 returned 91 frames identical to the stream's tail)
+ok   truncated and malformed frames are refused without touching the log (rejected 0 -> 4, lastSeq 124 -> 124)
+ok   the log is still clean after the injections ({"gaps":[],"duplicates":[]})
+ok   the scenario-a kill left the agent process alive (agent pid 47 still running)
+ok   the tunnel was re-opened after the kill ([agent] tunnel open last_seen_seq=0 reconnects=0 | [agent] tunnel open last_seen_seq=33 reconnects=1)
+ok   the rejoin named a last_seen_seq inside the one log ([agent] tunnel open last_seen_seq=33 reconnects=1 (kill-time watermark 33, final 124))
+
+--- scenario a log tails ---
+[agent.log]
+[agent] supervisor link open
+[agent] attached acked=0 supervisor_last_seq=0
+[agent] tunnel open last_seen_seq=0 reconnects=0
+[agent] tunnel closed; reconnecting in 250ms
+[agent] tunnel open last_seen_seq=33 reconnects=1
+[agent] replayed 17 unconfirmed frames from seq 34
+
+[supervisor.log]
+[supervisor] listening host=127.0.0.1 port=42875
+[supervisor] agent attached acked=0 replay=0 last_seq=0
+[supervisor] boot ok pi_pid=25
+[supervisor] prompt sent id=prompt-1
+[supervisor] pi settled seq=124
+
+[server.log]
+listening on http://127.0.0.1:50205
+[stream] client attached last_seen_seq=0 log_last_seq=0
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+[tunnel] agent detached log_last_seq=33
+[tunnel] agent attached last_seen_seq=33 log_last_seq=33
+[tunnel] agent attached last_seen_seq=0 log_last_seq=124
+[tunnel] agent detached log_last_seq=124
+[relay.log]
+[relay] listening on 0.0.0.0:50206 -> 127.0.0.1:50205
+[frame kinds]
+response: 2, agent_start: 1, turn_start: 4, message_start: 9, message_end: 9, message_update: 87, tool_execution_start: 3, tool_execution_end: 3, turn_end: 4, agent_end: 1, agent_settled: 1
+
+--- scenario b ---
+transcript: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-tunnel-b-11JGq5/transcript-b.jsonl
+ok   pi survived the agent kill (pi pid 25)
+ok   pi is the same process while the agent is gone (starttime 374079 -> 374079)
+ok   the reattached agent is a fresh process (agent pid 46 -> 98)
+ok   log has zero gaps ([])
+ok   log has zero duplicates ([])
+ok   log starts at seq 1 (firstSeq 1)
+ok   observer stream has zero gaps ([])
+ok   observer stream has zero duplicates ([])
+ok   one sequence, 1..N, across the whole run (logged 124, lastSeq 124, delivered 124)
+ok   the stream is exactly 1..N in order (124 frames)
+ok   the kill landed mid-stream (last seq at kill 77, 47 frames arrived after the kill instant)
+ok   no payload was refused during the run (0)
+ok   a 3+ step exchange ran (3 tool calls)
+ok   the unary endpoint and the stream share one log (GET /events?last_seen_seq=77 returned 47 frames identical to the stream's tail)
+ok   pi never restarted across the agent kill and reattach (pid 25, starttime 374079 -> 374079)
+ok   the tool call in flight at the kill completed after reattach (toolCallId call_spike_2 ended after the kill)
+ok   the tunnel was re-opened after the kill ([agent] tunnel open last_seen_seq=0 reconnects=0 | [agent] tunnel open last_seen_seq=0 reconnects=0)
+ok   the rejoin named a last_seen_seq inside the one log ([agent] tunnel open last_seen_seq=0 reconnects=0 (kill-time watermark 77, final 124))
+
+--- scenario b log tails ---
+[agent.log]
+[agent] supervisor link open
+[agent] attached acked=0 supervisor_last_seq=0
+[agent] tunnel open last_seen_seq=0 reconnects=0
+[agent] supervisor link open
+[agent] attached acked=77 supervisor_last_seq=94
+[agent] tunnel open last_seen_seq=0 reconnects=0
+[agent] replayed 17 unconfirmed frames from seq 78
+
+[supervisor.log]
+[supervisor] listening host=127.0.0.1 port=36129
+[supervisor] agent attached acked=0 replay=0 last_seq=0
+[supervisor] boot ok pi_pid=25
+[supervisor] prompt sent id=prompt-1
+[supervisor] agent detached acked=77
+[supervisor] agent attached acked=77 replay=17 last_seq=94
+[supervisor] pi settled seq=124
+
+[server.log]
+listening on http://127.0.0.1:50220
+[stream] client attached last_seen_seq=0 log_last_seq=0
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+[tunnel] agent detached log_last_seq=77
+[tunnel] agent attached last_seen_seq=0 log_last_seq=77
+[relay.log]
+[relay] listening on 0.0.0.0:50221 -> 127.0.0.1:50220
+[frame kinds]
+response: 2, agent_start: 1, turn_start: 4, message_start: 9, message_end: 9, message_update: 87, tool_execution_start: 3, tool_execution_end: 3, turn_end: 4, agent_end: 1, agent_settled: 1
+
+RESULT: PASS (34/34 scenario checks green)
