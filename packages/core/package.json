@@ -6,7 +6,11 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "dependencies": {
+    "@freebot/protocol": "workspace:*",
+    "@freebot/sandbox": "workspace:*"
+  },
   "devDependencies": {
-    "@freebot/protocol": "workspace:*"
+    "@freebot/review": "workspace:*"
   }
 }
