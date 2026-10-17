@@ -4,8 +4,13 @@
  *
  * `apps/server/src/index.ts` starts as its own process on ephemeral ports, exactly as an operator
  * starts it. Everything this script claims is read out of that process: the printed token, the
- * refusal matrix read from real HTTP responses, a real oRPC round trip, and an event that arrived
- * over a real WebSocket. It refuses to write an artifact containing the token.
+ * refusal matrix read from real HTTP responses, a real oRPC round trip, and the runs themselves.
+ * It refuses to write an artifact containing the token.
+ *
+ * Since U2.1 the server has one run path, so a run started here is a run the loop executes: the
+ * script starts one over `start_run` and one through the gate matrix, answers both parked approvals
+ * over the page's own stream, and asserts the frames each run put in the log. The model is replayed
+ * from the committed Pi transcript and the sandbox is the pinned image, as in the run-loop evidence.
  *
  *   bun apps/server/scripts/verify.ts
  */
@@ -83,7 +88,7 @@ async function waitFor(read: () => string, match: RegExp, timeoutMs: number): Pr
   throw new Error(`no line matching ${match} within ${timeoutMs}ms; saw: ${read().slice(-400)}`);
 }
 
-async function until(ready: () => boolean, what: string, timeoutMs = 5000): Promise<boolean> {
+async function until(ready: () => boolean, what: string, timeoutMs = 60_000): Promise<boolean> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (ready()) return true;
@@ -91,6 +96,21 @@ async function until(ready: () => boolean, what: string, timeoutMs = 5000): Prom
   }
   check(false, `timed out after ${timeoutMs}ms waiting for ${what}`);
   return false;
+}
+
+/** The containers this unit's runs create; empty is the cleanup invariant. */
+function containersFor(unit: string): string[] {
+  const proc = Bun.spawnSync([
+    "docker",
+    "ps",
+    "-a",
+    "--filter",
+    `label=freebot.unit=${unit}`,
+    "--format",
+    "{{.Names}}",
+  ]);
+  const raw = `${proc.stdout.toString()}${proc.stderr.toString()}`.trim();
+  return raw === "" ? [] : raw.split("\n").filter((name) => name.length > 0);
 }
 
 const head = git(["rev-parse", "HEAD"]);
@@ -220,8 +240,10 @@ try {
     [`origin: ${origin}`, `authorization: Bearer ${token}`],
     { status: "200" },
   );
-  const matrixRunId = /"runId":"(run_[0-9a-f-]{36})"/.exec(allowed.body)?.[1];
-  check(matrixRunId !== undefined, `the allowed arm minted a run: ${allowed.body}`);
+  // The allowed arm starts a run the loop executes, which is the point of the fold: this id is a
+  // run that appeared in the log, not a record the control plane kept for itself.
+  const matrixRunId = /"runId":"(run-\d+)"/.exec(allowed.body)?.[1];
+  check(matrixRunId !== undefined, `the allowed arm started a run: ${allowed.body}`);
 
   const health = curl(apiPort, "/healthz", [], "GET");
   check(
@@ -280,7 +302,7 @@ try {
   );
 
   // -------------------------------------------------------------------------
-  // One oRPC round trip and one streamed event, over the wire
+  // One oRPC round trip, one oRPC stream, and two runs driven to a terminal state
   // -------------------------------------------------------------------------
 
   const client: ApiClient = createORPCClient(
@@ -290,50 +312,139 @@ try {
     }),
   );
 
+  // Whatever a previous launch left behind is not this run's business. This run's business is that
+  // it adds nothing: the set below is compared with itself once both runs have finished.
+  const containersBefore = containersFor("u1.7");
+
   const started = await client.start_run({ prompt: "verify the control plane" });
   const run = await client.get_run({ runId: started.runId });
   check(
-    run.status === "running" && run.prompt === "verify the control plane" && run.lastSeq >= 2,
+    run.status === "running" && run.prompt === "verify the control plane",
     `oRPC round trip: start_run + get_run -> ${JSON.stringify(run)}`,
   );
 
+  /**
+   * The page's own stream, which is how the surface answers a card. It replays the log from seq 0
+   * and then follows it live, so one socket observes both runs and carries both answers.
+   */
+  const page = new WebSocket(`ws://127.0.0.1:${apiPort}/events?token=${token}`);
+  const observed: EventMessage[] = [];
+  page.addEventListener("message", (event) => {
+    const parsed = safeParseMessage(JSON.parse(String(event.data)) as unknown);
+    if (parsed.success && "seq" in parsed.data) observed.push(parsed.data);
+  });
+
   const socket = new WebSocket(`ws://127.0.0.1:${apiPort}/rpc-ws?token=${token}`);
-  const received: EventMessage[] = [];
+  const streamedFrames: EventMessage[] = [];
   const drained = (async () => {
     try {
       const streamed: ApiClient = createORPCClient(new WebSocketLink({ websocket: socket }));
       for await (const message of await streamed.subscribe_events({ lastSeq: 0 })) {
-        received.push(message);
+        streamedFrames.push(message);
       }
     } catch {
       // The client's iterator aborts when its socket closes, which is how this drain ends.
     }
   })();
 
-  await until(() => received.length >= 2, "the replayed events");
-  const cancelled = await client.cancel_run({ runId: started.runId });
-  await until(() => received.length >= 3, "the live run.failed");
+  await until(
+    () => observed.filter((message) => message.type === "approval.requested").length === 2,
+    "both runs to park at the gate",
+  );
+  const parks = observed.filter((message) => message.type === "approval.requested");
+  const parkRunIds = [...new Set(parks.map((park) => park.runId))].sort();
+  check(
+    parkRunIds.length === 2 &&
+      parkRunIds.includes(matrixRunId ?? "") &&
+      parkRunIds.includes(started.runId),
+    `both runs parked, one per run id: ${parkRunIds.join(",")}`,
+  );
+  for (const park of parks) {
+    if (park.type !== "approval.requested") continue;
+    page.send(
+      JSON.stringify({
+        type: "answer",
+        decision: "deny",
+        approvalId: park.payload.approvalId,
+      }),
+    );
+  }
+
+  await until(
+    () =>
+      [matrixRunId, started.runId].every((id) =>
+        observed.some((message) => message.runId === id && message.type === "run.finished"),
+      ),
+    "both runs to reach their terminal frame",
+  );
+  await until(
+    () => observed.some((message) => message.type === "tool_call.decision"),
+    "the denial to land in the log",
+  );
   socket.close();
   await drained;
 
   check(
-    received.length === 3 &&
-      received.every((message, index) => message.seq === index + 1) &&
-      received.every((message) => safeParseMessage(message).success),
-    `websocket stream seq ${received.map((message) => message.seq).join(",")}: ${received.map((message) => message.type).join(",")}`,
+    observed.length > 0 &&
+      observed.every((message, index) => message.seq === index + 1) &&
+      observed.every((message) => safeParseMessage(message).success),
+    `the page's stream is dense from seq 1 to ${observed.at(-1)?.seq} (${observed.length} frames), all v1`,
   );
   check(
-    received[0]?.type === "run.started" &&
-      received[0].runId === matrixRunId &&
-      received[1]?.type === "run.started" &&
-      received[1].runId === started.runId,
-    `the replay covers both runs in order: ${received[0]?.runId} then ${received[1]?.runId}`,
+    observed[0]?.type === "run.started" &&
+      observed[0]?.runId === matrixRunId &&
+      observed.some((message) => message.type === "run.started" && message.runId === started.runId),
+    `the replayed log starts with the matrix run and carries the round-trip run: ${observed[0]?.runId} then ${started.runId}`,
   );
   check(
-    received[2]?.type === "run.failed" &&
-      JSON.stringify(received[2].payload) === '{"reason":"cancelled by operator"}' &&
-      cancelled.runId === started.runId,
-    `the live event is the cancel's run.failed: ${JSON.stringify(received[2])}`,
+    observed.filter((message) => message.type === "run.finished").length === 2 &&
+      observed.filter(
+        (message) => message.type === "run.status" && message.payload.status === "done",
+      ).length === 2,
+    `both runs put their own terminal frames in the log: ${observed
+      .filter((message) => message.type === "run.finished")
+      .map((message) => message.runId)
+      .join(",")}`,
+  );
+  const denials = observed.filter((message) => message.type === "tool_call.decision");
+  check(
+    denials.length === 2 &&
+      denials.every(
+        (denial) =>
+          denial.type === "tool_call.decision" &&
+          denial.payload.allow === false &&
+          denial.payload.code === "user_denied",
+      ) &&
+      [...new Set(denials.map((denial) => denial.runId))].sort().join(",") === parkRunIds.join(","),
+    `each answered card produced the user_denied decision the fold exists for: ${JSON.stringify(denials.map((denial) => denial.payload))}`,
+  );
+  check(
+    streamedFrames.length > 0 &&
+      streamedFrames.every((message, index) => message.seq === index + 1) &&
+      streamedFrames.at(-1)?.type === "run.status",
+    `the oRPC stream saw the same log, dense from seq 1 to ${streamedFrames.at(-1)?.seq}: ${[
+      ...new Set(streamedFrames.map((message) => message.type)),
+    ].join(",")}`,
+  );
+
+  const ended = await client.get_run({ runId: started.runId });
+  check(
+    ended.status === "finished" && ended.endedAt !== null,
+    `get_run reports the finished run: ${JSON.stringify(ended)}`,
+  );
+
+  // The loop destroys the sandbox after its last frame, so the container goes away a moment after
+  // the run's terminal status, not with it.
+  await until(
+    () => containersFor("u1.7").length === containersBefore.length,
+    "both runs to destroy their own container",
+    30_000,
+  );
+  const containersAfter = containersFor("u1.7");
+  check(
+    containersAfter.length === containersBefore.length &&
+      containersAfter.every((name) => containersBefore.includes(name)),
+    `both runs destroyed their own container: the label's container set is what it was before them (${containersBefore.length} -> ${containersAfter.length})`,
   );
 
   await Bun.sleep(100);
@@ -365,6 +476,8 @@ const report = [
   `git sha short: ${shortSha}`,
   `branch: ${branch}`,
   `runtime: bun ${Bun.version} on ${process.platform} ${process.arch}`,
+  `pinned image: freebot-sandbox:u0.6`,
+  `transcript: packages/pi-bridge/fixtures/rpc-handshake.jsonl`,
   "",
   ...lines,
   "",
