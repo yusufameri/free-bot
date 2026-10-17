@@ -1,0 +1,29 @@
+feature: protocol
+command: bun packages/protocol/scripts/replay-spike.ts
+timestamp: 2026-10-17T08:16:07.854Z
+git sha short: e025559
+fixture: packages/protocol/fixtures/spike-display-frames-a.jsonl
+
+frames: 84; mapped messages: 85 (run.started synthesized, one answered placeholder resolved)
+
+  seq 30 -> appended
+  seq 30 replayed (echo_last=1) -> duplicate
+  seq 31 never arrived: seq 32 -> gap (expected 31, got 32)
+  resend from 31: seq 31 -> appended
+  seq 32 again -> appended
+
+ingest outcomes: {"appended":85,"duplicate":1,"gap":1,"rejected":0}
+frames refused by the v1 schema before ingest: 1
+resume from last_seen_seq=30: 55 messages, seq 31..85
+
+seq audit (packages/core SeqLog, recomputed from the stored entries):
+  frames logged: 85 (seq 1..85)
+  gaps: 0 []
+  duplicates: 0 []
+  suppressed at ingest (replayed frames the log already held): 1 [30]
+  gap events (refused, healed by resend): 1 [31<-32]
+  rejected payloads: 1
+  observer counts: appended 85, duplicate 1, gap 1
+  audit invariant: OK (zero gaps, zero duplicates)
+
+PASS replay: 85 frames ingested, 1 duplicate suppressed, 1 gap refused and healed, 1 rejected
