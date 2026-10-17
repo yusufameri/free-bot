@@ -71,6 +71,10 @@
     "packages/providers": {
       "name": "@freebot/providers",
       "version": "0.0.0",
+      "dependencies": {
+        "@freebot/pi-bridge": "workspace:*",
+        "@freebot/verify": "workspace:*",
+      },
     },
     "packages/review": {
       "name": "@freebot/review",
