@@ -1,0 +1,47 @@
+# U0.2 pi rpc spike verification
+commit: e203adffa3e8dd0ce047b42216d7414fd1838c15  short: e203adf  branch: u0.2-pi-rpc-spike
+date: 2026-10-17T06:33:51Z
+
+$ bun install
+bun install v1.2.5 (013fdddc)
+
+Checked 140 installs across 148 packages (no changes) [8.00ms]
+
+$ bun run lint
+$ biome check .
+Checked 41 files in 7ms. No fixes applied.
+
+$ bunx biome check docs/pi-rpc-spike.md spikes/pi-rpc packages/pi-bridge packages/verify/run.ts
+
+Checked 4 files in 5ms. No fixes applied.
+
+$ bun run typecheck
+$ tsc -p tsconfig.json
+exit=0
+
+$ bun run verify
+$ bun packages/verify/run.ts
+PASS step typecheck ($ tsc -p tsconfig.json)
+PASS step tests (bun test v1.2.5 (013fdddc))
+PASS step scaffold-shape (scaffold shape ok: 9 packages, 5 apps, every package extends tsconfig.base.json)
+PASS step healthz (GET /healthz -> 200 {"status":"ok","service":"freebot-server"})
+artifact: packages/verify/artifacts/scaffold/195f336/assert.txt
+PASS scaffold
+exit=0
+
+$ bun spikes/pi-rpc/drive.ts
+
+spike transcript: /Users/yusufameri/projects/free-bot/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+checks passed: 39
+checks failed: 0
+
+
+$ head -1 fixtures/rpc-handshake.jsonl (header line)
+{"dir":"header","generator":"spikes/pi-rpc/drive.ts","piPackage":"@earendil-works/pi-coding-agent","piVersion":"1.3.0","platform":"darwin-arm64","osRelease":"24.3.0","node":"v24.21.0","driveRuntime":"bun 1.2.5","startedAt":"2026-10-17T06:33:41.574Z"}
+
+fixture line count:
+     248 packages/pi-bridge/fixtures/rpc-handshake.jsonl
+assertion frames ok=true:
+39
+assertion frames ok=false:
+0
