@@ -1,0 +1,127 @@
+feature: core-run-model
+command: bun packages/core/src/run-evidence.ts
+git sha: 5046bd6c53ea7c16f5823d733a0161f17e0ef5b2
+branch: u1.4-run-model
+runtime: bun 1.2.5 on darwin arm64
+journal: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-run-evidence/runs.jsonl
+lifecycle source: docs/mvp-smoke-dry-run.md (start, steps, approval park, kill/rejoin, resume, done)
+
+== the lifecycle
+PASS start_run creates a queued record on attempt 1: [true,"queued",1]
+PASS the record carries the thread, the bot, and the prompt: ["thread-1","bot-1","echo one; rm -f /scratch/task/doomed.txt; sleep 3 && echo two"]
+PASS the park is durable and names the call the user answers: ["awaiting_approval","approval-1","v1:sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"]
+PASS a parked run emits no turn or step traffic until it is answered: "awaiting_approval"
+PASS the answer returns the run to running with no park left behind: ["running",null]
+kill point: step 3 (sleep 3) is in flight, the run is running on attempt 1 at seq 17, 21 commands journaled
+
+== the kill and the rejoin
+crash: the writer is gone and its last write has no newline (55 bytes, never reported applied)
+PASS the torn trailing line is dropped rather than parsed: true
+PASS every complete command replayed: 21
+PASS replay refused nothing: []
+PASS the reopen converges to the same records: true
+PASS the run came back where it was killed: ["running",17,1]
+PASS losing the sandbox mid-run parks the run instead of ending it: ["paused","sandbox_lost_mid_run"]
+PASS the rejoin resumes the run on attempt 2 with the reason cleared: ["running",2,null]
+PASS the rejoin continues at the seq after the kill: 18
+PASS a denied park resumes the run without recording a failure: ["running",null]
+PASS usage mid-run is counted per model through the same record: [true,true]
+
+== the transitions this run made, in order
+  - -> queued | via start_run | seq - | event no wire kind
+  queued -> running | via begin | seq 1 | event run.started
+  running -> awaiting_approval | via park | seq 10 | event approval.requested
+  awaiting_approval -> running | via resolve | seq 11 | event approval.resolved
+  running -> paused | via pause | seq - | event no wire kind
+  paused -> running | via resume | seq - | event no wire kind
+  running -> awaiting_approval | via park | seq 28 | event approval.requested
+  awaiting_approval -> running | via resolve | seq 29 | event approval.resolved
+  running -> done | via finish | seq 35 | event run.finished
+
+== the log and the record at the end
+PASS the log is one contiguous run of frames: {"firstSeq":1,"lastSeq":35,"count":35,"gaps":[],"duplicates":[],"suppressedAtIngest":[],"gapEvents":[],"rejected":0}
+PASS the run's durable position is the log's last seq: 35
+PASS the run ended at done with two attempts: ["done",2,true]
+
+== usage and the spend cap
+PASS the run's totals are per model and exact: {"tokens":{"input":3000,"output":600,"cacheRead":0,"cacheWrite":0},"costNanoUsd":18000000,"byModel":{"openai/gpt-4o":{"provider":"openai","model":"gpt-4o","tokens":{"input":3000,"output":600,"cacheRead":0,"cacheWrite":0},"costNanoUsd":18000000,"calls":2}}}
+  spent: 0.018 USD (18000000 nano-USD)
+  usage_event shapes kept: usage-1, usage-2
+  cap 0.025000000 USD: {"ok":true,"spentNanoUsd":18000000,"capNanoUsd":25000000,"remainingNanoUsd":7000000,"overByNanoUsd":0}
+  cap 0.017999999 USD: {"ok":false,"spentNanoUsd":18000000,"capNanoUsd":17999999,"remainingNanoUsd":0,"overByNanoUsd":1}
+PASS under the cap the run loop may continue: [true,7000000]
+PASS one nano over the cap and the run loop must stop: [false,1]
+
+== idempotency
+PASS start_run on a settled run returns the same record and creates nothing: [false,"done",1700000000010,18000000]
+PASS cancel_run on a settled run is a no-op, not an error: ["done",null]
+PASS a replayed usage id is refused rather than counted twice: [false,18000000]
+PASS a seq the record already passed never moves it back: 35
+PASS a resent park is the same park, not a second one: [7000,7000]
+PASS cancelling a run that never began ends it without throwing: "cancelled"
+PASS reloading the settled journal converges again: true
+
+== illegal moves are refused by name
+  park before begin: park: queued -> awaiting_approval is not a legal run transition
+  finish while paused: finish: paused -> done is not a legal run transition
+  resume a park nobody answered: resume: awaiting_approval -> running is not a legal run transition
+  a code that settles the run cannot park it: pause(provider_auth): the taxonomy settles this code at status failed
+PASS an unknown run is refused: "unknown run: run-nope"
+
+== the transition table the registry holds
+PASS legal pairs: 14
+PASS refused pairs out of the 49: 35
+  queued -> running | event run.started
+  queued -> failed | event run.failed
+  queued -> cancelled | event no wire kind
+  running -> awaiting_approval | event approval.requested
+  running -> paused | event no wire kind
+  running -> done | event run.finished
+  running -> failed | event run.failed
+  running -> cancelled | event no wire kind
+  awaiting_approval -> running | event approval.resolved
+  awaiting_approval -> failed | event run.failed
+  awaiting_approval -> cancelled | event no wire kind
+  paused -> running | event no wire kind
+  paused -> failed | event run.failed
+  paused -> cancelled | event no wire kind
+
+== the failure taxonomy
+  code | status | event | ui copy
+  provider_auth | failed | run.failed | The model provider rejected your API key.
+PASS   provider_auth reaches failed: ["failed","provider_auth"]
+  provider_rate_limit | failed | run.failed | The model provider is rate-limiting you. Try again in a few minutes.
+PASS   provider_rate_limit reaches failed: ["failed","provider_rate_limit"]
+  provider_malformed_tool_call | failed | run.failed | That model sent a tool call FreeBot cannot run. Try a different model.
+PASS   provider_malformed_tool_call reaches failed: ["failed","provider_malformed_tool_call"]
+  sandbox_unavailable | failed | run.failed | FreeBot could not start the sandbox. Run freebot doctor.
+PASS   sandbox_unavailable reaches failed: ["failed","sandbox_unavailable"]
+  sandbox_lost_mid_run | paused | no wire kind | The sandbox was lost. FreeBot is reconnecting; the run continues where it stopped.
+PASS   sandbox_lost_mid_run reaches paused: ["paused","sandbox_lost_mid_run"]
+  approval_timeout | failed | run.failed | The approval request timed out.
+PASS   approval_timeout reaches failed: ["failed","approval_timeout"]
+  cancelled | cancelled | no wire kind | Cancelled.
+PASS   cancelled reaches cancelled: ["cancelled","cancelled"]
+  internal_invariant | failed | run.failed | FreeBot hit an internal error and stopped this run.
+PASS   internal_invariant reaches failed: ["failed","internal_invariant"]
+
+== freebot doctor
+  freebot doctor
+  store: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-run-evidence/freebot-home
+  PASS bun: 1.2.5 (floor 1.2.0)
+  PASS docker daemon: server 28.3.2
+  PASS pinned image: freebot-sandbox:u0.6 base sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+  PASS run store: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-run-evidence/freebot-home/runs.jsonl: probe doctor-probe cancelled, reopen converged, created true
+  FAIL provider key: no key file at /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-run-evidence/freebot-home/provider.key (value never read)
+  freebot doctor: 4/5 checks pass
+PASS the doctor runs five checks: [4,1]
+PASS its one failure is the provider key G1 parks: true
+PASS it exits non-zero when a check fails: 1
+PASS it proves the store writable through a real probe run: true
+PASS a second doctor run appends nothing to the store: [3,3]
+PASS and its probe finds the record already settled: true
+
+== artifact
+
+RESULT: PASS (45/45)
+artifact: packages/verify/artifacts/core-run-model/5046bd6/assert.txt

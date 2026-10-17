@@ -25,7 +25,10 @@
       "name": "@freebot/server",
       "version": "0.0.0",
       "dependencies": {
+        "@freebot/core": "workspace:*",
+        "@freebot/protocol": "workspace:*",
         "@orpc/client": "1.15.7",
+        "@orpc/contract": "1.15.7",
         "@orpc/server": "1.15.7",
         "hono": "^4.6.0",
       },
@@ -41,6 +44,9 @@
     "packages/core": {
       "name": "@freebot/core",
       "version": "0.0.0",
+      "devDependencies": {
+        "@freebot/protocol": "workspace:*",
+      },
     },
     "packages/pi-bridge": {
       "name": "@freebot/pi-bridge",
