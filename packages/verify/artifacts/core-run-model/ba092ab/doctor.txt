@@ -1,0 +1,8 @@
+freebot doctor
+store: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-run-evidence/freebot-home
+PASS bun: 1.2.5 (floor 1.2.0)
+PASS docker daemon: server 28.3.2
+PASS pinned image: freebot-sandbox:u0.6 base sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+PASS run store: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-run-evidence/freebot-home/runs.jsonl: probe doctor-probe cancelled, reopen converged, created true
+FAIL provider key: no key file at /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-run-evidence/freebot-home/provider.key (value never read)
+freebot doctor: 4/5 checks pass
