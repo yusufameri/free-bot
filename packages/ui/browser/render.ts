@@ -25,6 +25,8 @@ export interface ThreadHandle {
   apply(message: Message): void;
   setConnection(connection: Connection): void;
   showError(message: string): void;
+  /** Empty the transcript for a different thread's frames: the state, the DOM, and the counters. */
+  reset(): void;
   state(): ThreadState;
   facts(): FrameFacts;
 }
@@ -333,6 +335,26 @@ export function mountThread(config: {
     setConnection(connection: Connection): void {
       connEl.textContent = connection;
       connEl.dataset.connection = connection;
+    },
+    reset(): void {
+      state = initialState();
+      toolRefs.clear();
+      approvalRefs.clear();
+      currentAssistant = null;
+      threadEl.replaceChildren();
+      if (idleNote !== null) {
+        idleNote.hidden = false;
+        threadEl.append(idleNote);
+      }
+      resumeEl.hidden = true;
+      resumeEl.textContent = "";
+      delete resumeEl.dataset.resumedFrom;
+      errorEl.hidden = true;
+      errorEl.textContent = "";
+      delete errorEl.dataset.error;
+      runEl.textContent = "";
+      delete runEl.dataset.runId;
+      updateHeader();
     },
     showError,
     state(): ThreadState {

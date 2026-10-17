@@ -77,7 +77,7 @@ preflight in `apps/web/scripts/capture.ts`.
 
 ## What the gate still does not reach
 
-These five are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no included
+These six are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no included
 root reaches. The probe derives that set from the tree and asserts it equals this list, so a new
 unreached file fails the probe.
 
@@ -86,10 +86,11 @@ unreached file fails the probe.
 | `apps/web/host/main.ts` | browser code, needs `lib: DOM`, which the root program does not carry | `apps/web/tsconfig.json` |
 | `packages/ui/browser/render.ts` | same, the DOM surface of the shared thread model | `apps/web/tsconfig.json` |
 | `packages/ui/browser/library.ts` | same, the DOM surface of the shared Library model (U4.1) | `apps/web/tsconfig.json` |
+| `packages/ui/browser/shell.ts` | same, the DOM surface of the Bot sidebar and thread list (U4.2) | `apps/web/tsconfig.json` |
 | `packages/sandbox/image/replay-ext.ts` | nothing imports it, and `image/` is not `src` or `scripts` | nothing |
 | `packages/pi-bridge/extension/smoke-echo.ts` | nothing imports it (the smoke passes its path as a string) | nothing |
 
-The three DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
+The four DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
 control-plane and server code call `document` without a complaint, which is a worse trade than
 leaving the browser surface to the app config that already owns it.
 

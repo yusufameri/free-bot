@@ -1,17 +1,25 @@
 /**
- * The apps/web host: connect, hand every message to the shared thread model, and let it render.
- * The Library tab is the same host's second view of the same Bot: it reads the workspace through the
- * oRPC route surface, with the operator token the page was opened with. Everything else (the two
- * models, the DOM contract) lives in `@freebot/ui`.
+ * The apps/web host: read the Bots, hand every message of the selected thread to the shared thread
+ * model, and let it render. The Library tab is the same host's second view of the selected Bot: it
+ * reads that Bot's workspace through the oRPC route surface, with the operator token the page was
+ * opened with. Everything else (the three models, the DOM contract) lives in `@freebot/ui`.
  *
  * Two peers, one page. The fixture server (`apps/web/scripts/server.ts`) is the dev peer: no token,
- * one committed replay. The real server serves this page and its stream, and its stream is gated by
- * the operator token, so the page presents the token it was opened with. The token rides in the URL
- * fragment, because a browser never sends a fragment to a server; only the WebSocket's query string
- * carries it, which is the one place the gate reads a token from a query.
+ * one committed replay, no Bot list. The real server serves this page and its stream, and its stream
+ * is gated by the operator token, so the page presents the token it was opened with. The token rides
+ * in the URL fragment, because a browser never sends a fragment to a server; only the WebSocket's
+ * query string carries it, which is the one place the gate reads a token from a query.
  *
- * Operator mode is "the page was opened with a token". That is what reveals the prompt box, so the
- * fixture page renders exactly the page it rendered before this unit.
+ * Operator mode is "the page was opened with a token". That is what reveals the sidebar and the
+ * prompt box, because both need the Bot list; the fixture page renders exactly the page it rendered
+ * before this unit. Operator mode also creates the first Bot, named `Local Bot`, on a server that
+ * holds none: a person who runs `bun run up` gets a conversation to type into, and the record the
+ * page makes is the same record a Bot made from the sidebar would be.
+ *
+ * One thread at a time. The page follows the selected thread's own log, so switching threads closes
+ * the socket and opens the stream for the thread that is now on screen, replaying it from 0. The
+ * last_seq it carries on a reconnect is that thread's, which is why the cursor belongs to the
+ * socket and not to the page.
  */
 
 import { createORPCClient } from "@orpc/client";
@@ -20,8 +28,16 @@ import type { ContractRouterClient } from "@orpc/contract";
 import type { apiContract, Message } from "../../../packages/protocol/src/index.ts";
 import { exposeLibraryFacts, mountLibrary } from "../../../packages/ui/browser/library.ts";
 import { type Connection, exposeFacts, mountThread } from "../../../packages/ui/browser/render.ts";
+import {
+  exposeShellFacts,
+  mountShell,
+  type ShellSelection,
+} from "../../../packages/ui/browser/shell.ts";
 
 type ApiClient = ContractRouterClient<typeof apiContract>;
+
+/** The name the page gives the first Bot on a server that holds none. */
+const FIRST_BOT_NAME = "Local Bot";
 
 const params = new URLSearchParams(location.search);
 const fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
@@ -32,10 +48,20 @@ const autoAnswer = auto === "allow" || auto === "deny" ? auto : null;
 const operator = document.querySelector<HTMLFormElement>("#operator");
 const promptInput = document.querySelector<HTMLInputElement>("#prompt");
 const startButton = document.querySelector<HTMLButtonElement>("#start");
+const sidebar = document.querySelector<HTMLElement>("#sidebar");
+const shellEl = document.querySelector<HTMLElement>(".shell");
 
 let socket: WebSocket | null = null;
+/** The Bot and thread on screen. A run and a stream both name them. */
+let selection: ShellSelection = { botId: null, threadId: null };
+/** The thread the transcript currently holds, so a reconnect does not clear it. */
+let shownThread: string | null = null;
+/** A prompt typed before the page had a thread to send it to. */
+let queued: string | null = null;
+/** Bumped per connection, so a socket that has been replaced cannot speak for the page. */
+let generation = 0;
 
-/** The page's own workspace reads, over the same routes a client uses, with its operator token. */
+/** The page's own reads, over the same routes a client uses, with its operator token. */
 const api: ApiClient | null =
   token === null
     ? null
@@ -46,15 +72,25 @@ const api: ApiClient | null =
         }),
       );
 
+/** The token the shell needs. A page without one renders no Bot list at all. */
+function client(): ApiClient {
+  if (api === null) throw new Error("the Bot list needs the operator token");
+  return api;
+}
+
 const library = mountLibrary({
   calls: {
     list: async (path) => {
-      if (api === null) throw new Error("the Library needs the operator token");
-      return await api.list_files({ path });
+      if (api === null || selection.botId === null) {
+        throw new Error("the Library needs the operator token");
+      }
+      return await api.list_files({ botId: selection.botId, path });
     },
     read: async (path) => {
-      if (api === null) throw new Error("the Library needs the operator token");
-      return await api.read_file({ path });
+      if (api === null || selection.botId === null) {
+        throw new Error("the Library needs the operator token");
+      }
+      return await api.read_file({ botId: selection.botId, path });
     },
   },
   onTab: (tab) => showOperator(tab === "conversation"),
@@ -88,31 +124,90 @@ window.__threadSend = (message: unknown): void => {
   socket?.send(JSON.stringify(message));
 };
 
+const shell = mountShell({
+  calls: {
+    listBots: async () => (await client().list_bots({})).bots,
+    createBot: (name) => client().create_bot({ name }),
+    listThreads: async (botId) => (await client().list_threads({ botId })).threads,
+    createThread: async (botId, title) =>
+      await client().create_thread(title === undefined ? { botId } : { botId, title }),
+  },
+  onChange: (next) => {
+    selection = next;
+    if (token !== null && next.threadId !== null) {
+      void library.refresh().catch(() => undefined);
+      connect();
+      flushQueued();
+    }
+  },
+});
+exposeShellFacts(shell);
+
+/** Start the run the composer asked for, in the Bot and the thread on screen. */
+function sendStart(prompt: string): void {
+  socket?.send(
+    JSON.stringify({ type: "start", prompt, botId: selection.botId, threadId: selection.threadId }),
+  );
+  if (startButton !== null) startButton.disabled = true;
+}
+
+/** Send a prompt that arrived before the page had a thread to send it to. */
+function flushQueued(): void {
+  if (queued === null || selection.threadId === null) return;
+  const prompt = queued;
+  queued = null;
+  sendStart(prompt);
+}
+
 /** The prompt box is the page's way to begin a run, and it lands on the server's one run path. */
 operator?.addEventListener("submit", (event) => {
   event.preventDefault();
   const prompt = promptInput?.value.trim() ?? "";
   if (prompt.length === 0) return;
-  socket?.send(JSON.stringify({ type: "start", prompt }));
-  if (startButton !== null) startButton.disabled = true;
+  if (token === null) {
+    // The dev peer holds one committed thread and no Bot list, so it takes the bare message.
+    socket?.send(JSON.stringify({ type: "start", prompt }));
+    if (startButton !== null) startButton.disabled = true;
+    return;
+  }
+  if (selection.threadId === null) {
+    queued = prompt;
+    return;
+  }
+  sendStart(prompt);
 });
 
+/** Follow the selected thread's log, from where this thread's display left off. */
 function connect(): void {
+  const threadId = selection.threadId;
+  const mine = ++generation;
+  const threadChanged = threadId !== shownThread;
+  if (threadId !== null && threadChanged) {
+    // A different conversation: the transcript on screen belongs to the thread that was selected.
+    handle.reset();
+    shownThread = threadId;
+    if (startButton !== null) startButton.disabled = false;
+  }
+  if (token !== null && threadId === null) return;
+
   const carry = new URLSearchParams();
   for (const key of ["drop_at", "echo_last", "auto", "hold_before"]) {
     const value = params.get(key);
     if (value !== null) carry.set(key, value);
   }
   if (token !== null) carry.set("token", token);
+  if (threadId !== null) carry.set("thread_id", threadId);
   carry.set("last_seen_seq", String(handle.state().lastSeq));
   const scheme = location.protocol === "https:" ? "wss" : "ws";
   const ws = new WebSocket(`${scheme}://${location.host}/events?${carry.toString()}`);
   socket = ws;
 
   ws.onopen = () => {
+    if (mine !== generation) return;
     handle.setConnection("connected");
   };
   ws.onmessage = (event) => {
+    if (mine !== generation) return;
     const message = JSON.parse(String(event.data)) as Message;
     try {
       handle.apply(message);
@@ -122,16 +217,22 @@ function connect(): void {
       return;
     }
     if (handle.state().error !== null) ws.close();
+    if (message.type === "run.finished" || message.type === "run.failed") {
+      // The thread's own counts moved, so the list that shows them is re-read.
+      void shell.refresh().catch(() => undefined);
+    }
     if (startButton !== null && (handle.state().done || handle.state().failed !== null)) {
       startButton.disabled = false;
     }
   };
   ws.onclose = () => {
+    if (mine !== generation) return;
     if (handle.state().error !== null) return;
     handle.setConnection("reconnecting");
     setTimeout(connect, 250);
   };
   ws.onerror = () => {
+    if (mine !== generation) return;
     if (handle.state().error !== null) return;
     handle.setConnection("reconnecting");
   };
@@ -139,4 +240,24 @@ function connect(): void {
 
 const initial: Connection = "connecting";
 handle.setConnection(initial);
+
+if (token !== null && sidebar !== null && shellEl !== null) {
+  sidebar.hidden = false;
+  shellEl.dataset.operator = "true";
+  void (async () => {
+    try {
+      await shell.load();
+      if (shell.facts().bots.length === 0) {
+        // The first time this server runs there is no Bot, and a conversation needs one.
+        await shell.createBot(FIRST_BOT_NAME);
+      } else {
+        selection = shell.selection();
+        connect();
+      }
+    } catch (error) {
+      handle.showError(error instanceof Error ? error.message : String(error));
+    }
+  })();
+}
+
 connect();
