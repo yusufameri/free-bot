@@ -64,7 +64,10 @@ const cases: ProbeCase[] = [
  */
 const tsxFamilies = [
   { pattern: "packages/*/src/**/*.tsx", path: "packages/core/src/__type-gate-census.tsx" },
-  { pattern: "packages/*/scripts/**/*.tsx", path: "packages/protocol/scripts/__type-gate-census.tsx" },
+  {
+    pattern: "packages/*/scripts/**/*.tsx",
+    path: "packages/protocol/scripts/__type-gate-census.tsx",
+  },
   { pattern: "apps/*/src/**/*.tsx", path: "apps/server/src/__type-gate-census.tsx" },
   { pattern: "apps/*/scripts/**/*.tsx", path: "apps/web/scripts/__type-gate-census.tsx" },
 ];
