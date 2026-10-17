@@ -1,0 +1,37 @@
+feature: sandbox-provider
+command: bun test packages/sandbox/src/docker.test.ts
+timestamp: 2026-10-17T14:13:20.657Z
+git short sha: 4f44e98 (branch u1.2-sandbox-provider)
+runtime: bun 1.2.5 on darwin arm64
+docker server: 28.3.2
+check pinned image: tag=freebot-sandbox:u0.6 id=sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8 layers=7/7 matching docs/sandbox-image.md
+check pre-suite sweep (own labels only): removed=0
+check decoys created (other unit and unlabelled): u12-decoy-foreign-unit, u12-decoy-bare status=running, running
+check create: handle={"provider":"docker","id":"u12-main"} labels={"freebot.provider":"docker","freebot.sandbox":"u12-main","freebot.unit":"u1.2","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check container image content: 7 RootFS layers equal the U0.6-recorded set
+check exec echo: exit=0 stdout="hello-from-sandbox"
+check exec stream: exit=0 streamed="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check detached exec: {started:true} then marker="detached-marker"
+check upload/download: bytes=4096 sha256=40d912cb9cb1df3a5e2c983bcf1e31e680c6f3061d01806a52c11f48fffdeac8 same-in-sandbox=true round-trip-equal=true
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote ack seq=7, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u12-no-link: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check exposePort: http://127.0.0.1:51367 -> "exposed-body"
+check snapshot: tag=freebot-snapshot/u12-main:u12-round-trip ref=sha256:2bbce3556c6b209e2a57ead73dae6fc8b98024d007b07bc7fc3cb6a37101a274 createdAt=2026-10-17T14:13:24.565169763Z
+check stop/resume: exited -> running, marker="round-trip-marker\n"
+check disk-only restore: u12-from-snap from the snapshot reads marker="round-trip-marker\n"
+check idle-kill: u12-idle (idleTtlMs=600) stopped after 2791ms with no adapter call (docker stop -t 2)
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 600ms ttl
+containers before sweep (label freebot.unit=u1.2):
+b12ec4165dab|freebot-sbx-u12-idle|Up 1 second
+3c8ad5b74714|freebot-sbx-u12-from-snap|Up 4 seconds
+4661399ce099|freebot-sbx-u12-main|Up 4 seconds
+containers before sweep (foreign unit u0.11):
+db9f26ecb4f6|u12-decoy-foreign-unit|Up 10 seconds
+containers before sweep (unlabelled decoy):
+2d45b69585b2|u12-decoy-bare|Up 10 seconds
+check sweep removed 3 containers with label freebot.unit=u1.2: b12ec4165dab, 3c8ad5b74714, 4661399ce099
+containers after sweep (label freebot.unit=u1.2):
+(none)
+containers after sweep, unchanged: u12-decoy-foreign-unit=db9f26ecb4f61e7afcceb1310d37e20eb98de5702f9af2c088adafd986e8ce24 running, u12-decoy-bare=2d45b69585b264f0daa0740a941a9bea3b33977d92c5b53fbe680d143c716f76 running
