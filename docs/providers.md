@@ -2,8 +2,8 @@
 
 Status: implementation complete, unit-test-verified over an injectable transport and the committed
 replay transcript. The live half of the probe is built and parked on gate G1 while this unit ran; G1
-has since opened, so the live path below is documented, run once against the real endpoint, and kept
-out of the gate on purpose.
+has since opened, so the live path below is documented, run against the real endpoint, and kept out
+of the gate on purpose.
 
 Plan citations. §2.5 puts the model layer at `@earendil-works/pi-ai` plus a custom
 OpenAI-compatible provider. §2.9 item 1 asks for a save-time smoke test that drives a real Pi
