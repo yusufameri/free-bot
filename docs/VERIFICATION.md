@@ -21,6 +21,7 @@ directory per feature and git short sha. The row records the commit the artifact
 | sandbox-provider | `bun test packages/sandbox/src/docker.test.ts` | unit-test-verified (Docker integration is the live surface: create from the pinned image, exec/upload/download, tunnel echo, snapshot/resume, idle-kill, label-scoped sweep against decoys; the suite skips itself where the pinned arm64 image is absent, so CI runs it as a skip and this artifact is the local run; no UI, so no live-ui claim) | `packages/verify/artifacts/sandbox-provider/dc875b3/assert.txt` | dc875b31769843ebd3b743fc8a68b3f43566b35f | 2026-10-17 |
 | providers | `bun packages/providers/scripts/evidence.ts` | unit-test-verified (the injectable transport and the replay-mode probe are the tested surface: 36 tests covering the client's streaming and non-streaming parsing, the malformed tool-call shapes, the auth/rate-limit/refusal/malformed-call/timeout/transport error literals, the fallback's success and failure modes, and the flag derivation from one observed turn, one of them the parsable-reply-with-no-tool-call note; every artifact row asserts the literal it prints, so a regression fails the run rather than printing PASS; the live-provider run is gate-bound on G1 and is unobserved, so every observation line in the artifact is labelled replay or live and all of them are replay today) | `packages/verify/artifacts/providers/a980049/assert.txt` | a980049d0d892f15bbe92d8ead42aab9a2ca239c | 2026-10-17 |
 | web chat surface | `bun apps/web/scripts/capture.ts` | live-ui-verified (76/76 CDP checks in headless Chrome 155: the eight key states with their DOM facts read before and after each capture and failing if they moved, every caption's claims evaluated against those facts, every caption's element asserted inside the captured viewport, and 28 pairwise distinctness comparisons with zero collisions; committed-fixture replay only, no model, no key) | `packages/verify/artifacts/web-shell/2f23017/assert.txt` | 2f230177008f1d369ee8f94bd90f16fc082e4ff7 | 2026-10-17 |
+| run loop | `bun apps/server/src/run-loop-live.ts` | unit-test-verified (the live surface is a real container from the pinned image plus the real loop: 16 loop tests drive the transitions over fake ports with the real gate and a real `SeqLog`, 4 endpoint tests drive `start_run` and the approve and deny routes to completion with a fake sandbox, and the evidence run makes 20 checks pass against a booted container — the pinned layer set, the status trail, the decision table, the seq audit with zero gaps and zero duplicates over 25 frames, both new wire frames as they sit in the log, and the label-scoped cleanup with a surviving decoy. The model is replayed from the committed Pi transcript and the human's two answers are scripted, because gate G1 parks the keyed provider; no key material is read or written anywhere) | `packages/verify/artifacts/run-loop/0263ae6/assert.txt` | 0263ae66c914f8811aa4d625ffe55f2732ab9b1f | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, the pi-bridge client, and the
 sandbox image pin. The scaffold row covers workspace shape, typecheck, the `apps/server` health test,
@@ -66,5 +67,14 @@ streamed, detached), round-trip 4096 bytes through upload/download, echo a link 
 `tunnel()`, reach an in-sandbox port through `exposePort`, snapshot/stop/resume and restore from the
 snapshot, kill an idle sandbox on its ttl, and remove exactly this unit's containers while two decoy
 containers survive; its semantics, typed gaps, and follow-ups are in `docs/sandbox-provider.md`.
+The run loop row covers U1.7's composition of the landed parts into one executing run: `packages/core`'s
+seven-status record and its append-only journal, the landed `SeqLog`, the frozen `SandboxProvider`
+behind Docker, `packages/review`'s gate and ledger, and the v1 envelope, driven by one pure loop over
+injected ports. Its evidence boots a container from the pinned image and prints the run's status
+trail, the decision table, the seq audit, both new wire frames (`run.status` and the tenth deny code
+`user_denied`), and the label-scoped cleanup beside a surviving decoy. The model's turns are replayed
+from the committed Pi transcript and the human's answers are scripted, because gate G1 parks the keyed
+provider. Its shape, limits, and follow-ups (the keyed provider, the scheduler's idle-kill and rejoin,
+and spend caps, which are not wired) are in `docs/run-loop.md`.
 Every later feature gets its own row when its script
 lands.

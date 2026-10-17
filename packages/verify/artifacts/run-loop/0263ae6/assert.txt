@@ -1,0 +1,58 @@
+feature: run-loop
+command: bun apps/server/src/run-loop-live.ts
+timestamp: 2026-10-17T15:43:05.117Z
+git sha: 0263ae66c914f8811aa4d625ffe55f2732ab9b1f
+git sha short: 0263ae6
+branch: u1.7-run-loop
+runtime: bun 1.2.5 on darwin arm64
+pinned image: freebot-sandbox:u0.6 sha256:42794e17472717be29b4c888d3b2ac97d6b883901279d4303aafce088b4f9b4d
+transcript: packages/pi-bridge/fixtures/rpc-handshake.jsonl
+
+run loop evidence, unit u1.7, 2026-10-17T12:00:00.000Z
+
+PASS the pinned image is present and its layer set is the recorded one: {"ref":"freebot-sandbox:u0.6","layers":7}
+PASS the recorded turn asks for one bash call, verbatim from the committed transcript: "bash {\"command\":\"echo native-should-not-run\"}"
+
+the run's turns, in order:
+  1. replayed (transcript): bash {"command":"echo native-should-not-run"}
+  2. scripted by this run: bash {"command":"rm -rf /tmp/u17-doomed"}
+  3. replayed (transcript): the recorded text after the result arrives
+
+the run trail (run.status frames, in order):
+  seq 2 running
+  seq 6 awaiting_approval
+  seq 8 running
+  seq 15 awaiting_approval
+  seq 17 running
+  seq 25 done
+
+the decision table, from the log:
+  seq 9 call_stub_11 allow
+  seq 18 u17-call-2 user_denied | the user denied action v1:sha256:3b532bd55789ae73cfca3bd048473c7e708f3e3bbf10a3887ed9ec5711044d85
+
+PASS the run's final status is done: {"outcome":"done","record":"done","error":null}
+PASS the status trail is the run's own lifecycle, literal: ["running","awaiting_approval","running","awaiting_approval","running","done"]
+PASS two calls, one approved once and one refused by the human: ["call_stub_11: allow","u17-call-2: user_denied"]
+PASS the refusal names the action the human refused: {"toolCallId":"u17-call-2","ok":false,"denied":true,"output":"the user denied action v1:sha256:3b532bd55789ae73cfca3bd048473c7e708f3e3bbf10a3887ed9ec5711044d85","durationMs":null}
+PASS the approved call ran in the container and its output is the container's: {"toolCallId":"call_stub_11","ok":true,"denied":false,"output":"native-should-not-run\n"}
+PASS the approved call reported a measured duration, which a call that never ran cannot: "number"
+PASS the approved grant was consumed by the call it authorized: ["grant-1 call_stub_11"]
+PASS one refusal is on the ledger behind the gate: 1
+PASS the seq audit has no gaps, no duplicates and nothing refused: {"firstSeq":1,"lastSeq":25,"count":25,"gaps":[],"duplicates":[],"rejected":0,"suppressedAtIngest":[],"gapEvents":[]}
+PASS the run's durable position is the log's tail: 25
+PASS every frame is a v1 message the protocol accepts: true
+PASS the run.status frame in the log, parsed under v1: {"v":1,"seq":6,"ts":1792238400009,"runId":"run-u1.7","type":"run.status","payload":{"runId":"run-u1.7","status":"awaiting_approval"}}
+PASS the user_denied decision frame in the log, parsed under v1: {"v":1,"seq":18,"ts":1792238400027,"runId":"run-u1.7","type":"tool_call.decision","payload":{"toolCallId":"u17-call-2","allow":false,"code":"user_denied","detail":"the user denied action v1:sha256:3b532bd55789ae73cfca3bd048473c7e708f3e3bbf10a3887ed9ec5711044d85"}}
+
+the two new wire frames, as they appear in the log:
+  {"v":1,"seq":6,"ts":1792238400009,"runId":"run-u1.7","type":"run.status","payload":{"runId":"run-u1.7","status":"awaiting_approval"}}
+  {"v":1,"seq":18,"ts":1792238400027,"runId":"run-u1.7","type":"tool_call.decision","payload":{"toolCallId":"u17-call-2","allow":false,"code":"user_denied","detail":"the user denied action v1:sha256:3b532bd55789ae73cfca3bd048473c7e708f3e3bbf10a3887ed9ec5711044d85"}}
+
+PASS a real container from the pinned image was up while the run was parked: {"midRunContainers":2,"named":true}
+PASS the run's container is gone after the run: []
+PASS the unit's label-scoped sweep finds nothing left to remove: []
+PASS a container outside this unit's label survives, so the cleanup is scoped: 1
+PASS the decoy this run created is removed too: []
+
+checks: 20/20 PASS
+PASS run-loop
