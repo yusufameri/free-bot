@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { envProviderMode, pageUrl, parseUpArgs, UP_USAGE } from "./args.ts";
+import { envProviderMode, envWorkspace, pageUrl, parseUpArgs, UP_USAGE } from "./args.ts";
 
 describe("parseUpArgs", () => {
   test("no flags takes a free port on both legs, opens a browser, and asks the vault", () => {
@@ -8,6 +8,7 @@ describe("parseUpArgs", () => {
       tunnelPort: 0,
       open: true,
       providerMode: "auto",
+      workspace: null,
       help: false,
     });
   });
@@ -18,6 +19,7 @@ describe("parseUpArgs", () => {
       tunnelPort: 8081,
       open: true,
       providerMode: "auto",
+      workspace: null,
       help: false,
     });
   });
@@ -39,6 +41,13 @@ describe("parseUpArgs", () => {
     expect(envProviderMode({ FREEBOT_PROVIDER: "live" })).toBe("live");
     expect(envProviderMode({ FREEBOT_PROVIDER: "keyed" })).toBeNull();
     expect(envProviderMode({})).toBeNull();
+  });
+
+  test("FREEBOT_WORKSPACE moves the Bot's workspace, and an empty one means the default", () => {
+    expect(parseUpArgs([], { FREEBOT_WORKSPACE: "/tmp/ws" }).workspace).toBe("/tmp/ws");
+    expect(envWorkspace({ FREEBOT_WORKSPACE: "/tmp/ws" })).toBe("/tmp/ws");
+    expect(envWorkspace({ FREEBOT_WORKSPACE: "" })).toBeNull();
+    expect(envWorkspace({})).toBeNull();
   });
 
   test("an unknown flag is refused and named", () => {

@@ -2,9 +2,10 @@
  * The control-plane API as an oRPC contract, built with `@orpc/contract` 1.15.7.
  *
  * This is the slice a server can implement and a client can call today: three unary run procedures
- * (`start_run`, `cancel_run`, `get_run`) and one subscription (`subscribe_events`) that yields the
- * log's messages in seq order. `dto.ts` stays the source of truth for the shapes it already owns;
- * this file wires those schemas into oRPC and adds only the shapes oRPC needs that did not exist.
+ * (`start_run`, `cancel_run`, `get_run`), one subscription (`subscribe_events`) that yields the
+ * log's messages in seq order, and the workspace's two reads (`list_files`, `read_file`). `dto.ts`
+ * stays the source of truth for the shapes it already owns; this file wires those schemas into oRPC
+ * and adds only the shapes oRPC needs that did not exist.
  *
  * Auth is not here either. The token gate and the Origin/Host allowlist live in the Hono/Bun layer
  * (apps/server), because they are transport facts, not API facts. Nothing in this contract carries
@@ -17,7 +18,17 @@
 
 import { eventIterator, oc } from "@orpc/contract";
 import { z } from "zod";
-import { cancelRunInput, cancelRunOutput, startRunInput, startRunOutput } from "./dto.ts";
+import {
+  cancelRunInput,
+  cancelRunOutput,
+  listFilesInput,
+  listFilesOutput,
+  readFileInput,
+  readFileOutput,
+  startRunInput,
+  startRunOutput,
+  type WorkspaceReadRefusal,
+} from "./dto.ts";
 import { cursorSeqSchema, eventMessageSchema, runIdSchema, tsSchema } from "./envelope.ts";
 
 /**
@@ -82,26 +93,74 @@ export const subscribeEventsInput = z.strictObject({
 export type SubscribeEventsInput = z.infer<typeof subscribeEventsInput>;
 
 // ---------------------------------------------------------------------------
+// Workspace files
+// ---------------------------------------------------------------------------
+
+/**
+ * The named refusals a `list_files` or `read_file` call can end in, each with the status the wire
+ * answers with. The code IS the refusal name, so a surface branches on `error.code` rather than
+ * matching a sentence. These are error codes oRPC does not know, so they are declared here; the
+ * router also reads this table for the status an error it raises carries, because a code oRPC does
+ * not know would otherwise answer 500 and read as a server fault instead of a refused path.
+ */
+export const WORKSPACE_READ_ERRORS = {
+  absolute_path: { status: 400, message: "path is absolute; every path is relative to /workspace" },
+  parent_traversal: { status: 400, message: "path contains a .. segment" },
+  symlink_escape: { status: 403, message: "the path resolves outside /workspace" },
+  path_not_found: { status: 404, message: "no such path under /workspace" },
+  not_a_directory: { status: 400, message: "the path is not a directory" },
+  not_a_file: { status: 400, message: "the path is not a file" },
+  binary_file: { status: 415, message: "the file is not UTF-8 text" },
+} as const satisfies Record<WorkspaceReadRefusal, { status: number; message: string }>;
+
+/**
+ * List one directory of the Bot's workspace, or read one file from it. Both read the Bot's own
+ * directory on the host, which is the path its container sees as `/workspace`, so what comes back
+ * is what the computer wrote rather than a copy taken at some other time.
+ */
+export const listFilesProcedure = oc
+  .input(listFilesInput)
+  .output(listFilesOutput)
+  .errors(WORKSPACE_READ_ERRORS);
+
+export const readFileProcedure = oc
+  .input(readFileInput)
+  .output(readFileOutput)
+  .errors(WORKSPACE_READ_ERRORS);
+
+export type ListFilesOutput = z.infer<typeof listFilesOutput>;
+export type ReadFileOutput = z.infer<typeof readFileOutput>;
+
+// ---------------------------------------------------------------------------
 // The router
 // ---------------------------------------------------------------------------
 
 /**
  * The contract router. Keys are the oRPC procedure names, which are also their paths.
  *
- * The seven operations `dto.ts` already declares beyond these four (`get_events`, `approve`, `deny`,
- * `list_files`, `read_file`) stay out until each has a handler; a contract arm with no implementation
- * would type a call the server cannot answer.
+ * The five operations `dto.ts` declares beyond these six (`get_events`, `approve`, `deny`) stay out
+ * until each has a handler; a contract arm with no implementation would type a call the server
+ * cannot answer.
  */
 export const apiContract = {
   start_run: oc.input(startRunInput).output(startRunOutput),
   cancel_run: oc.input(cancelRunInput).output(cancelRunOutput),
   get_run: oc.input(getRunInput).output(getRunOutput),
   subscribe_events: oc.input(subscribeEventsInput).output(eventIterator(eventMessageSchema)),
+  list_files: listFilesProcedure,
+  read_file: readFileProcedure,
 };
 
 export type ApiContract = typeof apiContract;
 
-/** The four procedure names, for a caller that needs to enumerate them. */
-export const API_PROCEDURES = ["start_run", "cancel_run", "get_run", "subscribe_events"] as const;
+/** The six procedure names, for a caller that needs to enumerate them. */
+export const API_PROCEDURES = [
+  "start_run",
+  "cancel_run",
+  "get_run",
+  "subscribe_events",
+  "list_files",
+  "read_file",
+] as const;
 
 export type ApiProcedure = (typeof API_PROCEDURES)[number];
