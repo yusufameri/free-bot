@@ -1,0 +1,27 @@
+git commit: 8d36ea72a1dc1577d8f120e93e5858c666d8a71d
+git short sha: 8d36ea7
+branch: u0.6-sandbox-image
+docker build exit code: 0 (rebuild: 0)
+
+== base image ==
+tag: node:24.22.0-bookworm-slim
+digest pinned in Dockerfile: sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+RepoDigests: ["node@sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"]
+Id: sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5
+
+== built image ==
+tag: freebot-sandbox:u0.6
+Id: sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8
+RepoDigests: ["freebot-sandbox@sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8"]
+Created: 2026-10-17T06:51:56.955638878Z
+Architecture: arm64
+node in image: v24.22.0
+pi in image: 1.3.0
+image digest used for the pinned run env: sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8
+
+== rebuild ==
+tag: freebot-sandbox:u0.6-rebuild
+Id: sha256:c4748f675316528a1e26045afcc9022d8127b34365586ffc2738c4bc6ddf4115
+rebuild outcome: different image Id (the OCI config carries build timestamps)
+RootFS layers identical across the two builds: yes
+RootFS layers (build 1): ["sha256:dca69811453d69d10b6c0345a5c49147162abe20a2f77802d66efc60667949ea","sha256:da0c0c58041e871b63d148c451055f55713093889b5be37ad753bda51516a864","sha256:30f65559f915c9c93f6787bb6bd7690c5df44fa4525abd719396d6764adb9c66","sha256:84e62bf59c8da03d305b081c73cfb6505b47b157e35f8f2a02aa010a5098319f","sha256:ce3defcc04f94f253fc43a46d5e219e9eaa32e7231ab12561922b65bae914331","sha256:52191768128deabdb95b5103f5981c28d15f8adcd1e9dfecf791e6a8eb1290ae","sha256:6764b05ff971fe9c0b59f9f38481cf44e7879401e20b04807d3898652ab2e35c"]
