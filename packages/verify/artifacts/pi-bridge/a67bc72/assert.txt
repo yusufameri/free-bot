@@ -1,0 +1,53 @@
+feature: pi-bridge
+command: bun install && bun run lint && bun run typecheck && bun test packages/pi-bridge && bun run verify && bun packages/pi-bridge/scripts/smoke.ts
+timestamp: 2026-10-17T06:50:27Z
+git sha: a67bc7248a9b0b04552f748dd683f86f35d3a19d
+git sha short: a67bc72
+branch: u0.3-pi-bridge
+runtime: bun 1.2.5 on darwin arm64
+
+frame counts, fixtures/rpc-handshake.jsonl (asserted against literals in src/frames.test.ts):
+  lines: 248
+  pi->bridge inbound frames: 165
+  ok:true checks: 39
+  ok:false checks: 0
+  distinct inbound frame kinds: 13 (agent_end, agent_settled, agent_start,
+    bash_execution_update, extension_ui_request, message_end, message_start,
+    message_update, response, tool_execution_end, tool_execution_start,
+    turn_end, turn_start)
+
+fail-closed proof (src/gate.test.ts "fail-closed > with the gate throwing, ..."):
+  a throwing gate handler answers the dialog with the literal
+  {"allow":false,"reason":"gate handler threw: boom"}; the fixture's recorded denied call
+  (tool_execution_end, toolName gated_blocked) has isError true, no durationMs, the block
+  reason as its result text, and the tool's execute output appears nowhere in the transcript.
+
+=== bun install ===
+Checked 140 installs across 148 packages (no changes) [6.00ms]
+
+=== bun run lint ===
+Checked 56 files in 15ms. No fixes applied.
+
+=== bun run typecheck ===
+(no output; exit 0)
+
+=== bun test packages/pi-bridge ===
+ 28 pass
+ 0 fail
+ 76 expect() calls
+Ran 28 tests across 3 files. [364.00ms]
+
+=== bun run verify ===
+PASS step typecheck ($ tsc -p tsconfig.json)
+PASS step tests (bun test v1.2.5 (013fdddc))
+PASS step scaffold-shape (scaffold shape ok: 9 packages, 5 apps, every package extends tsconfig.base.json)
+PASS step healthz (GET /healthz -> 200 {"status":"ok","service":"freebot-server"})
+artifact: packages/verify/artifacts/scaffold/a67bc72/assert.txt
+PASS scaffold
+
+=== bun packages/pi-bridge/scripts/smoke.ts ===
+parked: G1 BYOK key absent
+smoke exit: 0
+
+note: the live keyed smoke path (PASS) is unobserved on this machine; gate G1's BYOK key is
+absent and was not requested. The parked path is the required behavior without a key.
