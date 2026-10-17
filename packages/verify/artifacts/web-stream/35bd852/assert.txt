@@ -1,0 +1,95 @@
+# web-stream spike driver — 2026-10-17T07:50:44.457Z
+worktree /Users/yusufameri/projects/free-bot-u0.10/  head 35bd852
+fixture /Users/yusufameri/projects/free-bot-u0.10/packages/verify/artifacts/tunnel/bf0a4e6/transcript.jsonl
+chrome Chrome/155.0.8059.84
+
+## allow path
+ok - idle: connection is live: "connected"
+ok - idle: zero frames rendered: 0
+ok - idle: no error: null
+frame allow-01-idle: allow-01-idle-1792223445310.png (16828 bytes) — page connected, stream not started
+ok - streaming: every rendered seq is dense from 1: []
+ok - streaming: at least one assistant delta rendered: true
+frame allow-02-streaming: allow-02-streaming-1792223446811.png (28267 bytes) — first turn text streaming, first tool card visible
+ok - resume: banner text: "resumed from seq 30"
+ok - resume: exactly one element for the replayed seq: 1
+ok - resume: duplicate frame counted and ignored: 1
+ok - resume: continued densely past the replay: []
+ok - resume: rendered count matches last seq: 30
+frame allow-03-reconnect-resume: allow-03-reconnect-resume-1792223449087.png (51868 bytes) — banner "resumed from seq 30", replay of seq 30 changed nothing
+ok - approval: stream is awaiting an answer: true
+ok - approval: tool card waits: "awaiting approval"
+ok - approval: card shows the gated command: "spike_echo {\"note\":\"two\",\"delay_ms\":200}"
+ok - approval: buttons: ["Allow once","Deny"]
+ok - approval: stream frozen at the gate: [53,53]
+frame allow-04-approval-pending: allow-04-approval-pending-1792223451900.png (87314 bytes) — approval card with Allow once / Deny, stream paused at seq 53
+ok - resolved: card decision: "allow"
+ok - resolved: decision text: "allowed once"
+ok - resolved: marker at seq 54: "approval ap-call_spike_2: allowed once"
+ok - allow: tool card status: "done"
+ok - allow: tool card output: "echo: two"
+ok - allow: result marker at seq 55: "result call_spike_2: done in 211ms"
+frame allow-05-resolved: allow-05-resolved-1792223452050.png (91389 bytes) — allowed once, tool card done with output
+ok - done: page reported done: true
+ok - done: frame count: 84
+ok - done: last seq: 84
+ok - done: full seq range 1..84 in order: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]
+ok - done: rendered elements: 84
+ok - done: turns: 4
+ok - done: tool card statuses: [["call_spike_1","done"],["call_spike_2","done"],["call_spike_3","done"]]
+ok - done: no error: null
+frame allow-06-done: allow-06-done-1792223454697.png (128196 bytes) — full stream at 84 frames, all turns complete
+RESULT: PASS (29/29) — allow path
+
+## deny path
+ok - idle: connection is live: "connected"
+ok - idle: zero frames rendered: 0
+ok - idle: no error: null
+frame deny-01-idle: deny-01-idle-1792223454809.png (16828 bytes) — page connected, stream not started
+ok - streaming: every rendered seq is dense from 1: []
+ok - streaming: at least one assistant delta rendered: true
+frame deny-02-streaming: deny-02-streaming-1792223456360.png (28267 bytes) — first turn text streaming, first tool card visible
+ok - resume: banner text: "resumed from seq 30"
+ok - resume: exactly one element for the replayed seq: 1
+ok - resume: duplicate frame counted and ignored: 1
+ok - resume: continued densely past the replay: []
+ok - resume: rendered count matches last seq: 30
+frame deny-03-reconnect-resume: deny-03-reconnect-resume-1792223458631.png (51868 bytes) — banner "resumed from seq 30", replay of seq 30 changed nothing
+ok - approval: stream is awaiting an answer: true
+ok - approval: tool card waits: "awaiting approval"
+ok - approval: card shows the gated command: "spike_echo {\"note\":\"two\",\"delay_ms\":200}"
+ok - approval: buttons: ["Allow once","Deny"]
+ok - approval: stream frozen at the gate: [53,53]
+frame deny-04-approval-pending: deny-04-approval-pending-1792223461432.png (87314 bytes) — approval card with Allow once / Deny, stream paused at seq 53
+ok - resolved: card decision: "deny"
+ok - resolved: decision text: "denied"
+ok - resolved: marker at seq 54: "approval ap-call_spike_2: denied"
+ok - deny: tool card status: "denied"
+ok - deny: tool card has no output: ""
+ok - deny: no output leaks onto the card: false
+ok - deny: result marker at seq 55: "result call_spike_2: denied"
+frame deny-05-resolved: deny-05-resolved-1792223461590.png (89135 bytes) — denied, tool card denied with no output
+ok - done: page reported done: true
+ok - done: frame count: 84
+ok - done: last seq: 84
+ok - done: full seq range 1..84 in order: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84]
+ok - done: rendered elements: 84
+ok - done: turns: 4
+ok - done: tool card statuses: [["call_spike_1","done"],["call_spike_2","denied"],["call_spike_3","done"]]
+ok - done: no error: null
+frame deny-06-done: deny-06-done-1792223464255.png (125751 bytes) — full stream at 84 frames, all turns complete
+RESULT: PASS (30/30) — deny path
+frame artifact: frames/allow-01-idle-1792223445310.png (16828 bytes)
+frame artifact: frames/allow-02-streaming-1792223446811.png (28267 bytes)
+frame artifact: frames/allow-03-reconnect-resume-1792223449087.png (51868 bytes)
+frame artifact: frames/allow-04-approval-pending-1792223451900.png (87314 bytes)
+frame artifact: frames/allow-05-resolved-1792223452050.png (91389 bytes)
+frame artifact: frames/allow-06-done-1792223454697.png (128196 bytes)
+frame artifact: frames/deny-01-idle-1792223454809.png (16828 bytes)
+frame artifact: frames/deny-02-streaming-1792223456360.png (28267 bytes)
+frame artifact: frames/deny-03-reconnect-resume-1792223458631.png (51868 bytes)
+frame artifact: frames/deny-04-approval-pending-1792223461432.png (87314 bytes)
+frame artifact: frames/deny-05-resolved-1792223461590.png (89135 bytes)
+frame artifact: frames/deny-06-done-1792223464255.png (125751 bytes)
+chrome Chrome/155.0.8059.84; deterministic replay, both answer paths, localhost only
+RESULT: PASS (59/59)
