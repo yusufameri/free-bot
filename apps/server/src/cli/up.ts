@@ -99,7 +99,8 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   console.error(
     "freebot up: Ctrl-C stops the servers and removes this launch's sandbox containers",
   );
-  // stdout carries one line and one line only: the URL to open.
+  // stdout's one URL is this line. A gate refusal the landed server logs later lands on stdout too,
+  // where that server writes it; a launch nobody probes writes nothing else.
   console.log(up.url);
 
   let stopping = false;
