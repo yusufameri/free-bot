@@ -6,9 +6,29 @@ adapter the Phase 1 MVP runs Pi-in-sandbox on. Interface and error types live in
 against the strictest adapter (boat: screen, suspend, fork), not against Docker, so E2B and boat
 fill in capabilities without a redesign.
 
-Artifact: `packages/verify/artifacts/sandbox-provider/83058fe/assert.txt`, produced by
-`bun test packages/sandbox/src/docker.test.ts` at commit `83058fee4b6c191b697b3cfae098253d1f0189c` on
+Artifact: `packages/verify/artifacts/sandbox-provider/4f44e98/assert.txt`, produced by
+`bun test packages/sandbox/src/docker.test.ts` at commit `4f44e989ed73c692ccb16d04473f0c1aa3f40d10` on
 branch `u1.2-sandbox-provider`.
+
+## Running the integration suite
+
+The Docker suite is the only one that needs a daemon, and it decides before any container exists
+whether it can run. Two preconditions hold, and their absence is the only skip. The daemon must answer
+`docker version`, and `docker image ls -q freebot-sandbox:u0.6` must print an id. A skip prints its
+reason with the command that fixes it, records a `skip:` line in that run's artifact, and exits 0, so
+the rest of `bun test` stays green.
+
+| Situation | Behavior |
+| --- | --- |
+| No reachable daemon | skip, naming the failed `docker version` |
+| Daemon up, pinned image absent | skip, naming `bash packages/sandbox/image/run.sh` |
+| Daemon up, `image ls` itself fails | throw, because a half-working daemon is not absence |
+| Pinned image present | all ten checks run; a drifted layer set fails inside `ensurePinnedImage` |
+| `FREEBOT_DOCKER_TESTS=require` | any would-be skip throws instead |
+| Any other `FREEBOT_DOCKER_TESTS` value | throws at load, so a typo cannot mean "optional" |
+
+The image is arm64-only (order 18: this Mac builds), so the linux/amd64 CI runner cannot materialize
+it. CI skips this suite by design, and the committed artifact is the local run.
 
 ## The interface, method by method
 
