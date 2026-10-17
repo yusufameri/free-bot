@@ -14,6 +14,10 @@
  * and the composer: the agent rejoins with last_seen_seq, the page resumes from its last seq,
  * and the task completes on one gapless, duplicate-free seq log.
  *
+ * Frames are captured under the page facts they claim (spikes/mvp-smoke/frames.ts). The stub's
+ * final stop is queued only after the denial capture, so the refusal parks the stream instead of
+ * racing it: a frame that quietly became a second copy of another fails the run.
+ *
  * STUB DISCLOSURE: the stub decision source IS the model this round. Nothing here is
  * live-model traffic; Gate G1 parks the keyed run (U0.12), which replaces only the decision
  * source.
@@ -22,6 +26,7 @@
  * <short-sha>/. Docker cleanup is name-scoped to the container and images this run created.
  */
 
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -29,7 +34,6 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
-  statSync,
   writeFileSync,
 } from "node:fs";
 import { createServer } from "node:net";
@@ -37,6 +41,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type StubModel, startStubModel } from "../forge-test-a/stub-model.ts";
+import {
+  type Capture,
+  collapsedPairs,
+  describeFacts,
+  type FrameFacts,
+  factsKey,
+} from "./frames.ts";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
@@ -51,6 +62,14 @@ const STEPS = {
   step4: { callId: "call_step_4", command: "rm -f /scratch/task/doomed.txt" },
   step5: { callId: "call_step_5", command: "rm -f /scratch/task/doomed2.txt" },
 } as const;
+
+/**
+ * The display seq the stream parks at once the page refuses the second destructive call. Turn 6
+ * has no plan queued at that point, so pi has emitted the refusal's frames and cannot render
+ * another one: the denial frame captures this seq, and the terminal frames only arrive after the
+ * run queues the stop plan.
+ */
+const DENY_PARKS_AT = 35;
 
 interface Service {
   port: number;
@@ -397,14 +416,61 @@ async function openPage(cdp: Cdp, url: string): Promise<string> {
   return sessionId;
 }
 
-async function shot(
+/** The page facts a committed frame is judged by, read in one round trip. */
+const FACTS_EXPRESSION = `(() => {
+  const state = window.__webStreamState();
+  const resume = document.querySelector('#resume');
+  return {
+    lastSeq: state.lastSeq,
+    done: state.done,
+    frameCount: state.frameCount,
+    turns: document.querySelectorAll('.turn').length,
+    cards: [...document.querySelectorAll('.tool-card')].map((card) => [
+      card.dataset.toolCall,
+      card.querySelector('.status').textContent,
+    ]),
+    approvals: [...document.querySelectorAll('.approval-card')].map((card) => card.dataset.decision ?? null),
+    deltas: [...document.querySelectorAll('.delta')].map((span) => span.textContent),
+    resume: resume === null || resume.dataset.resumedFrom === undefined
+      ? null
+      : Number(resume.dataset.resumedFrom),
+    streamEnd: document.querySelector('.stream-end')?.textContent ?? null,
+  };
+})()`;
+
+async function readFacts(cdp: Cdp, sessionId: string): Promise<FrameFacts> {
+  return evalJson<FrameFacts>(cdp, sessionId, FACTS_EXPRESSION);
+}
+
+interface FrameClaim {
+  /** The page facts this frame claims, every key compared to a literal. */
+  facts: Partial<FrameFacts>;
+  /** The frame claims a state the page held still: the facts may not move across the capture. */
+  frozen?: boolean;
+}
+
+/**
+ * Capture one committed frame under the claim it makes. The facts are read immediately before the
+ * screenshot, so the claim is checked against the state the PNG is taken from, and a `frozen`
+ * claim re-reads them after the capture and requires them unchanged. A frame that raced a later
+ * one fails the run instead of shipping as evidence for a state it does not show.
+ */
+async function captureFrame(
+  log: Log,
   cdp: Cdp,
   sessionId: string,
   framesDir: string,
+  captures: Capture[],
   name: string,
-  prep?: string,
-): Promise<{ file: string; bytes: number }> {
-  if (prep !== undefined) await evalJson(cdp, sessionId, prep);
+  claim: FrameClaim,
+): Promise<Capture> {
+  const keys = Object.keys(claim.facts) as Array<keyof FrameFacts>;
+  const before = await readFacts(cdp, sessionId);
+  log.check(
+    `frame ${name}: page facts at the capture`,
+    keys.map((key) => [key, before[key]]),
+    keys.map((key) => [key, claim.facts[key]]),
+  );
   const { data } = await cdp.send<{ data: string }>(
     "Page.captureScreenshot",
     { format: "png", captureBeyondViewport: true },
@@ -413,7 +479,39 @@ async function shot(
   const buffer = Buffer.from(data, "base64");
   const file = `${name}-${Date.now()}.png`;
   writeFileSync(join(framesDir, file), buffer);
-  return { file, bytes: buffer.byteLength };
+  const after = await readFacts(cdp, sessionId);
+  if (claim.frozen === true) {
+    log.check(
+      `frame ${name}: the page held still across the capture`,
+      factsKey(after),
+      factsKey(before),
+    );
+  }
+  const capture: Capture = {
+    name,
+    file,
+    bytes: buffer.byteLength,
+    sha256: createHash("sha256").update(buffer).digest("hex"),
+    facts: after,
+  };
+  captures.push(capture);
+  log.note(
+    `frame ${name}: frames/${file} (${capture.bytes} bytes, sha256 ${capture.sha256}) — ${describeFacts(after)}`,
+  );
+  return capture;
+}
+
+/** The seq the durable display log parked at, once it stops growing for 700ms. */
+async function waitForDisplayPark(displayPath: string, timeoutMs: number): Promise<number> {
+  const tail = () => jsonl<{ seq: number }>(displayPath).at(-1)?.seq ?? 0;
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const before = tail();
+    await sleep(700);
+    const after = tail();
+    if (before === after && after > 0) return after;
+  }
+  throw new Error("the display stream never parked");
 }
 
 async function main(): Promise<number> {
@@ -422,6 +520,7 @@ async function main(): Promise<number> {
   const framesDir = join(artifactDir, "frames");
   rmSync(framesDir, { recursive: true, force: true });
   mkdirSync(framesDir, { recursive: true });
+  const captures: Capture[] = [];
 
   const log = new Log();
   log.note(`# mvp smoke dry run (U0.11) — ${new Date().toISOString()}`);
@@ -621,8 +720,18 @@ async function main(): Promise<number> {
     const idle = await pageState(cdp, sessionId);
     log.check("idle: zero frames rendered", idle.frameCount, 0);
     log.check("idle: no resume banner yet", idle.resumedFrom, null);
-    const idleShot = await shot(cdp, sessionId, framesDir, "01-idle");
-    log.note(`frame 01-idle: ${idleShot.file} (${idleShot.bytes} bytes) — connected, no frames`);
+    await captureFrame(log, cdp, sessionId, framesDir, captures, "01-idle", {
+      facts: {
+        lastSeq: 0,
+        done: false,
+        turns: 0,
+        cards: [],
+        approvals: [],
+        resume: null,
+        streamEnd: null,
+      },
+      frozen: true,
+    });
 
     log.section("container, supervisor, agent");
     dockerStrict(
@@ -672,7 +781,10 @@ async function main(): Promise<number> {
     const piPid = await waitForFile(join(stateDir, "pi.pid"), 30_000);
     log.note(`pi pid ${piPid}`);
 
-    // The scripted decision source: one plan per assistant completion, in task order.
+    // The scripted decision source: one plan per assistant completion, in task order. The final
+    // stop is deliberately not queued here: turn 6 then has nothing to run on, so the stream
+    // parks after the page's refusal and the denial frame captures a state the terminal frames
+    // have not overwritten yet.
     const plan = async (call: { callId: string; command: string }): Promise<void> => {
       const response = await fetch(`http://127.0.0.1:${stub.port}/plan`, {
         method: "POST",
@@ -688,12 +800,15 @@ async function main(): Promise<number> {
       });
       if (!response.ok) throw new Error(`stub plan refused: ${response.status}`);
     };
+    const stop = async (): Promise<void> => {
+      const response = await fetch(`http://127.0.0.1:${stub.port}/plan`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ plan: { kind: "stop" } }),
+      });
+      if (!response.ok) throw new Error(`stub stop refused: ${response.status}`);
+    };
     for (const step of Object.values(STEPS)) await plan(step);
-    await fetch(`http://127.0.0.1:${stub.port}/plan`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ plan: { kind: "stop" } }),
-    });
 
     const agentCommand = shellIn(
       "/work",
@@ -746,10 +861,15 @@ async function main(): Promise<number> {
       step1Decision?.via,
       "policy_auto_grant",
     );
-    const streamShot = await shot(cdp, sessionId, framesDir, "02-streaming");
-    log.note(
-      `frame 02-streaming: ${streamShot.file} (${streamShot.bytes} bytes) — turn text, step-1 card done with output "one"`,
-    );
+    await captureFrame(log, cdp, sessionId, framesDir, captures, "02-streaming", {
+      facts: {
+        done: false,
+        cards: [["call_step_1", "done"]],
+        approvals: [],
+        resume: null,
+        streamEnd: null,
+      },
+    });
 
     log.section("step 2: destructive call gated on the page's approval");
     await waitTrue(
@@ -796,16 +916,21 @@ async function main(): Promise<number> {
       [frozen1.lastSeq, frozen2.lastSeq],
       [frozen1.lastSeq, frozen1.lastSeq],
     );
-    const pendingShot = await shot(
-      cdp,
-      sessionId,
-      framesDir,
-      "03-approval-pending",
-      "document.querySelector('.approval-card').scrollIntoView({ block: 'center' })",
-    );
-    log.note(
-      `frame 03-approval-pending: ${pendingShot.file} (${pendingShot.bytes} bytes) — destructive card AWAITING APPROVAL, Allow once / Deny, frozen at display seq ${frozen1.lastSeq}`,
-    );
+    await captureFrame(log, cdp, sessionId, framesDir, captures, "03-approval-pending", {
+      facts: {
+        lastSeq: frozen1.lastSeq,
+        done: false,
+        turns: 2,
+        cards: [
+          ["call_step_1", "done"],
+          ["call_step_2", "awaiting approval"],
+        ],
+        approvals: [null],
+        resume: null,
+        streamEnd: null,
+      },
+      frozen: true,
+    });
 
     log.section("allow once: the page's answer is the grant");
     await evalJson(cdp, sessionId, "document.querySelector('.approval-card .allow-once').click()");
@@ -851,16 +976,14 @@ async function main(): Promise<number> {
       dockerExecStrict(container, `cat ${TASK_DIR}/doomed.txt 2>/dev/null || echo ABSENT`),
       "ABSENT",
     );
-    const resolvedShot = await shot(
-      cdp,
-      sessionId,
-      framesDir,
-      "04-post-approval",
-      "document.querySelector('.approval-card').scrollIntoView({ block: 'center' })",
-    );
-    log.note(
-      `frame 04-post-approval: ${resolvedShot.file} (${resolvedShot.bytes} bytes) — allowed once, step-2 card done, doomed.txt removed in the VM`,
-    );
+    await captureFrame(log, cdp, sessionId, framesDir, captures, "04-post-approval", {
+      facts: {
+        done: false,
+        approvals: ["allow"],
+        resume: null,
+        streamEnd: null,
+      },
+    });
 
     log.section("kill/rejoin: relay SIGKILLed mid-task, composer restarts with the same logs");
     await waitTrue(
@@ -937,16 +1060,14 @@ async function main(): Promise<number> {
       (await pageState(cdp, sessionId)).duplicatesIgnored,
       0,
     );
-    const resumeShot = await shot(
-      cdp,
-      sessionId,
-      framesDir,
-      "05-kill-rejoin-resumed",
-      "document.querySelector('#resume').scrollIntoView({ block: 'center' })",
-    );
-    log.note(
-      `frame 05-kill-rejoin-resumed: ${resumeShot.file} (${resumeShot.bytes} bytes) — "resumed from seq ${preKill.lastSeq}" after the relay+composer SIGKILL, step-3 card in flight`,
-    );
+    await captureFrame(log, cdp, sessionId, framesDir, captures, "05-kill-rejoin-resumed", {
+      facts: {
+        done: false,
+        approvals: ["allow"],
+        resume: preKill.lastSeq,
+        streamEnd: null,
+      },
+    });
 
     log.section("after rejoin: the task continues on the same log");
     await waitTrue(
@@ -966,6 +1087,11 @@ async function main(): Promise<number> {
     );
 
     // The repeat: identical args to the approved call, after its grant was consumed.
+    const approvalCardsBeforeStep4 = await evalJson<number>(
+      cdp,
+      sessionId,
+      "document.querySelectorAll('.approval-card').length",
+    );
     writeFileSync(join(scratch, "task", "doomed.txt"), "doomed-again\n");
     await waitTrue(
       cdp,
@@ -983,9 +1109,16 @@ async function main(): Promise<number> {
       true,
     );
     log.check(
-      "step 4 repeat: no approval card was offered for a ledger denial",
-      await evalJson<number>(cdp, sessionId, "document.querySelectorAll('.approval-card').length"),
-      1,
+      "step 4 repeat: the ledger denial offered no approval card (count before and after)",
+      [
+        approvalCardsBeforeStep4,
+        await evalJson<number>(
+          cdp,
+          sessionId,
+          "document.querySelectorAll('.approval-card').length",
+        ),
+      ],
+      [1, 1],
     );
     log.check(
       "step 4 repeat: the re-created file is untouched (a silent re-run would have removed it)",
@@ -1025,36 +1158,51 @@ async function main(): Promise<number> {
       ),
       "denied",
     );
+    // Turn 6's plan is still unqueued, so the refusal's frames arrive and the stream parks:
+    // nothing can render again until `stop()` fires below. Waiting for the park, rather than
+    // racing the terminal frames, is what makes this capture document the denial moment.
+    log.check(
+      "deny: the display stream parks after the refusal, before the terminal frames",
+      await waitForDisplayPark(displayPath, 30_000),
+      DENY_PARKS_AT,
+    );
+    await waitTrue(
+      cdp,
+      sessionId,
+      "the page rendered the parked stream",
+      `window.__webStreamState().lastSeq === ${DENY_PARKS_AT}`,
+    );
+    await captureFrame(log, cdp, sessionId, framesDir, captures, "06-denied", {
+      facts: {
+        lastSeq: DENY_PARKS_AT,
+        done: false,
+        turns: 6,
+        cards: [
+          ["call_step_1", "done"],
+          ["call_step_2", "done"],
+          ["call_step_3", "done"],
+          ["call_step_4", "denied"],
+          ["call_step_5", "denied"],
+        ],
+        approvals: ["allow", "deny"],
+        resume: preKill.lastSeq,
+        streamEnd: null,
+      },
+      frozen: true,
+    });
     const step5Decision = jsonl<DecisionLine>(decisionsPath).find(
       (line) => line.toolCallId === STEPS.step5.callId,
     );
     log.check("step 5 deny: gate decision code", step5Decision?.code, "user_denied");
     log.check("step 5 deny: refusal came from the page", step5Decision?.via, "page_deny");
-    // Placed before the step-5 tool result and stream end, so this frame
-    // documents the denial moment instead of repeating the done capture.
-    const deniedShot = await shot(
-      cdp,
-      sessionId,
-      framesDir,
-      "06-denied",
-      "[...document.querySelectorAll('.approval-card')].at(-1).scrollIntoView({ block: 'center' })",
-    );
-    log.note(
-      `frame 06-denied: ${deniedShot.file} (${deniedShot.bytes} bytes) — the second approval resolved as denied on the page`,
-    );
-    await waitTrue(
-      cdp,
-      sessionId,
-      "step 5 denied card",
-      "document.querySelector('.tool-card[data-tool-call=\"call_step_5\"] .status')?.textContent === 'denied'",
-    );
     log.check(
       "step 5 deny: in-VM side effect observed (doomed2.txt intact)",
       dockerExecStrict(container, `cat ${TASK_DIR}/doomed2.txt 2>/dev/null || echo ABSENT`),
       "doomed-2",
     );
 
-    log.section("done");
+    log.section("stream end: the parked turn finishes once its plan is queued");
+    await stop();
     await waitTrue(cdp, sessionId, "stream end", "window.__webStreamState().done === true");
     const done = await pageState(cdp, sessionId);
     log.check(
@@ -1099,16 +1247,24 @@ async function main(): Promise<number> {
       renderedSeqs.map((seq, index) => (seq === index + 1 ? null : seq)).filter((v) => v !== null),
       [],
     );
-    const doneShot = await shot(
-      cdp,
-      sessionId,
-      framesDir,
-      "07-done",
-      "window.scrollTo(0, document.body.scrollHeight)",
-    );
-    log.note(
-      `frame 07-done: ${doneShot.file} (${doneShot.bytes} bytes) — full stream, all turns complete`,
-    );
+    await captureFrame(log, cdp, sessionId, framesDir, captures, "07-done", {
+      facts: {
+        lastSeq: done.lastSeq,
+        done: true,
+        turns: 6,
+        cards: [
+          ["call_step_1", "done"],
+          ["call_step_2", "done"],
+          ["call_step_3", "done"],
+          ["call_step_4", "denied"],
+          ["call_step_5", "denied"],
+        ],
+        approvals: ["allow", "deny"],
+        resume: preKill.lastSeq,
+        streamEnd: "stream complete",
+      },
+      frozen: true,
+    });
 
     log.section("seq audit across the kill");
     const summaryPath = join(stateDir, "supervisor-summary.json");
@@ -1229,12 +1385,30 @@ async function main(): Promise<number> {
     );
 
     const frames = readdirSync(framesDir).sort();
-    for (const file of frames) {
+    log.check(
+      "frames: the seven key states, captured in order",
+      captures.map((capture) => capture.name),
+      [
+        "01-idle",
+        "02-streaming",
+        "03-approval-pending",
+        "04-post-approval",
+        "05-kill-rejoin-resumed",
+        "06-denied",
+        "07-done",
+      ],
+    );
+    log.check(
+      "frames: every committed frame differs from every other in its page facts (pairwise)",
+      collapsedPairs(captures),
+      [],
+    );
+    log.check("frames: one PNG on disk per capture", frames.length, captures.length);
+    for (const capture of captures) {
       log.lines.push(
-        `frame artifact: frames/${file} (${statSync(join(framesDir, file)).size} bytes)`,
+        `frame artifact: frames/${capture.file} (${capture.bytes} bytes, sha256 ${capture.sha256}, last seq ${capture.facts.lastSeq})`,
       );
     }
-    if (frames.length === 0) log.check("frame captures", "none", "at least one PNG");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     log.check("harness completed without a crash", message, "no crash");
