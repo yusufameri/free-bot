@@ -27,12 +27,6 @@ export interface CapabilityFlags {
   notes: string[];
 }
 
-/** One assistant message's text, read from the turn that produced it. */
-export interface TurnText {
-  /** The last assistant message's text, concatenated across its parts. */
-  text: string;
-}
-
 export interface TurnObservation {
   /** Native tool calls the model emitted, counted at `toolcall_end`. */
   toolCallsCompleted: number;
