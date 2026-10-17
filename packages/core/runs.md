@@ -30,8 +30,9 @@ queued ──begin──▶ running ──park──▶ awaiting_approval ──
 Fourteen pairs are legal; `transitionPairs()` lists them and `RUN_TRANSITIONS` is the only authority
 on which. `RunStore` exposes one named operation per move and no status setter, so the illegal ones
 have no call site. `queued` can fail without ever running, because a sandbox that will not start
-fails a run before its first turn. The three terminal statuses are settled: every later operation is
-a no-op, so cancelling a finished run is not an error and never rewrites history.
+fails a run before its first turn. The three terminal statuses are settled: every later lifecycle
+operation is a no-op, so cancelling a finished run is not an error and never rewrites history, while
+a `seq` or `usage` frame still lands on a settled record so late arrival is not lost.
 
 `awaiting_approval` and `paused` both return to `running`, and both are waits rather than endings. A
 denied approval returns the run to `running` too: the refusal is the tool's result, not the run's
@@ -100,6 +101,12 @@ daemon, the pinned sandbox image and its base digest label, the run store, and t
 presence (never its value). It lives in `apps/server` because that app owns the local control-plane
 runtime and already imports `packages/core`; plan 2.7 has no CLI app, and one would be scaffolding
 for five checks.
+
+The two Docker probes retry once after 500 ms. Docker Desktop answers `docker info` and `docker image
+inspect` with a non-zero exit while its daemon is still booting, and a mid-boot machine produced
+`FAIL pinned image: freebot-sandbox:u0.6 not present` on a first run and the exact committed digest
+seconds later. The retry cannot hide a genuinely absent image: both attempts fail the same way and
+the check still prints `freebot-sandbox:u0.6 not present`.
 
 The store check writes rather than stats: it starts, cancels, and reopens a `doctor-probe` run. Both
 operations are idempotent, so a hundred doctor runs leave one settled record and append nothing after

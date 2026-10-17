@@ -4,8 +4,9 @@
  * Every mutation is a command that gets journaled, and every command is idempotent, so two things
  * follow. A store that reopens a journal left behind by a crash replays to the same records, and a
  * command that arrives twice (a resent `start_run`, a replayed `cancel_run`, an agent's resend of a
- * held approval request) applies once. A terminal run is settled: every later command is a no-op,
- * so cancelling a finished run is not an error and never rewrites history.
+ * held approval request) applies once. A terminal run is settled: every later lifecycle operation
+ * is a no-op, so cancelling a finished run is not an error and never rewrites history, while a
+ * `seq` or `usage` frame still lands on a settled record so late arrival is not lost.
  *
  * Commands apply in memory first and reach the disk second. The disk write is the next process's
  * crash-safety net, not this one's: if it fails, the caller gets the error rather than a success the

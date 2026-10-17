@@ -39,6 +39,9 @@
     "packages/core": {
       "name": "@freebot/core",
       "version": "0.0.0",
+      "devDependencies": {
+        "@freebot/protocol": "workspace:*",
+      },
     },
     "packages/pi-bridge": {
       "name": "@freebot/pi-bridge",

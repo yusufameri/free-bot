@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { appendFileSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { EVENT_PAYLOADS } from "../../protocol/src/events.ts";
+import { EVENT_PAYLOADS } from "@freebot/protocol";
 import { type RunCommand, RunStore, type RunStoreOptions } from "./run-store.ts";
 import { costNanoUsd, noTokens, type TokenPrices, type UsageEvent } from "./run-usage.ts";
 

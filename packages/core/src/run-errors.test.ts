@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { EVENT_PAYLOADS } from "../../protocol/src/events.ts";
+import { EVENT_PAYLOADS } from "@freebot/protocol";
 import {
   failureEntry,
   failureFor,

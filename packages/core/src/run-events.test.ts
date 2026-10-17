@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { EVENT_PAYLOADS } from "../../protocol/src/events.ts";
+import { EVENT_PAYLOADS } from "@freebot/protocol";
 import { RUN_EVENT_KINDS, type RunEventKind, transitionEvent } from "./run-events.ts";
 import { type RunStatus, transitionPairs } from "./run-status.ts";
 

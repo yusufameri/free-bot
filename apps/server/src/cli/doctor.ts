@@ -23,6 +23,7 @@ import { RunStore } from "@freebot/core";
 const BUN_FLOOR = "1.2.0";
 const PINNED_IMAGE = "freebot-sandbox:u0.6";
 const PROBE_RUN_ID = "doctor-probe";
+const PROBE_RETRY_MS = 500;
 
 export interface CheckResult {
   name: string;
@@ -41,6 +42,23 @@ function shell(
   });
   const output = `${proc.stdout ?? ""}${proc.stderr ?? ""}`.trim();
   return { ok: proc.status === 0, output };
+}
+
+/**
+ * Run a probe, and if it reports not-ok run it once more after a short pause. Docker Desktop
+ * answers `docker info` and `docker image inspect` with a non-zero exit while its daemon is still
+ * booting, which turned a healthy machine into a spurious FAIL. One retry absorbs that without
+ * hiding a real absence: a genuinely missing image fails both attempts and still reports FAIL.
+ */
+export function probeWithRetry<T>(
+  probe: () => T,
+  ok: (value: T) => boolean,
+  delayMs = PROBE_RETRY_MS,
+): T {
+  const first = probe();
+  if (ok(first)) return first;
+  Bun.sleepSync(delayMs);
+  return probe();
 }
 
 function atLeastBun(actual: string, floor: string): boolean {
@@ -68,7 +86,10 @@ function checkBun(): CheckResult {
 }
 
 function checkDocker(): CheckResult {
-  const info = shell(["docker", "info", "--format", "{{.ServerVersion}}"]);
+  const info = probeWithRetry(
+    () => shell(["docker", "info", "--format", "{{.ServerVersion}}"]),
+    (result) => result.ok,
+  );
   if (!info.ok) {
     const first = info.output.split("\n")[0] ?? "";
     return { name: "docker daemon", ok: false, detail: `unreachable: ${first}` };
@@ -77,14 +98,18 @@ function checkDocker(): CheckResult {
 }
 
 function checkImage(): CheckResult {
-  const inspect = shell([
-    "docker",
-    "image",
-    "inspect",
-    PINNED_IMAGE,
-    "--format",
-    '{{index .Config.Labels "org.freebot.sandbox.node-base-digest"}}',
-  ]);
+  const inspect = probeWithRetry(
+    () =>
+      shell([
+        "docker",
+        "image",
+        "inspect",
+        PINNED_IMAGE,
+        "--format",
+        '{{index .Config.Labels "org.freebot.sandbox.node-base-digest"}}',
+      ]),
+    (result) => result.ok,
+  );
   if (!inspect.ok) {
     return { name: "pinned image", ok: false, detail: `${PINNED_IMAGE} not present` };
   }
