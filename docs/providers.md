@@ -138,15 +138,46 @@ Keys live in the vault path and nowhere else (order 8).
 
 - The smoke and the probe never print a key and never put one in a file. Their reports carry
   `keyPresent` as a boolean.
-- Live key resolution follows gate G1 the same way the pi-bridge smoke does it: `FREEBOT_BYOK_KEY`
-  in the environment, or a `FREEBOT_BYOK_KEY=` line in `~/.freebot/provider.env`. The vault value
-  stays in the file and is interpolated by Pi's own `$…` and `!command` support in `models.json`.
+- Live key resolution for those two follows gate G1: `FREEBOT_BYOK_KEY` in the environment, or a
+  `FREEBOT_BYOK_KEY=` line in `~/.freebot/provider.env`. A Pi-side key stays in the file and is
+  interpolated by Pi's own `$…` and `!command` support in `models.json`.
 - The direct structured-output step needs the value in memory, so it runs only when the key is in
   the environment. With a vault-only key the probe reports `structuredOutput: null` and names why.
 - Tests make no live calls. The client takes an injectable transport, and the one test that drives
   the real transport points it at a loopback `Bun.serve` fake provider.
 - The evidence run scans the artifact and `packages/providers` for key-shaped literals and fails on
   a hit. It reports 0.
+
+### The run path reads the vault itself
+
+`apps/server/src/vault.ts` is the run's only reader of `~/.freebot/provider.env`, and it does not
+consult the environment at all. The Pi smoke prefers `FREEBOT_BYOK_KEY` because Pi needs the value
+somewhere it can interpolate; the server has no such need, so the stricter rule applies to it and no
+child process, no `models.json`, and no `ps` listing can see the key. The value reaches exactly one
+`Authorization` header, built by `packages/providers`' client.
+
+`apps/server/src/provider.ts` turns the vault into one of two choices, and a keyed choice without a
+key is unrepresentable. `auto` follows the vault, `live` demands a key, `replay` records. The
+adapter behind the keyed choice is `apps/server/src/keyed-provider.ts`, and it owns the wire and
+nothing else: it carries the prompt, the run's tools and every tool outcome to the model, and turns
+the reply into the loop's `ProviderTurn`. A call the model asks for leaves as a call the gate judges,
+so the gate stays the only thing that allows anything.
+
+Its failure mapping is the run's taxonomy, and nothing new was added to it:
+
+| The client's failure | The run settles as |
+| --- | --- |
+| `ProviderAuthError` | `provider_auth` |
+| `ProviderRateLimitError`, with the wire's retry hint in the detail | `provider_rate_limit` |
+| `ProviderMalformedToolCallError`, or a tool this run does not offer | `provider_malformed_tool_call` |
+| anything else, a refusal, a timeout, a transport failure | `internal_invariant` |
+
+Every string the adapter emits, its per-turn notes, its journal and every failure detail, is passed
+through a redaction of the key first. That is belt and braces: the provider should never echo an
+`Authorization` header, and if one did, it could not reach a log, an artifact or a report.
+
+`docs/RUNNING.md` documents the flags, the mode default and the startup line; the evidence is at
+`packages/verify/artifacts/keyed-run/<short sha>/`.
 
 ## The one command
 

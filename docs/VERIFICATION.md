@@ -107,4 +107,27 @@ listener and an exit code of 0. `docs/RUNNING.md` is the operator's page, and th
 its flags and its container record are in `apps/server/src/cli/`. Its follow-ups (the landed server
 writes auth refusals to stdout after the URL line, and a hard `SIGKILL` still leaks a container) are
 named in `docs/RUNNING.md`.
+The keyed run row covers U2.4's swap of the run's model from the committed transcript to the vault's
+provider. `apps/server/src/provider.ts` is the factory: a keyed choice that carries the connection, or
+a replay choice that carries the transcript and the reason it stayed keyless, so a keyed choice
+without a key cannot be built. `apps/server/src/vault.ts` is the run path's only reader of
+`~/.freebot/provider.env`, in-process and never through the environment (order 8), and
+`apps/server/src/keyed-provider.ts` is the adapter over `packages/providers`' OpenAI-compatible
+client: it owns the wire, carries the prompt, the run's tools and every tool outcome to the model,
+and turns the reply into the loop's turn, so a call the model asks for still leaves as a call the
+gate judges. Its evidence is `live-ui-verified` and named `live-ui-verified` on purpose: a recorded
+turn is not evidence for this unit. `bun packages/verify/scripts/keyed-run.ts` spawns
+`bun run up --no-open` with no provider flag, opens the URL that launch printed in headless Chrome
+over CDP, types a prompt into the page's own box, and drives one allowed run and one denied run from
+two launches, asserting 69 checks and committing four frames at
+`packages/verify/artifacts/keyed-run/5333adb/`. The artifact carries the launcher's own selection line
+(`model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)`),
+the request the server made (endpoint, model, message count, tool names, `Bearer <redacted>`), the
+model's own text and tool call as the server read them off the wire, the provider's own token usage,
+the container's own stdout read off the page, and the allow and `user_denied` decisions; the model's
+second turn quotes the container's stdout, which no recording can produce. Both selection paths are
+exercised in unit tests with no key on the machine. `docs/RUNNING.md` is the operator's page and
+carries the flags and the startup line, `docs/providers.md` carries the key handling, and the
+recorded half of the loop's own evidence is unchanged at `apps/server/src/run-loop-live.ts`. Commit
+`5333adb` carries the code and the driver the artifact was produced from.
 Every later feature gets its own row when its script lands.
