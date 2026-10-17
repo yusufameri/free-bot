@@ -7,7 +7,9 @@
  *   - every mapped message survives a v1 round trip before ingest (the protocol boundary);
  *   - ingest is dense and idempotent: a replayed frame is suppressed, not stored twice;
  *   - a forward-skipping frame is refused and heals by resend, so no hole reaches the log;
- *   - a frame the schema refuses never touches the log: it counts as `rejected`.
+ *   - a frame the schema refuses never touches the log: it counts as `rejected`;
+ *   - what ingest persists: parsed v1 envelopes, so an additive v1.x field is stripped before the
+ *     log holds it (docs/protocol.md names that boundary and the raw-bytes alternative).
  *
  * It writes `replay-audit.txt` beside assert.txt and exits non-zero unless the audit reports
  * gaps [] and duplicates [].
@@ -135,6 +137,19 @@ try {
 say("");
 say(`ingest outcomes: ${JSON.stringify(outcomes)}`);
 say(`frames refused by the v1 schema before ingest: ${refusedBeforeIngest}`);
+
+// What this demo persists: the parsed envelope, so the additive v1.x key is gone before the log
+// holds it. SeqLog is generic over its frame, so the ingest path owns this choice;
+// docs/protocol.md states the boundary and records the raw-bytes alternative as a follow-up.
+const opener = parsed[0];
+if (opener === undefined) throw new Error("the mapping produced no messages");
+const wireWithFuture = JSON.parse(serializeMessage(opener)) as { payload: Record<string, unknown> };
+wireWithFuture.payload.futureField = 1;
+const stripped = parseMessage(wireWithFuture);
+if (!("seq" in stripped)) throw new Error(`a stream marker reached the log: ${stripped.type}`);
+say(
+  `log holds the parsed envelope (strip before persist): wire payload {${Object.keys(wireWithFuture.payload).join(", ")}} -> appended payload keys {${Object.keys(stripped.payload).join(", ")}}`,
+);
 
 // The rejoin contract: exactly the frames after a client's watermark.
 const resumeFrom = ECHO_SEQ;

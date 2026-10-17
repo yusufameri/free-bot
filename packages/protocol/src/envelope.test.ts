@@ -221,6 +221,16 @@ describe("rejections", () => {
     expect(issues).toContain("Invalid input: expected string, received undefined");
   });
 
+  test("a denial whose detail is empty is refused", () => {
+    const result = safeParseMessage({
+      ...runMessage("tool_call.decision"),
+      payload: { toolCallId: "call_1", allow: false, code: "no_grant", detail: "" },
+    });
+    expect(result.success).toBe(false);
+    const issues = result.success ? [] : result.error.issues.map((issue) => issue.message);
+    expect(issues).toContain("Too small: expected string to have >=1 characters");
+  });
+
   test("a reason code outside the nine is refused", () => {
     const result = safeParseMessage({
       ...runMessage("tool_call.decision"),

@@ -30,7 +30,7 @@ Every log-ordered message is one object:
 | `v` | `1`, a zod literal. A breaking change to any shape bumps it. |
 | `seq` | Integer ≥ 1. The message's own place in the one log. Never reused. `0` is a reader's cursor, never a message. |
 | `ts` | Epoch milliseconds, minted by the origin together with the seq. |
-| `runId` | Present on every run-scoped kind, absent on stream markers. `= "run-1"` never appears; it is minted by `start_run`. |
+| `runId` | Present on every run-scoped kind, absent on stream markers. No fixed example value; the id is minted by `start_run`, and every message of that run carries it. |
 | `type` | The kind. The spike already used `type`; the discriminant keeps that name so the proven renderer keeps working. |
 | `payload` | Always present, `{}` when the kind has nothing to say. |
 
@@ -53,9 +53,9 @@ the envelope.
 | `turn.started` / `turn.ended` | `{turn}` | One model turn inside the run, counted 1..n. |
 | `message.text.delta` | `{text}` | One assistant text delta; empty deltas are legal. |
 | `tool_call.requested` | `{toolCallId, toolName, command, destructive}` | A call about to run, `command` = name + JSON args. |
-| `tool_call.decision` | `{toolCallId, allow: true}` or `{toolCallId, allow: false, code, detail}` | The gate's verdict before anything runs. `code` is one of the nine, verbatim. |
+| `tool_call.decision` | `{toolCallId, allow: true}` or `{toolCallId, allow: false, code, detail}` | The gate's verdict before anything runs. `code` is one of the nine, verbatim; `detail` is the gate's explanation and is never empty. |
 | `tool_call.result` | `{toolCallId, ok, denied, output, durationMs}` | What the call did. A denied call never ran: `durationMs` is null. |
-| `approval.requested` | `{approvalId, toolCallId, command, actionHash, expiresAt}` | A governed call parked for consent. `actionHash` binds it to the exact call; `expiresAt` is the deadline to answer. |
+| `approval.requested` | `{approvalId, toolCallId, command, actionHash, expiresAt}` | A governed call awaiting consent: what the control plane emits when it parks one, which nothing does yet (follow-up below). `actionHash` binds it to the exact call; `expiresAt` is the deadline to answer. |
 | `approval.resolved` | `{approvalId, decision: "allow", grant}` or `{approvalId, decision: "deny"}` | The answer. An allow carries the issued grant; a deny mints nothing. |
 | `grant.lifecycle` | a union on `state`: `issued` / `consumed` / `expired` / `rewound` | The ledger transitions, each with exactly its own fields (`consumedBy`, `reason`). |
 
@@ -79,9 +79,17 @@ transports then **read** the one log:
 | --- | --- | --- |
 | `start_run`, `cancel_run`, `approve`, `deny`, `list_files`, `read_file` | oRPC request/response | client → control plane |
 | `get_events(lastSeq)` | oRPC request/response | client → control plane, reads the same log |
-| every run-scoped event, live | WebSocket push (`packages/core` `StreamMessage`) | control plane → client |
-| `stream.hello` / `stream.resumed` | WebSocket, at connect and at replay | control plane → client |
+| every run-scoped event, live | the control plane's WebSocket leg, unbuilt today; `packages/core`'s `StreamMessage` is the wrapper it would use, with a v1 message in the `frame` slot | control plane → client |
+| `stream.hello` / `stream.resumed` | WebSocket, at connect and at replay; this is the v1 form of the connect signalling core does today with `{kind:"hello", lastSeq}` | control plane → client |
 | `stream.gap` | same socket, in the direction of the refusal | reader → sender |
+
+The WS leg does not exist yet, and `packages/core`'s `StreamMessage` is the tunnel's envelope rather
+than v1's: it is `{kind:"hello", lastSeq}` or `{kind:"frame", seq, frame}`, a wrapper around a frame
+slot. The control-plane leg is what adopts v1, carrying v1 messages as that slot's payload
+(`StreamMessage<EventMessage>`), so the wrapper wraps v1 and no translation is needed. Core's bare
+hello is the one overlap: `stream.hello` carries the same `lastSeq` plus `firstSeq`, so the leg sends
+the marker instead. Until the leg lands, the oRPC `get_events` path is the only one that reads the
+log, and `scripts/replay-spike.ts` stands in for socket replay.
 
 The single counter survives because nothing but the supervisor mints and both transports read the
 same log; a client that uses both keeps one `lastSeq` and may interleave them freely. The replay
@@ -99,6 +107,14 @@ the socket) and receive exactly the messages after it, dense, from the same log.
   middle path between the two options the brief named: `strict` would make every additive field a
   coordinated flag day, `passthrough` would let unnamed keys travel. Required-field typos still
   fail, because a missing required key is an error.
+- **Stripping happens at the parse boundary, and the log stores whatever the ingest path appends.**
+  `SeqLog<TFrame>` (packages/core) is generic over its frame, so the contract does not pick. This
+  unit's replay demo parses the wire and appends the parsed envelope: an additive v1.x field is
+  visible on the wire and absent from the log for log consumers. Appending the raw producer bytes
+  instead would keep it. The demo prints `log holds the parsed envelope (strip before persist): wire
+  payload {prompt, futureField} -> appended payload keys {prompt}`, so the boundary it models is
+  legible in the artifact rather than implied. Which one Phase 1's control plane does is a follow-up
+  below; neither choice changes a shipped shape, because the frame type belongs to the caller.
 - **Command inputs are strict** (`z.strictObject`). An unknown key in `start_run` or `approve` is
   a caller bug, and the caller is same-machine, same-version code; refusing is fail-closed. Every
   operation in `API_OPERATIONS` has a test that proves its refusal.
@@ -158,13 +174,23 @@ The replay demo is the load-bearing artifact. It maps the recorded session, roun
 message through `parseMessage`, ingests the result through `packages/core`'s real `SeqLog`, and
 prints the audit: 85 frames logged, `gaps 0 []`, `duplicates 0 []`, one replayed frame suppressed
 at ingest (`[30]`), one gap refused and healed by resend (`31<-32`), one frame refused by the
-schema before ingest (`rejected 1`).
+schema before ingest (`rejected 1`). It also prints the strip-before-persist boundary of the
+versioning section, and `src/events.test.ts` drives all nine deny codes plus the allow path through
+the real `packages/review` gate before parsing them into `tool_call.decision` payloads.
 
 ## Follow-ups
 
 - Wire `API_OPERATIONS` through `@orpc/contract` once oRPC lands (shape-preserving).
 - The gate's allow path returns `{allow: true}` and no grant id, so `tool_call.decision` cannot
   name the consumed grant; `packages/review` would need to return it.
+- Nothing parks calls yet. No component writes `approval.requested` or `approval.resolved`, and no
+  component enforces `expiresAt`: the deadline (a parked call past it is denied rather than run) is
+  what the control plane must do, and `approvalId` appears nowhere in `packages/review` today. The
+  consent flow lands with the control plane.
+- Decide whether ingest retains raw producer bytes or the parsed envelope (the versioning section
+  above): today's demo models the latter, which drops additive v1.x fields for log consumers.
+- Adopt v1 in the control plane's WS leg when it lands: v1 messages as the `frame` payload of
+  `packages/core`'s `StreamMessage`, with `stream.hello` replacing core's bare `{kind:"hello"}`.
 - `run.failed {reason}` is free text until the Phase 1 error taxonomy names codes.
 - Retire `scripts/spike-map.ts` and the spike fixture with the U0.10 spike in Phase 1.5.
 - Decide the per-message id when the event log gains rewind.

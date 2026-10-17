@@ -12,7 +12,7 @@ const row = (name: string) => rows.find((entry) => entry.name === name);
 
 describe("the rejection list", () => {
   test("every case is refused with exactly the recorded literal", () => {
-    expect(rows.length).toBe(22);
+    expect(rows.length).toBe(23);
     expect(rows.filter((entry) => !entry.ok)).toEqual([]);
   });
 
@@ -30,6 +30,7 @@ describe("the rejection list", () => {
       "payload field of the wrong type",
       "denial without a reason code",
       "reason code outside the nine",
+      "denial without a detail",
       "action hash that is not v1:sha256:<64 hex>",
       "grant state outside the four",
       "consumed grant without its consumer",

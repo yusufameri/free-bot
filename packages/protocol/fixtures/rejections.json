@@ -134,6 +134,19 @@
     "error": "Invalid option: expected one of \"unknown_tool\"|\"no_grant\"|\"grant_mismatch\"|\"grant_expired\"|\"grant_consumed\"|\"grant_tombstoned\"|\"grant_forged\"|\"malformed_action\"|\"grant_store_error\""
   },
   {
+    "name": "denial without a detail",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "tool_call.decision",
+      "payload": { "toolCallId": "call_1", "allow": false, "code": "no_grant", "detail": "" }
+    },
+    "error": "Too small: expected string to have >=1 characters"
+  },
+  {
     "name": "action hash that is not v1:sha256:<64 hex>",
     "schema": "message",
     "input": {

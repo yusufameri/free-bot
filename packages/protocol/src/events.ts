@@ -110,9 +110,11 @@ export const toolCallRequestedPayload = z.object({
 });
 
 /**
- * The gate's verdict on a call, before anything runs. Denials carry the reason code and detail
- * as separate fields so a consumer never splits the gate's display string, while the code stays
- * verbatim from packages/review.
+ * The gate's verdict on a call, before anything runs. The code and its detail travel as separate
+ * fields, so the split of the gate's combined reason string happens once at the producer instead
+ * of in every consumer, and the code stays verbatim from packages/review. `detail` is non-empty:
+ * the gate's `deny()` always interpolates an explanation, so a denial that names no reason cannot
+ * be expressed.
  */
 export const toolCallDecisionPayload = z.discriminatedUnion("allow", [
   z.object({
@@ -123,7 +125,7 @@ export const toolCallDecisionPayload = z.discriminatedUnion("allow", [
     toolCallId: z.string().min(1),
     allow: z.literal(false),
     code: denyCodeSchema,
-    detail: z.string(),
+    detail: z.string().min(1),
   }),
 ]);
 
@@ -144,9 +146,10 @@ export const toolCallResultPayload = z.object({
 // ---------------------------------------------------------------------------
 
 /**
- * A governed call is parked until the user answers. `actionHash` binds the request to the exact
- * call, so a later grant for different args cannot satisfy it; `expiresAt` is the deadline for
- * answering, after which the parked call is denied rather than run.
+ * A governed call awaits consent: the shape the control plane emits when it parks one. Nothing
+ * parks a call yet (see the follow-up in docs/protocol.md). `actionHash` binds the request to the
+ * exact call, so a later grant for different args cannot satisfy it; `expiresAt` is the deadline
+ * the control plane must enforce by denying the parked call rather than running it.
  */
 export const approvalRequestedPayload = z.object({
   approvalId: z.string().min(1),
