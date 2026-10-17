@@ -50,10 +50,10 @@ The page opens on `127.0.0.1` with the prompt box already showing. Type anything
 
 The four committed frames, from the evidence run at commit `103cc49`:
 
-- `packages/verify/artifacts/launch/103cc49/01-armed.png`
-- `packages/verify/artifacts/launch/103cc49/02-parked.png`
-- `packages/verify/artifacts/launch/103cc49/03-finished.png`
-- `packages/verify/artifacts/launch/103cc49/04-denied.png`
+- `packages/verify/artifacts/launch/8fdb87f/01-armed.png`
+- `packages/verify/artifacts/launch/8fdb87f/02-parked.png`
+- `packages/verify/artifacts/launch/8fdb87f/03-finished.png`
+- `packages/verify/artifacts/launch/8fdb87f/04-denied.png`
 
 One launch parks only its first run. Once you answer a card, the landed ledger holds that action's
 grant and the same call again is refused as `grant_consumed` rather than parked, which is why

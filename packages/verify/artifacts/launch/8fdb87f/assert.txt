@@ -1,24 +1,24 @@
 feature: launch
 command: bun packages/verify/scripts/launch.ts
-timestamp: 2026-10-17T20:06:05.663Z
-git sha: 103cc4985a8861ae8b6cb521f03d54486fd35db0
-git sha short: 103cc49
+timestamp: 2026-10-17T20:10:23.710Z
+git sha: 8fdb87fbaf50ce6f5f54a2a1ac5af83c0b3a6a5a
+git sha short: 8fdb87f
 branch: u2.3-one-command
 runtime: bun 1.2.5 on darwin arm64
 pinned image: freebot-sandbox:u0.6
 transcript: packages/pi-bridge/fixtures/rpc-handshake.jsonl
 
-# launch live-ui frames - 2026-10-17T20:06:05.663Z
-worktree /Users/yusufameri/projects/free-bot-u2.3/  head 103cc49  branch u2.3-one-command
+# launch live-ui frames - 2026-10-17T20:10:23.710Z
+worktree /Users/yusufameri/projects/free-bot-u2.3/  head 8fdb87f  branch u2.3-one-command
 DRIVER DISCLOSURE: the model's turns are replayed from packages/pi-bridge/fixtures/rpc-handshake.jsonl (gate G1 parks the keyed provider) and the sandbox is the pinned image. The launcher, both listeners, the gate, the loop, the run store, the log, the container, the page, its stream and the reap are real.
 WHY THREE LAUNCHES: a launch parks only its first run. Once a run is allowed, the landed ledger holds that action's grant, and the same call again is refused as grant_consumed rather than parked (packages/review/src/policy.ts). So the parked state that shutdown needs, and the two answered states, are each driven from a launch that has not answered that action yet.
 
 ## the one command
 containers before the first run (label freebot.unit=u1.7): 0
 ok - the launcher printed a URL of the required shape, token in the fragment: true
-the printed URL, redacted: http://127.0.0.1:60366/#token=<redacted>
+the printed URL, redacted: http://127.0.0.1:60894/#token=<redacted>
 ok - and its stdout held exactly one line at that moment, the URL: 1
-ok - the launcher's own diagnostic names the same page port: "60366"
+ok - the launcher's own diagnostic names the same page port: "60894"
 ok - the page answers on the URL's port: 200
 ok - healthz answers on the URL's port: "{\"status\":\"ok\",\"service\":\"freebot-server\"}"
 ok - a page stream with no token is refused: "refused"
@@ -28,7 +28,7 @@ ok - the token reaches the launch's output once, inside the URL and nowhere else
 cdp: Chrome/155.0.8059.84, headless, remote debugging on the DevToolsActivePort file (dynamic)
 
 ## the printed URL, clicked the way a person clicks it
-ok - first launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:60366","fragmentKey":"#token=","fragmentLength":50,"search":""}
+ok - first launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:60894","fragmentKey":"#token=","fragmentLength":50,"search":""}
 ok - first launch: operator mode is on, so the prompt box is the way in: false
 ok - first launch: the connection is live: "connected"
 ok - frame 01-armed: the page held still across the capture: "{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null}"
@@ -45,7 +45,7 @@ ok - first launch: the card shows the exact command the model asked for: "bash {
 ok - first launch: the buttons are the two real answers: ["Allow once","Deny"]
 ok - first launch: the run's own status frame is rendered, so a parked run does not look frozen: 1
 ok - the parked run holds one live container, this launch's own: [1,1]
-containers while the first launch's run is parked: 1 (freebot-sbx-run-1-at68c5zd)
+containers while the first launch's run is parked: 1 (freebot-sbx-run-1-idcv8na2)
 ok - frame 02-parked: the page held still across the capture: "{\"lastSeq\":6,\"done\":false,\"frameCount\":6,\"turns\":1,\"cards\":[[\"call_stub_11\",\"awaiting approval\"]],\"outputShown\":[false],\"approvals\":[null],\"deltas\":[],\"resume\":null,\"streamEnd\":null}"
 ok - frame 02-parked: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
 ok - frame 02-parked: the driver's DOM read agrees with the page's facts hook: [6,6,["awaiting approval"],[false]]
@@ -59,8 +59,8 @@ frame 02-parked: 02-parked.png (47127 bytes, sha256 6654170e06bf85a6c0f08e657bd2
 ok - the second launch took a different page port: [true,true]
 ok - the second launch's healthz answers: "{\"status\":\"ok\",\"service\":\"freebot-server\"}"
 ok - the first launch is still answering while the second serves: "{\"status\":\"ok\",\"service\":\"freebot-server\"}"
-the second launch's URL, redacted: http://127.0.0.1:60389/#token=<redacted>
-ok - second launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:60389","fragmentKey":"#token=","fragmentLength":50,"search":""}
+the second launch's URL, redacted: http://127.0.0.1:60918/#token=<redacted>
+ok - second launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:60918","fragmentKey":"#token=","fragmentLength":50,"search":""}
 ok - second launch: operator mode is on, so the prompt box is the way in: false
 ok - second launch: the connection is live: "connected"
 ok - second launch: the run is the one the page started: "run run-1"
@@ -81,7 +81,7 @@ ok - frame 03-finished: claim - the governed card is done with its output open: 
 ok - frame 03-finished: claim - the run reported done: true
 ok - frame 03-finished: claim - the terminal marker is rendered: true
 ok - frame 03-finished: claim - one rendered message per seq: true
-frame 03-finished: 03-finished.png (70712 bytes, sha256 bc6be6e4b53ffae14722ce3b79a39c27cbb0a67b0fe983d23fd29a5511538870) - last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found"
+frame 03-finished: 03-finished.png (70719 bytes, sha256 473d48f9d32444bffc01fa2bfc3299bb3bd3e64173e9b87cc8d49848e8b611b8) - last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found"
 ok - the second launch: exits zero on SIGINT: 0
 ok - the second launch: reported that it stopped: true
 ok - the second launch: every container it says it removed is gone from Docker: []
@@ -91,7 +91,7 @@ ok - the first launch's parked container survived the second launch's shutdown: 
 
 ## a third launch, denied
 ok - the third launch took a page port of its own: [true,true]
-ok - third launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:60396","fragmentKey":"#token=","fragmentLength":50,"search":""}
+ok - third launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:60925","fragmentKey":"#token=","fragmentLength":50,"search":""}
 ok - third launch: operator mode is on, so the prompt box is the way in: false
 ok - third launch: the connection is live: "connected"
 ok - third launch: the run is the one the page started: "run run-1"
@@ -133,12 +133,12 @@ ok - the default launch: every container it says it removed is gone from Docker:
 ok - the default launch: nothing listens on its page port afterwards: []
 
 ## shutdown, with the first launch's run still parked
-containers before the shutdown, with the run still parked: 1 (freebot-sbx-run-1-at68c5zd)
+containers before the shutdown, with the run still parked: 1 (freebot-sbx-run-1-idcv8na2)
 ok - the first launch: exits zero on SIGINT: 0
 ok - the first launch: reported that it stopped: true
 ok - the first launch: every container it says it removed is gone from Docker: []
 ok - the first launch: nothing listens on its page port afterwards: []
-ok - the first launch named the container its parked run held: ["freebot-sbx-run-1-at68c5zd"]
+ok - the first launch named the container its parked run held: ["freebot-sbx-run-1-idcv8na2"]
 ok - that container is gone from Docker by its own name: []
 ok - the label's container set is back where it started: []
 containers after the shutdown (label freebot.unit=u1.7): 0
@@ -158,7 +158,7 @@ name → sha256 → asserted DOM facts → caption
   unmet claims: []
 02-parked → 6654170e06bf85a6c0f08e657bd227b1e9635f8e05c7459d492ec48dedb017ed → last seq 6 · done false · turns 1 · cards [call_stub_11:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text "" → A run started from the printed URL is parked at the gate: the approval card names the exact command the model asked for, and the tool card waits for the answer.
   unmet claims: []
-03-finished → bc6be6e4b53ffae14722ce3b79a39c27cbb0a67b0fe983d23fd29a5511538870 → last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → Allowed once and finished: the card shows the decision, the governed call ran in the container so its output block holds the container's own stdout, and the run reached its terminal frame.
+03-finished → 473d48f9d32444bffc01fa2bfc3299bb3bd3e64173e9b87cc8d49848e8b611b8 → last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → Allowed once and finished: the card shows the decision, the governed call ran in the container so its output block holds the container's own stdout, and the run reached its terminal frame.
   unmet claims: []
 04-denied → 4e926a1238c241dfff37c55c29336df8976f42989e7229c341fe6cc37d93276b → last seq 16 · done true · turns 2 · cards [call_stub_11:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → A second launch, denied: the same page and the same engine on a free port of its own, driven through a denial to its own terminal frame.
   unmet claims: []
@@ -167,7 +167,7 @@ name → sha256 → asserted DOM facts → caption
 ok - frames: one committed PNG per key state: 4
 artifact: 01-armed.png (23236 bytes)
 artifact: 02-parked.png (47127 bytes)
-artifact: 03-finished.png (70712 bytes)
+artifact: 03-finished.png (70719 bytes)
 artifact: 04-denied.png (66387 bytes)
 ok - no committed line carries any launch's operator token: [false,false,false]
 ok - the URL appears only with its token redacted: true
