@@ -1,8 +1,8 @@
 # The root type gate
 
-Status: PASS. 38/38 probe checks green at commit `21c263d`, driven by
+Status: PASS. 38/38 probe checks green at commit `9877569`, driven by
 `bun packages/verify/scripts/type-gate.ts`, with the transcript under
-`packages/verify/artifacts/type-gate/21c263d/probe.txt`. Verdict: type-check-only.
+`packages/verify/artifacts/type-gate/9877569/probe.txt`. Verdict: type-check-only.
 
 `bun run typecheck` is the cheap gate every unit, every PR and CI runs. Until this unit it was blind
 to 14 source files and to every `.tsx` file in the repo. It now covers each workspace's `src` and

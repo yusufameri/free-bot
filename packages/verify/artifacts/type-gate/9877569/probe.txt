@@ -1,8 +1,8 @@
 type gate probe
 command: bun packages/verify/scripts/type-gate.ts
-timestamp: 2026-10-17T15:54:56.459Z
-git sha: 21c263d76432f2182eae4828e4a0b1441036b26c
-git sha short: 21c263d
+timestamp: 2026-10-17T15:58:12.202Z
+git sha: 9877569af4e3620cec2caf2db86c311591c14901
+git sha short: 9877569
 branch: u1.10-type-gate
 include, root tsconfig.json: ["packages/*/src/**/*.ts","packages/*/src/**/*.tsx","packages/*/scripts/**/*.ts","packages/*/scripts/**/*.tsx","packages/verify/*.ts","apps/*/src/**/*.ts","apps/*/src/**/*.tsx","apps/*/scripts/**/*.ts","apps/*/scripts/**/*.tsx"]
 include, pre-widening: ["packages/*/src/**/*.ts","packages/verify/*.ts","apps/*/src/**/*.ts"]
