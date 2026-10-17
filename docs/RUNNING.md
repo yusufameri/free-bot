@@ -29,15 +29,39 @@ bun run up
 ```
 $ bun run up
 freebot up: page and run on 127.0.0.1:60203, tunnel on 127.0.0.1:60202
+freebot up: model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)
+freebot up: vault /Users/you/.freebot/provider.env present, mode 600
+freebot up: workspace /Users/you/.freebot/bots/bot-local/workspace mounted at /workspace, kept across runs
 freebot up: the operator token rides the URL's fragment and is printed nowhere else
 freebot up: opened the URL in your browser
 freebot up: Ctrl-C stops the servers and removes this launch's sandbox containers
 http://127.0.0.1:60203/#token=<43 url-safe characters>
 ```
 
-The first four lines are diagnostics on stderr. The last line is stdout, and it is the only URL the
+The lines above the URL are diagnostics on stderr. The last line is stdout, and it is the only URL the
 launcher prints. The token is in the fragment, the one URL part a browser never sends to a server,
 so it reaches no access log and no `Referer` (`docs/one-run-path.md` has the token contract).
+
+## The Library
+
+The page has two tabs. `Conversation` is the thread a run writes into. `Library` lists the Bot's
+workspace: `/workspace` pinned at the top, then the entries grouped as `Today`, `This week`, and
+`Older` by their own timestamps. Opening a file shows its bytes. Opening a path that resolves outside
+the workspace is refused by name and shows no bytes.
+
+The workspace is a real directory on this computer, and the launcher names it on stderr:
+
+```
+freebot up: workspace /Users/you/.freebot/bots/bot-local/workspace mounted at /workspace, kept across runs
+```
+
+Every run of this Bot mounts that directory at `/workspace`, so what a run writes there outlives the
+run. The container does not: anything outside `/workspace`, and anything installed into the
+container, is gone when the run ends. `docs/files-surface.md` states the whole rule, the scoping
+rules, and the limits.
+
+`FREEBOT_WORKSPACE=<path>` points the launch at a different workspace directory, which is how the
+evidence driver starts from an empty one.
 
 ## The click
 

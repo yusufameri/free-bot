@@ -147,6 +147,7 @@ per-launch tag.
   fresh server necessary in the evidence.
 - **G1 (the BYOK key) still parks the model.** The provider is the replay provider; the swap is one
   factory in `run-service.ts`.
-- **`get_events`, `approve`, `deny`, `list_files` and `read_file`** still have zod shapes and no
-  contract arm. The page's stream is how an approval is answered today, and the oRPC contract gains
-  `approve` and `deny` when a client that needs them lands.
+- **`get_events`, `approve` and `deny`** still have zod shapes and no contract arm. The page's stream
+  is how an approval is answered today, and the oRPC contract gains `approve` and `deny` when a
+  client that needs them lands. `list_files` and `read_file` gained their arms in U4.1, backed by the
+  run service's workspace reader; `docs/files-surface.md` is that unit's page.
