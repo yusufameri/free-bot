@@ -1,17 +1,20 @@
 /**
- * The run service's own contract: one log and one run store serve every run it starts.
+ * The run service's own contract: the three records a run sits inside, and the properties the
+ * surface tests over oRPC and the transports cannot show.
  *
- * The surface tests live in `router.test.ts` (over oRPC) and `api-server.test.ts` (over the
- * transports). What is left here is the property those two cannot show: two runs that start in the
- * same tick share one seq space, which is what one log for the whole service means.
+ * What is left here is what those two cannot express: that a Bot, a thread and a run all exist
+ * before the loop's first await, that two runs in one thread share one seq space, that two Bots have
+ * two workspace directories, and that a second process over the same bots root brings every record
+ * and every run back.
  */
 
 import { describe, expect, test } from "bun:test";
+import { mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ProviderPort, SandboxPort } from "@freebot/core";
 import type { SandboxSpec } from "@freebot/sandbox";
-import { createRunService } from "./run-service.ts";
+import { createRunService, UnknownRecordError } from "./run-service.ts";
 
 const unusedSandbox: SandboxPort = {
   async create() {},
@@ -21,77 +24,136 @@ const unusedSandbox: SandboxPort = {
   async destroy() {},
 };
 
-/** One turn of text and no call, so a run finishes in the fewest frames it can. */
+/** One turn of text and no call, so a run finishes in the few frames it can. */
 const immediateProvider: ProviderPort = {
   async next() {
     return { text: ["ok"], toolCalls: [] };
   },
 };
 
-const idleSandbox: SandboxPort = {
-  async create() {},
-  async execute() {
-    throw new Error("this test starts no tool call");
-  },
-  async destroy() {},
-};
+/** A bots root of this test's own, so nothing here reads or writes a Bot a person has run. */
+function botsRoot(): string {
+  return mkdtempSync(join(tmpdir(), "freebot-run-service-"));
+}
 
-describe("one log for every run the service starts", () => {
-  test("two runs started in the same tick share one seq space and both finish", async () => {
-    const service = createRunService({ sandbox: idleSandbox, provider: () => immediateProvider });
+describe("a Bot, a thread, and a run inside them", () => {
+  test("two runs in one thread share one seq space and both finish", async () => {
+    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const bot = service.createBot("Local Bot");
+    const thread = service.createThread(bot.id);
 
-    const first = service.start("one");
-    const second = service.start("two");
+    const first = service.start({ prompt: "one", botId: bot.id, threadId: thread.id });
+    const second = service.start({ prompt: "two", botId: bot.id, threadId: thread.id });
     await service.idle();
 
-    expect(service.store.get(first.runId)?.status).toBe("done");
-    expect(service.store.get(second.runId)?.status).toBe("done");
+    expect(service.run(first.runId)?.record.status).toBe("done");
+    expect(service.run(second.runId)?.record.status).toBe("done");
 
-    const frames = service.log.since(0).map((entry) => entry.frame);
+    const frames = service.events(thread.id, 0).messages;
     expect(frames.every((frame, index) => frame.seq === index + 1)).toBe(true);
     expect([...new Set(frames.map((frame) => frame.runId))].sort()).toEqual([
       first.runId,
       second.runId,
     ]);
-    expect(service.log.audit()).toMatchObject({
+    expect(service.audit(thread.id)).toMatchObject({
       firstSeq: 1,
       count: frames.length,
       gaps: [],
       duplicates: [],
       rejected: 0,
     });
+    // The thread is the conversation: both runs are in it, in the order they were asked for.
+    const held = service.listThreads(bot.id)[0];
+    expect(held?.runs.map((record) => record.prompt)).toEqual(["one", "two"]);
+  });
+
+  test("both records exist before the loop's first await, and the run names them", async () => {
+    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const bot = service.createBot("Local Bot");
+    const thread = service.createThread(bot.id);
+
+    const started = service.start({ prompt: "one", botId: bot.id, threadId: thread.id });
+
+    // Read in the same tick, before any await: the record is already there to be addressed.
+    expect(service.run(started.runId)).toMatchObject({
+      botId: bot.id,
+      threadId: thread.id,
+      record: { prompt: "one", status: "queued" },
+    });
+    await service.idle();
   });
 
   test("two subscribers both see every frame, in seq order", async () => {
-    const service = createRunService({ sandbox: unusedSandbox, provider: () => immediateProvider });
+    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const bot = service.createBot("Local Bot");
+    const thread = service.createThread(bot.id);
     const controller = new AbortController();
     const seen: number[][] = [[], []];
     const pumps = seen.map(async (list) => {
-      for await (const message of service.stream(0, controller.signal)) list.push(message.seq);
+      for await (const message of service.stream(thread.id, 0, controller.signal)) {
+        list.push(message.seq);
+      }
     });
 
-    const { runId } = service.start("one");
+    const { runId } = service.start({ prompt: "one", botId: bot.id, threadId: thread.id });
     await service.idle();
 
     const deadline = Date.now() + 2_000;
-    while (Date.now() < deadline && !seen.every((list) => list.length === service.log.lastSeq)) {
+    while (Date.now() < deadline && !seen.every((list) => list.length === service.audit(thread.id).lastSeq)) {
       await Bun.sleep(10);
     }
     controller.abort();
     await Promise.all(pumps);
 
-    expect(service.store.get(runId)?.status).toBe("done");
+    expect(service.run(runId)?.record.status).toBe("done");
     expect(seen[0]?.length).toBeGreaterThan(0);
     expect(seen[0]).toEqual(seen[1]);
     expect(seen[0]?.every((seq, index) => seq === index + 1)).toBe(true);
   });
+
+  test("one thread's frames are not another thread's, and each log starts at its own seq 1", async () => {
+    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const bot = service.createBot("Local Bot");
+    const first = service.createThread(bot.id);
+    const second = service.createThread(bot.id);
+
+    service.start({ prompt: "in the first", botId: bot.id, threadId: first.id });
+    await service.idle();
+
+    expect(service.events(first.id, 0).messages[0]?.payload).toEqual({ prompt: "in the first" });
+    expect(service.events(second.id, 0).messages).toEqual([]);
+  });
+
+  test("a Bot or a thread this server does not hold is refused by name", async () => {
+    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const bot = service.createBot("Local Bot");
+    const thread = service.createThread(bot.id);
+    const other = service.createBot("Other");
+
+    expect(() => service.start({ prompt: "x", botId: "bot-nowhere", threadId: thread.id })).toThrow(
+      "no such Bot: bot-nowhere",
+    );
+    expect(() => service.start({ prompt: "x", botId: bot.id, threadId: "thread-9" })).toThrow(
+      UnknownRecordError,
+    );
+    expect(() => service.start({ prompt: "x", botId: bot.id, threadId: "thread-9" })).toThrow(
+      "no such thread: thread-9",
+    );
+    // A thread belongs to one Bot: naming it under another is a lookup that failed, not a move.
+    expect(() => service.start({ prompt: "x", botId: other.id, threadId: thread.id })).toThrow(
+      "no such thread: thread-1",
+    );
+    expect(() => service.listThreads("bot-nowhere")).toThrow("no such Bot: bot-nowhere");
+    expect(() => service.createThread("bot-nowhere")).toThrow("no such Bot: bot-nowhere");
+    expect(service.listBots().map(({ bot: record }) => record.name)).toEqual(["Local Bot", "Other"]);
+  });
 });
 
 describe("the Bot's workspace", () => {
-  test("every run mounts the service's workspace directory at /workspace", async () => {
+  test("every run mounts this Bot's own directory at /workspace", async () => {
     const specs: SandboxSpec[] = [];
     const service = createRunService({
-      workspace: join(tmpdir(), "freebot-run-service-ws"),
+      botsRoot: botsRoot(),
       sandbox: {
         async create(spec) {
           specs.push(spec);
@@ -103,12 +165,91 @@ describe("the Bot's workspace", () => {
       },
       provider: () => immediateProvider,
     });
+    const bot = service.createBot("Local Bot");
+    const thread = service.createThread(bot.id);
 
-    service.start("one");
+    service.start({ prompt: "one", botId: bot.id, threadId: thread.id });
     await service.idle();
 
     expect(specs.map((spec) => spec.mounts)).toEqual([
-      [{ host: service.workspace.root, container: "/workspace" }],
+      [{ host: service.workspaceFor(bot.id), container: "/workspace" }],
     ]);
+  });
+
+  test("a file in one Bot's workspace is not in another Bot's", async () => {
+    const root = botsRoot();
+    const service = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const first = service.createBot("First");
+    const second = service.createBot("Second");
+
+    writeFileSync(join(service.workspaceFor(first.id), "note.txt"), "mine\n");
+
+    // The reader reports the real path, which is the same directory under another name on macOS.
+    expect(service.workspaceFor(first.id)).toBe(realpathSync(join(root, first.id, "workspace")));
+    expect(service.workspaceFor(second.id)).toBe(realpathSync(join(root, second.id, "workspace")));
+    expect((await service.readFile(first.id, "note.txt")).text).toBe("mine\n");
+    expect((await service.listFiles(second.id, ".")).entries).toEqual([]);
+    expect(await service.readFile(second.id, "note.txt").catch((error: Error) => error.message)).toBe(
+      "path_not_found: note.txt",
+    );
+  });
+
+  test("a workspace read for a Bot this server does not hold creates nothing and is refused", async () => {
+    const root = botsRoot();
+    const service = createRunService({ botsRoot: root, provider: () => immediateProvider });
+
+    expect(
+      await service.listFiles("bot-nowhere", ".").catch((error: Error) => error.message),
+    ).toBe("no such Bot: bot-nowhere");
+    expect(await Bun.file(join(root, "bot-nowhere")).exists()).toBe(false);
+  });
+});
+
+describe("a second process over the same bots root", () => {
+  test("brings back every Bot, every thread and every run", async () => {
+    const root = botsRoot();
+    const first = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const bot = first.createBot("Local Bot");
+    const other = first.createBot("Second");
+    const thread = first.createThread(bot.id);
+    first.createThread(other.id);
+    const { runId } = first.start({ prompt: "remember me", botId: bot.id, threadId: thread.id });
+    await first.idle();
+    first.close();
+
+    const reopened = createRunService({ botsRoot: root, provider: () => immediateProvider });
+
+    expect(reopened.listBots().map(({ bot: record, threadCount }) => [record.name, threadCount])).toEqual([
+      ["Local Bot", 1],
+      ["Second", 1],
+    ]);
+    expect(reopened.listThreads(bot.id)[0]?.runs.map((record) => [record.id, record.prompt])).toEqual([
+      [runId, "remember me"],
+    ]);
+    expect(reopened.registry.loadReport).toEqual({
+      commands: 4,
+      refused: [],
+      tornTrailingLine: false,
+    });
+    reopened.close();
+  });
+
+  test("run ids continue past the runs the last process recorded", async () => {
+    const root = botsRoot();
+    const first = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const bot = first.createBot("Local Bot");
+    const thread = first.createThread(bot.id);
+    expect(first.start({ prompt: "one", botId: bot.id, threadId: thread.id }).runId).toBe("run-1");
+    await first.idle();
+    first.close();
+
+    const reopened = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    expect(reopened.start({ prompt: "two", botId: bot.id, threadId: thread.id }).runId).toBe("run-2");
+    await reopened.idle();
+    expect(reopened.listThreads(bot.id)[0]?.runs.map((record) => record.id)).toEqual([
+      "run-1",
+      "run-2",
+    ]);
+    reopened.close();
   });
 });

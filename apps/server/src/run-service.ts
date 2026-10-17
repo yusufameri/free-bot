@@ -1,18 +1,23 @@
 /**
  * The run service: the loop, wired to real ports, and the one run authority in `apps/server`.
  *
- * One `SeqLog` per service instance is the record for every run it starts. Every reader reads that
- * one buffer: `stream()` replays it from a watermark and then follows it live, and the same buffer
- * is what `startTunnelServer({log})` can serve. Nothing here buffers events a second time.
+ * The service is organized around the three nouns, and each one owns its own state:
  *
- * The service owns the run's state through `RunStore` and nothing else: `start` creates the record
- * before it launches the loop, so a cancel or a read that arrives in the same tick as `start` sees
- * the run the caller just asked for. The action is the loop's; this file only supplies ports.
+ * - A Bot is a record (`BotStore`) and a host directory, `botsRoot/<botId>/workspace`, which every
+ *   run of that Bot mounts at `/workspace`. Two Bots cannot see each other's files, because the
+ *   mount is this Bot's directory and nothing else.
+ * - A thread is a record, one conversation with one Bot, and it owns two things on disk: its run
+ *   journal, `botsRoot/<botId>/threads/<threadId>/runs.jsonl`, and its log, which is a `SeqLog` per
+ *   thread. One log per thread is what makes a conversation's seq space its own, so the page can
+ *   show one thread's frames and only that thread's.
+ * - A run belongs to both. `start` names the Bot and the thread, refuses either if it is not there,
+ *   and creates the run's record before it launches the loop, so a cancel or a read that arrives in
+ *   the same tick as `start` sees the run the caller just asked for.
  *
- * The service also owns the Bot's workspace, which is the one thing a run leaves behind. Its
- * container is destroyed on every path, so `start` mounts this Bot's host directory at `/workspace`,
- * and `listFiles` and `readFile` read that same directory back for the Library. The lifetime rule,
- * the scoping rules, and the limits are in `docs/files-surface.md`.
+ * Every thread the registry holds is opened at boot, so a restart brings back every Bot, every
+ * thread and every run the last process had, and `list_bots` / `list_threads` answer from the same
+ * records the run path reads. The three files that hold this are described in
+ * `docs/bots-and-threads.md`.
  *
  * The model is real when the vault holds a key. `mode` defaults to `auto`, which asks the vault and
  * falls back to the replay transcript on a keyless machine, so the launcher's page gets the model
@@ -21,8 +26,24 @@
  * `docs/RUNNING.md`.
  */
 
-import { type ProviderPort, RunStore, runRunLoop, type SandboxPort, SeqLog } from "@freebot/core";
-import type { EventMessage, ListFilesOutput, ReadFileOutput } from "@freebot/protocol";
+import { join } from "node:path";
+import {
+  type BotRecord,
+  BotStore,
+  type ProviderPort,
+  type RunRecord,
+  RunStore,
+  runRunLoop,
+  type SandboxPort,
+  SeqLog,
+  type ThreadRecord,
+} from "@freebot/core";
+import type {
+  BotRefusal,
+  EventMessage,
+  ListFilesOutput,
+  ReadFileOutput,
+} from "@freebot/protocol";
 import { GrantStore } from "@freebot/review";
 import { DockerAdapter } from "@freebot/sandbox";
 import {
@@ -51,9 +72,6 @@ import {
 
 const RUN_IDLE_TTL_MS = 300_000;
 
-/** The one Bot this server has. The workspace on disk is this Bot's, and it outlives its runs. */
-export const BOT_ID = "bot-local";
-
 /**
  * Suffixes this launch's sandbox names. The run id is `run-<n>` per process, and the sandbox is
  * named from it, so a container a hard-killed launch left behind would collide with the next
@@ -62,6 +80,34 @@ export const BOT_ID = "bot-local";
  */
 const LAUNCH_TAG = Math.random().toString(36).slice(2, 10);
 
+/** The Bot registry's file name inside the bots root. */
+export const REGISTRY_FILE = "index.jsonl";
+
+/** The default title a thread carries until a person renames it. */
+export const NEW_THREAD_TITLE = "New conversation";
+
+/** One thread's run journal, the file a restart brings that thread's conversation back from. */
+export function threadJournalPath(root: string, botId: string, threadId: string): string {
+  return join(root, botId, "threads", threadId, "runs.jsonl");
+}
+
+/**
+ * A caller named a Bot or a thread this server does not hold. The refusal name is what the wire
+ * reports, so a surface can branch on it instead of matching a sentence.
+ */
+export class UnknownRecordError extends Error {
+  readonly refusal: BotRefusal;
+  /** The id the caller named. */
+  readonly id: string;
+
+  constructor(refusal: BotRefusal, id: string) {
+    super(`${refusal === "bot_not_found" ? "no such Bot" : "no such thread"}: ${id}`);
+    this.name = "UnknownRecordError";
+    this.refusal = refusal;
+    this.id = id;
+  }
+}
+
 export interface RunServiceOptions {
   /** Inject a provider, for a test. A factory takes the run's prompt, which is the model's user
    * message, so a keyed provider is built per run. */
@@ -69,12 +115,10 @@ export interface RunServiceOptions {
   /** Inject a sandbox, so a test drives the endpoints without Docker. A factory gets one port per
    * run, which keeps two concurrent runs off each other's container. */
   readonly sandbox?: SandboxPort | (() => SandboxPort);
-  /** Journal path for the run store. Omitted means an in-memory store. */
-  readonly file?: string;
+  /** The directory that holds the Bot registry and one workspace per Bot. Defaults to the bots
+   * directory under the freebot home, which is where the single-Bot app already kept its own. */
+  readonly botsRoot?: string;
   readonly transcript?: string;
-  /** The Bot's workspace on the host, mounted into every run at `/workspace`. Defaults to this
-   * Bot's own directory under the freebot home. */
-  readonly workspace?: string;
   /** How the factory picks the model. `auto` follows the vault, `replay` records, `live` demands a
    * key. Defaults to `auto`. */
   readonly mode?: ProviderMode;
@@ -85,48 +129,154 @@ export interface RunServiceOptions {
   readonly now?: () => number;
 }
 
+/** One Bot and the count the sidebar renders beside its name. */
+export interface BotSummary {
+  readonly bot: BotRecord;
+  readonly threadCount: number;
+}
+
+/** One thread and its conversation: the runs that append to it, oldest first. */
+export interface ThreadSummary {
+  readonly thread: ThreadRecord;
+  readonly runs: RunRecord[];
+}
+
+export interface StartRunInput {
+  readonly prompt: string;
+  readonly botId: string;
+  readonly threadId: string;
+}
+
 export interface RunService {
-  readonly log: SeqLog<EventMessage>;
-  readonly store: RunStore;
+  /** The Bot registry: every Bot and thread record this server holds. */
+  readonly registry: BotStore;
+  /** The directory holding one workspace per Bot. */
+  readonly workspacesRoot: string;
   readonly grants: GrantStore;
   readonly approvals: PendingApprovals;
-  /** The Bot's workspace reader: the directory every run of this Bot mounts at `/workspace`. */
-  readonly workspace: WorkspaceReader;
-  /** Begin a run. Returns before the loop does anything; progress arrives in the log. */
-  start(prompt: string): { runId: string };
+  /** Every Bot, in creation order, with its thread count. */
+  listBots(): BotSummary[];
+  /** Create a Bot. The id is minted here, because it keys the Bot's workspace directory. */
+  createBot(name: string): BotRecord;
+  /** Every thread of one Bot, in creation order, each with its conversation. Refused by name when
+   * the Bot is not one this server holds. */
+  listThreads(botId: string): ThreadSummary[];
+  createThread(botId: string, title?: string): ThreadRecord;
+  /** The run's record and the two records it belongs to, or undefined for a run it never held. */
+  run(runId: string): { record: RunRecord; botId: string; threadId: string } | undefined;
+  /** The host directory a Bot's runs mount at `/workspace`. */
+  workspaceFor(botId: string): string;
+  /** Begin a run in a Bot's thread. Returns before the loop does anything; progress is in the log. */
+  start(input: StartRunInput): { runId: string };
   cancel(runId: string): boolean;
   answer(approvalId: string, decision: "allow" | "deny"): boolean;
-  events(lastSeq: number, limit?: number): { messages: EventMessage[]; lastSeq: number };
-  /** The log's messages after `lastSeq`, in seq order, then live until `signal` aborts. */
-  stream(lastSeq: number, signal: AbortSignal | undefined): AsyncGenerator<EventMessage>;
-  /** One directory of the Bot's workspace, refused by name when it is not one. */
-  listFiles(path: string): Promise<ListFilesOutput>;
-  /** One UTF-8 file of the Bot's workspace, refused by name when it is not one. */
-  readFile(path: string): Promise<ReadFileOutput>;
-  /** Readers currently waiting for an append. Zero once every socket has gone away. */
+  /** One thread's messages after `lastSeq`, up to `limit`. */
+  events(threadId: string, lastSeq: number, limit?: number): { messages: EventMessage[]; lastSeq: number };
+  /** One thread's log audit, which is what its `stream.hello` reports. */
+  audit(threadId: string): ReturnType<SeqLog<EventMessage>["audit"]>;
+  /** One thread's messages after `lastSeq`, in seq order, then live until `signal` aborts. */
+  stream(
+    threadId: string,
+    lastSeq: number,
+    signal: AbortSignal | undefined,
+  ): AsyncGenerator<EventMessage>;
+  /** One directory of a Bot's workspace, refused by name when it is not one. */
+  listFiles(botId: string, path: string): Promise<ListFilesOutput>;
+  /** One UTF-8 file of a Bot's workspace, refused by name when it is not one. */
+  readFile(botId: string, path: string): Promise<ReadFileOutput>;
+  /** Readers currently waiting for an append, across every thread. Zero once every socket is gone. */
   readonly subscribers: number;
   /** Resolves once every run this service started has settled. */
   idle(): Promise<void>;
+  /** Release every journal this service holds open. */
+  close(): void;
+}
+
+/** One thread's own state: its record, its run journal, its log, and the readers waiting on it. */
+interface ThreadRuntime {
+  readonly thread: ThreadRecord;
+  readonly store: RunStore;
+  readonly log: SeqLog<EventMessage>;
+  readonly waiters: Set<() => void>;
 }
 
 export function createRunService(options: RunServiceOptions = {}): RunService {
-  const log = new SeqLog<EventMessage>();
-  const store = new RunStore(options.file === undefined ? {} : { file: options.file });
+  const workspacesRoot = resolveBotsRoot(options.botsRoot);
+  const now = options.now ?? Date.now;
+  const registry = new BotStore({ file: join(workspacesRoot, REGISTRY_FILE), now });
   const grants = new GrantStore();
   const refusals = new Set<string>();
   const approvals = createPendingApprovals();
-  const now = options.now ?? Date.now;
   const gate = createReviewGate(grants, refusals, { now });
   const cancelled = new Set<string>();
   const inflight: Array<Promise<unknown>> = [];
   const transcript = options.transcript ?? DEFAULT_TRANSCRIPT;
   const vaultEntry = options.readVaultEntry ?? readVault;
-  const workspace = createWorkspaceReader(
-    options.workspace ?? botWorkspacePath(freebotHome(), BOT_ID),
-  );
+  const runtimes = new Map<string, ThreadRuntime>();
+  const readers = new Map<string, WorkspaceReader>();
+  /** The run's thread, so a run id alone reaches the record and the log it belongs to. */
+  const runThreads = new Map<string, string>();
+  /** Run ids count across every thread and continue from the runs a previous process recorded. */
+  let runSerial = 0;
 
-  /** One entry per reader waiting for an append; `stream()` adds and drops its own. */
-  const waiters = new Set<() => void>();
+  /** The run's record and the two records it belongs to, or undefined for a run it never held. */
+  function runOf(runId: string): { record: RunRecord; botId: string; threadId: string } | undefined {
+    const threadId = runThreads.get(runId);
+    if (threadId === undefined) return undefined;
+    const runtime = runtimes.get(threadId);
+    if (runtime === undefined) return undefined;
+    const record = runtime.store.get(runId);
+    if (record === undefined) return undefined;
+    return { record, botId: runtime.thread.botId, threadId };
+  }
+
+  function requireBot(botId: string): BotRecord {
+    const bot = registry.bot(botId);
+    if (bot === undefined) throw new UnknownRecordError("bot_not_found", botId);
+    return bot;
+  }
+
+  /**
+   * The thread's runtime, opened from its record. Every thread the registry holds has one by the
+   * time this returns: they are opened at boot and by `createThread`, so a run can never find a
+   * thread without the record that owns it.
+   */
+  function runtimeFor(threadId: string): ThreadRuntime {
+    const runtime = runtimes.get(threadId);
+    if (runtime === undefined) throw new UnknownRecordError("thread_not_found", threadId);
+    return runtime;
+  }
+
+  function openRuntime(thread: ThreadRecord): ThreadRuntime {
+    const store = new RunStore({
+      file: threadJournalPath(workspacesRoot, thread.botId, thread.id),
+      now,
+    });
+    const runtime: ThreadRuntime = {
+      thread,
+      store,
+      log: new SeqLog<EventMessage>(),
+      waiters: new Set(),
+    };
+    runtimes.set(thread.id, runtime);
+    for (const record of store.list()) runThreads.set(record.id, thread.id);
+    runSerial = Math.max(runSerial, store.list().length);
+    return runtime;
+  }
+
+  for (const bot of registry.bots()) {
+    for (const thread of registry.threads(bot.id)) openRuntime(thread);
+  }
+
+  /** The reader over one Bot's workspace directory, created on first use. */
+  function readerFor(botId: string): WorkspaceReader {
+    requireBot(botId);
+    const existing = readers.get(botId);
+    if (existing !== undefined) return existing;
+    const created = createWorkspaceReader(botWorkspacePath(workspacesRoot, botId));
+    readers.set(botId, created);
+    return created;
+  }
 
   /** This run's provider, from the factory's choice. The prompt is the model's user message. */
   async function providerFor(prompt: string): Promise<ProviderPort> {
@@ -143,11 +293,11 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     });
   }
 
-  /** Resolves on the next append, or as soon as `signal` aborts. */
-  function nextAppend(signal: AbortSignal | undefined): {
-    promise: Promise<void>;
-    drop: () => void;
-  } {
+  /** Resolves on the next append in this thread, or as soon as `signal` aborts. */
+  function nextAppend(
+    runtime: ThreadRuntime,
+    signal: AbortSignal | undefined,
+  ): { promise: Promise<void>; drop: () => void } {
     let wake!: () => void;
     const promise = new Promise<void>((resolve) => {
       wake = resolve;
@@ -157,16 +307,16 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
       wake();
     };
     const drop = () => {
-      waiters.delete(stop);
+      runtime.waiters.delete(stop);
       signal?.removeEventListener("abort", stop);
     };
-    waiters.add(stop);
+    runtime.waiters.add(stop);
     signal?.addEventListener("abort", stop);
     return { promise, drop };
   }
 
   /**
-   * The log's messages after `lastSeq`, in seq order, then live.
+   * The thread's messages after `lastSeq`, in seq order, then live.
    *
    * The waiter is registered *before* the log is read, not after. Read-then-wait loses a wake that
    * lands while the reader is between the read and the wait, and the reader then sleeps through
@@ -174,14 +324,16 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
    * read, or it resolves the waiter the read already registered.
    */
   async function* stream(
+    threadId: string,
     lastSeq: number,
     signal: AbortSignal | undefined,
   ): AsyncGenerator<EventMessage> {
+    const runtime = runtimeFor(threadId);
     let cursor = lastSeq;
     while (signal?.aborted !== true) {
-      const wake = nextAppend(signal);
+      const wake = nextAppend(runtime, signal);
       try {
-        for (const entry of log.since(cursor)) {
+        for (const entry of runtime.log.since(cursor)) {
           cursor = entry.seq;
           yield entry.frame;
         }
@@ -193,34 +345,76 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
   }
 
   return {
-    log,
-    store,
+    registry,
+    workspacesRoot,
     grants,
     approvals,
     stream,
-    workspace,
 
-    get subscribers() {
-      return waiters.size;
+    listBots() {
+      return registry.bots().map((bot) => ({
+        bot,
+        threadCount: registry.threads(bot.id).length,
+      }));
     },
 
-    start(prompt) {
-      const runId = `run-${store.list().length + 1}`;
+    createBot(name) {
+      const id = registry.nextBotId();
+      return registry.createBot({ id, name }).record;
+    },
+
+    listThreads(botId) {
+      requireBot(botId);
+      return registry.threads(botId).map((thread) => ({
+        thread,
+        runs: runtimeFor(thread.id).store.list(),
+      }));
+    },
+
+    createThread(botId, title) {
+      requireBot(botId);
+      const id = registry.nextThreadId();
+      const created = registry.createThread({ id, botId, title: title ?? NEW_THREAD_TITLE }).record;
+      openRuntime(created);
+      return created;
+    },
+
+    run: runOf,
+
+    workspaceFor: (botId) => readerFor(botId).root,
+
+    get subscribers() {
+      let waiting = 0;
+      for (const runtime of runtimes.values()) waiting += runtime.waiters.size;
+      return waiting;
+    },
+
+    start(input) {
+      const bot = requireBot(input.botId);
+      const runtime = runtimeFor(input.threadId);
+      if (runtime.thread.botId !== bot.id) {
+        // A thread belongs to one Bot. Naming it under another Bot is a lookup that failed, not a
+        // thread to move, and starting a run there would write into the wrong Bot's conversation.
+        throw new UnknownRecordError("thread_not_found", input.threadId);
+      }
+      runSerial += 1;
+      const runId = `run-${runSerial}`;
+      runThreads.set(runId, runtime.thread.id);
       // The record exists before the loop's first await, so a cancel or a read in the same tick as
       // this call has a run to address. The loop's own `store.start` for this id is a no-op.
-      store.start({
+      runtime.store.start({
         id: runId,
-        threadId: `thread-${runId}`,
-        botId: "bot-local",
-        prompt,
+        threadId: runtime.thread.id,
+        botId: bot.id,
+        prompt: input.prompt,
       });
       const logPort = createLogPort({
-        log,
+        log: runtime.log,
         runId,
-        noteSeq: (seq) => void store.noteSeq(runId, seq),
+        noteSeq: (seq) => void runtime.store.noteSeq(runId, seq),
         now,
         onAppend: () => {
-          for (const wake of [...waiters]) wake();
+          for (const wake of [...runtime.waiters]) wake();
         },
       });
       const injected = options.sandbox;
@@ -229,30 +423,30 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
           ? injected()
           : (injected ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT })));
       const run = (async () => {
-        const provider = await providerFor(prompt);
+        const provider = await providerFor(input.prompt);
         return await runRunLoop(
           {
             sandbox,
             provider,
             gate,
             approvals,
-            store,
+            store: runtime.store,
             log: logPort,
             now,
             cancelled: () => cancelled.has(runId),
           },
           {
             runId,
-            threadId: `thread-${runId}`,
-            botId: "bot-local",
-            prompt,
+            threadId: runtime.thread.id,
+            botId: bot.id,
+            prompt: input.prompt,
             sandbox: {
               name: `${runId}-${LAUNCH_TAG}`,
               idleTtlMs: RUN_IDLE_TTL_MS,
-              // The Bot's workspace is the container's `/workspace`. A run's container is destroyed
+              // This Bot's workspace is the container's `/workspace`. A run's container is destroyed
               // when the run ends, so the files a run produced would go with it; the mount is what
-              // makes them outlive the run, and it is why the Library has anything to show.
-              mounts: [{ host: workspace.root, container: RUN_WORKSPACE }],
+              // makes them outlive the run, and it is what keeps one Bot's files out of another's.
+              mounts: [{ host: readerFor(bot.id).root, container: RUN_WORKSPACE }],
             },
             tools: runToolDefinitions(),
           },
@@ -263,7 +457,7 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     },
 
     cancel(runId) {
-      if (store.get(runId) === undefined) return false;
+      if (runOf(runId) === undefined) return false;
       cancelled.add(runId);
       return true;
     },
@@ -272,17 +466,32 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
       return approvals.answer({ approvalId, decision, grants, refusals });
     },
 
-    events(lastSeq, limit) {
-      const page = log.since(lastSeq);
+    events(threadId, lastSeq, limit) {
+      const runtime = runtimeFor(threadId);
+      const page = runtime.log.since(lastSeq);
       const bounded = limit === undefined ? page : page.slice(0, limit);
-      return { messages: bounded.map((entry) => entry.frame), lastSeq: log.lastSeq };
+      return { messages: bounded.map((entry) => entry.frame), lastSeq: runtime.log.lastSeq };
     },
 
-    listFiles: (path) => workspace.list(path),
-    readFile: (path) => workspace.read(path),
+    audit(threadId) {
+      return runtimeFor(threadId).log.audit();
+    },
+
+    listFiles: async (botId, path) => await readerFor(botId).list(path),
+    readFile: async (botId, path) => await readerFor(botId).read(path),
 
     idle: async () => {
       await Promise.allSettled(inflight);
     },
+
+    close: () => {
+      for (const runtime of runtimes.values()) runtime.store.close();
+      registry.close();
+    },
   };
+}
+
+/** The bots root a service runs over: the option, or the one under the freebot home. */
+function resolveBotsRoot(option: string | undefined): string {
+  return option ?? join(freebotHome(), "bots");
 }

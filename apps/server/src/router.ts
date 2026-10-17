@@ -1,5 +1,5 @@
 /**
- * The contract's implementation: six handlers over one `RunService`.
+ * The contract's implementation: ten handlers over one `RunService`.
  *
  * The router is built from `apiContract`, so a handler that returns the wrong shape is a compile
  * error and oRPC still validates the input and output on the wire at runtime. `$context` types the
@@ -7,31 +7,42 @@
  *
  * Every handler reaches the same authority the loop runs behind, so a run started here executes
  * rather than printing a record of itself. `get_run` projects `packages/core`'s seven run statuses
- * onto the contract's three arms, because the wire's `get_run` is a coarse read: see `PROTOCOL_STATUS`.
- * The two workspace reads reach the same `RunService` and therefore the same directory the runs
- * mount, so the page reads the computer rather than a second copy of it.
+ * onto the contract's three arms, because the wire's `get_run` is a coarse read: see
+ * `PROTOCOL_STATUS`. The two workspace reads reach the same `RunService` and therefore the same
+ * directory the named Bot's runs mount, so the page reads that Bot's computer rather than a second
+ * copy of it.
+ *
+ * A Bot and a thread are named, never inferred. `start_run` refuses a Bot or a thread this server
+ * does not hold, by name, so a caller that sends a stale id is told which one is gone instead of
+ * getting a run in some other conversation.
  */
 
 import { type RunStatus as CoreRunStatus, isTerminal } from "@freebot/core";
 import type { ApiContext } from "@freebot/protocol";
-import { apiContract, WORKSPACE_READ_ERRORS } from "@freebot/protocol";
+import { apiContract, BOT_ERRORS, WORKSPACE_READ_ERRORS } from "@freebot/protocol";
 import { implement, ORPCError } from "@orpc/server";
-import type { RunService } from "./run-service.ts";
+import { type RunService, UnknownRecordError } from "./run-service.ts";
 import { WorkspaceReadError } from "./workspace-files.ts";
 
 const api = implement(apiContract).$context<ApiContext>();
 
 /**
- * A workspace refusal raised as the wire's own error. The refusal's name IS the code, so a surface
- * branches on `error.code`, and its status comes from the one table the contract declares it with.
- * A code oRPC does not know answers 500 unless its status is set here, which would make a refused
- * path read as a server fault.
+ * A refusal raised as the wire's own error. The refusal's name IS the code, so a surface branches on
+ * `error.code`, and its status comes from the one table the contract declares it with. A code oRPC
+ * does not know answers 500 unless its status is set here, which would make a refused path or a
+ * missing Bot read as a server fault.
  */
-function refuseRead(error: unknown): never {
+function refuse(error: unknown): never {
   if (error instanceof WorkspaceReadError) {
     throw new ORPCError(error.refusal, {
       message: error.message,
       status: WORKSPACE_READ_ERRORS[error.refusal].status,
+    });
+  }
+  if (error instanceof UnknownRecordError) {
+    throw new ORPCError(error.refusal, {
+      message: error.message,
+      status: BOT_ERRORS[error.refusal].status,
     });
   }
   throw error;
@@ -53,9 +64,13 @@ const PROTOCOL_STATUS: Record<CoreRunStatus, "running" | "finished" | "failed"> 
 
 export function createApiRouter(service: RunService) {
   return {
-    start_run: api.start_run.handler(({ input }) => ({
-      runId: service.start(input.prompt).runId,
-    })),
+    start_run: api.start_run.handler(({ input }) => {
+      try {
+        return { runId: service.start(input).runId };
+      } catch (error) {
+        refuse(error);
+      }
+    }),
 
     cancel_run: api.cancel_run.handler(({ input }) => {
       if (!service.cancel(input.runId)) {
@@ -65,37 +80,87 @@ export function createApiRouter(service: RunService) {
     }),
 
     get_run: api.get_run.handler(({ input }) => {
-      const record = service.store.get(input.runId);
-      if (record === undefined) {
+      const found = service.run(input.runId);
+      if (found === undefined) {
         throw new ORPCError("NOT_FOUND", { message: `no such run: ${input.runId}` });
       }
       return {
-        runId: record.id,
-        status: PROTOCOL_STATUS[record.status],
-        prompt: record.prompt,
-        startedAt: record.createdAt,
-        endedAt: isTerminal(record.status) ? record.updatedAt : null,
-        lastSeq: service.log.lastSeq,
+        runId: found.record.id,
+        status: PROTOCOL_STATUS[found.record.status],
+        prompt: found.record.prompt,
+        startedAt: found.record.createdAt,
+        endedAt: isTerminal(found.record.status) ? found.record.updatedAt : null,
+        lastSeq: service.audit(found.threadId).lastSeq,
       };
     }),
 
     subscribe_events: api.subscribe_events.handler(({ input, context }) =>
-      service.stream(input.lastSeq, context.signal),
+      service.stream(input.threadId, input.lastSeq, context.signal),
     ),
+
+    list_bots: api.list_bots.handler(() => ({
+      bots: service.listBots().map(({ bot, threadCount }) => ({
+        botId: bot.id,
+        name: bot.name,
+        createdAt: bot.createdAt,
+        threadCount,
+      })),
+    })),
+
+    create_bot: api.create_bot.handler(({ input }) => {
+      const bot = service.createBot(input.name);
+      return { botId: bot.id, name: bot.name, createdAt: bot.createdAt, threadCount: 0 };
+    }),
+
+    list_threads: api.list_threads.handler(({ input }) => {
+      try {
+        return {
+          threads: service.listThreads(input.botId).map(({ thread, runs }) => ({
+            threadId: thread.id,
+            botId: thread.botId,
+            title: thread.title,
+            createdAt: thread.createdAt,
+            runs: runs.map((record) => ({
+              runId: record.id,
+              prompt: record.prompt,
+              status: record.status,
+              startedAt: record.createdAt,
+            })),
+          })),
+        };
+      } catch (error) {
+        refuse(error);
+      }
+    }),
+
+    create_thread: api.create_thread.handler(({ input }) => {
+      try {
+        const thread = service.createThread(input.botId, input.title);
+        return {
+          threadId: thread.id,
+          botId: thread.botId,
+          title: thread.title,
+          createdAt: thread.createdAt,
+          runs: [],
+        };
+      } catch (error) {
+        refuse(error);
+      }
+    }),
 
     list_files: api.list_files.handler(async ({ input }) => {
       try {
-        return await service.listFiles(input.path);
+        return await service.listFiles(input.botId, input.path);
       } catch (error) {
-        refuseRead(error);
+        refuse(error);
       }
     }),
 
     read_file: api.read_file.handler(async ({ input }) => {
       try {
-        return await service.readFile(input.path);
+        return await service.readFile(input.botId, input.path);
       } catch (error) {
-        refuseRead(error);
+        refuse(error);
       }
     }),
   };

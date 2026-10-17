@@ -43,7 +43,7 @@ describe("parseUpArgs", () => {
     expect(envProviderMode({})).toBeNull();
   });
 
-  test("FREEBOT_WORKSPACE moves the Bot's workspace, and an empty one means the default", () => {
+  test("FREEBOT_WORKSPACE moves the Bots directory, and an empty one means the default", () => {
     expect(parseUpArgs([], { FREEBOT_WORKSPACE: "/tmp/ws" }).workspace).toBe("/tmp/ws");
     expect(envWorkspace({ FREEBOT_WORKSPACE: "/tmp/ws" })).toBe("/tmp/ws");
     expect(envWorkspace({ FREEBOT_WORKSPACE: "" })).toBeNull();

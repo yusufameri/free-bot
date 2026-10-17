@@ -56,11 +56,12 @@ function curl(
   path: string,
   headers: string[],
   method = "POST",
+  body = '{"json":{"prompt":"verify"}}',
 ): { status: string; body: string } {
   const args = ["curl", "-sS", "--max-time", "5", "-X", method, "-w", "\n%{http_code}"];
   for (const header of headers) args.push("-H", header);
   if (method === "POST") {
-    args.push("-H", "content-type: application/json", "--data", '{"json":{"prompt":"verify"}}');
+    args.push("-H", "content-type: application/json", "--data", body);
   }
   args.push(`http://127.0.0.1:${port}${path}`);
   const proc = Bun.spawnSync(args, { cwd: root, stdout: "pipe", stderr: "pipe" });
@@ -198,12 +199,35 @@ try {
   // -------------------------------------------------------------------------
 
   const origin = `http://127.0.0.1:${apiPort}`;
+
+  /**
+   * The Bot and the thread every run in this script belongs to, created through the same two arms
+   * a page uses. A run names both, so the raw matrix arms below send the ids in their own body.
+   */
+  const operatorHeaders: string[] = [`origin: ${origin}`, `authorization: Bearer ${token}`];
+  const botBody = curl(apiPort, "/rpc/create_bot", operatorHeaders, "POST", '{"json":{"name":"Verify Bot"}}');
+  const verifyBotId = /"botId":"([a-z0-9-]+)"/.exec(botBody.body)?.[1];
+  check(verifyBotId !== undefined, `create_bot over HTTP -> ${botBody.status} ${botBody.body}`);
+  const threadBody = curl(
+    apiPort,
+    "/rpc/create_thread",
+    operatorHeaders,
+    "POST",
+    `{"json":{"botId":"${verifyBotId}"}}`,
+  );
+  const verifyThreadId = /"threadId":"([a-z0-9-]+)"/.exec(threadBody.body)?.[1];
+  check(
+    verifyThreadId !== undefined,
+    `create_thread over HTTP -> ${threadBody.status} ${threadBody.body}`,
+  );
+  const runBody = `{"json":{"prompt":"verify","botId":"${verifyBotId}","threadId":"${verifyThreadId}"}}`;
+
   const arm = (
     label: string,
     headers: string[],
     expected: { status: string; code?: string },
   ): { status: string; body: string } => {
-    const response = curl(apiPort, "/rpc/start_run", headers);
+    const response = curl(apiPort, "/rpc/start_run", headers, "POST", runBody);
     const code = response.status === "200" ? undefined : codeOf(response.body);
     const ok = response.status === expected.status && code === expected.code;
     check(
@@ -316,7 +340,11 @@ try {
   // it adds nothing: the set below is compared with itself once both runs have finished.
   const containersBefore = containersFor("u1.7");
 
-  const started = await client.start_run({ prompt: "verify the control plane" });
+  const started = await client.start_run({
+    prompt: "verify the control plane",
+    botId: verifyBotId ?? "",
+    threadId: verifyThreadId ?? "",
+  });
   const run = await client.get_run({ runId: started.runId });
   check(
     run.status === "running" && run.prompt === "verify the control plane",
@@ -327,7 +355,9 @@ try {
    * The page's own stream, which is how the surface answers a card. It replays the log from seq 0
    * and then follows it live, so one socket observes both runs and carries both answers.
    */
-  const page = new WebSocket(`ws://127.0.0.1:${apiPort}/events?token=${token}`);
+  const page = new WebSocket(
+    `ws://127.0.0.1:${apiPort}/events?token=${token}&thread_id=${verifyThreadId}`,
+  );
   const observed: EventMessage[] = [];
   page.addEventListener("message", (event) => {
     const parsed = safeParseMessage(JSON.parse(String(event.data)) as unknown);
@@ -339,7 +369,10 @@ try {
   const drained = (async () => {
     try {
       const streamed: ApiClient = createORPCClient(new WebSocketLink({ websocket: socket }));
-      for await (const message of await streamed.subscribe_events({ lastSeq: 0 })) {
+      for await (const message of await streamed.subscribe_events({
+        threadId: verifyThreadId ?? "",
+        lastSeq: 0,
+      })) {
         streamedFrames.push(message);
       }
     } catch {
