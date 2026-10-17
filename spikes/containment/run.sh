@@ -120,6 +120,10 @@ host_platform="$(uname -srm)"
   cat "$probes_log"
   echo "--- end container probes ---"
   echo
+  echo "--- proxy log (host side; the dial lines are the proxy resolving DNS itself) ---"
+  cat "$proxy_log"
+  echo "--- end proxy log ---"
+  echo
   echo "--- overhead (exit $overhead_rc) ---"
   cat "$overhead_log"
   echo "--- end overhead ---"

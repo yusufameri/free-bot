@@ -55,30 +55,59 @@ function timedGet(requestLine: string, port: number): Promise<number> {
   });
 }
 
-async function proxyPort(): Promise<{ port: number; stop: () => void }> {
+type ProxyHandle = { port: number; stop: () => void; dials: () => number };
+
+async function startProxy(): Promise<ProxyHandle> {
   const child = Bun.spawn(["bun", "spikes/containment/proxy.ts"], {
     cwd: process.cwd(),
     env: { ...process.env, PROXY_PORT: "0", PROXY_BIND: "127.0.0.1" },
     stdout: "pipe",
-    stderr: "inherit",
+    stderr: "pipe",
   });
-  const reader = child.stdout.getReader();
   const decoder = new TextDecoder();
-  let buffer = "";
-  const deadline = Date.now() + 10_000;
-  while (Date.now() < deadline) {
-    const { done, value } = await reader.read();
-    if (done) {
-      throw new Error(`proxy exited before binding: ${buffer}`);
+  let dials = 0;
+  let onPort: (port: number) => void = () => {};
+  let onError: (error: Error) => void = () => {};
+  const portPromise = new Promise<number>((resolve, reject) => {
+    onPort = resolve;
+    onError = reject;
+  });
+
+  // One pump per stream. The proxy logs its own DNS resolutions to stdout as
+  // "proxy dial <host>:<port> -> <address>:<port>", so the pumps both keep the
+  // pipes drained and count those lines.
+  const pump = async (stream: ReadableStream<Uint8Array>): Promise<void> => {
+    const reader = stream.getReader();
+    let pending = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) {
+        return;
+      }
+      pending += decoder.decode(value, { stream: true });
+      const lines = pending.split("\n");
+      pending = lines.pop() ?? "";
+      for (const line of lines) {
+        if (line.includes("dial ")) {
+          dials += 1;
+        }
+        const match = line.match(/proxy listening on 127\.0\.0\.1:(\d+)/);
+        if (match?.[1] !== undefined) {
+          onPort(Number(match[1]));
+        }
+      }
     }
-    buffer += decoder.decode(value, { stream: true });
-    const match = buffer.match(/proxy listening on 127\.0\.0\.1:(\d+)/);
-    if (match?.[1] !== undefined) {
-      return { port: Number(match[1]), stop: () => child.kill() };
-    }
-  }
-  child.kill();
-  throw new Error(`proxy did not report a port: ${buffer}`);
+  };
+  pump(child.stdout).catch((error: unknown) => {
+    onError(error instanceof Error ? error : new Error(String(error)));
+  });
+  pump(child.stderr).catch(() => {});
+
+  const timeout = new Promise<never>((_, reject) => {
+    setTimeout(() => reject(new Error("proxy did not report a port within 10s")), 10_000);
+  });
+  const port = await Promise.race([portPromise, timeout]);
+  return { port, stop: () => child.kill(), dials: () => dials };
 }
 
 const origin = Bun.serve({
@@ -90,7 +119,7 @@ const originPort = origin.port;
 if (originPort === undefined) {
   throw new Error("Bun.serve did not report the origin port");
 }
-const proxy = await proxyPort();
+const proxy = await startProxy();
 
 const direct: Array<number> = [];
 const proxied: Array<number> = [];
@@ -117,6 +146,9 @@ console.log(
   `overhead p50=+${(proxiedStats.p50 - directStats.p50).toFixed(2)}ms p95=+${(
     proxiedStats.p95 - directStats.p95
   ).toFixed(2)}ms`,
+);
+console.log(
+  `proxy DNS: ${proxy.dials()} dial lines for ${REQUESTS} proxied requests, each resolved by the proxy on the host`,
 );
 
 proxy.stop();
