@@ -8,8 +8,9 @@
  *
  * The census carries as much weight as the exit codes. tsconfig `include` patterns fail open: brace
  * expansion is not supported in them, so a brace pattern matches nothing while the gate still exits
- * 0 with a smaller program. The census asserts the covered files are in the program, so a narrowing
- * of the include list fails here even when every exit code looks healthy.
+ * 0 with a smaller program. The census compares the include list against the nine patterns it ships,
+ * measures one temporary `.tsx` file in each `.tsx` family, and asserts the covered files are in the
+ * program, so a narrowing of the include list fails here even when every exit code looks healthy.
  *
  * Writes `packages/verify/artifacts/type-gate/<short-sha>/probe.txt`.
  *
@@ -28,6 +29,23 @@ const legacyConfig = "tsconfig.type-gate-legacy.json";
 /** The include the gate shipped before this unit, copied from the U1.5 review that measured it. */
 const LEGACY_INCLUDE = ["packages/*/src/**/*.ts", "packages/verify/*.ts", "apps/*/src/**/*.ts"];
 
+/**
+ * The include the root `tsconfig.json` must carry. Patterns fail open, so a dropped line, a brace
+ * collapse or any other narrowing leaves every exit code healthy over a smaller program. The census
+ * compares the config against this list, literal pattern for literal pattern.
+ */
+const EXPECTED_INCLUDE = [
+  "packages/*/src/**/*.ts",
+  "packages/*/src/**/*.tsx",
+  "packages/*/scripts/**/*.ts",
+  "packages/*/scripts/**/*.tsx",
+  "packages/verify/*.ts",
+  "apps/*/src/**/*.ts",
+  "apps/*/src/**/*.tsx",
+  "apps/*/scripts/**/*.ts",
+  "apps/*/scripts/**/*.tsx",
+];
+
 /** The repro U1.5 measured: a plain type error that the gate must refuse anywhere it looks. */
 const BROKEN = 'const broken: number = "this is a type error";\n';
 
@@ -37,6 +55,18 @@ const cases: ProbeCase[] = [
   { label: ".tsx under apps/web", path: "apps/web/scripts/__type-gate-probe.tsx" },
   { label: ".ts under apps/web/scripts", path: "apps/web/scripts/__type-gate-probe.ts" },
   { label: "a package script", path: "packages/protocol/scripts/__type-gate-probe.ts" },
+];
+
+/**
+ * One temporary `.tsx` per `.tsx` pattern family, in the tree only while the census runs. No real
+ * `.tsx` file exists yet, so a `.tsx` pattern that matched nothing would leave every exit code
+ * healthy. The census measures each pattern against one of these files instead of the string alone.
+ */
+const tsxFamilies = [
+  { pattern: "packages/*/src/**/*.tsx", path: "packages/core/src/__type-gate-census.tsx" },
+  { pattern: "packages/*/scripts/**/*.tsx", path: "packages/protocol/scripts/__type-gate-census.tsx" },
+  { pattern: "apps/*/src/**/*.tsx", path: "apps/server/src/__type-gate-census.tsx" },
+  { pattern: "apps/*/scripts/**/*.tsx", path: "apps/web/scripts/__type-gate-census.tsx" },
 ];
 
 /** Files the widened gate must see. A missing one means the include list narrowed. */
@@ -187,6 +217,13 @@ try {
   check("the restored tree passes the root typecheck", clean.ok);
 
   section("coverage census");
+  const include = includeOf("tsconfig.json");
+  check(
+    "the root include is exactly the nine patterns this gate ships",
+    [...include].sort().join("\n") === [...EXPECTED_INCLUDE].sort().join("\n"),
+    `root include is ${JSON.stringify(include)}`,
+  );
+
   const widened = program("tsconfig.json");
   writeFileSync(
     join(root, legacyConfig),
@@ -199,6 +236,18 @@ try {
   for (const path of covered) {
     check(`in program: ${path}`, inProgram.has(join(root, path)), "the include narrowed");
   }
+
+  for (const family of tsxFamilies) place(family.path);
+  const withStubs = new Set(program("tsconfig.json"));
+  clear();
+  for (const family of tsxFamilies) {
+    check(
+      `${family.pattern} reaches a real .tsx file`,
+      withStubs.has(join(root, family.path)),
+      "the pattern matches nothing",
+    );
+  }
+
   const unreached = treeFiles().filter((path) => !inProgram.has(join(root, path)));
   log.push(
     `unreached .ts/.tsx files under packages/ and apps/: ${unreached.length}`,
@@ -250,7 +299,13 @@ try {
   const after = gate();
   show("bun run typecheck", after);
   check("the tree passes with every probe file removed", after.ok);
-  const residue = git(["status", "--porcelain", "--", ...cases.map((c) => c.path)]);
+  const residue = git([
+    "status",
+    "--porcelain",
+    "--",
+    ...cases.map((c) => c.path),
+    ...tsxFamilies.map((f) => f.path),
+  ]);
   check("the probe left no residue", residue === "");
 } finally {
   clear();
