@@ -1,7 +1,7 @@
 # MVP smoke dry run (U0.11): the whole Phase 0 pipeline, keyless, one command
 
-Status: PASS. 60/60 harness checks at commit `7ce8f5e`, run by `bun spikes/mvp-smoke/run.ts`.
-Artifacts: `packages/verify/artifacts/mvp-smoke/7ce8f5e/` (assert.txt, decision-table.txt,
+Status: PASS. 75/75 harness checks at commit `333323c`, run by `bun spikes/mvp-smoke/run.ts`.
+Artifacts: `packages/verify/artifacts/mvp-smoke/333323c/` (assert.txt, decision-table.txt,
 seq-audit.txt, frames/, logs.txt, and the three JSONL log copies the run reads back; the grant
 ledger's final state is in seq-audit.txt). The run needs Docker and Chrome; it needs no provider key
 and no BYOK secret.
@@ -48,7 +48,9 @@ Provenance, nothing outside this directory modified:
 | `run.ts` | the harness: preflight, images, processes, the CDP driver, every assertion, the artifact |
 | `composer.ts` | host control plane: `/tunnel`, `/events`, `/`, `/bundle.js`, `/audit`, gate policy, logs |
 | `display.ts` | pi frame to display frame mapping, the dense display log, the spike classifier |
+| `frames.ts` | the page facts a committed frame is judged by, and the pairwise distinctness guard |
 | `display.test.ts` | 6 tests over the mapping and the display log, literal expectations |
+| `frames.test.ts` | 3 tests over the distinctness guard, including the collision it caught |
 | `supervisor.ts` | in-VM: spawns pi under `PiSession`, mints the seq at the only read point, serves the link |
 | `agent.ts` | in-VM: tunnel client, outbox, resends held `gate_request`s on every reopen |
 | `link.ts` | the supervisor-agent loopback protocol, extended with `gate_request` / `gate_answer` |
@@ -77,8 +79,10 @@ gets the same answer instead of a second approval card.
 2. The page comes up first and is asserted idle: connected, zero frames, no resume banner.
 3. The container starts; `pi --version` is read in it (`1.3.0`). The supervisor starts pi under the
    tool-gate extension, points it at the stub's `/v1`, and writes its port and pid to `/scratch/state`.
-4. Five plans and a stop are queued in the stub (`echo one`, the gated `rm`, `sleep 3 && echo two`,
-   the repeated `rm`, the second `rm`), then the agent starts and the tunnel opens.
+4. Five plans are queued in the stub (`echo one`, the gated `rm`, `sleep 3 && echo two`,
+   the repeated `rm`, the second `rm`), then the agent starts and the tunnel opens. The stub's
+   final `stop` is queued later, after the denial capture: turn 6 has nothing to run on until
+   then, which is what parks the stream at the refusal instead of racing it.
 5. Step 1 passes the real policy: the composer mints a grant, consumes it through `createGrantPolicy`,
    and the card shows `done` with output `one`.
 6. Step 2 is destructive. The gate denies with `no_grant`; the composer emits the approval card; the
@@ -88,7 +92,11 @@ gets the same answer instead of a second approval card.
    the same ports, and waits for the page's banner.
 8. The task continues: step 3 finishes on the same logs, the repeated `rm` is denied from the ledger
    with `grant_consumed` and no card is offered, and the second `rm` is refused by the page (`Deny`).
-9. The run asserts the end state, writes the artifact, and prints one `RESULT` line.
+9. The refusal parks the stream: the harness waits for the durable display log to stop growing,
+   asserts the parked seq (`35`), and captures `06-denied` there. Turn 6 opens and nothing else
+   renders, because its plan is still unqueued. Only then does the harness queue the stub's `stop`,
+   the stream ends, and `07-done` captures the terminal state.
+10. The run asserts the end state, writes the artifact, and prints one `RESULT` line.
 
 ## Decisions
 
@@ -140,21 +148,33 @@ the allowed removal, `doomed-again` (re-created before the repeat) is still ther
 The seq audits run on both logs and on a fresh re-read of the JSONL: gaps `[]`, duplicates `[]`,
 rejected `0`, suppressed at ingest `[]`.
 
-The seven committed frames, all byte-distinct:
+Every committed frame records the page facts it captured, and the harness asserts those facts
+pairwise: no two frames may show the same state. The guard exists because they once did —
+`06-denied` was captured after the terminal frames had rendered, so the denial moment appeared in
+no frame while two files claimed to document it. The harness therefore captures each frame under
+the facts it claims, read in the same round trip as the screenshot, and a frame that claims a
+frozen state is re-read after the capture and must be unchanged. The seven frames, from
+`assert.txt`:
 
-| Frame | Bytes | What it shows |
-| --- | --- | --- |
-| `01-idle` | 16828 | connected, no frames, no banner |
-| `02-streaming` | 30100 | turn 1 text, step-1 card done with output `one` |
-| `03-approval-pending` | 48839 | `rm` card AWAITING APPROVAL, `Allow once` / `Deny`, frozen at display seq 11 |
-| `04-post-approval` | 63359 | `allowed once`, step-2 card done with no output, the file gone in the VM |
-| `05-kill-rejoin-resumed` | 66360 | `resumed from seq 18`, step-3 card RUNNING after the SIGKILL |
-| `06-denied` | 110688 | the second approval resolved as denied |
-| `07-done` | 110797 | six turns, last seq 38, duplicates ignored 0, `stream complete` |
+| Frame | Bytes | last seq | What it shows |
+| --- | --- | --- | --- |
+| `01-idle` | 16828 | 0 | connected, no frames, no banner |
+| `02-streaming` | 30081 | 9 | turn 2 open, step-1 card done with output `one` |
+| `03-approval-pending` | 48815 | 11 | `rm` card AWAITING APPROVAL, `Allow once` / `Deny`, frozen at the gate seq |
+| `04-post-approval` | 63339 | 18 | `allowed once`, step-2 card done, step-3 card running |
+| `05-kill-rejoin-resumed` | 66337 | 18 | `resumed from seq 18` after the relay+composer SIGKILL, step-3 card in flight |
+| `06-denied` | 106219 | 35 | the page's `Deny` took effect: step-5 card denied, turn 6 open, no `stream complete` |
+| `07-done` | 110770 | 38 | six turns, last seq 38, duplicates ignored 0, `stream complete` |
 
-The unit tests are `bun test spikes/mvp-smoke/display.test.ts` (6 pass). PNG bytes vary run to run
-(antialiasing, timestamped filenames); the structure and the seqs do not. A video recording stays
-deferred by standing order 12, as in U0.10.
+The pair that once collapsed, `06-denied` against `07-done`, differs in 1679 pixels over their
+common region (three terminal lines and the header's seq counter); the minimum over all 21 pairs is
+those 1679, and no pair is zero. Four frames are asserted frozen (`01-idle`, `03-approval-pending`,
+`06-denied`, `07-done`): their facts must be identical either side of the screenshot.
+
+The unit tests are `bun test spikes/mvp-smoke/display.test.ts spikes/mvp-smoke/frames.test.ts`
+(9 pass, 3 of them over the distinctness guard, including the collision above). PNG bytes vary run
+to run (antialiasing, timestamped filenames); the structure and the seqs do not. A video recording
+stays deferred by standing order 12, as in U0.10.
 
 ## Limits
 
