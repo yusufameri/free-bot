@@ -17,6 +17,7 @@ import {
 import type { PiInboundFrame } from "@freebot/pi-bridge";
 import { Hono } from "hono";
 import { app } from "./app";
+import { checkOrigin, refusalLogLine, refusalResponse } from "./auth";
 
 const CLIENT_TOPIC = "stream";
 
@@ -66,6 +67,16 @@ export function startTunnelServer(options: { port?: number } = {}): TunnelServer
     fetch(request, srv) {
       const url = new URL(request.url);
       if (url.pathname !== "/tunnel" && url.pathname !== "/stream") return http.fetch(request);
+      // WebSockets escape CORS, so a page on any origin can open these legs; a browser's Origin is
+      // the only provenance these upgrades have. The agent leg reaches this server as
+      // host.docker.internal through the relay, so the Host check stays off this listener; the
+      // operator-facing API leg (api-server.ts) is where a strict Host check lives. See
+      // docs/server-auth.md.
+      const refusal = checkOrigin(request.headers.get("origin"));
+      if (refusal !== null) {
+        console.log(refusalLogLine(refusal, request));
+        return refusalResponse(refusal);
+      }
       const requested = Number(url.searchParams.get("last_seen_seq") ?? "0");
       const lastSeenSeq = Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : 0;
       const data: SocketData = {

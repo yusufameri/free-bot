@@ -248,3 +248,29 @@ describe("tunnel reconnect and repair", () => {
     expect(audit.firstSeq).toBe(1);
   });
 });
+
+describe("cross-origin upgrades", () => {
+  async function upgrade(port: number, origin: string | undefined): Promise<string> {
+    const url = `ws://127.0.0.1:${port}/stream?last_seen_seq=0`;
+    const ws =
+      origin === undefined ? new WebSocket(url) : new WebSocket(url, { headers: { origin } });
+    sockets.push(ws);
+    return new Promise((resolve) => {
+      ws.addEventListener("open", () => resolve("open"));
+      ws.addEventListener("error", () => resolve("refused"));
+      ws.addEventListener("close", () => resolve("refused"));
+    });
+  }
+
+  test("a foreign Origin is refused before the socket opens", async () => {
+    const server = serve();
+    expect(await upgrade(server.port, "http://evil.example")).toBe("refused");
+    expect(await upgrade(server.port, "null")).toBe("refused");
+  });
+
+  test("a loopback Origin and a client with no Origin still upgrade", async () => {
+    const server = serve();
+    expect(await upgrade(server.port, "http://localhost:5173")).toBe("open");
+    expect(await upgrade(server.port, undefined)).toBe("open");
+  });
+});
