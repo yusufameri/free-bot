@@ -1,0 +1,233 @@
+[
+  {
+    "name": "unknown kind",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "tool_execution_start",
+      "payload": {}
+    },
+    "error": "Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'"
+  },
+  {
+    "name": "missing kind",
+    "schema": "message",
+    "input": { "v": 1, "seq": 1, "ts": 1792221550000, "runId": "run-1", "payload": {} },
+    "error": "Invalid discriminator value. Expected 'run.started' | 'run.finished' | 'run.failed' | 'turn.started' | 'turn.ended' | 'message.text.delta' | 'tool_call.requested' | 'tool_call.decision' | 'tool_call.result' | 'approval.requested' | 'approval.resolved' | 'grant.lifecycle' | 'stream.hello' | 'stream.resumed' | 'stream.gap'"
+  },
+  {
+    "name": "wrong version tag",
+    "schema": "message",
+    "input": {
+      "v": 2,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "run.finished",
+      "payload": {}
+    },
+    "error": "Invalid input: expected 1"
+  },
+  {
+    "name": "missing seq",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "run.finished",
+      "payload": {}
+    },
+    "error": "Invalid input: expected number, received undefined"
+  },
+  {
+    "name": "seq 0",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 0,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "run.finished",
+      "payload": {}
+    },
+    "error": "Too small: expected number to be >0"
+  },
+  {
+    "name": "non-integer seq",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1.5,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "run.finished",
+      "payload": {}
+    },
+    "error": "Invalid input: expected int, received number"
+  },
+  {
+    "name": "seq as a string",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": "1",
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "run.finished",
+      "payload": {}
+    },
+    "error": "Invalid input: expected number, received string"
+  },
+  {
+    "name": "run-scoped message without a runId",
+    "schema": "message",
+    "input": { "v": 1, "seq": 1, "ts": 1792221550000, "type": "run.finished", "payload": {} },
+    "error": "Invalid input: expected string, received undefined"
+  },
+  {
+    "name": "missing payload",
+    "schema": "message",
+    "input": { "v": 1, "seq": 1, "ts": 1792221550000, "runId": "run-1", "type": "run.finished" },
+    "error": "Invalid input: expected object, received undefined"
+  },
+  {
+    "name": "payload field of the wrong type",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "message.text.delta",
+      "payload": { "text": 3 }
+    },
+    "error": "Invalid input: expected string, received number"
+  },
+  {
+    "name": "denial without a reason code",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "tool_call.decision",
+      "payload": { "toolCallId": "call_1", "allow": false }
+    },
+    "error": "Invalid option: expected one of \"unknown_tool\"|\"no_grant\"|\"grant_mismatch\"|\"grant_expired\"|\"grant_consumed\"|\"grant_tombstoned\"|\"grant_forged\"|\"malformed_action\"|\"grant_store_error\""
+  },
+  {
+    "name": "reason code outside the nine",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "tool_call.decision",
+      "payload": { "toolCallId": "call_1", "allow": false, "code": "vibes", "detail": "no" }
+    },
+    "error": "Invalid option: expected one of \"unknown_tool\"|\"no_grant\"|\"grant_mismatch\"|\"grant_expired\"|\"grant_consumed\"|\"grant_tombstoned\"|\"grant_forged\"|\"malformed_action\"|\"grant_store_error\""
+  },
+  {
+    "name": "action hash that is not v1:sha256:<64 hex>",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "approval.requested",
+      "payload": {
+        "approvalId": "ap-1",
+        "toolCallId": "call_1",
+        "command": "bash {\"command\":\"ls\"}",
+        "actionHash": "sha256:abc",
+        "expiresAt": 1792221610000
+      }
+    },
+    "error": "Invalid string: must match pattern /^v1:sha256:[0-9a-f]{64}$/"
+  },
+  {
+    "name": "grant state outside the four",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "grant.lifecycle",
+      "payload": {
+        "state": "revoked",
+        "grantId": "g1",
+        "actionHash": "v1:sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "at": 1792221550000
+      }
+    },
+    "error": "Invalid discriminator value. Expected 'issued' | 'consumed' | 'expired' | 'rewound'"
+  },
+  {
+    "name": "consumed grant without its consumer",
+    "schema": "message",
+    "input": {
+      "v": 1,
+      "seq": 1,
+      "ts": 1792221550000,
+      "runId": "run-1",
+      "type": "grant.lifecycle",
+      "payload": {
+        "state": "consumed",
+        "grantId": "g1",
+        "actionHash": "v1:sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "at": 1792221550000
+      }
+    },
+    "error": "Invalid input: expected string, received undefined"
+  },
+  {
+    "name": "negative resume point",
+    "schema": "message",
+    "input": { "v": 1, "type": "stream.resumed", "payload": { "fromSeq": -1, "toSeq": 84 } },
+    "error": "Too small: expected number to be >=0"
+  },
+  {
+    "name": "unknown key on a command input (strict)",
+    "schema": "start_run",
+    "input": { "prompt": "hi", "extra": 1 },
+    "error": "Unrecognized key: \"extra\""
+  },
+  {
+    "name": "unknown key on an approval answer (strict)",
+    "schema": "approve",
+    "input": { "approvalId": "ap-1", "extra": 1 },
+    "error": "Unrecognized key: \"extra\""
+  },
+  {
+    "name": "negative event cursor",
+    "schema": "get_events",
+    "input": { "lastSeq": -1 },
+    "error": "Too small: expected number to be >=0"
+  },
+  {
+    "name": "event page over the cap",
+    "schema": "get_events",
+    "input": { "lastSeq": 0, "limit": 1001 },
+    "error": "Too big: expected number to be <=1000"
+  },
+  {
+    "name": "absolute file path",
+    "schema": "read_file",
+    "input": { "path": "/etc/passwd" },
+    "error": "path must be relative to /workspace without .. segments"
+  },
+  {
+    "name": "parent-directory traversal",
+    "schema": "read_file",
+    "input": { "path": "a/../../b" },
+    "error": "path must be relative to /workspace without .. segments"
+  }
+]
