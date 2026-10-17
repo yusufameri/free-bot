@@ -1,0 +1,104 @@
+== target ==
+canary length: 56
+user: root, HOME: /root
+mount table:
+overlay / overlay rw,relatime,lowerdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/405/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/380/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/379/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/297/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/296/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/295/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/294/fs:/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/244/fs,upperdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/406/fs,workdir=/var/lib/desktop-containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/406/work 0 0
+proc /proc proc rw,nosuid,nodev,noexec,relatime 0 0
+tmpfs /dev tmpfs rw,nosuid,size=65536k,mode=755 0 0
+devpts /dev/pts devpts rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=666 0 0
+sysfs /sys sysfs ro,nosuid,nodev,noexec,relatime 0 0
+cgroup /sys/fs/cgroup cgroup2 ro,nosuid,nodev,noexec,relatime 0 0
+mqueue /dev/mqueue mqueue rw,nosuid,nodev,noexec,relatime 0 0
+shm /dev/shm tmpfs rw,nosuid,nodev,noexec,relatime,size=65536k 0 0
+/run/host_mark/Users /image fakeowner ro,nosuid,nodev,relatime,fakeowner 0 0
+/run/host_mark/Users /out fakeowner rw,nosuid,nodev,relatime,fakeowner 0 0
+/dev/vda1 /etc/resolv.conf ext4 rw,relatime,discard 0 0
+/dev/vda1 /etc/hostname ext4 rw,relatime,discard 0 0
+/dev/vda1 /etc/hosts ext4 rw,relatime,discard 0 0
+proc /proc/bus proc ro,nosuid,nodev,noexec,relatime 0 0
+proc /proc/fs proc ro,nosuid,nodev,noexec,relatime 0 0
+proc /proc/irq proc ro,nosuid,nodev,noexec,relatime 0 0
+proc /proc/sys proc ro,nosuid,nodev,noexec,relatime 0 0
+proc /proc/sysrq-trigger proc ro,nosuid,nodev,noexec,relatime 0 0
+tmpfs /proc/interrupts tmpfs rw,nosuid,size=65536k,mode=755 0 0
+tmpfs /proc/kcore tmpfs rw,nosuid,size=65536k,mode=755 0 0
+tmpfs /proc/keys tmpfs rw,nosuid,size=65536k,mode=755 0 0
+tmpfs /proc/timer_list tmpfs rw,nosuid,size=65536k,mode=755 0 0
+tmpfs /proc/scsi tmpfs ro,relatime 0 0
+tmpfs /sys/firmware tmpfs ro,relatime 0 0
+== 1. environment ==
+env: 0 hit(s)
+== 2. process env and argv ==
+/proc/*/environ: 0 hit(s)
+/proc/*/cmdline: 0 hit(s)
+== 3. mount table ==
+mounts: 0 hit(s)
+no keyscan path in mount table
+== 4. filesystem ==
+positive control: decoy string found in 1 file(s), expected 1
+filesystem hits:
+  none
+filesystem: 0 hit(s)
+== 5. home and freebot paths ==
+no ~/.freebot
+no /home/yusufameri
+ls -la /:
+total 60
+drwxr-xr-x   1 root root 4096 Oct 17 06:52 .
+drwxr-xr-x   1 root root 4096 Oct 17 06:52 ..
+-rwxr-xr-x   1 root root    0 Oct 17 06:52 .dockerenv
+lrwxrwxrwx   1 root root    7 Oct  5 00:00 bin -> usr/bin
+drwxr-xr-x   2 root root 4096 Jul  2 19:05 boot
+drwxr-xr-x   5 root root  340 Oct 17 06:52 dev
+drwxr-xr-x   1 root root 4096 Oct 17 06:52 etc
+drwxr-xr-x   1 root root 4096 Oct 14 18:29 home
+drwxr-xr-x   9 root root  288 Oct 17 06:48 image
+lrwxrwxrwx   1 root root    7 Oct  5 00:00 lib -> usr/lib
+drwxr-xr-x   2 root root 4096 Oct  5 00:00 media
+drwxr-xr-x   2 root root 4096 Oct  5 00:00 mnt
+drwxr-xr-x   1 root root 4096 Oct 14 18:30 opt
+drwxr-xr-x   7 root root  224 Oct 17 06:52 out
+dr-xr-xr-x 255 root root    0 Oct 17 06:52 proc
+drwx------   1 root root 4096 Oct 17 06:51 root
+drwxr-xr-x   3 root root 4096 Oct  5 00:00 run
+lrwxrwxrwx   1 root root    8 Oct  5 00:00 sbin -> usr/sbin
+drwxr-xr-x   2 root root 4096 Oct  5 00:00 srv
+dr-xr-xr-x  11 root root    0 Oct 17 06:52 sys
+drwxrwxrwt   1 root root 4096 Oct 17 06:52 tmp
+drwxr-xr-x   1 root root 4096 Oct  5 00:00 usr
+drwxr-xr-x   1 root root 4096 Oct  5 00:00 var
+drwxr-xr-x   2 root root 4096 Oct 17 06:51 workspace
+ls -la /home:
+total 12
+drwxr-xr-x 1 root root 4096 Oct 14 18:29 .
+drwxr-xr-x 1 root root 4096 Oct 17 06:52 ..
+drwxr-xr-x 2 node node 4096 Oct 14 18:29 node
+paths matching *keyscan* under / (excluding /proc):
+/out/keyscan.txt
+== 6. private key headers (informational) ==
+private key header hits: 2
+  /usr/lib/aarch64-linux-gnu/libgnutls.so.30.34.3
+/image/probe.sh
+== summary ==
+CANARY HITS: 0
+PROBE RESULT: PASS
+full scan output above is the raw stdout+stderr of:
+  docker run --name freebot-u0.6-keyscan -i -v /Users/yusufameri/projects/free-bot-u0.6/packages/sandbox/image:/image:ro -v /Users/yusufameri/projects/free-bot-u0.6/packages/verify/artifacts/sandbox-image/8d36ea7:/out freebot-sandbox:u0.6 sh /image/probe.sh < /tmp/freebot-keyscan/provider.env
+probe exit code: 0
+
+== container freebot-u0.6-keyscan spec (proves no key path is bound and no env is injected) ==
+Image: sha256:9d0dfd169778839640084e90deae1dfd2aa08a2b1edac1c1451ef2e1531719f8
+Env: ["PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin","NODE_VERSION=24.22.0","YARN_VERSION=1.22.22"]
+Binds: ["/Users/yusufameri/projects/free-bot-u0.6/packages/sandbox/image:/image:ro","/Users/yusufameri/projects/free-bot-u0.6/packages/verify/artifacts/sandbox-image/8d36ea7:/out"]
+NetworkMode: bridge
+
+== host control ==
+$ grep -c -F <canary> /tmp/freebot-keyscan/provider.env
+matches: 1
+shasum: 318b15959bf52d8902ccfe3ed5626f4fbb75387b36a9c1cde15201e672edc559  /tmp/freebot-keyscan/provider.env
+
+== assertion ==
+canary hit count must be 0; the probe's own summary line is authoritative:
+positive control: decoy string found in 1 file(s), expected 1
+CANARY HITS: 0
+PROBE RESULT: PASS

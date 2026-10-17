@@ -44,6 +44,7 @@
       "name": "@freebot/pi-bridge",
       "version": "0.0.0",
       "dependencies": {
+        "@earendil-works/pi-ai": "1.3.0",
         "@earendil-works/pi-coding-agent": "1.3.0",
       },
     },
@@ -58,6 +59,9 @@
     "packages/review": {
       "name": "@freebot/review",
       "version": "0.0.0",
+      "dependencies": {
+        "@freebot/pi-bridge": "workspace:*",
+      },
     },
     "packages/sandbox": {
       "name": "@freebot/sandbox",
