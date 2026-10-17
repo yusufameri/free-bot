@@ -2,7 +2,7 @@
 {"seq":2,"type":"message_delta","payload":{"text":"calling "}}
 {"seq":3,"type":"message_delta","payload":{"text":"bash "}}
 {"seq":4,"type":"tool_call","payload":{"toolCallId":"call_step_1","toolName":"bash","command":"bash {\"command\":\"echo one\"}","destructive":false}}
-{"seq":5,"type":"tool_result","payload":{"toolCallId":"call_step_1","ok":true,"denied":false,"output":"one\n","durationMs":6}}
+{"seq":5,"type":"tool_result","payload":{"toolCallId":"call_step_1","ok":true,"denied":false,"output":"one\n","durationMs":5}}
 {"seq":6,"type":"turn_end","payload":{"turn":1}}
 {"seq":7,"type":"turn_start","payload":{"turn":2}}
 {"seq":8,"type":"message_delta","payload":{"text":"calling "}}
@@ -16,7 +16,7 @@
 {"seq":16,"type":"message_delta","payload":{"text":"calling "}}
 {"seq":17,"type":"message_delta","payload":{"text":"bash "}}
 {"seq":18,"type":"tool_call","payload":{"toolCallId":"call_step_3","toolName":"bash","command":"bash {\"command\":\"sleep 3 && echo two\"}","destructive":false}}
-{"seq":19,"type":"tool_result","payload":{"toolCallId":"call_step_3","ok":true,"denied":false,"output":"two\n","durationMs":3019}}
+{"seq":19,"type":"tool_result","payload":{"toolCallId":"call_step_3","ok":true,"denied":false,"output":"two\n","durationMs":3015}}
 {"seq":20,"type":"turn_end","payload":{"turn":3}}
 {"seq":21,"type":"turn_start","payload":{"turn":4}}
 {"seq":22,"type":"message_delta","payload":{"text":"calling "}}
