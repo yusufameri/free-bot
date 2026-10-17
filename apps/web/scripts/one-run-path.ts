@@ -755,6 +755,9 @@ async function main(): Promise<number> {
 
   const api = await bootServer();
   log.note(`server: apps/server/src/index.ts, control plane on 127.0.0.1:${api.apiPort}`);
+  // Whatever a previous launch left behind is not this run's business. This run's business is that
+  // it adds nothing: the set below is compared with itself after both runs have finished.
+  const containersBefore = containersFor("u1.7");
 
   log.section("the page's stream, both directions of the token");
   const base = `ws://127.0.0.1:${api.apiPort}/events`;
@@ -840,10 +843,16 @@ async function main(): Promise<number> {
     [api.output().split(api.token).length - 1, denyApi.output().split(denyApi.token).length - 1],
     [1, 1],
   );
+  // The loop destroys the sandbox after its last frame, so the container goes away a moment after
+  // the run's terminal status, not with it.
+  const settlesBy = Date.now() + 30_000;
+  while (Date.now() < settlesBy && containersFor("u1.7").length !== containersBefore.length) {
+    await sleep(200);
+  }
   log.check(
-    "no container from either run is left behind",
-    [containersFor("u1.7"), containersFor("u1.7")],
-    [[], []],
+    "the runs added no container: the label's container set is exactly what it was before them",
+    [containersBefore, containersFor("u1.7")],
+    [containersBefore, containersBefore],
   );
 
   log.section("pairwise distinctness of the committed frames");

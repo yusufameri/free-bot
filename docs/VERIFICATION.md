@@ -22,7 +22,8 @@ directory per feature and git short sha. The row records the commit the artifact
 | providers | `bun packages/providers/scripts/evidence.ts` | unit-test-verified (the injectable transport and the replay-mode probe are the tested surface: 36 tests covering the client's streaming and non-streaming parsing, the malformed tool-call shapes, the auth/rate-limit/refusal/malformed-call/timeout/transport error literals, the fallback's success and failure modes, and the flag derivation from one observed turn, one of them the parsable-reply-with-no-tool-call note; every artifact row asserts the literal it prints, so a regression fails the run rather than printing PASS; the live-provider run is gate-bound on G1 and is unobserved, so every observation line in the artifact is labelled replay or live and all of them are replay today) | `packages/verify/artifacts/providers/a980049/assert.txt` | a980049d0d892f15bbe92d8ead42aab9a2ca239c | 2026-10-17 |
 | web chat surface | `bun apps/web/scripts/capture.ts` | live-ui-verified (76/76 CDP checks in headless Chrome 155: the eight key states with their DOM facts read before and after each capture and failing if they moved, every caption's claims evaluated against those facts, every caption's element asserted inside the captured viewport, and 28 pairwise distinctness comparisons with zero collisions; committed-fixture replay only, no model, no key) | `packages/verify/artifacts/web-shell/2f23017/assert.txt` | 2f230177008f1d369ee8f94bd90f16fc082e4ff7 | 2026-10-17 |
  `bun apps/server/src/run-loop-live.ts` | unit-test-verified (the live surface is a real container from the pinned image plus the real loop: 16 loop tests drive the transitions over fake ports with the real gate and a real `SeqLog`, 4 endpoint tests drive `start_run` and the approve and deny routes to completion with a fake sandbox, and the evidence run makes 20 checks pass against a booted container — the pinned layer set, the status trail, the decision table, the seq audit with zero gaps and zero duplicates over 25 frames, both new wire frames as they sit in the log, and the label-scoped cleanup with a surviving decoy. The model is replayed from the committed Pi transcript and the human's two answers are scripted, because gate G1 parks the keyed provider; no key material is read or written anywhere) | `packages/verify/artifacts/run-loop/12730d2/assert.txt` | 12730d2a8d0831adca3b42fe2f73426399ada988 | 2026-10-17 |
-| run loop | `bun apps/server/scripts/verify.ts` | unit-test-verified (55 tests: the refusal matrix per code, the oRPC contract over HTTP, a real WebSocket subscribe with replay-then-live ordering, the resume path, and subscription release; plus 23 live checks against a really launched `apps/server/src/index.ts` on ephemeral ports: the 401/403/200 matrix as literal lines, the tunnel leg's rebound-Host refusals on `/events` and `/audit` alongside the in-sandbox agent's `host.docker.internal` Host still reading both, one oRPC round trip, one streamed event, the loopback-only bind, the token printed exactly once, and no token in any log line or in the artifact) | `packages/verify/artifacts/server-auth/0744562/assert.txt` | 0744562bf0e7027a8c8b56cf0eda78572d0a66ae | 2026-10-17 |
+| server-auth | `bun apps/server/scripts/verify.ts` | unit-test-verified (63 tests: the refusal matrix per code, the oRPC contract over HTTP, a real WebSocket subscribe with replay-then-live ordering, the resume path, subscription release, and two runs over one log in one tick; plus 32 live checks against a really launched `apps/server/src/index.ts` on ephemeral ports: the 401/403/200 matrix as literal lines, the tunnel leg's rebound-Host refusals on `/events` and `/audit` alongside the in-sandbox agent's `host.docker.internal` Host still reading both, one oRPC round trip, two runs parked at the gate and answered with deny over the page's own stream so both reach a terminal frame and both put `user_denied` in the log, the container set back where it started, the loopback-only bind, the token printed exactly once, and no token in any log line or in the artifact. The model is replayed from the committed Pi transcript and the sandbox is the pinned image) | `packages/verify/artifacts/server-auth/8ffc8cb/assert.txt` | 8ffc8cbeaa522ff6deb80fa3f71ef872b337a6ca | 2026-10-17 |
+| one run path | `bun apps/web/scripts/one-run-path.ts` | live-ui-verified (53 CDP checks in headless Chrome 155 against a really launched `apps/server/src/index.ts`: both directions of the operator token on the page's stream, read as socket handshakes; then two runs started from the page's own prompt box, one answered allow and one answered deny, in four committed states whose DOM facts are read before and after each capture and fail the run if they moved, whose captions' claims are evaluated against those same facts, whose caption element is asserted inside the captured viewport, and which are pairwise distinct across six comparisons. The allow run's tool card shows the container's own stdout, `native-should-not-run\n`, and the deny run's marker reads `deny (user_denied)`. Not live: the provider is the replay transcript, because gate G1 parks the keyed path, and the sandbox is the pinned image) | `packages/verify/artifacts/one-run-path/8ffc8cb/assert.txt` | 8ffc8cbeaa522ff6deb80fa3f71ef872b337a6ca | 2026-10-17 |
 
 Coverage so far is the scaffold unit, the pi-rpc and containment spikes, the pi-bridge client, and the
 sandbox image pin. The scaffold row covers workspace shape, typecheck, the `apps/server` health test,
@@ -77,14 +78,20 @@ trail, the decision table, the seq audit, both new wire frames (`run.status` and
 from the committed Pi transcript and the human's answers are scripted, because gate G1 parks the keyed
 provider. Its shape, limits, and follow-ups (the keyed provider, the scheduler's idle-kill and rejoin,
 and spend caps, which are not wired) are in `docs/run-loop.md`.
-The server-auth row covers U1.3's control-plane slice: 55 tests over the refusal matrix, the oRPC
-round trip, a real WebSocket subscribe with replay-then-live ordering, the resume path, and the
-release of a closed socket's subscription, plus 23 live checks against a really launched
-`apps/server/src/index.ts` (the token printed once, the 401/403/200 matrix as literal lines, the
-tunnel leg's two rebound-Host refusals and its agent reads with their literal log bodies, one oRPC
-call, one streamed event, the loopback-only bind, and a redaction check that fails the run rather
-than commit a token). Its threat model, check order, token lifecycle, and explicit non-goals live in
-`docs/server-auth.md`.
-The run loop row
-Every later feature gets its own row when its script
-lands.
+The server-auth row covers U1.3's control-plane slice, now over the folded run path: 63 tests over the
+refusal matrix, the oRPC round trip, a real WebSocket subscribe with replay-then-live ordering, the
+resume path, the release of a closed socket's subscription, and two runs over one log in one tick,
+plus 32 live checks against a really launched `apps/server/src/index.ts` (the token printed once, the
+401/403/200 matrix as literal lines, the tunnel leg's two rebound-Host refusals and its agent reads
+with their literal log bodies, one oRPC round trip, two runs parked, answered with deny over the
+page's stream and driven to a terminal frame each, the container set back where it started, the
+loopback-only bind, and a redaction check that fails the run rather than commit a token). Its threat
+model, check order, token lifecycle, and explicit non-goals live in `docs/server-auth.md`.
+The one run path row covers U2.1's fold and the surface that drives it: `apps/server`'s in-memory
+control plane and its Hono run routes are deleted, the oRPC router drives one `RunService`, and the
+page's own stream is a second transport over the same log. Its evidence boots the real server, opens
+the real page with the operator token, starts two runs from the page's prompt box and answers one
+allow and one deny, asserting the DOM, the socket handshakes and the container's own stdout. Its
+shape, the token contract it kept, the three defects it found and fixed, and its follow-ups live in
+`docs/one-run-path.md`.
+Every later feature gets its own row when its script lands.
