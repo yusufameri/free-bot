@@ -7,6 +7,7 @@
     "apps/*"
   ],
   "scripts": {
+    "up": "bun apps/server/src/cli/up.ts",
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "bun test",
