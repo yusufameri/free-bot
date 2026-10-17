@@ -94,8 +94,8 @@ endpoint, the model, the tool names and `Bearer <redacted>`, and nothing else.
 Two callers stay recorded on purpose. `apps/server/src/index.ts` states `replay` where it builds the
 run service, because it is the peer the other evidence drivers boot and a golden run must not bill a
 provider or vary with this machine's vault (order 9). And `packages/verify/scripts/launch.ts` drives
-`bun run up`, so it asserts a recorded turn: run it as
-`FREEBOT_PROVIDER=replay bun packages/verify/scripts/launch.ts`.
+`bun run up` and asserts a recorded turn, so it pins `FREEBOT_PROVIDER=replay` in the environment of
+every launch it spawns: run it bare as `bun packages/verify/scripts/launch.ts`.
 
 A rate limit is a normal answer, not a bug. The provider's 429 settles the run as
 `provider_rate_limit`, and the failure line carries the wire's own retry hint; there is no retry
@@ -157,20 +157,17 @@ own text and tool call as the server read them off the wire, the provider's own 
 container's own stdout read off the page.
 
 ```
-FREEBOT_PROVIDER=replay bun packages/verify/scripts/launch.ts
+bun packages/verify/scripts/launch.ts
 ```
 
-This is the launcher's own evidence, and it asserts a recorded turn, so it runs pinned to the replay
-provider. It boots real launchers with `bun run up`, opens the URL each one printed, drives the
-click, launches a second and a third instance at the same time, provokes the pinned-port refusal, and
-SIGINTs a launch while a run still holds a live container. It writes
+This is the launcher's own evidence, and it asserts a recorded turn, so it pins the replay provider
+in every launch it spawns. It boots real launchers with `bun run up`, opens the URL each one printed,
+drives the click, launches a second and a third instance at the same time, provokes the pinned-port
+refusal, and SIGINTs a launch while a run still holds a live container. It writes
 `packages/verify/artifacts/launch/<short sha>/`. `docs/VERIFICATION.md` carries both rows.
 
 ## What is not live today
 
-- **The page's own subtitle.** The header still reads `Local, replay-driven, no model attached`,
-  which stopped being true when the vault's key landed. The copy lives in `apps/web/host/index.html`
-  and is a follow-up.
 - **Per-token streaming.** The loop's provider port returns a whole turn, so the model's text arrives
   as one frame and the page renders it in one piece. Streaming it needs a port that yields, which is
   a change to `packages/core`.
