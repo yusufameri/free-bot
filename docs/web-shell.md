@@ -1,6 +1,6 @@
 # The web chat surface (U1.5)
 
-Status: PASS. 75/75 harness checks green at commit `761eca9`, driven by
+Status: PASS. 75/75 harness checks green at commit `326cf65`, driven by
 `bun apps/web/scripts/capture.ts`, with eight committed key-state frames under
 `packages/verify/artifacts/web-shell/761eca9/`. Verdict: live-ui-verified.
 
@@ -80,8 +80,8 @@ PR.
 
 Order 12 asks for a recording rather than stills. No assembler exists on this host (no ffmpeg, no
 ImageMagick), so this unit ships the frame sequence plus the harness that regenerates it, and names
-the exemption here rather than dropping it silently. The PNGs are content-stable across runs: seven
-of the eight hashes are identical between the pre-commit run and the committed one.
+the exemption here rather than dropping it silently. The PNGs are content-stable: all eight hashes are
+identical between the two runs of this harness, so a re-run reproduces the frames byte for byte.
 
 ## Deliberately missing
 
