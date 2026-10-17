@@ -100,7 +100,8 @@ bun packages/verify/scripts/type-gate.ts
 ```
 
 It writes `packages/verify/artifacts/type-gate/<short-sha>/probe.txt` and exits non-zero on any
-failed check. Per run it does all of this against the real gate, `bun run typecheck`.
+failed check. Per run it does all of this against the real gate, `bun run typecheck`. The artifact
+for the blind-set change U4.1 made is `packages/verify/artifacts/type-gate/e7cb536/probe.txt`.
 
 1. The clean tree passes.
 2. A census compares the program against the tree. It asserts the root include is exactly the nine
