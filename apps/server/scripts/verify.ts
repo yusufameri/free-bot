@@ -140,8 +140,11 @@ try {
     /^[A-Za-z0-9_-]{43}$/.test(token),
     `token printed once at boot: ${token.length} url-safe chars`,
   );
+  const tunnelPort = Number(
+    await waitFor(() => serverOutput, /listening on http:\/\/127\.0\.0\.1:(\d+)/, 10_000),
+  );
   check(
-    serverOutput.includes(`listening on http://127.0.0.1:`),
+    tunnelPort > 0,
     `the tunnel leg still announces its port for bun run verify: ${serverOutput.split("\n")[0]}`,
   );
 
@@ -224,6 +227,56 @@ try {
   check(
     health.status === "200" && health.body.includes('"service":"freebot-server"'),
     `GET /healthz stays a liveness probe -> ${health.status} ${health.body}`,
+  );
+
+  // -------------------------------------------------------------------------
+  // The tunnel leg's HTTP reads, host-checked with the agent's allowance
+  // -------------------------------------------------------------------------
+
+  const readArm = (
+    label: string,
+    path: string,
+    host: string,
+    expected: { status: string; code?: string },
+  ): { status: string; body: string } => {
+    const response = curl(tunnelPort, path, [`host: ${host}`], "GET");
+    const code = response.status === "200" ? undefined : codeOf(response.body);
+    const ok = response.status === expected.status && code === expected.code;
+    check(
+      ok,
+      `${label} -> ${response.status}${code === undefined ? "" : ` ${code}`}${ok ? "" : ` (expected ${expected.status} ${expected.code ?? ""})`}`,
+    );
+    return response;
+  };
+
+  readArm("GET /events on the tunnel leg with a rebound Host", "/events", "evil.example", {
+    status: "403",
+    code: "host_not_allowed",
+  });
+  readArm("GET /audit on the tunnel leg with a rebound Host", "/audit", "evil.example", {
+    status: "403",
+    code: "host_not_allowed",
+  });
+  const agentRead = readArm(
+    "GET /events on the tunnel leg as the in-sandbox agent",
+    "/events",
+    `host.docker.internal:${tunnelPort}`,
+    { status: "200" },
+  );
+  check(
+    agentRead.body === '{"last_seq":0,"count":0,"reply_is_exact":true,"frames":[]}',
+    `the agent's read returns the real log body: ${agentRead.body}`,
+  );
+  const agentAudit = readArm(
+    "GET /audit on the tunnel leg as the in-sandbox agent",
+    "/audit",
+    `host.docker.internal:${tunnelPort}`,
+    { status: "200" },
+  );
+  check(
+    agentAudit.body ===
+      '{"firstSeq":null,"lastSeq":0,"count":0,"gaps":[],"duplicates":[],"suppressedAtIngest":[],"gapEvents":[],"rejected":0}',
+    `the agent's audit read returns the real audit body: ${agentAudit.body}`,
   );
 
   // -------------------------------------------------------------------------

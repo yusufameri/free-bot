@@ -338,6 +338,16 @@ describe("the gate over the real server", () => {
     expect(refusal(await rebound.json())).toBe("host_not_allowed");
   });
 
+  test("the tunnel leg's allowance stays off the API leg", async () => {
+    const server = serve();
+
+    const reply = await fetch(`http://127.0.0.1:${server.port}/healthz`, {
+      headers: { host: `host.docker.internal:${server.port}` },
+    });
+    expect(reply.status).toBe(403);
+    expect(refusal(await reply.json())).toBe("host_not_allowed");
+  });
+
   test("the server answers on loopback only", async () => {
     const server = serve();
     const listening = Bun.spawnSync(["lsof", "-nP", "-iTCP", "-sTCP:LISTEN"], {

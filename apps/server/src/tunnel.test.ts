@@ -249,6 +249,81 @@ describe("tunnel reconnect and repair", () => {
   });
 });
 
+describe("the tunnel leg's HTTP reads", () => {
+  /** A read of the tunnel leg with the Host header spelled out, the way a browser would send it. */
+  async function read(
+    port: number,
+    path: string,
+    host?: string,
+  ): Promise<{ status: number; body: unknown }> {
+    const response = await fetch(`http://127.0.0.1:${port}${path}`, {
+      headers: host === undefined ? undefined : { host },
+    });
+    return { status: response.status, body: await response.json() };
+  }
+
+  test("a rebound Host is refused on /events and /audit", async () => {
+    const server = serve();
+    const events = await read(server.port, "/events", "evil.example");
+    expect(events.status).toBe(403);
+    expect(events.body).toEqual({
+      error: { code: "host_not_allowed", message: "Host evil.example is not allowed" },
+    });
+
+    const audit = await read(server.port, "/audit", "evil.example:8080");
+    expect(audit.status).toBe(403);
+    expect(audit.body).toEqual({
+      error: { code: "host_not_allowed", message: "Host evil.example is not allowed" },
+    });
+  });
+
+  test("the in-sandbox agent's Host still reaches both reads", async () => {
+    const server = serve();
+    const agent = await connectAgent(server.port);
+    agent.send(1);
+    await until(() => server.log.lastSeq === 1, "one frame logged");
+
+    const host = `host.docker.internal:${server.port}`;
+    const events = await read(server.port, "/events", host);
+    expect(events.status).toBe(200);
+    expect(events.body).toEqual({
+      last_seq: 1,
+      count: 1,
+      reply_is_exact: true,
+      frames: [{ seq: 1, frame: marker(1) }],
+    });
+
+    const audit = await read(server.port, "/audit", host);
+    expect(audit.status).toBe(200);
+    expect(audit.body).toEqual({
+      firstSeq: 1,
+      lastSeq: 1,
+      count: 1,
+      gaps: [],
+      duplicates: [],
+      suppressedAtIngest: [],
+      gapEvents: [],
+      rejected: 0,
+    });
+  });
+
+  test("a loopback Host reads the log unchanged", async () => {
+    const server = serve();
+    const agent = await connectAgent(server.port);
+    agent.send(1);
+    await until(() => server.log.lastSeq === 1, "one frame logged");
+
+    const events = await read(server.port, "/events", `127.0.0.1:${server.port}`);
+    expect(events.status).toBe(200);
+    expect(events.body).toEqual({
+      last_seq: 1,
+      count: 1,
+      reply_is_exact: true,
+      frames: [{ seq: 1, frame: marker(1) }],
+    });
+  });
+});
+
 describe("cross-origin upgrades", () => {
   async function upgrade(port: number, origin: string | undefined): Promise<string> {
     const url = `ws://127.0.0.1:${port}/stream?last_seen_seq=0`;

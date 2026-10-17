@@ -13,16 +13,17 @@ page in the operator's browser, or any process that can make the browser resolve
 | Another local process (any user's) | Yes, by design | It is the operator's machine and there is no user separation in local mode. Such a process can read the printed token anyway. Documented as out of scope below. |
 | A page on a foreign origin in the operator's browser | Yes | `Origin` check, then the token. A browser cannot forge `Origin`, and cannot read the response cross-origin regardless. |
 | A page on a loopback origin (any port) | Yes | The token. Loopback origins are allowlisted because the web app is one of them; the token is what distinguishes a page that was handed the token from one that was not. |
-| DNS rebinding: an attacker hostname resolves to 127.0.0.1 | The socket, yes | `Host` check. The rebound request arrives with the attacker's hostname in `Host`, which is refused before any credential is compared. |
+| DNS rebinding: an attacker hostname resolves to 127.0.0.1 | The socket, yes | `Host` check on both legs. The rebound request arrives with the attacker's hostname in `Host`, which is refused before any credential is compared. The tunnel leg allows loopback plus `host.docker.internal`, since its HTTP reads are how the in-sandbox agent sees the log. |
 | A WebSocket upgrade from a foreign page | Yes (WebSockets escape CORS) | `Origin` check at upgrade time on both listeners, plus the token on the API leg. |
 
 ## The checks, in order
 
 `apps/server/src/auth.ts` holds them; `apps/server/src/api-server.ts` runs them before any handler.
 
-1. **`Host` must be loopback** (`127.0.0.1`, `localhost`, `::1`, with or without a port). A missing
-   `Host` is refused too. Refusal: **403 `host_not_allowed`**. This runs first so a rebound request
-   is refused without its bearer token being compared against anything.
+1. **`Host` must be an allowed hostname** (`127.0.0.1`, `localhost`, `::1`, with or without a port;
+   the tunnel leg adds `host.docker.internal`). A missing `Host` is refused too. Refusal: **403
+   `host_not_allowed`**. This runs first so a rebound request is refused without its bearer token
+   being compared against anything.
 2. **A present `Origin` must be a loopback http(s) origin.** `http://127.0.0.1:<port>`,
    `http://localhost:<port>`, and their https forms pass; anything else, including `null`, `file:`,
    and `chrome-extension:`, is **403 `origin_not_allowed`**.
@@ -37,6 +38,10 @@ page in the operator's browser, or any process that can make the browser resolve
 
 `GET /healthz` runs check 1 only. It answers a liveness question with two constant fields and no
 state, and the launcher's first question about the server is whether it is up.
+
+The tunnel leg runs the same order on its HTTP reads (`/events`, `/audit`, `/healthz`) with
+`TUNNEL_HOSTNAMES`, and check 2 on its two WebSocket upgrades. It runs no token check, for the reason
+given under "Two listeners, two gates".
 
 Refusals answer `{"error":{"code":...,"message":...}}` with that status. Each refusal also logs one
 line to stdout, `[auth] refused code=... method=... path=...`, which never carries the token or any
@@ -63,11 +68,22 @@ header value.
 
 - The **tunnel leg** (`tunnel.ts`, `PORT`): the agent leg at `/tunnel`, the display leg at `/stream`,
   `/events`, `/audit`, `/healthz`. The in-sandbox agent reaches it as `host.docker.internal` through
-  the TCP relay, so a strict loopback `Host` check would break the agent; this leg therefore carries
-  the `Origin` check on its two WebSocket upgrades (WebSockets escape CORS, so a foreign page could
-  otherwise read the log) and no token.
+  the TCP relay, so its `Host` check allows `host.docker.internal` besides loopback
+  (`TUNNEL_HOSTNAMES` in `auth.ts`) and a strict loopback set would break the agent. Its two
+  WebSocket upgrades carry the `Origin` check, because WebSockets escape CORS and a foreign page
+  could otherwise read the log. Its HTTP reads carry the `Host` check with that allowance, because a
+  rebound page's `fetch` to its own hostname is same-origin: it sends no `Origin` and CORS does not
+  apply, so `Host` is the only control that covers those reads.
 - The **API leg** (`api-server.ts`, `API_PORT`): `POST /rpc`, `ws://…/rpc-ws`, `/healthz`. The full
   gate. The agent never holds the operator token, so the sandbox cannot drive the operator's API.
+
+The tunnel leg carries **no token**, by design: the sandbox must not hold the operator's token, and
+what `/events` and `/audit` serve is the seq log its own frames fill, so a token there would be a
+credential protecting the caller's own data. That is affordable now because the two ways a different
+actor could reach those reads are both closed: a foreign-origin page is refused by CORS (no
+`Access-Control-Allow-Origin` header is sent, so it cannot read the response), and a rebound page is
+refused by the `Host` check. What is left open is a process already running on this machine, which
+the "deliberately not covered" list below covers.
 
 ## What is deliberately not covered yet
 
