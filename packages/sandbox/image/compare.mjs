@@ -62,8 +62,8 @@ check(
   `image_digest equal across runs (${a.header.image_digest})`,
 );
 check(
-  JSON.stringify(a.header.pi_command) === JSON.stringify(b.header.pi_command),
-  "pi command line equal across runs",
+  JSON.stringify(a.header) === JSON.stringify(b.header),
+  "run headers identical (pi version, digest, node, platform, command line)",
 );
 
 const eventsA = a.events.map((event) => JSON.stringify(normalize(event)));

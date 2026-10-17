@@ -94,12 +94,16 @@ rebuild_id=$(docker inspect --format '{{.Id}}' "$rebuild_tag")
   if [ "$rebuild_id" = "$image_id" ]; then
     echo "rebuild outcome: identical image Id"
   else
-    echo "rebuild outcome: different image Id (layer timestamps are not reproducible);"
-    echo "the pinned base digest is what the guarantee rests on, not build determinism"
+    echo "rebuild outcome: different image Id (the OCI config carries build timestamps)"
   fi
-  echo "RebuildDiffIds:"
-  docker image inspect --format '{{json .RootFS.Layers}}' "$tag" | sed 's/},{/}\n{/g'
-  docker image inspect --format '{{json .RootFS.Layers}}' "$rebuild_tag" | sed 's/},{/}\n{/g'
+  layers_a=$(docker image inspect --format '{{json .RootFS.Layers}}' "$tag")
+  layers_b=$(docker image inspect --format '{{json .RootFS.Layers}}' "$rebuild_tag")
+  if [ "$layers_a" = "$layers_b" ]; then
+    echo "RootFS layers identical across the two builds: yes"
+  else
+    echo "RootFS layers identical across the two builds: no"
+  fi
+  echo "RootFS layers (build 1): $layers_a"
 } >"$art/digest.txt"
 
 # --- two replay runs in the image ------------------------------------------------------------
@@ -185,7 +189,8 @@ note_step "$keyscan_code" "keyscan probe"
   echo "  pi version: $(docker run --rm "$tag" pi --version 2>/dev/null || echo unknown)"
   echo "  image Id: $image_id"
   echo "  rebuild image Id: $rebuild_id"
-  echo "  rebuild identical: $([ "$rebuild_id" = "$image_id" ] && echo yes || echo no)"
+  echo "  rebuild identical image Id: $([ "$rebuild_id" = "$image_id" ] && echo yes || echo no)"
+  echo "  rebuild layer digest sets identical: $(grep -oE 'RootFS layers identical across the two builds: (yes|no)' "$art/digest.txt" | sed 's/.*: //')"
   echo
   echo "normalization for replay equality (compare.mjs):"
   echo "  every frame is re-serialized with object keys sorted, then the keys id, timestamp,"
