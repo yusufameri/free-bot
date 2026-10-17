@@ -59,6 +59,9 @@
     "packages/review": {
       "name": "@freebot/review",
       "version": "0.0.0",
+      "dependencies": {
+        "@freebot/pi-bridge": "workspace:*",
+      },
     },
     "packages/sandbox": {
       "name": "@freebot/sandbox",
