@@ -124,6 +124,22 @@ stream's v1 adoption is the follow-up `docs/protocol.md` already names.
 Driving a run to completion over these routes is proven with a fake sandbox in
 `run-service.test.ts`, not against Docker, so the endpoint claim is unit-test-verified.
 
+### Overlap with the landed control plane, and what to do about it
+
+U1.3 landed after this unit's brief was written and carries its own run surface: `control-plane.ts`
+mints `run.started` and a cancel with its own run table over its own `SeqLog`, and `router.ts`
+implements `start_run`, `cancel_run`, `get_run` and `subscribe_events` behind the auth gate. That is
+the placeholder this unit was expected to replace, and the two surfaces are now both present, which
+is the wrong end state.
+
+The resolution this unit did NOT take, because it would rewrite another unit's landed proof: the
+loop's ports should sit behind that control plane, with `ControlPlane.startRun` calling the loop
+instead of minting its own events, `subscribe_events` reading the loop's one log, and the approve and
+deny operations answered by the consent port. The Hono routes here then go away entirely. Doing it
+means changing U1.3's `control-plane.ts`, `router.ts` and their tests, which is a decision for the
+coordinator with the review in hand, not a silent edit inside this PR. Until then, one run has two
+ways to be started and only this one executes anything.
+
 ## What the evidence run proves
 
 `bun apps/server/src/run-loop-live.ts` writes
