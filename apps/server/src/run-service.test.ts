@@ -6,17 +6,29 @@
  * before the loop's first await, that two runs in one thread share one seq space, that two Bots have
  * two workspace directories, and that a second process over the same bots root brings every record
  * and every run back.
+ *
+ * Every service below is built with a sandbox that starts nothing, so no test here needs Docker: the
+ * runs still execute, and what they execute in is not what any of these assertions are about.
  */
 
 import { describe, expect, test } from "bun:test";
 import { mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ProviderPort } from "@freebot/core";
+import type { ProviderPort, SandboxPort } from "@freebot/core";
 import type { SandboxSpec } from "@freebot/sandbox";
 import { createRunService, UnknownRecordError } from "./run-service.ts";
 
 /** One turn of text and no call, so a run finishes in the few frames it can. */
+/** Creates nothing and runs nothing, so a test that starts a run needs no container. */
+const noSandbox: SandboxPort = {
+  async create() {},
+  async execute() {
+    throw new Error("this test starts no tool call");
+  },
+  async destroy() {},
+};
+
 const immediateProvider: ProviderPort = {
   async next() {
     return { text: ["ok"], toolCalls: [] };
@@ -30,7 +42,11 @@ function botsRoot(): string {
 
 describe("a Bot, a thread, and a run inside them", () => {
   test("two runs in one thread share one seq space and both finish", async () => {
-    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const service = createRunService({
+      botsRoot: botsRoot(),
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     const bot = service.createBot("Local Bot");
     const thread = service.createThread(bot.id);
 
@@ -60,7 +76,11 @@ describe("a Bot, a thread, and a run inside them", () => {
   });
 
   test("both records exist before the loop's first await, and the run names them", async () => {
-    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const service = createRunService({
+      botsRoot: botsRoot(),
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     const bot = service.createBot("Local Bot");
     const thread = service.createThread(bot.id);
 
@@ -76,7 +96,11 @@ describe("a Bot, a thread, and a run inside them", () => {
   });
 
   test("two subscribers both see every frame, in seq order", async () => {
-    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const service = createRunService({
+      botsRoot: botsRoot(),
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     const bot = service.createBot("Local Bot");
     const thread = service.createThread(bot.id);
     const controller = new AbortController();
@@ -107,7 +131,11 @@ describe("a Bot, a thread, and a run inside them", () => {
   });
 
   test("one thread's frames are not another thread's, and each log starts at its own seq 1", async () => {
-    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const service = createRunService({
+      botsRoot: botsRoot(),
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     const bot = service.createBot("Local Bot");
     const first = service.createThread(bot.id);
     const second = service.createThread(bot.id);
@@ -120,7 +148,11 @@ describe("a Bot, a thread, and a run inside them", () => {
   });
 
   test("a Bot or a thread this server does not hold is refused by name", async () => {
-    const service = createRunService({ botsRoot: botsRoot(), provider: () => immediateProvider });
+    const service = createRunService({
+      botsRoot: botsRoot(),
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     const bot = service.createBot("Local Bot");
     const thread = service.createThread(bot.id);
     const other = service.createBot("Other");
@@ -176,7 +208,11 @@ describe("the Bot's workspace", () => {
 
   test("a file in one Bot's workspace is not in another Bot's", async () => {
     const root = botsRoot();
-    const service = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const service = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     const first = service.createBot("First");
     const second = service.createBot("Second");
 
@@ -194,7 +230,11 @@ describe("the Bot's workspace", () => {
 
   test("a workspace read for a Bot this server does not hold creates nothing and is refused", async () => {
     const root = botsRoot();
-    const service = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const service = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
 
     expect(await service.listFiles("bot-nowhere", ".").catch((error: Error) => error.message)).toBe(
       "no such Bot: bot-nowhere",
@@ -206,7 +246,11 @@ describe("the Bot's workspace", () => {
 describe("a second process over the same bots root", () => {
   test("brings back every Bot, every thread and every run", async () => {
     const root = botsRoot();
-    const first = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const first = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     const bot = first.createBot("Local Bot");
     const other = first.createBot("Second");
     const thread = first.createThread(bot.id);
@@ -215,7 +259,11 @@ describe("a second process over the same bots root", () => {
     await first.idle();
     first.close();
 
-    const reopened = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const reopened = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
 
     expect(
       reopened.listBots().map(({ bot: record, threadCount }) => [record.name, threadCount]),
@@ -236,14 +284,22 @@ describe("a second process over the same bots root", () => {
 
   test("run ids continue past the runs the last process recorded", async () => {
     const root = botsRoot();
-    const first = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const first = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     const bot = first.createBot("Local Bot");
     const thread = first.createThread(bot.id);
     expect(first.start({ prompt: "one", botId: bot.id, threadId: thread.id }).runId).toBe("run-1");
     await first.idle();
     first.close();
 
-    const reopened = createRunService({ botsRoot: root, provider: () => immediateProvider });
+    const reopened = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
     expect(reopened.start({ prompt: "two", botId: bot.id, threadId: thread.id }).runId).toBe(
       "run-2",
     );
