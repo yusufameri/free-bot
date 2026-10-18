@@ -21,7 +21,12 @@
  * stdout stays the one URL. See docs/RUNNING.md.
  */
 
-import { ConnectorRegistry, connectorsPath as connectorsPathFor } from "../connectors.ts";
+import {
+  type ConnectorPaths,
+  ConnectorRegistry,
+  connectorPaths,
+  pathsBeside,
+} from "../connectors.ts";
 import { startServer } from "../index.ts";
 import {
   type ChoiceDescription,
@@ -44,10 +49,10 @@ export interface Up {
   readonly botsRoot: string;
   /** What the run's model is: the endpoint, the model id, and whether a key is in play. */
   readonly provider: ChoiceDescription;
-  /** The connectors this launch holds, by id and address. Never a credential. */
-  readonly connectors: ReadonlyArray<{ id: string; url: string }>;
-  /** The file those connectors were read from, so a diagnostic names the file it actually read. */
-  readonly connectorsFile: string;
+  /** The connectors this launch holds, by id, label and address. Never a credential. */
+  readonly connectors: ReadonlyArray<{ id: string; label: string; url: string }>;
+  /** The two files those connectors were read from, so a diagnostic names what it actually read. */
+  readonly connectorPaths: ConnectorPaths;
   /** Stop the servers, then remove every container this launch created. 0 only when none survived. */
   stop(): Promise<number>;
 }
@@ -63,8 +68,8 @@ export function startUp(args: UpArgs): Up {
     vault,
     ...(args.transcript === null ? {} : { transcript: args.transcript }),
   });
-  const connectorsPath = args.connectors ?? connectorsPathFor();
-  const connectors = ConnectorRegistry.fromFile(connectorsPath);
+  const paths = args.connectors === null ? connectorPaths() : pathsBeside(args.connectors);
+  const connectors = ConnectorRegistry.open(paths);
   const server = startServer({
     tunnelPort: args.tunnelPort,
     apiPort: args.apiPort,
@@ -72,7 +77,9 @@ export function startUp(args: UpArgs): Up {
     service: createRunService({
       sandbox: () => sandboxes.port(),
       mode: args.providerMode,
-      connectors: connectors.connectors(),
+      // A supplier rather than a list, so a connector connected while this launch is up is offered
+      // to the next run. The credential itself is read from the vault at call time either way.
+      connectors: () => connectors.connectors(),
       ...(args.transcript === null ? {} : { transcript: args.transcript }),
       ...(args.workspace === null ? {} : { botsRoot: args.workspace }),
     }),
@@ -85,7 +92,7 @@ export function startUp(args: UpArgs): Up {
     botsRoot,
     provider: describeChoice(choice),
     connectors: connectors.describe(),
-    connectorsFile: connectorsPath,
+    connectorPaths: paths,
     async stop() {
       server.stop();
       server.service.close();
@@ -152,12 +159,13 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   console.error(
     `freebot up: bots under ${up.botsRoot}; each Bot's workspace is mounted at /workspace and kept across runs`,
   );
+  const roster = up.connectors
+    .map((connector) => `${connector.label} (${connector.id}) at ${connector.url}`)
+    .join(", ");
   console.error(
-    up.connectors.length === 0
-      ? `freebot up: connectors ${up.connectorsFile} holds none`
-      : `freebot up: connectors ${up.connectorsFile} holds ${up.connectors
-          .map((connector) => `${connector.id} at ${connector.url}`)
-          .join(", ")}`,
+    `freebot up: connectors ${
+      up.connectors.length === 0 ? "none" : roster
+    }; records ${up.connectorPaths.record}, credential vault ${up.connectorPaths.vault} at mode 600`,
   );
   console.error(
     "freebot up: the operator token rides the URL's fragment and is printed nowhere else",

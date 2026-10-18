@@ -122,10 +122,12 @@ export interface RunServiceOptions {
   readonly transcript?: string;
   /**
    * The connectors this server's runs may call. Each contributes one governed tool arm per tool its
-   * server offers, so the run's table is built once per run, when the run starts. Empty by default:
-   * a machine nobody has connected anything on runs exactly as it did before.
+   * server offers, so the run's table is built once per run, when the run starts. A supplier rather
+   * than a list, so a connector connected while this server is up is offered to the next run; the
+   * credential is read from the vault at call time either way. Empty by default: a machine nobody
+   * has connected anything on runs exactly as it did before.
    */
-  readonly connectors?: readonly Connector[];
+  readonly connectors?: () => readonly Connector[];
   /** How the factory picks the model. `auto` follows the vault, `replay` records, `live` demands a
    * key. Defaults to `auto`. */
   readonly mode?: ProviderMode;
@@ -221,7 +223,7 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
   const cancelled = new Set<string>();
   const inflight: Array<Promise<unknown>> = [];
   const transcript = options.transcript ?? DEFAULT_TRANSCRIPT;
-  const connectors = options.connectors ?? [];
+  const connectors = options.connectors ?? (() => []);
   const vaultEntry = options.readVaultEntry ?? readVault;
   const runtimes = new Map<string, ThreadRuntime>();
   const readers = new Map<string, WorkspaceReader>();
@@ -444,7 +446,7 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
         // the run's connectors offer. A connector that cannot be reached right now contributes no
         // arms and says so on the note line, rather than failing a run that the other tools could
         // still finish.
-        const tools = await runToolsFor(connectors, options.note);
+        const tools = await runToolsFor(connectors(), options.note);
         const provider = await providerFor(input.prompt, tools);
         return await runRunLoop(
           {
