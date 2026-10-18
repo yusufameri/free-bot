@@ -1,0 +1,211 @@
+feature: truth-fix
+command: bun run verify && bun run lint && bun run typecheck && bun apps/web/scripts/one-run-path.ts && bun packages/verify/scripts/connectors.ts
+timestamp: 2026-10-18T05:30:00Z
+git sha: ada90ad05b841552c47752ce7ee5813171f0af1e
+git sha short: ada90ad
+branch: u7.2-truth-fix
+runtime: bun 1.2.5 on darwin arm64
+
+# truth fix (U7.2): the repository stops saying the keyed model is parked
+
+No code changed. This run re-reads the repository for one false claim and regenerates the two
+committed artifacts whose own text carried it. The census below is read at `ada90ad`, the commit
+that lands this unit's prose. The two driver artifacts record `b760edb`, the commit that lands the
+code-side fix they re-ran against.
+
+## The fact, checked at this head before any edit
+
+- `apps/server/src/provider.ts` constructs the real `KeyedProvider` whenever the factory's choice is
+  `keyed`, and `auto` chooses `keyed` when the vault at `~/.freebot/provider.env` holds a key. Only
+  the non-keyed branch falls through to the replay transcript.
+- `apps/server/src/provider.test.ts:12` states the same thing as a test name: "auto takes the vault's
+  keyed path when the vault holds a key".
+- Gate G1 is open. `apps/server/src/cli/doctor.ts`'s provider key check passes whenever the vault
+  holds a key file.
+- `apps/server/src/index.ts:47-52` states `replay` on purpose, because it is the entrypoint the
+  evidence drivers boot. `packages/verify/scripts/launch.ts:20` says a driver pins the replay provider
+  so a recorded turn is what its assertions hold. Both are true statements about a driver's choice.
+  "Gate G1 parks the keyed provider" is a false statement about the system, and it is what this unit
+  removes wherever it stands in the present tense.
+
+## The acceptance grep at this head, verbatim
+
+$ git grep -nE "park(s|ed)? the keyed|keyed path|still runs the replay|replay provider" HEAD -- '*.md' '*.ts'
+HEAD:apps/server/src/provider.test.ts:12:  test("auto takes the vault's keyed path when the vault holds a key", () => {
+HEAD:apps/server/src/provider.ts:10: * caller that demands the keyed path and finds no key fails loudly instead of quietly replaying,
+HEAD:apps/server/src/replay-provider.ts:2: * The replay provider: the model's turns, read out of a committed Pi transcript.
+HEAD:apps/server/src/run-service.ts:134:  /** Read the vault, injectable so a test drives the keyed path with no key on the machine. */
+HEAD:apps/web/scripts/one-run-path.ts:14: * the replay provider so a recorded turn is what its assertions hold (order 9); it is not a missing
+HEAD:apps/web/scripts/one-run-path.ts:802:    "DRIVER DISCLOSURE: the model's turns are replayed from packages/pi-bridge/fixtures/rpc-handshake.jsonl (this driver boots apps/server/src/index.ts, which states the replay provider so a recorded turn is what its assertions hold, order 9; no gate parks it) and the sandbox is the pinned image. The loop, the gate, the grant ledger, the run store, the log, the container, the server, the stream and the DOM are real.",
+HEAD:docs/RUNNING.md:187:This is the launcher's own evidence, and it asserts a recorded turn, so it pins the replay provider
+HEAD:docs/VERIFICATION.md:24:| run loop | `bun apps/server/src/run-loop-live.ts` | unit-test-verified (the live surface is a real container from the pinned image plus the real loop: 16 loop tests drive the transitions over fake ports with the real gate and a real `SeqLog`, and the evidence run makes 20 checks pass against a booted container — the pinned layer set, the status trail, the decision table, the seq audit with zero gaps and zero duplicates over 25 frames, both new wire frames as they sit in the log, and the label-scoped cleanup with a surviving decoy. The endpoint tests that drove `start_run` and the approve and deny routes are gone with those routes; `router.test.ts` drives the same surface over oRPC now. The model is replayed from the committed Pi transcript and the human's two answers are scripted, because this driver runs the loop against a replay provider on purpose so its assertions hold a fixed turn, not because a key is missing (order 9); no key material is read or written anywhere) | `packages/verify/artifacts/run-loop/12730d2/assert.txt` | 12730d2a8d0831adca3b42fe2f73426399ada988 | 2026-10-17 |
+HEAD:docs/VERIFICATION.md:26:| one run path | `bun apps/web/scripts/one-run-path.ts` | live-ui-verified (54 CDP checks in headless Chrome 155 against a really launched `apps/server/src/index.ts`: both directions of the operator token on the page's stream, read as socket handshakes; then two runs started from the page's own prompt box, one answered allow and one answered deny, in four committed states whose DOM facts are read before and after each capture and fail the run if they moved, whose captions' claims are evaluated against those same facts, whose caption element is asserted inside the captured viewport, and which are pairwise distinct across six comparisons. The allow run's tool card shows the container's own stdout, `native-should-not-run\n`, and the deny run's marker reads `deny (user_denied)`. Not live: the provider is the replay transcript, because this driver boots the driver-facing `apps/server/src/index.ts`, which states the replay provider so a recorded turn is what its assertions hold, not because a key is missing (order 9), and the sandbox is the pinned image) | `packages/verify/artifacts/one-run-path/b760edb/assert.txt` | b760edbd06ddb2c4889cb80a5909ccba8e5442ae | 2026-10-18 |
+HEAD:docs/VERIFICATION.md:28:| launch | `bun packages/verify/scripts/launch.ts` | live-ui-verified (114 checks: `bun run up` spawned as a person runs it with the replay provider pinned in its environment, the one URL it prints taken from stdout and opened in headless Chrome 155, every assertion driven from that URL. The token gate in both directions, the armed page with the token in the fragment and no query and its header subtitle read as a DOM fact against the copy that holds in either provider mode, the parked approval card, an allowed run whose output block holds the container's own stdout, and a denied run's `user_denied` marker: four committed states whose DOM facts are read before and after each capture, whose captions' claims are evaluated against those same facts, whose caption element is inside the captured viewport, and which are pairwise distinct across six comparisons. Two further launches while the first was parked, each on its own free port, the first instance still answering; a launch pinned to a taken port exiting nonzero and naming it; and SIGINT with a run still parked, after which the container the launch created is gone by its own name, the label's container set is back to the empty set it started at, nothing listens on either port, and the launch exits 0. The default browser-open path is checked against a stand-in `open` on `PATH`. Not live: the provider is the replay transcript, because the driver pins the replay provider so its recorded-turn assertions hold, and the sandbox is the pinned image) | `packages/verify/artifacts/launch/8d892fa/assert.txt` | 8d892faff1aa28f65bfdcd522df8c685bb35981b | 2026-10-18 |
+HEAD:docs/VERIFICATION.md:35:| connectors | `bun packages/verify/scripts/connectors.ts` | unit-test-verified (57 checks in one process against an emulated service rather than an account: `vercel-labs/emulate`'s GitHub fixture bound on `0.0.0.0` and seeded per run, with the driver's own probes establishing that a write with no `authorization` header is refused `401 Requires authentication` and that `reset()` empties the store and re-runs the seed, and every assertion about its state read back over the service's own REST surface rather than from a mock's return. Three really launched `bun run up` processes over one temp home and bots root: run 1's replayed model turn calls `emulate-github__create_issue` through the seam, parks at the gate on an empty ledger, is answered allow, and the service itself reports the issue it created; `reset()` then leaves the service holding nothing and run 2, with a distinct title and therefore a distinct action hash, parks and creates exactly one issue again, numbered from the reset — the second test in the same process passing after the reset that acceptance 2 asks for. A by-hand container of the pinned image reaches the service and is refused a write while holding neither credential (its env, its init's env and the Bot's workspace all read empty of both), the connector's credential lives only in a mode-600 `connectors.json` under the driver's own home, and the last checks scan the worktree and the artifact for all three secrets. The landed `bash` arm still runs beside the connector arm in a third launch over the committed transcript, the two routes answer rows with a credential reference and no value, and no run container survives any launch. Not live: the model is the replay provider this driver pins. It spawns `bun run up --no-open --replay --transcript <this run's turn>`, so the run used a recorded turn and not the vault's keyed model, and the run labels itself as a replay. The keyed path is exercised by `bun packages/verify/scripts/keyed-run.ts`, `files-surface.ts` and `bots-and-threads.ts`, each over `bun run up` with the vault's model) | `packages/verify/artifacts/connectors/b760edb/assert.txt` | b760edbd06ddb2c4889cb80a5909ccba8e5442ae | 2026-10-18 |
+HEAD:docs/VERIFICATION.md:94:loop against a replay provider on purpose so its assertions hold a fixed turn (order 9). Its shape, limits, and follow-ups (the scheduler's idle-kill and rejoin,
+HEAD:docs/VERIFICATION.md:264:reason clause rather than a capability: both regenerated artifacts use the replay provider because
+HEAD:docs/forge-test-a.md:125:  artifact is live-model traffic, and Gate G1 still parks the keyed smoke.
+HEAD:docs/mvp-smoke-dry-run.md:11:parks the keyed run (U0.12), which replaces only the decision source. Every other component here
+HEAD:docs/one-run-path.md:99:| the loop, the gate and its grant ledger, the run store, the seq log | the model's turns, from `packages/pi-bridge/fixtures/rpc-handshake.jsonl`, because this driver boots the driver-facing `apps/server/src/index.ts`, which states the replay provider so a recorded turn is what the assertions hold (order 9) | the sandbox image, `freebot-sandbox:u0.6` |
+HEAD:docs/one-run-path.md:148:- **The keyed model is not this unit's.** This unit's evidence pins the replay provider, because it
+HEAD:docs/run-loop.md:9:real `KeyedProvider` when the vault holds a key and a replay provider when it does not, so a keyed
+HEAD:docs/run-loop.md:10:machine calls a real model. This unit's evidence run pins the replay provider on purpose so its
+HEAD:docs/run-loop.md:21:apps/server/src/run-loop-live.ts     the evidence run: a real container, the replay provider
+HEAD:docs/run-loop.md:146:image (asserting the recorded layer set), runs the loop with the replay provider, allows the first
+HEAD:docs/run-loop.md:169:- **The keyed model.** This unit's evidence run pins the replay provider; a run under `bun run up`
+HEAD:docs/run-loop.md:177:  no `usage_event` is recorded either, because the replay provider reports no usage. This PR wires
+HEAD:docs/sandbox-conformance.md:124:`bun run up --no-open`, over a home and a bots root it made, with the replay provider pinned. It then
+HEAD:packages/core/runs.md:113:the first three commands. The provider key check FAILs while gate G1 parks the keyed run, which is
+HEAD:packages/verify/scripts/bots-and-threads.ts:992:    "the launcher selected the keyed path from the vault, so the file the run writes is a real model's",
+HEAD:packages/verify/scripts/connectors.ts:9: * the replay provider: keyless, and pinned to this driver's own recorded turn, so the run bills
+HEAD:packages/verify/scripts/files-surface.ts:728:    "the launcher selected the keyed path from the vault, so the file is a real model's",
+HEAD:packages/verify/scripts/keyed-run.ts:882:    "the launcher selected the keyed path from the vault, with no flag asking for it",
+HEAD:packages/verify/scripts/keyed-run.ts:898:    "the vault it read is present, so the keyed path is the real one",
+HEAD:packages/verify/scripts/launch.ts:20: * packages/pi-bridge/fixtures/rpc-handshake.jsonl, because this driver pins the replay provider so a
+HEAD:packages/verify/scripts/launch.ts:443:/** `bun run up`, exactly as a person types it, with the replay provider pinned in its environment. */
+HEAD:packages/verify/scripts/sandbox-conformance.ts:7: * and a bots root this driver made, with the replay provider pinned in its environment. The driver
+HEAD:packages/verify/scripts/sandbox-conformance.ts:14: * the replay provider so the run path is deterministic. Pinned: the sandbox image.
+HEAD:spikes/mvp-smoke/composer.ts:20: * parks the keyed run.
+HEAD:spikes/mvp-smoke/run.ts:22: * live-model traffic; Gate G1 parks the keyed run (U0.12), which replaces only the decision
+HEAD:spikes/mvp-smoke/run.ts:531:      "Gate G1 parks the keyed run (U0.12), which replaces only the decision source.",
+
+One line per surviving hit, with its verdict.
+
+FIXED this unit (a present-tense claim a reader acts on):
+
+- apps/web/scripts/one-run-path.ts:14   FIXED. The header's reason. It said the transcript is replayed
+  "because gate G1 parks the keyed provider". It now names the entrypoint the driver boots, which
+  states the replay provider so a recorded turn is what the assertions hold (order 9), the shape
+  `launch.ts` already uses.
+- apps/web/scripts/one-run-path.ts:802  FIXED. The DRIVER DISCLOSURE string it writes into its
+  artifact, same claim. The artifact is regenerated at b760edb.
+- docs/one-run-path.md:99   FIXED. The "Replayed" cell of the real/replayed/pinned table. Same reason
+  replaced with the entrypoint's own replay statement.
+- docs/one-run-path.md:148  FIXED. The "what remains" bullet "G1 (the BYOK key) still parks the model.
+  The provider is the replay provider". Now states that this unit's evidence pins replay on purpose
+  and names `keyed-run.ts` as the driver that exercises the keyed path.
+- docs/run-loop.md:9, :10   FIXED. The opening paragraph "The loop is keyless today. Gate G1 parks the
+  BYOK key, so the provider path replays a committed Pi transcript instead of calling a model". Now
+  states the model is the factory's choice in `provider.ts` and that this unit's evidence pins replay.
+- docs/run-loop.md:169   FIXED. The "what remains" bullet "G1 (the BYOK key). The provider path is
+  replay." Replaced with the true statement about the keyed path and the driver that asserts it.
+- docs/VERIFICATION.md:24   FIXED. The run loop row's "because gate G1 parks the keyed provider". The
+  row still proves what it proved; only the false reason clause changed.
+- docs/VERIFICATION.md:26   FIXED. The one run path row's "because gate G1 parks the keyed path". The
+  artifact is regenerated at b760edb and the row cites it; the count is 54, not 53.
+- docs/VERIFICATION.md:35   FIXED. The connectors row's "because gate G1 parks the keyed path". The
+  artifact is regenerated at b760edb and the row now says plainly that the run used the replay
+  provider because its driver pins it, and names the drivers that exercise the keyed path.
+- docs/VERIFICATION.md:94   FIXED. The prose paragraph beside the run loop row, same clause.
+- docs/VERIFICATION.md:20   FIXED (does not match the pattern above). The core run model row attributed
+  the doctor's one FAIL to "the provider key gate G1 parks". The true cause is that the driver runs the
+  doctor over its own temp home, which holds no key file.
+- docs/VERIFICATION.md:50   FIXED (does not match the pattern above). "Its live keyed smoke (one real
+  gated tool call) is unobserved while gate G1 parks." The live smoke is still not part of that row's
+  artifact, but the reason is not a closed gate.
+- docs/providers.md:220   FIXED (does not match the pattern above). It said the providers row "states
+  that the live-provider run is gate-bound on G1". That row says G1 is open, so the sentence now
+  matches it.
+
+LEFT as a dated record. The sentence was true when written and the document is the record of a run at
+a commit, so rewriting it would falsify what that run observed:
+
+- docs/forge-test-a.md:125   RECORD. The U0.9 spike page's pins/disclosure. "Gate G1 still parks the
+  keyed smoke" was true when U0.9 ran (artifact a46071c, 2026-10-17). Follow-up recorded below.
+- docs/mvp-smoke-dry-run.md:11   RECORD. The U0.11 dry run's STUB DISCLOSURE. That run was keyless by
+  construction; the line itself names U0.12 as the unit that replaces only the decision source.
+- spikes/mvp-smoke/composer.ts:20, spikes/mvp-smoke/run.ts:22, spikes/mvp-smoke/run.ts:531   RECORD.
+  The same U0.11 spike disclosure in its own code, dated by its U0.12 reference. Both files are outside
+  this unit's write scope.
+
+LEFT as a true statement about a driver pinning replay. This is the `launch.ts` shape, and it is
+correct:
+
+- docs/RUNNING.md:187   TRUE. "it asserts a recorded turn, so it pins the replay provider in every
+  launch it spawns", about `launch.ts`.
+- docs/VERIFICATION.md:28   TRUE. The launch row's same statement. This row is the model the fixed rows
+  now follow.
+- docs/run-loop.md:21, :146   TRUE. The run-loop evidence run uses a replay provider.
+- docs/sandbox-conformance.md:124   TRUE. The sandbox conformance driver pins the replay provider.
+- packages/verify/scripts/launch.ts:20, :443   TRUE. The driver documents its own pin.
+- packages/verify/scripts/connectors.ts:9   TRUE. "the replay provider: keyless, and pinned to this
+  driver's own recorded turn".
+- packages/verify/scripts/sandbox-conformance.ts:7, :14   TRUE. The driver documents its own pin.
+- docs/VERIFICATION.md:264   TRUE. This unit's own new prose saying both regenerated artifacts use the
+  replay provider because their driver pins it.
+
+LEFT as a true statement about the keyed path itself, the app making a real call:
+
+- apps/server/src/provider.test.ts:12, apps/server/src/provider.ts:10,
+  apps/server/src/replay-provider.ts:2, apps/server/src/run-service.ts:134   TRUE. The factory, its test
+  name, and the replay provider's own doc comment.
+- packages/verify/scripts/bots-and-threads.ts:992, packages/verify/scripts/files-surface.ts:728   TRUE.
+  Their assertions read "the launcher selected the keyed path from the vault, so the file is a real
+  model's".
+- packages/verify/scripts/keyed-run.ts:882, :898   TRUE. The keyed-path driver's own assertions.
+- docs/run-loop.md:177   TRUE. "the replay provider reports no usage": `RunStore.recordUsage` has no
+  caller in the loop or the run service at this head, so no `usage_event` is recorded by either.
+
+## Wider census: the same claim in other words
+
+The brief's census is a pattern over four phrases, so the same claim in other words escapes it. The
+census was widened to `G1` and to `parks the` / `keyless today` / `provider path is replay` at the base
+commit 64b06db. The extra hits and their verdicts:
+
+- docs/run-loop.md:8   FIXED ("The loop is keyless today. Gate G1 parks the BYOK key, so the provider
+  path replays ... instead of calling a model"). A capability claim in other words.
+- docs/run-loop.md:167   FIXED ("The provider path is replay"). Same.
+- docs/RUNNING.md:17   TRUE, left. It already reads "Gate G1 is open, so a run calls a real model when
+  `~/.freebot/provider.env` holds `FREEBOT_BYOK_KEY`".
+- docs/VERIFICATION.md:22   TRUE, left. The providers row already reads "Gate G1 is open".
+- docs/providers.md:4, :14, :141, :191   LEAVE. Already correct about G1 being open (4, 191), or the
+  key-resolution rule (14, 141).
+- docs/pi-bridge.md:89, :93   LEAVE. The key-resolution rule, and the literal the smoke prints when no
+  key is present (`parked: G1 BYOK key absent`).
+- docs/web-stream-spike.md:7, :61   LEAVE. A dated U0.10 spike note.
+- docs/run-loop.md:63   LEAVE. A design-table cell, "Pi in the sandbox once G1 clears". A U1.7 forward
+  note about a future adapter, not a present-tense park claim. Follow-up recorded below.
+- packages/core/runs.md:113   NOT FIXED. "The provider key check FAILs while gate G1 parks the keyed
+  run." A present-tense claim of the first kind, outside this unit's write scope. Follow-up below.
+
+## Sites this unit changed
+
+- `apps/web/scripts/one-run-path.ts`, its header comment and its disclosure string only. No assertion,
+  no behaviour and no check changed. It still passes 54/54.
+- `docs/one-run-path.md`, `docs/run-loop.md`, `docs/VERIFICATION.md`, `docs/providers.md`.
+
+## The two regenerated artifacts, and what each used for its model turns
+
+- `packages/verify/artifacts/one-run-path/b760edb/` — `bun apps/web/scripts/one-run-path.ts`,
+  RESULT: PASS (54/54). Model turns: the replay provider, from
+  `packages/pi-bridge/fixtures/rpc-handshake.jsonl`, because the driver boots `apps/server/src/index.ts`,
+  which states `replay` on purpose so a recorded turn is what its assertions hold. The artifact's own
+  disclosure line carries the corrected wording. The older `one-run-path/8d892fa/` stays in place.
+- `packages/verify/artifacts/connectors/b760edb/` — `bun packages/verify/scripts/connectors.ts`,
+  RESULT: PASS (57/57). Model turns: the replay provider, because the driver spawns
+  `bun run up --no-open --replay --transcript <this run's turn>`; the launcher's own line in the
+  artifact reads `model mode replay, keyless, replaying`. Not the keyed model. The older
+  `connectors/ca04580/` stays in place.
+
+Both drivers ran with the vault present, so neither replay is a fallback from a missing key. Each pins
+replay by its own construction.
+
+## Gates
+
+$ bun run verify    PASS (typecheck, tests, scaffold-shape, healthz)
+$ bun run lint      no errors; only the two pre-existing descending-specificity warnings
+$ bun run typecheck clean
+
+## Follow-ups this unit did not fix
+
+- `docs/forge-test-a.md:125` says "Gate G1 still parks the keyed smoke". It is a dated record now, but
+  a reader on that page can still be misled. A dated correction line, or a note in the page's limits,
+  belongs to a docs-truth sweep, not to this unit.
+- `spikes/mvp-smoke/composer.ts:20`, `spikes/mvp-smoke/run.ts:22, :531` carry the same claim in the
+  U0.11 spike's own code. Out of this unit's write scope.
+- `packages/core/runs.md:113` attributes the doctor's provider key failure to the gate, which is false
+  at this head. Out of this unit's write scope.
+- `docs/run-loop.md:63` still reads "Pi in the sandbox once G1 clears". The live `ProviderPort` adapter
+  is the factory's choice, not Pi in the sandbox. Superseded by U2.4; a run-loop page refresh owns it.
+- The sandbox idempotency contradiction and the `sandbox-provider` row's "ten Docker integration tests"
+  wording are U9.2's ground and are left alone.
