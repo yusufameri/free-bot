@@ -39,6 +39,7 @@ import {
   refusalLogLine,
   refusalResponse,
 } from "./auth.ts";
+import type { ConnectorRegistry } from "./connectors.ts";
 import { createApiRouter } from "./router.ts";
 import { createRunService, type RunService } from "./run-service.ts";
 
@@ -67,6 +68,8 @@ export interface ApiServerOptions {
   token?: string;
   /** Injected by the entrypoint and by tests. Defaults to a service with the real ports. */
   service?: RunService;
+  /** The connectors this server lists and its runs may call. Empty unless a launcher says otherwise. */
+  connectors?: ConnectorRegistry;
   /** Where the web host's page lives. Defaults to this repo's `apps/web/host`. */
   hostDir?: string;
 }
@@ -75,7 +78,7 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
   const token = options.token ?? mintToken();
   const service = options.service ?? createRunService();
   const hostDir = options.hostDir ?? HOST_DIR;
-  const router = createApiRouter(service);
+  const router = createApiRouter(service, undefined, options.connectors);
   const http = new FetchHandler(router);
   const socket = new BunWebSocketHandler(router);
 

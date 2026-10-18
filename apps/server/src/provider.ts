@@ -16,7 +16,12 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { type ProviderPort, ProviderTurnError } from "@freebot/core";
 import { KeyedProvider } from "./keyed-provider.ts";
-import { ReplayProvider, readTranscript, turnForTool, turnsInBlock } from "./replay-provider.ts";
+import {
+  firstTurnForTools,
+  ReplayProvider,
+  readTranscript,
+  turnsInBlock,
+} from "./replay-provider.ts";
 import { type VaultEntry, vaultPath } from "./vault.ts";
 
 const ROOT = fileURLToPath(new URL("../../../", import.meta.url));
@@ -115,6 +120,8 @@ export interface ProviderOptions {
   readonly note?: (line: string) => void;
   /** The tool the run governs, so a call the model asks for carries the gate's flag. */
   readonly destructive?: (toolName: string) => boolean;
+  /** The tools this run offers, so a replay picks the recorded block that asks for one of them. */
+  readonly tools?: readonly string[];
   readonly timeoutMs?: number;
 }
 
@@ -133,17 +140,27 @@ export async function createProviderPort(
       ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
     });
   }
-  return await replayProviderFrom(choice.transcript);
+  return await replayProviderFrom(choice.transcript, options.tools);
 }
 
-/** The recorded turns for the tool this run governs, or a named failure when the record has none. */
-export async function replayProviderFrom(transcript: string): Promise<ProviderPort> {
+/**
+ * The recorded turns for a tool this run offers, or a named failure when the record has none.
+ *
+ * The block is chosen by the run's own tool names rather than by a name written here, because a
+ * transcript is chosen for a run: the landed transcript's tool is `bash` and a connector's is
+ * `<connector>__<tool>`, and the run's table is the one place that knows which of those exist. A
+ * transcript that holds no turn for any offered tool is a mispairing, so it fails by name.
+ */
+export async function replayProviderFrom(
+  transcript: string,
+  tools: readonly string[] = ["bash"],
+): Promise<ProviderPort> {
   const turns = await readTranscript(transcript);
-  const block = turnForTool(turns, "bash");
+  const block = firstTurnForTools(turns, tools);
   if (block === undefined) {
     throw new ProviderTurnError(
       "provider_malformed_tool_call",
-      `the replay transcript holds no bash call: ${transcript}`,
+      `the replay transcript holds no call to any of ${tools.join(", ")}: ${transcript}`,
     );
   }
   return new ReplayProvider(turnsInBlock(block));

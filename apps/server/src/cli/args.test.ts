@@ -8,6 +8,8 @@ describe("parseUpArgs", () => {
       tunnelPort: 0,
       open: true,
       providerMode: "auto",
+      transcript: null,
+      connectors: null,
       workspace: null,
       help: false,
     });
@@ -19,9 +21,33 @@ describe("parseUpArgs", () => {
       tunnelPort: 8081,
       open: true,
       providerMode: "auto",
+      transcript: null,
+      connectors: null,
       workspace: null,
       help: false,
     });
+  });
+
+  test("--transcript and --connectors name the two files a driver pins, and both take a path", () => {
+    expect(
+      parseUpArgs(["--transcript", "/tmp/turn.jsonl", "--connectors", "/tmp/c.json"], {}),
+    ).toEqual({
+      apiPort: 0,
+      tunnelPort: 0,
+      open: true,
+      providerMode: "auto",
+      transcript: "/tmp/turn.jsonl",
+      connectors: "/tmp/c.json",
+      workspace: null,
+      help: false,
+    });
+    expect(parseUpArgs([], { FREEBOT_TRANSCRIPT: "/tmp/t.jsonl" }).transcript).toBe("/tmp/t.jsonl");
+    expect(parseUpArgs([], { FREEBOT_CONNECTORS: "/tmp/c.json" }).connectors).toBe("/tmp/c.json");
+    expect(parseUpArgs([], { FREEBOT_TRANSCRIPT: "" }).transcript).toBeNull();
+    expect(() => parseUpArgs(["--transcript"], {})).toThrow("--transcript needs a path");
+    expect(() => parseUpArgs(["--connectors", "--replay"], {})).toThrow(
+      "--connectors needs a path",
+    );
   });
 
   test("--no-open leaves the browser alone", () => {

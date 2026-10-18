@@ -20,15 +20,25 @@
  * directory the named Bot's runs mount, so the page reads that Bot's computer rather than a second
  * copy of it.
  *
+ * The connector surface's four arms are the second group that does not reach the run path: list,
+ * connect, test and remove read and write the person's own two files through one registry, and the
+ * row they answer with names the credential's reference rather than its value.
+ *
  * A Bot and a thread are named, never inferred. `start_run` refuses a Bot or a thread this server
  * does not hold, by name, so a caller that sends a stale id is told which one is gone instead of
  * getting a run in some other conversation.
  */
 
 import { type RunStatus as CoreRunStatus, isTerminal } from "@freebot/core";
-import type { ApiContext } from "@freebot/protocol";
-import { apiContract, BOT_ERRORS, WORKSPACE_READ_ERRORS } from "@freebot/protocol";
+import type { ApiContext, ConnectorRow } from "@freebot/protocol";
+import {
+  apiContract,
+  BOT_ERRORS,
+  CONNECTOR_ERRORS,
+  WORKSPACE_READ_ERRORS,
+} from "@freebot/protocol";
 import { implement, ORPCError } from "@orpc/server";
+import { type ConnectorRecord, ConnectorRegistry, UnknownConnectorError } from "./connectors.ts";
 import { createProviderSetup, type ProviderSetup } from "./provider-setup.ts";
 import { type RunService, UnknownRecordError } from "./run-service.ts";
 import { WorkspaceReadError } from "./workspace-files.ts";
@@ -54,6 +64,12 @@ function refuse(error: unknown): never {
       status: BOT_ERRORS[error.refusal].status,
     });
   }
+  if (error instanceof UnknownConnectorError) {
+    throw new ORPCError("connector_not_found", {
+      message: error.message,
+      status: CONNECTOR_ERRORS.connector_not_found.status,
+    });
+  }
   throw error;
 }
 
@@ -71,9 +87,32 @@ const PROTOCOL_STATUS: Record<CoreRunStatus, "running" | "finished" | "failed"> 
   cancelled: "failed",
 };
 
+/**
+ * The connector surface. All four arms read and write the registry the launcher built over the
+ * person's own two files, and none of them can answer with a credential: a row carries the
+ * credential's reference and the only place a header value exists is the vault file.
+ *
+ * `list_connectors` probes every connector once and a failed probe is a row in the `unreachable`
+ * state, because a surface that lists connectors has to show the broken one. `connect_connector` and
+ * `test_connector` answer the same row shape, so the surface renders one thing everywhere.
+ */
+function connectorRow(row: ConnectorRecord): ConnectorRow {
+  return {
+    id: row.id,
+    label: row.label,
+    url: row.url,
+    ref: row.ref,
+    state: row.state,
+    detail: row.detail,
+    tools: [...row.tools],
+    testedAt: row.testedAt,
+  };
+}
+
 export function createApiRouter(
   service: RunService,
   providers: ProviderSetup = createProviderSetup(),
+  connectors: ConnectorRegistry = ConnectorRegistry.open(),
 ) {
   return {
     start_run: api.start_run.handler(({ input }) => {
@@ -216,5 +255,31 @@ export function createApiRouter(
     connect_provider: api.connect_provider.handler(
       async ({ input }) => await providers.connect(input),
     ),
+
+    /**
+     * The connector surface's four arms. See `connectorRow` for why the row is the same shape
+     * everywhere: connect, test and list answer one thing, so a surface renders one thing.
+     */
+    list_connectors: api.list_connectors.handler(async () => ({
+      connectors: (await connectors.list()).map(connectorRow),
+    })),
+
+    connect_connector: api.connect_connector.handler(async ({ input }) =>
+      connectorRow(await connectors.connect(input)),
+    ),
+
+    test_connector: api.test_connector.handler(async ({ input }) => {
+      try {
+        return connectorRow(await connectors.test(input.id));
+      } catch (error) {
+        refuse(error);
+      }
+    }),
+
+    /**
+     * Removing one this install does not hold is a `removed: false` answer rather than a refusal, so
+     * a surface can send the same removal twice and the end state is the same either way.
+     */
+    remove_connector: api.remove_connector.handler(({ input }) => connectors.remove(input.id)),
   };
 }

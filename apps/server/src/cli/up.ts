@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * `bun run up`: the one command.
  *
@@ -20,6 +21,12 @@
  * stdout stays the one URL. See docs/RUNNING.md.
  */
 
+import {
+  type ConnectorPaths,
+  ConnectorRegistry,
+  connectorPaths,
+  pathsBeside,
+} from "../connectors.ts";
 import { startServer } from "../index.ts";
 import {
   type ChoiceDescription,
@@ -42,6 +49,10 @@ export interface Up {
   readonly botsRoot: string;
   /** What the run's model is: the endpoint, the model id, and whether a key is in play. */
   readonly provider: ChoiceDescription;
+  /** The connectors this launch holds, by id, label and address. Never a credential. */
+  readonly connectors: ReadonlyArray<{ id: string; label: string; url: string }>;
+  /** The two files those connectors were read from, so a diagnostic names what it actually read. */
+  readonly connectorPaths: ConnectorPaths;
   /** Stop the servers, then remove every container this launch created. 0 only when none survived. */
   stop(): Promise<number>;
 }
@@ -49,13 +60,27 @@ export interface Up {
 export function startUp(args: UpArgs): Up {
   const sandboxes = new LaunchSandboxes();
   const vault = readVault();
-  const choice = chooseProvider({ mode: args.providerMode, vault });
+  // The choice the launcher reports and the choice the service runs are the same fact: both come
+  // from here, with the transcript this launch was asked for. A choice built twice from different
+  // inputs is how a diagnostic comes to name a file the run is not replaying.
+  const choice = chooseProvider({
+    mode: args.providerMode,
+    vault,
+    ...(args.transcript === null ? {} : { transcript: args.transcript }),
+  });
+  const paths = args.connectors === null ? connectorPaths() : pathsBeside(args.connectors);
+  const connectors = ConnectorRegistry.open(paths);
   const server = startServer({
     tunnelPort: args.tunnelPort,
     apiPort: args.apiPort,
+    connectors,
     service: createRunService({
       sandbox: () => sandboxes.port(),
       mode: args.providerMode,
+      // A supplier rather than a list, so a connector connected while this launch is up is offered
+      // to the next run. The credential itself is read from the vault at call time either way.
+      connectors: () => connectors.connectors(),
+      ...(args.transcript === null ? {} : { transcript: args.transcript }),
       ...(args.workspace === null ? {} : { botsRoot: args.workspace }),
     }),
   });
@@ -66,6 +91,8 @@ export function startUp(args: UpArgs): Up {
     tunnelPort: server.tunnelPort,
     botsRoot,
     provider: describeChoice(choice),
+    connectors: connectors.describe(),
+    connectorPaths: paths,
     async stop() {
       server.stop();
       server.service.close();
@@ -131,6 +158,14 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   );
   console.error(
     `freebot up: bots under ${up.botsRoot}; each Bot's workspace is mounted at /workspace and kept across runs`,
+  );
+  const roster = up.connectors
+    .map((connector) => `${connector.label} (${connector.id}) at ${connector.url}`)
+    .join(", ");
+  console.error(
+    `freebot up: connectors ${
+      up.connectors.length === 0 ? "none" : roster
+    }; records ${up.connectorPaths.record}, credential vault ${up.connectorPaths.vault} at mode 600`,
   );
   console.error(
     "freebot up: the operator token rides the URL's fragment and is printed nowhere else",
