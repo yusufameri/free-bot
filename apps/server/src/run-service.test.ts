@@ -12,7 +12,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ProviderPort, SandboxPort } from "@freebot/core";
@@ -309,5 +309,57 @@ describe("a second process over the same bots root", () => {
       "run-2",
     ]);
     reopened.close();
+  });
+});
+
+describe("the bots root a service runs over", () => {
+  const saved = { workspace: process.env.FREEBOT_WORKSPACE, home: process.env.FREEBOT_HOME };
+
+  function withEnv(env: { FREEBOT_WORKSPACE?: string; FREEBOT_HOME?: string }): () => void {
+    if (env.FREEBOT_WORKSPACE === undefined) delete process.env.FREEBOT_WORKSPACE;
+    else process.env.FREEBOT_WORKSPACE = env.FREEBOT_WORKSPACE;
+    if (env.FREEBOT_HOME === undefined) delete process.env.FREEBOT_HOME;
+    else process.env.FREEBOT_HOME = env.FREEBOT_HOME;
+    return () => {
+      if (saved.workspace === undefined) delete process.env.FREEBOT_WORKSPACE;
+      else process.env.FREEBOT_WORKSPACE = saved.workspace;
+      if (saved.home === undefined) delete process.env.FREEBOT_HOME;
+      else process.env.FREEBOT_HOME = saved.home;
+    };
+  }
+
+  test("FREEBOT_WORKSPACE moves the whole set, so a driver lands in its own directory", () => {
+    const scratch = realpathSync(botsRoot());
+    const restore = withEnv({ FREEBOT_WORKSPACE: scratch });
+    try {
+      const service = createRunService({ sandbox: noSandbox, provider: () => immediateProvider });
+      expect(service.workspacesRoot).toBe(scratch);
+      const bot = service.createBot("Local Bot");
+      expect(existsSync(join(scratch, "index.jsonl"))).toBe(true);
+      expect(bot.id).toBe("bot-local");
+      service.close();
+    } finally {
+      restore();
+    }
+  });
+
+  test("the option still wins over the variable, and an empty variable means the default", () => {
+    const explicit = realpathSync(botsRoot());
+    const restore = withEnv({ FREEBOT_WORKSPACE: realpathSync(botsRoot()) });
+    try {
+      expect(createRunService({ botsRoot: explicit, sandbox: noSandbox }).workspacesRoot).toBe(
+        explicit,
+      );
+    } finally {
+      restore();
+    }
+
+    const home = realpathSync(botsRoot());
+    const restoreDefault = withEnv({ FREEBOT_WORKSPACE: "", FREEBOT_HOME: home });
+    try {
+      expect(createRunService({ sandbox: noSandbox }).workspacesRoot).toBe(join(home, "bots"));
+    } finally {
+      restoreDefault();
+    }
   });
 });

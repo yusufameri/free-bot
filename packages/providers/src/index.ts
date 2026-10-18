@@ -1,5 +1,6 @@
 /** The model layer: an OpenAI-compatible client, its typed errors, and the capability probe. */
 
+export * from "./capability.ts";
 export * from "./client.ts";
 export * from "./errors.ts";
 export * from "./fallback.ts";

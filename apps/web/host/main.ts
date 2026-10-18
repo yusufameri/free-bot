@@ -29,14 +29,20 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { ContractRouterClient } from "@orpc/contract";
-import type { apiContract, Message } from "../../../packages/protocol/src/index.ts";
+import type {
+  apiContract,
+  Message,
+  ProviderConnection,
+} from "../../../packages/protocol/src/index.ts";
 import { exposeLibraryFacts, mountLibrary } from "../../../packages/ui/browser/library.ts";
+import { exposeProviderFacts, mountProvider } from "../../../packages/ui/browser/provider.ts";
 import { type Connection, exposeFacts, mountThread } from "../../../packages/ui/browser/render.ts";
 import {
   exposeShellFacts,
   mountShell,
   type ShellSelection,
 } from "../../../packages/ui/browser/shell.ts";
+import { providerRowLabel } from "../../../packages/ui/src/provider.ts";
 
 type ApiClient = ContractRouterClient<typeof apiContract>;
 
@@ -54,6 +60,7 @@ const promptInput = document.querySelector<HTMLInputElement>("#prompt");
 const startButton = document.querySelector<HTMLButtonElement>("#start");
 const sidebar = document.querySelector<HTMLElement>("#sidebar");
 const shellEl = document.querySelector<HTMLElement>(".shell");
+const providerOpen = document.querySelector<HTMLButtonElement>("#provider-open");
 
 let socket: WebSocket | null = null;
 /** The Bot and thread on screen. A run and a stream both name them. */
@@ -264,19 +271,67 @@ function connect(): void {
 const initial: Connection = "connecting";
 handle.setConnection(initial);
 
+/**
+ * The sidebar footer's provider row: the active connection at a glance, and the way back to page 1.
+ * A FreeBot install can hold one active connection, so the row is the whole of that surface.
+ */
+function paintProviderButton(connection: ProviderConnection | null): void {
+  if (providerOpen === null) return;
+  providerOpen.textContent = providerRowLabel(connection);
+  providerOpen.dataset.providerStatus = connection?.status ?? "none";
+}
+
+/** The conversation: the Bot list, the selected thread, and the stream over it. */
+async function enterApp(): Promise<void> {
+  providerPage.hide();
+  if (sidebar !== null) sidebar.hidden = false;
+  if (shellEl !== null) shellEl.dataset.operator = "true";
+  await shell.load();
+  if (shell.facts().bots.length === 0) {
+    // The first time a server with a connection runs there is no Bot, and a conversation needs one.
+    await shell.createBot(FIRST_BOT_NAME);
+  } else {
+    selection = shell.selection();
+    connect();
+  }
+}
+
+const providerPage = mountProvider({
+  calls: {
+    read: async () => {
+      if (api === null) throw new Error("page 1 needs the operator token");
+      return await api.get_provider({});
+    },
+    connect: async (input) => {
+      if (api === null) throw new Error("page 1 needs the operator token");
+      return await api.connect_provider(input);
+    },
+  },
+  onSaved: (connection) => paintProviderButton(connection),
+  onContinue: () =>
+    void enterApp().catch((error: unknown) =>
+      handle.showError(error instanceof Error ? error.message : String(error)),
+    ),
+  onReplay: () =>
+    void enterApp().catch((error: unknown) =>
+      handle.showError(error instanceof Error ? error.message : String(error)),
+    ),
+});
+exposeProviderFacts(providerPage);
+providerOpen?.addEventListener("click", () => providerPage.show());
+
 if (token !== null && sidebar !== null && shellEl !== null) {
-  sidebar.hidden = false;
-  shellEl.dataset.operator = "true";
   void (async () => {
     try {
-      await shell.load();
-      if (shell.facts().bots.length === 0) {
-        // The first time this server runs there is no Bot, and a conversation needs one.
-        await shell.createBot(FIRST_BOT_NAME);
-      } else {
-        selection = shell.selection();
-        connect();
+      const state = await providerPage.load();
+      paintProviderButton(state.connection);
+      if (state.connection === null) {
+        // Page 1 is the first page a new person sees: the vault holds nothing to run on, so the
+        // welcome page takes the center and the Bot list stays out of the way.
+        providerPage.show();
+        return;
       }
+      await enterApp();
     } catch (error) {
       handle.showError(error instanceof Error ? error.message : String(error));
     }

@@ -9,10 +9,13 @@ import {
   API_OPERATIONS,
   BOT_NAME_MAX,
   botIdSchema,
+  connectProviderInput,
   type EventMessage,
   GET_EVENTS_MAX_LIMIT,
   getEventsOutput,
   listFilesInput,
+  providerConnectionSchema,
+  providerStateSchema,
   READ_FILE_MAX_BYTES,
   readFileInput,
   startRunInput,
@@ -39,6 +42,12 @@ const validInputs: Record<(typeof API_OPERATION_NAMES)[number], unknown> = {
   deny: { approvalId: "ap-1" },
   list_files: { botId: "bot-local" },
   read_file: { botId: "bot-local", path: "notes/todo.md" },
+  get_provider: {},
+  connect_provider: {
+    baseUrl: "https://api.example.com/v1",
+    model: "gpt-4o-mini",
+    key: "sk-not-a-real-key",
+  },
 };
 
 describe("operation registry", () => {
@@ -55,6 +64,8 @@ describe("operation registry", () => {
       "deny",
       "list_files",
       "read_file",
+      "get_provider",
+      "connect_provider",
     ]);
   });
 
@@ -232,5 +243,101 @@ describe("approval answers", () => {
       approvalId: "ap-1",
     });
     expect(HASH).toMatch(/^v1:sha256:[0-9a-f]{64}$/);
+  });
+});
+
+describe("the provider connection", () => {
+  test("the base URL has to be one an HTTP client can post to", () => {
+    const parse = (baseUrl: string) =>
+      connectProviderInput.safeParse({ baseUrl, model: "gpt-4o-mini", key: "sk-x" }).success;
+
+    expect(parse("https://api.commandcode.ai/v1")).toBe(true);
+    expect(parse("http://127.0.0.1:8080/v1")).toBe(true);
+    expect(parse("api.commandcode.ai/v1")).toBe(false);
+    expect(parse("ftp://api.commandcode.ai")).toBe(false);
+    expect(parse("")).toBe(false);
+  });
+
+  test("the vault is one KEY=value per line, so a value that spans lines is refused", () => {
+    const parse = (key: string) =>
+      connectProviderInput.safeParse({
+        baseUrl: "https://api.example.com/v1",
+        model: "gpt-4o-mini",
+        key,
+      });
+    expect(parse("sk-one-line").success).toBe(true);
+    const multiline = parse("sk-first\nFREEBOT_BYOK_KEY=sk-second");
+    expect(multiline.success).toBe(false);
+    expect(multiline.success ? "" : multiline.error.issues[0]?.message).toBe(
+      "the key must be one line",
+    );
+    expect(
+      connectProviderInput.safeParse({
+        baseUrl: "https://api.example.com/v1\nFREEBOT_BYOK_KEY=sk-x",
+        model: "gpt-4o-mini",
+        key: "sk-x",
+      }).success,
+    ).toBe(false);
+    expect(connectProviderInput.safeParse({ baseUrl: "https://api.example.com/v1" }).success).toBe(
+      false,
+    );
+  });
+
+  test("the connection a client reads has no field a key could travel in", () => {
+    const connection = providerConnectionSchema.parse({
+      baseUrl: "https://api.example.com/v1",
+      model: "gpt-4o-mini",
+      status: "capable",
+      testedAt: TS,
+      flags: {
+        toolCalling: "strong",
+        streaming: true,
+        structuredOutput: null,
+        contextWindow: null,
+        notes: ["native tool call(s): freebot_smoke_echo"],
+      },
+      refusal: null,
+      answer: "save-time-smoke",
+    });
+    expect(Object.keys(connection).sort()).toEqual([
+      "answer",
+      "baseUrl",
+      "flags",
+      "model",
+      "refusal",
+      "status",
+      "testedAt",
+    ]);
+    // A record that carries a key anyway cannot travel through this shape: the schema strips it, so
+    // the router's own output validation is a second boundary the key cannot cross.
+    const stripped = providerConnectionSchema.parse({ ...connection, key: "sk-not-a-real-key" });
+    expect("key" in stripped).toBe(false);
+    expect(JSON.stringify(stripped).includes("sk-not-a-real-key")).toBe(false);
+  });
+
+  test("the page's state is the vault's own description plus the connection, or null", () => {
+    expect(
+      providerStateSchema.parse({
+        vault: { path: "/home/person/.freebot/provider.env", present: false, mode: null },
+        connection: null,
+      }),
+    ).toEqual({
+      vault: { path: "/home/person/.freebot/provider.env", present: false, mode: null },
+      connection: null,
+    });
+    expect(
+      providerStateSchema.safeParse({
+        vault: { path: "/home/person/.freebot/provider.env", present: true, mode: "600" },
+        connection: providerConnectionSchema.parse({
+          baseUrl: "https://api.example.com/v1",
+          model: "gpt-4o-mini",
+          status: "untested",
+          testedAt: null,
+          flags: null,
+          refusal: { status: 401, message: "invalid api key" },
+          answer: null,
+        }),
+      }).success,
+    ).toBe(true);
   });
 });

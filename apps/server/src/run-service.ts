@@ -41,6 +41,7 @@ import {
 import type { BotRefusal, EventMessage, ListFilesOutput, ReadFileOutput } from "@freebot/protocol";
 import { GrantStore } from "@freebot/review";
 import { DockerAdapter } from "@freebot/sandbox";
+import { envWorkspace } from "./cli/args.ts";
 import {
   chooseProvider,
   createProviderPort,
@@ -492,7 +493,15 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
   };
 }
 
-/** The bots root a service runs over: the option, or the one under the freebot home. */
+/**
+ * The bots root a service runs over: the option, then `FREEBOT_WORKSPACE`, then the default under
+ * the freebot home.
+ *
+ * The variable is the documented way to move the whole set, and `bun run up` already honors it by
+ * passing the option through. A server started directly has to mean the same thing by it, or a
+ * driver that points the variable at a scratch directory gets the machine's own Bots instead: that
+ * is how a run id in one driver's assertion came to depend on what another driver had left behind.
+ */
 function resolveBotsRoot(option: string | undefined): string {
-  return option ?? join(freebotHome(), "bots");
+  return option ?? envWorkspace() ?? join(freebotHome(), "bots");
 }

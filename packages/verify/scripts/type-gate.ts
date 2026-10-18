@@ -102,6 +102,7 @@ const blind = [
   "packages/pi-bridge/extension/smoke-echo.ts",
   "packages/sandbox/image/replay-ext.ts",
   "packages/ui/browser/library.ts",
+  "packages/ui/browser/provider.ts",
   "packages/ui/browser/render.ts",
   "packages/ui/browser/shell.ts",
 ];
