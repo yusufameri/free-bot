@@ -217,4 +217,5 @@ another recorded transcript. Exit codes: 0 when the observed turn can drive Pi (
   mapping, the `retryAfterMs` arithmetic, or the fallback's reading of a reply fails the run
   instead of printing PASS.
 - The VERIFICATION.md row names the injectable transport and the replay-mode probe as the live
-  surface, and states that the live-provider run is gate-bound on G1.
+  surface, and states that the live-provider run is documented, was run once against the real
+  endpoint, and is kept out of the gate on purpose.
