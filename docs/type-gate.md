@@ -77,7 +77,7 @@ preflight in `apps/web/scripts/capture.ts`.
 
 ## What the gate still does not reach
 
-These six are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no included
+These seven are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no included
 root reaches. The probe derives that set from the tree and asserts it equals this list, so a new
 unreached file fails the probe.
 
@@ -86,11 +86,12 @@ unreached file fails the probe.
 | `apps/web/host/main.ts` | browser code, needs `lib: DOM`, which the root program does not carry | `apps/web/tsconfig.json` |
 | `packages/ui/browser/render.ts` | same, the DOM surface of the shared thread model | `apps/web/tsconfig.json` |
 | `packages/ui/browser/library.ts` | same, the DOM surface of the shared Library model (U4.1) | `apps/web/tsconfig.json` |
+| `packages/ui/browser/provider.ts` | same, the DOM surface of page 1's provider model (U4.3) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/shell.ts` | same, the DOM surface of the Bot sidebar and thread list (U4.2) | `apps/web/tsconfig.json` |
 | `packages/sandbox/image/replay-ext.ts` | nothing imports it, and `image/` is not `src` or `scripts` | nothing |
 | `packages/pi-bridge/extension/smoke-echo.ts` | nothing imports it (the smoke passes its path as a string) | nothing |
 
-The four DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
+The five DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
 control-plane and server code call `document` without a complaint, which is a worse trade than
 leaving the browser surface to the app config that already owns it.
 
@@ -104,13 +105,14 @@ It writes `packages/verify/artifacts/type-gate/<short-sha>/probe.txt` and exits 
 failed check. Per run it does all of this against the real gate, `bun run typecheck`. The artifact
 for the blind-set change U4.1 made is `packages/verify/artifacts/type-gate/e7cb536/probe.txt`, and the
 one U4.2 made, which adds `packages/ui/browser/shell.ts` to the list, is
-`packages/verify/artifacts/type-gate/bdf5f12/probe.txt`.
+`packages/verify/artifacts/type-gate/bdf5f12/probe.txt`, and one U4.3 makes for
+`packages/ui/browser/provider.ts`.
 
 1. The clean tree passes.
 2. A census compares the program against the tree. It asserts the root include is exactly the nine
    patterns above, measures a temporary `.tsx` file in each of the four `.tsx` families, asserts 12
    named files are in the program, that the program grew, and that the unreached set is exactly the
-   four above.
+   seven above.
 3. Three deliberate errors, one per covered location, are placed in the tree together. The
    pre-widening include accepts all three and does not reach them.
 4. Each error alone makes the root typecheck fail and names its file. The file is removed and the
