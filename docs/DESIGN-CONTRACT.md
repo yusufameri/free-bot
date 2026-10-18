@@ -264,7 +264,7 @@ were never run) while the app renders real records and an empty conversation. Tw
 content differs render different pixels whatever their styling, so `design-contract.ts` reports the
 differing-pixel share as information with that reason attached, and asserts geometry and computed
 styles instead. A number that cannot be attributed to a cause is not a pass, and this frame does not
-present one. The share runs from about 59% at 360x800 down to about 38% at 1366x768, which follows
+present one. The share runs from 59.43% at 360x800 down to 29.41% at 1920x1080, which follows
 the same content story rather than a styling one. On the narrow viewports the export paints a
 populated conversation across the whole width while the app paints one line of metadata, and the
 wider the viewport the larger the share of the frame that is chrome both pages agree on. The literal
