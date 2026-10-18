@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { envProviderMode, envWorkspace, pageUrl, parseUpArgs, UP_USAGE } from "./args.ts";
+import { envSandboxBackend, parseSandboxBackendValue } from "./sandbox-backend.ts";
 
 describe("parseUpArgs", () => {
   test("no flags takes a free port on both legs, opens a browser, and asks the vault", () => {
@@ -8,6 +9,8 @@ describe("parseUpArgs", () => {
       tunnelPort: 0,
       open: true,
       providerMode: "auto",
+      sandbox: "auto",
+      sandboxSource: "default",
       transcript: null,
       connectors: null,
       workspace: null,
@@ -21,6 +24,8 @@ describe("parseUpArgs", () => {
       tunnelPort: 8081,
       open: true,
       providerMode: "auto",
+      sandbox: "auto",
+      sandboxSource: "default",
       transcript: null,
       connectors: null,
       workspace: null,
@@ -36,6 +41,8 @@ describe("parseUpArgs", () => {
       tunnelPort: 0,
       open: true,
       providerMode: "auto",
+      sandbox: "auto",
+      sandboxSource: "default",
       transcript: "/tmp/turn.jsonl",
       connectors: "/tmp/c.json",
       workspace: null,
@@ -76,6 +83,33 @@ describe("parseUpArgs", () => {
     expect(envWorkspace({})).toBeNull();
   });
 
+  test("--sandbox names the backend, and the flag wins over FREEBOT_SANDBOX", () => {
+    const fromFlag = parseUpArgs(["--sandbox", "microsandbox"], {});
+    expect(fromFlag.sandbox).toBe("microsandbox");
+    expect(fromFlag.sandboxSource).toBe("--sandbox");
+    const fromEnv = parseUpArgs([], { FREEBOT_SANDBOX: "docker" });
+    expect(fromEnv.sandbox).toBe("docker");
+    expect(fromEnv.sandboxSource).toBe("FREEBOT_SANDBOX");
+    const flagWins = parseUpArgs(["--sandbox", "docker"], { FREEBOT_SANDBOX: "microsandbox" });
+    expect(flagWins.sandbox).toBe("docker");
+    expect(flagWins.sandboxSource).toBe("--sandbox");
+    expect(parseUpArgs(["--sandbox", "auto"], {}).sandbox).toBe("auto");
+  });
+
+  test("a backend this launcher does not have is refused by name, never guessed at", () => {
+    expect(() => parseUpArgs(["--sandbox", "e2b"], {})).toThrow(
+      '--sandbox names no backend: "e2b"; use docker, microsandbox or auto',
+    );
+    expect(() => parseUpArgs(["--sandbox"], {})).toThrow("--sandbox needs a path");
+    expect(() => envSandboxBackend({ FREEBOT_SANDBOX: "boat" })).toThrow(
+      'FREEBOT_SANDBOX="boat" names no sandbox backend; use docker, microsandbox, auto',
+    );
+    expect(envSandboxBackend({})).toBeNull();
+    expect(envSandboxBackend({ FREEBOT_SANDBOX: "" })).toBeNull();
+    expect(parseSandboxBackendValue("auto")).toBe("auto");
+    expect(parseSandboxBackendValue("firecracker")).toBeNull();
+  });
+
   test("an unknown flag is refused and named", () => {
     expect(() => parseUpArgs(["--port", "1"], {})).toThrow('unknown flag "--port"');
   });
@@ -104,6 +138,7 @@ describe("UP_USAGE", () => {
       "--no-open",
       "--live",
       "--replay",
+      "--sandbox",
       "--api-port",
       "--tunnel-port",
       "-h, --help",
