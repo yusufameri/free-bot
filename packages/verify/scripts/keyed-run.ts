@@ -18,7 +18,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -405,7 +405,7 @@ async function waitForMatch(read: () => string, match: RegExp, timeoutMs: number
 async function launch(): Promise<Launched> {
   const proc = Bun.spawn(["bun", "run", "up", "--no-open"], {
     cwd: root,
-    env: { ...process.env },
+    env: { ...process.env, FREEBOT_WORKSPACE: launchBotsRoot() },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -450,6 +450,33 @@ function redacted(url: string): string {
 }
 
 /** One page-stream handshake, so the artifact shows the stream was gated and then allowed. */
+/** One call to the route surface with the launch's own token, for the records a stream needs. */
+async function rpc(
+  launch: Launched,
+  procedure: string,
+  input: Record<string, unknown>,
+): Promise<unknown> {
+  const response = await fetch(`http://127.0.0.1:${launch.apiPort}/rpc/${procedure}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${launch.token}`,
+      origin: `http://127.0.0.1:${launch.apiPort}`,
+    },
+    body: JSON.stringify({ json: input }),
+  });
+  return ((await response.json()) as { json: unknown }).json;
+}
+
+/** A Bot and a thread of this launch's own, made the way a page makes them. */
+async function streamTarget(launch: Launched): Promise<string> {
+  const bot = (await rpc(launch, "create_bot", { name: "Stream Check" })) as { botId: string };
+  const thread = (await rpc(launch, "create_thread", { botId: bot.botId })) as {
+    threadId: string;
+  };
+  return thread.threadId;
+}
+
 async function handshake(url: string): Promise<"open" | "refused"> {
   const socket = new WebSocket(url);
   const outcome = await new Promise<"open" | "refused">((resolve) => {
@@ -787,6 +814,19 @@ async function cleanup(): Promise<void> {
   await Promise.race([Promise.allSettled(live.map((launch) => launch.exited())), sleep(20_000)]);
   chromeProc?.kill();
   if (userDataDir !== null) rmSync(userDataDir, { recursive: true, force: true });
+  for (const path of botsRoots.splice(0)) rmSync(path, { recursive: true, force: true });
+}
+
+/**
+ * The bots root one launch runs over: one per launch, so a launch that starts a run starts run-1
+ * whatever its siblings are doing, and every root is this driver's own rather than the operator's.
+ */
+const botsRoots: string[] = [];
+
+function launchBotsRoot(): string {
+  const made = mkdtempSync(join(tmpdir(), "freebot-keyed-bots-"));
+  botsRoots.push(made);
+  return made;
 }
 
 function statSafe(path: string): boolean {
@@ -861,10 +901,12 @@ async function main(): Promise<number> {
   );
 
   const events = `ws://127.0.0.1:${first.apiPort}/events`;
+  const threadId = await streamTarget(first);
+  log.note(`the thread the page's stream follows: ${threadId}`);
   log.check("a page stream with no token is refused", await handshake(events), "refused");
   log.check(
-    "a page stream with the URL's own token is accepted",
-    await handshake(`${events}?token=${first.token}`),
+    "a page stream with the URL's own token and a real thread is accepted",
+    await handshake(`${events}?token=${first.token}&thread_id=${threadId}`),
     "open",
   );
 

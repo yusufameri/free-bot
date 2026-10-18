@@ -11,6 +11,9 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ProviderPort, SandboxPort } from "@freebot/core";
 import { type apiContract, type EventMessage, safeParseMessage } from "@freebot/protocol";
 import { createORPCClient } from "@orpc/client";
@@ -46,10 +49,35 @@ const unusedSandbox: SandboxPort = {
 };
 
 function serve(): ApiServer {
-  const service = createRunService({ sandbox: unusedSandbox, provider: () => heldProvider });
+  const service = createRunService({
+    botsRoot: mkdtempSync(join(tmpdir(), "freebot-api-server-")),
+    sandbox: unusedSandbox,
+    provider: () => heldProvider,
+  });
   const server = startApiServer({ port: 0, token: TOKEN, service });
   running.push(server);
   return server;
+}
+
+/**
+ * The Bot and the thread every run and every stream in these tests is addressed by. A run names
+ * both, so a test gets them from the same records the page reads rather than hard-coding ids.
+ */
+const targets = new WeakMap<ApiServer, { botId: string; threadId: string }>();
+
+function target(server: ApiServer): { botId: string; threadId: string } {
+  const existing = targets.get(server);
+  if (existing !== undefined) return existing;
+  const bot = server.service.createBot("Local Bot");
+  const thread = server.service.createThread(bot.id);
+  const made = { botId: bot.id, threadId: thread.id };
+  targets.set(server, made);
+  return made;
+}
+
+/** The thread's log head, which is what a read of the run address resumes from. */
+function head(server: ApiServer): number {
+  return server.service.audit(target(server).threadId).lastSeq;
 }
 
 function http(server: ApiServer, headers: Record<string, string> = {}): ApiClient {
@@ -120,9 +148,9 @@ function refusal(body: unknown): string {
 
 /** One `start_run`, awaited to the frames it appends before its first turn. */
 async function beginRun(server: ApiServer, client: ApiClient, prompt: string): Promise<string> {
-  const before = server.service.log.lastSeq;
-  const started = await client.start_run({ prompt });
-  await until(() => server.service.log.lastSeq >= before + 3, "the run's opening frames");
+  const before = head(server);
+  const started = await client.start_run({ prompt, ...target(server) });
+  await until(() => head(server) >= before + 3, "the run's opening frames");
   return started.runId;
 }
 
@@ -173,7 +201,11 @@ describe("the oRPC surface over HTTP", () => {
     const client = http(serve());
 
     await expect(
-      client.start_run({ prompt: "hi", model: "gpt-5" } as unknown as { prompt: string }),
+      client.start_run({ prompt: "hi", model: "gpt-5" } as unknown as {
+        prompt: string;
+        botId: string;
+        threadId: string;
+      }),
     ).rejects.toMatchObject({ code: "BAD_REQUEST" });
     expect(
       await http(serve())
@@ -206,7 +238,10 @@ describe("the event stream over a real socket", () => {
     expect(await handshake(socket)).toBe("open");
 
     const received: EventMessage[] = [];
-    const iterator = await streamed.subscribe_events({ lastSeq: 0 });
+    const iterator = await streamed.subscribe_events({
+      threadId: target(server).threadId,
+      lastSeq: 0,
+    });
     const pump = drain(iterator, received);
 
     await until(() => received.length === 3, "the replayed run opening");
@@ -239,7 +274,10 @@ describe("the event stream over a real socket", () => {
     expect(await handshake(socket)).toBe("open");
 
     const received: EventMessage[] = [];
-    const iterator = await streamed.subscribe_events({ lastSeq: 3 });
+    const iterator = await streamed.subscribe_events({
+      threadId: target(server).threadId,
+      lastSeq: 3,
+    });
     const pump = drain(iterator, received);
 
     await until(() => received.length === 3, "the resumed events");
@@ -257,7 +295,10 @@ describe("the event stream over a real socket", () => {
     const { socket, client } = websocket(server);
     expect(await handshake(socket)).toBe("open");
 
-    const iterator = await client.subscribe_events({ lastSeq: 0 });
+    const iterator = await client.subscribe_events({
+      threadId: target(server).threadId,
+      lastSeq: 0,
+    });
     const received: EventMessage[] = [];
     const pump = drain(iterator, received);
     await until(() => server.service.subscribers === 1, "the subscription to register");
@@ -271,10 +312,15 @@ describe("the event stream over a real socket", () => {
 
 describe("the page's stream over the real server", () => {
   /** The page's own messages: `stream.hello`, the log, then live. */
-  function pageStream(server: ApiServer, options: { token?: string; lastSeenSeq?: number } = {}) {
+  function pageStream(
+    server: ApiServer,
+    options: { token?: string; lastSeenSeq?: number; threadId?: string | null } = {},
+  ) {
     const query = new URLSearchParams();
     if (options.token !== undefined) query.set("token", options.token);
     if ((options.lastSeenSeq ?? 0) > 0) query.set("last_seen_seq", String(options.lastSeenSeq));
+    const threadId = options.threadId === undefined ? target(server).threadId : options.threadId;
+    if (threadId !== null) query.set("thread_id", threadId);
     const socket = new WebSocket(`ws://127.0.0.1:${server.port}/events?${query}`);
     sockets.push(socket);
     const messages: unknown[] = [];
@@ -308,7 +354,9 @@ describe("the page's stream over the real server", () => {
     const stream = pageStream(server, { token: server.token });
     expect(await handshake(stream.socket)).toBe("open");
 
-    stream.socket.send(JSON.stringify({ type: "start", prompt: "from the page" }));
+    stream.socket.send(
+      JSON.stringify({ type: "start", prompt: "from the page", ...target(server) }),
+    );
     await until(() => stream.messages.length === 4, "the hello and the run's opening frames");
 
     expect(stream.messages[1]).toMatchObject({
@@ -322,7 +370,27 @@ describe("the page's stream over the real server", () => {
       type: "turn.started",
       payload: { turn: 1 },
     });
-    expect(server.service.store.get("run-1")?.prompt).toBe("from the page");
+    expect(server.service.run("run-1")?.record.prompt).toBe("from the page");
+  });
+
+  test("a stream that names no thread, or an unknown one, is refused before the upgrade", async () => {
+    const server = serve();
+
+    const anonymous = pageStream(server, { token: server.token, threadId: null });
+    expect(await handshake(anonymous.socket)).toBe("refused");
+
+    const stale = pageStream(server, { token: server.token, threadId: "thread-9" });
+    expect(await handshake(stale.socket)).toBe("refused");
+
+    const refused = await fetch(`http://127.0.0.1:${server.port}/events?token=${server.token}`);
+    expect(refused.status).toBe(400);
+    expect(await refused.text()).toBe("this stream needs a thread_id");
+
+    const missing = await fetch(
+      `http://127.0.0.1:${server.port}/events?token=${server.token}&thread_id=thread-9`,
+    );
+    expect(missing.status).toBe(404);
+    expect(await missing.text()).toBe("no such thread: thread-9");
   });
 
   test("the page serves its own host page and bundle", async () => {
@@ -347,7 +415,7 @@ describe("the gate over the real server", () => {
       fetch(`http://127.0.0.1:${server.port}/rpc/start_run`, {
         method: "POST",
         headers: { "content-type": "application/json", ...headers },
-        body: JSON.stringify({ json: { prompt: "hi" } }),
+        body: JSON.stringify({ json: { prompt: "hi", ...target(server) } }),
       });
 
     const missing = await call({ origin });
@@ -379,7 +447,7 @@ describe("the gate over the real server", () => {
       json: { runId: expect.stringMatching(/^run-\d+$/) },
     });
 
-    expect(server.service.log.lastSeq).toBeGreaterThanOrEqual(1);
+    expect(head(server)).toBeGreaterThanOrEqual(1);
   });
 
   test("a refused call never reaches a handler", async () => {
@@ -388,10 +456,10 @@ describe("the gate over the real server", () => {
     await fetch(`http://127.0.0.1:${server.port}/rpc/start_run`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ prompt: "hi" }),
+      body: JSON.stringify({ prompt: "hi", ...target(server) }),
     });
 
-    expect(server.service.log.lastSeq).toBe(0);
+    expect(head(server)).toBe(0);
   });
 
   test("the WebSocket upgrade is refused without the token, and accepted with it", async () => {

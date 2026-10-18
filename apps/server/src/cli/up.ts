@@ -38,8 +38,8 @@ export interface Up {
   readonly url: string;
   readonly apiPort: number;
   readonly tunnelPort: number;
-  /** The Bot's workspace on the host, which every run mounts at `/workspace`. */
-  readonly workspace: string;
+  /** The directory that holds every Bot: the registry and one workspace directory per Bot. */
+  readonly botsRoot: string;
   /** What the run's model is: the endpoint, the model id, and whether a key is in play. */
   readonly provider: ChoiceDescription;
   /** Stop the servers, then remove every container this launch created. 0 only when none survived. */
@@ -56,18 +56,19 @@ export function startUp(args: UpArgs): Up {
     service: createRunService({
       sandbox: () => sandboxes.port(),
       mode: args.providerMode,
-      ...(args.workspace === null ? {} : { workspace: args.workspace }),
+      ...(args.workspace === null ? {} : { botsRoot: args.workspace }),
     }),
   });
-  const workspace = server.service.workspace.root;
+  const botsRoot = server.service.workspacesRoot;
   return {
     url: pageUrl(server.apiPort, server.token),
     apiPort: server.apiPort,
     tunnelPort: server.tunnelPort,
-    workspace,
+    botsRoot,
     provider: describeChoice(choice),
     async stop() {
       server.stop();
+      server.service.close();
       const { removed, surviving } = await sandboxes.reap();
       for (const name of removed) console.error(`freebot up: removed sandbox container ${name}`);
       for (const name of surviving) {
@@ -128,7 +129,9 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   console.error(
     `freebot up: vault ${vault.path} ${vault.present ? `present, mode ${vault.mode ?? "unknown"}` : "absent"}`,
   );
-  console.error(`freebot up: workspace ${up.workspace} mounted at /workspace, kept across runs`);
+  console.error(
+    `freebot up: bots under ${up.botsRoot}; each Bot's workspace is mounted at /workspace and kept across runs`,
+  );
   console.error(
     "freebot up: the operator token rides the URL's fragment and is printed nowhere else",
   );

@@ -168,7 +168,10 @@ export function createWorkspaceReader(root: string): WorkspaceReader {
   };
 }
 
-/** The workspace directory a Bot owns under the freebot home. */
-export function botWorkspacePath(home: string, botId: string): string {
-  return join(home, "bots", botId, "workspace");
+/**
+ * The workspace directory a Bot owns: one directory per Bot under the bots root, keyed by the Bot's
+ * id, which is what keeps one Bot's files out of another Bot's workspace.
+ */
+export function botWorkspacePath(botsRoot: string, botId: string): string {
+  return join(botsRoot, botId, "workspace");
 }

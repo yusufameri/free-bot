@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * The U4.1 evidence driver: the Library tab, over the workspace a real run wrote.
+ * The U4.1 evidence driver: the Library tab, over the Bot's workspace a real run wrote.
  *
  * The peer is the real launcher, spawned the way a person runs it, with no provider flag: the mode
  * is `auto`, so a real vault key makes a real model write the file this driver then reads back. The
@@ -11,10 +11,13 @@
  *
  * What makes this evidence rather than a fixture is the content. The prompt asks the model to write
  * a line carrying a nonce this driver minted at start, so the bytes read back cannot have existed
- * before this run. Two further facts are read outside the browser: the file is present on the host
- * workspace the container mounted, and the container is gone from Docker by the time the Library
- * reads it, which is what shows the surface is reading the Bot's computer rather than a live
- * container.
+ * before this run. Two further facts are read outside the browser: the file is present in the Bot's
+ * own workspace directory on the host, which the container mounted at `/workspace`, and the
+ * container is gone from Docker by the time the Library reads it, which is what shows the surface is
+ * reading the Bot's computer rather than a live container.
+ *
+ * The bots root is this driver's own, so the page creates its first Bot there and nothing here
+ * touches a Bot a person has run. Every read names that Bot, because the workspace is per Bot.
  *
  * Run from the repo root: bun packages/verify/scripts/files-surface.ts
  */
@@ -33,6 +36,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
 import type { LibraryFacts } from "../../../packages/ui/src/library.ts";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
@@ -385,11 +389,11 @@ async function waitForMatch(read: () => string, match: RegExp, timeoutMs: number
   throw new Error(`no line matching ${match} within ${timeoutMs}ms; saw:\n${read().slice(-1500)}`);
 }
 
-/** `bun run up --no-open`, as a person runs it, with the workspace this driver made. */
-async function launch(workspace: string): Promise<Launched> {
+/** `bun run up --no-open`, as a person runs it, with the bots root this driver made. */
+async function launch(botsRoot: string): Promise<Launched> {
   const proc = Bun.spawn(["bun", "run", "up", "--no-open"], {
     cwd: root,
-    env: { ...process.env, FREEBOT_WORKSPACE: workspace },
+    env: { ...process.env, FREEBOT_WORKSPACE: botsRoot },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -649,15 +653,14 @@ async function main(): Promise<number> {
   rmSync(artifactsDir, { recursive: true, force: true });
   mkdirSync(artifactsDir, { recursive: true });
 
-  // The run's workspace is empty and this driver's own, so the empty state is empty and nothing
-  // here touches a Bot a person has run. It is still a real host directory: the container mounts it.
-  const workspace = realpathSync(mkdtempSync(join(tmpdir(), "freebot-files-ws-")));
+  // The bots root is this driver's own, and the Bot's workspace under it starts empty, so the empty
+  // state is empty and nothing here touches a Bot a person has run. It is a real host directory: the
+  // container mounts it.
+  const botsRoot = realpathSync(mkdtempSync(join(tmpdir(), "freebot-files-bots-")));
   const outside = realpathSync(mkdtempSync(join(tmpdir(), "freebot-files-out-")));
-  made.push(workspace, outside);
+  made.push(botsRoot, outside);
   const secret = join(outside, "secret.txt");
   writeFileSync(secret, "outside the workspace\n");
-  const escapePath = join(workspace, "escape.txt");
-  const escapeCommand = `ln -s ${secret} ${escapePath}`;
 
   headerLines = [
     "feature: files-surface",
@@ -668,13 +671,13 @@ async function main(): Promise<number> {
     `branch: ${branch}`,
     `runtime: bun ${Bun.version} on ${process.platform} ${process.arch}`,
     `the line the model was asked to write: ${LINE}`,
-    `the workspace this driver made: ${workspace}`,
+    `the bots root this driver made: ${botsRoot}`,
     `the file outside it the refused read points at: ${secret}`,
     "",
   ];
   log.note("# files-surface live-ui frames");
   log.note(
-    "DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open` with FREEBOT_WORKSPACE pointing at a fresh directory, so the Bot's workspace starts empty and no Bot a person has run is touched. The provider mode is `auto`, so the model is whatever the vault selects; the prompt is typed into the page's own box and the approval card is answered on the page. The file the Library reads is the one the model wrote through /workspace inside the container. The symlink the refused state opens is made by this driver with `ln -s`, because asking a live model to plant one is not this driver's to ask; the passwd-shaped target is a file this driver wrote outside the workspace.",
+    "DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open` with FREEBOT_WORKSPACE pointing at a fresh directory, so the server starts with no Bots, the page creates its own, and no Bot a person has run is touched. The provider mode is `auto`, so the model is whatever the vault selects; the prompt is typed into the page's own box and the approval card is answered on the page. The file the Library reads is the one the model wrote through /workspace inside the container. The symlink the refused state opens is made by this driver with `ln -s`, because asking a live model to plant one is not this driver's to ask; the passwd-shaped target is a file this driver wrote outside the workspace.",
   );
 
   const baseline = runContainers();
@@ -682,19 +685,19 @@ async function main(): Promise<number> {
     `containers before the run (label ${UNIT_LABEL}): ${baseline.length}${baseline.length === 0 ? "" : ` (${baseline.join(", ")})`}`,
   );
 
-  log.section("the launcher, and the workspace it mounted");
-  const first = await launch(workspace);
+  log.section("the launcher, and the bots root it holds");
+  const first = await launch(botsRoot);
   log.note(`the printed URL, redacted: ${redacted(first.url)}`);
-  const workspaceLine = await waitForMatch(
+  const botsLine = await waitForMatch(
     () => first.stderr(),
-    /^(freebot up: workspace .*)$/m,
+    /^(freebot up: bots under .*)$/m,
     30_000,
   );
-  log.note(`the launcher's line: ${workspaceLine}`);
+  log.note(`the launcher's line: ${botsLine}`);
   log.check(
-    "the launcher mounted the workspace this driver made, and says it is kept across runs",
-    workspaceLine,
-    `freebot up: workspace ${workspace} mounted at /workspace, kept across runs`,
+    "the launcher holds the bots root this driver made, with one workspace per Bot",
+    botsLine,
+    `freebot up: bots under ${botsRoot}; each Bot's workspace is mounted at /workspace and kept across runs`,
   );
   const choiceLine = await waitForMatch(
     () => first.stderr(),
@@ -768,6 +771,25 @@ async function main(): Promise<number> {
     "the page to connect",
     `document.querySelector('#conn').textContent === 'connected'`,
   );
+  // The Bot the page made on its first load. Every workspace read names it, because a workspace
+  // belongs to a Bot and the server refuses a read that names none.
+  const bots = await post(first, "list_bots", {});
+  log.note(`the request: ${bots.request}`);
+  log.note(`the answer: ${bots.status} ${bots.body}`);
+  const botId =
+    (JSON.parse(bots.body) as { json: { bots: Array<{ botId: string; name: string }> } }).json
+      .bots[0]?.botId ?? "";
+  const botName =
+    (JSON.parse(bots.body) as { json: { bots: Array<{ botId: string; name: string }> } }).json
+      .bots[0]?.name ?? "";
+  log.check(
+    "the page created one Bot on a server that held none, through the same arm a person's click uses",
+    [bots.status, botId, botName],
+    [200, "bot-local", "Local Bot"],
+  );
+  const botWorkspace = botWorkspacePath(botsRoot, botId);
+  const escapePath = join(botWorkspace, "escape.txt");
+  const escapeCommand = `ln -s ${secret} ${escapePath}`;
   log.check(
     "the page is the URL the launcher printed, token in the fragment and never sent to a server",
     await evalJson(
@@ -861,18 +883,18 @@ async function main(): Promise<number> {
     await settles(() => JSON.stringify(runContainers()) === JSON.stringify(baseline)),
     true,
   );
-  const onDisk = await Bun.file(join(workspace, "note.txt"))
+  const onDisk = await Bun.file(join(botWorkspace, "note.txt"))
     .text()
     .catch(() => null);
   log.note(`the workspace file, read by the driver from the host: ${JSON.stringify(onDisk)}`);
   log.check(
-    "the file the container wrote is on the host workspace, and carries the nonce",
+    "the file the container wrote is in this Bot's workspace directory on the host, and carries the nonce",
     onDisk?.includes(LINE) === true,
     true,
   );
 
   log.section("the request that listed it, and the bytes that came back");
-  const listing = await post(first, "list_files", { path: "." });
+  const listing = await post(first, "list_files", { botId, path: "." });
   log.note(`the request: ${listing.request}`);
   log.note(`the answer: ${listing.status} ${listing.body}`);
   log.check("the listing answered 200", listing.status, 200);
@@ -883,7 +905,7 @@ async function main(): Promise<number> {
     ).json.entries.some((entry) => entry.name === "note.txt" && entry.size > 0),
     true,
   );
-  const read = await post(first, "read_file", { path: "note.txt" });
+  const read = await post(first, "read_file", { botId, path: "note.txt" });
   log.note(`the request: ${read.request}`);
   log.note(`the answer: ${read.status} ${JSON.stringify(read.body)}`);
   const readText = (JSON.parse(read.body) as { json: { text: string; size: number } }).json;
@@ -908,6 +930,7 @@ async function main(): Promise<number> {
   );
 
   log.section("a path that resolves outside the workspace");
+  log.note(`the Bot's workspace directory: ${botWorkspace}`);
   log.note(`the driver's own command: ${escapeCommand}`);
   symlinkSync(secret, escapePath);
   await clickSelector(cdp, page, "#tab-conversation");
@@ -918,7 +941,7 @@ async function main(): Promise<number> {
     (await factsOf(cdp, page)).entries.some((entry) => entry.path === "escape.txt"),
     true,
   );
-  const refused = await post(first, "read_file", { path: "escape.txt" });
+  const refused = await post(first, "read_file", { botId, path: "escape.txt" });
   log.note(`the request: ${refused.request}`);
   log.note(`the answer: ${refused.status} ${refused.body}`);
   log.check(
@@ -926,13 +949,13 @@ async function main(): Promise<number> {
     [refused.status, (JSON.parse(refused.body) as { json: { code: string } }).json.code],
     [403, "symlink_escape"],
   );
-  const absolute = await post(first, "read_file", { path: "/etc/passwd" });
+  const absolute = await post(first, "read_file", { botId, path: "/etc/passwd" });
   log.check(
     "an absolute path is refused at the contract boundary",
     [absolute.status, (JSON.parse(absolute.body) as { json: { code: string } }).json.code],
     [400, "BAD_REQUEST"],
   );
-  const traversal = await post(first, "read_file", { path: "../secret.txt" });
+  const traversal = await post(first, "read_file", { botId, path: "../secret.txt" });
   log.check(
     "a .. traversal is refused at the contract boundary",
     [traversal.status, (JSON.parse(traversal.body) as { json: { code: string } }).json.code],

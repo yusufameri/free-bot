@@ -4,9 +4,13 @@
  * One `RunService` serves every surface here. `POST /rpc/<procedure>` carries the unary procedures
  * through oRPC's fetch adapter and `ws://…/rpc-ws` carries the same router through the Bun
  * WebSocket adapter, where `subscribe_events` streams. `GET /` serves the web host's page and
- * `ws://…/events` is the page's transport: the same log, in the shape the page already renders,
- * plus the two control messages the page sends (`start`, `answer`). There is no second run path:
- * every one of them lands on `service.start`, `service.cancel` or `service.answer`.
+ * `ws://…/events` is the page's transport: the named thread's log, in the shape the page already
+ * renders, plus the two control messages the page sends (`start`, `answer`). There is no second run
+ * path: every one of them lands on `service.start`, `service.cancel` or `service.answer`.
+ *
+ * The page's stream names the thread it is watching, because a log belongs to a thread. A socket
+ * that asks for no thread, or for one this server does not hold, is refused before the upgrade
+ * rather than served an empty stream.
  *
  * Both socket legs and `/rpc` run the same gate (`auth.ts`) before any handler runs, so an
  * unauthenticated caller cannot reach a procedure, an upgrade, or the page's stream. The gate on
@@ -43,7 +47,8 @@ const HOST_DIR = fileURLToPath(new URL("../../web/host/", import.meta.url));
 interface SocketData {
   kind: "rpc" | "events";
   abort: AbortController;
-  /** The `last_seen_seq` a page asked to resume its stream from. */
+  /** The thread this socket is watching, and the `last_seen_seq` it asked to resume from. */
+  threadId: string | null;
   lastSeenSeq: number;
 }
 
@@ -107,9 +112,18 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
         if (refusal !== null) return refuse(refusal, request);
         const requested = Number(url.searchParams.get("last_seen_seq") ?? "0");
         const lastSeenSeq = Number.isFinite(requested) && requested > 0 ? Math.floor(requested) : 0;
+        const threadId = url.searchParams.get("thread_id");
+        if (threadId === null) {
+          // The stream is a thread's. Without one there is no log to follow, and guessing a thread
+          // would hand the caller a conversation they did not name.
+          return new Response("this stream needs a thread_id", { status: 400 });
+        }
+        if (service.registry.thread(threadId) === undefined) {
+          return new Response(`no such thread: ${threadId}`, { status: 404 });
+        }
         if (
           srv.upgrade(request, {
-            data: { kind: "events", abort: new AbortController(), lastSeenSeq },
+            data: { kind: "events", abort: new AbortController(), threadId, lastSeenSeq },
           })
         )
           return undefined;
@@ -119,7 +133,12 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
       if (path === "/rpc-ws") {
         const refusal = authorize(request, token, { tokenFromQuery: true });
         if (refusal !== null) return refuse(refusal, request);
-        const data: SocketData = { kind: "rpc", abort: new AbortController(), lastSeenSeq: 0 };
+        const data: SocketData = {
+          kind: "rpc",
+          abort: new AbortController(),
+          threadId: null,
+          lastSeenSeq: 0,
+        };
         if (srv.upgrade(request, { data })) return undefined;
         return new Response("expected a websocket upgrade", { status: 426 });
       }
@@ -153,7 +172,8 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
     websocket: {
       open(ws) {
         if (ws.data.kind !== "events") return;
-        const audit = service.log.audit();
+        const threadId = ws.data.threadId ?? "";
+        const audit = service.audit(threadId);
         send(ws, {
           v: 1,
           type: "stream.hello",
@@ -182,10 +202,14 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
     },
   });
 
-  /** Follow the service's log to the page, from where it left off. */
+  /** Follow the thread's log to the page, from where it left off. */
   async function pump(ws: Bun.ServerWebSocket<SocketData>): Promise<void> {
     try {
-      for await (const message of service.stream(ws.data.lastSeenSeq, ws.data.abort.signal)) {
+      for await (const message of service.stream(
+        ws.data.threadId ?? "",
+        ws.data.lastSeenSeq,
+        ws.data.abort.signal,
+      )) {
         send(ws, message);
       }
     } catch {
@@ -209,6 +233,8 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
       decision?: unknown;
       approvalId?: unknown;
       prompt?: unknown;
+      botId?: unknown;
+      threadId?: unknown;
     };
     if (
       message.type === "answer" &&
@@ -221,9 +247,13 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
     if (
       message.type === "start" &&
       typeof message.prompt === "string" &&
-      message.prompt.length > 0
+      message.prompt.length > 0 &&
+      typeof message.botId === "string" &&
+      typeof message.threadId === "string"
     ) {
-      service.start(message.prompt);
+      // The page names the Bot and the thread it is showing, so a run lands in the conversation the
+      // person is looking at. A control message that names neither is not a run request.
+      service.start({ prompt: message.prompt, botId: message.botId, threadId: message.threadId });
     }
   }
 

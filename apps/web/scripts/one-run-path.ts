@@ -16,7 +16,15 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -422,7 +430,7 @@ async function waitForMatch(read: () => string, match: RegExp, timeoutMs: number
 async function bootServer(): Promise<Launched> {
   const server = Bun.spawn(["bun", "apps/server/src/index.ts"], {
     cwd: root,
-    env: { ...process.env, PORT: "0", API_PORT: "0" },
+    env: { ...process.env, PORT: "0", API_PORT: "0", FREEBOT_WORKSPACE: serverBotsRoot() },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -445,6 +453,34 @@ async function bootServer(): Promise<Launched> {
       await server.exited;
     },
   };
+}
+
+/** One call to the route surface with the server's own token, for the records a stream needs. */
+async function rpc(
+  api: { apiPort: number; token: string },
+  procedure: string,
+  input: Record<string, unknown>,
+): Promise<unknown> {
+  const response = await fetch(`http://127.0.0.1:${api.apiPort}/rpc/${procedure}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${api.token}`,
+      origin: `http://127.0.0.1:${api.apiPort}`,
+    },
+    body: JSON.stringify({ json: input }),
+  });
+  return ((await response.json()) as { json: unknown }).json;
+}
+
+/**
+ * A Bot and a thread of this server's own, made the way a page makes them: the page's stream names
+ * the thread it follows, and this check runs before any page has opened.
+ */
+async function streamTarget(api: { apiPort: number; token: string }): Promise<string> {
+  const bot = (await rpc(api, "create_bot", { name: "Stream Check" })) as { botId: string };
+  const thread = (await rpc(api, "create_thread", { botId: bot.botId })) as { threadId: string };
+  return thread.threadId;
 }
 
 /** One page-stream handshake from Bun, for the two directions the gate must get right. */
@@ -721,10 +757,21 @@ async function driveDenyPath(
 
 let chromeProc: Bun.Subprocess | null = null;
 let userDataDir: string | null = null;
+let botsRoot: string | null = null;
 
 function cleanup(): void {
   chromeProc?.kill();
   if (userDataDir !== null) rmSync(userDataDir, { recursive: true, force: true });
+  if (botsRoot !== null) rmSync(botsRoot, { recursive: true, force: true });
+}
+
+/** The bots root both servers this driver boots run over: its own, so no Bot a person has is touched. */
+function serverBotsRoot(): string {
+  const existing = botsRoot;
+  if (existing !== null) return existing;
+  const made = mkdtempSync(join(tmpdir(), "freebot-one-run-path-bots-"));
+  botsRoot = made;
+  return made;
 }
 
 function statSafe(path: string): boolean {
@@ -761,13 +808,20 @@ async function main(): Promise<number> {
 
   log.section("the page's stream, both directions of the token");
   const base = `ws://127.0.0.1:${api.apiPort}/events`;
+  const threadId = await streamTarget(api);
+  log.note(`the thread the page's stream follows: ${threadId}`);
   log.check("a page stream with no token is refused", await handshake(base), "refused");
   log.check(
     "a page stream with a wrong token is refused",
-    await handshake(`${base}?token=0000`),
+    await handshake(`${base}?token=0000&thread_id=${threadId}`),
     "refused",
   );
-  const accepted = new WebSocket(`${base}?token=${api.token}`);
+  log.check(
+    "a page stream that names no thread is refused: the stream is a thread's",
+    await handshake(`${base}?token=${api.token}`),
+    "refused",
+  );
+  const accepted = new WebSocket(`${base}?token=${api.token}&thread_id=${threadId}`);
   const hello = await new Promise<string>((resolve) => {
     accepted.addEventListener("message", (event) => resolve(String(event.data)));
     setTimeout(() => resolve("(no message)"), 5_000);

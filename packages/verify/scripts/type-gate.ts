@@ -103,6 +103,7 @@ const blind = [
   "packages/sandbox/image/replay-ext.ts",
   "packages/ui/browser/library.ts",
   "packages/ui/browser/render.ts",
+  "packages/ui/browser/shell.ts",
 ];
 
 type Outcome = { code: number; ok: boolean; output: string };

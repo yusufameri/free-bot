@@ -24,7 +24,7 @@ export interface UpArgs {
   readonly open: boolean;
   /** How the run's model is chosen. */
   readonly providerMode: ProviderMode;
-  /** The Bot's workspace on the host, or null for this Bot's default directory. */
+  /** The directory that holds the Bot registry and one workspace per Bot, or null for the default. */
   readonly workspace: string | null;
   /** Print the usage and exit. */
   readonly help: boolean;
@@ -49,8 +49,9 @@ export const UP_USAGE = [
   "process, which is how an evidence driver pins the recorded provider.",
   "",
   "The Bot's workspace is a host directory, mounted into every run at /workspace, so the files a",
-  "run writes outlive it. It defaults to ~/.freebot/bots/bot-local/workspace and FREEBOT_WORKSPACE",
-  "moves it, which is how an evidence driver starts from an empty one.",
+  "run writes outlive it. Every Bot has one of its own, and the Bot records live beside them.",
+  "They default to ~/.freebot/bots and FREEBOT_WORKSPACE moves the whole set, which is how an",
+  "evidence driver starts from no Bots at all.",
   "",
   "Ctrl-C stops the servers and removes the sandbox containers this launch created.",
 ].join("\n");
@@ -66,7 +67,7 @@ export function envProviderMode(
   return value === "auto" || value === "live" || value === "replay" ? value : null;
 }
 
-/** The workspace `FREEBOT_WORKSPACE` names, or null for this Bot's default directory. */
+/** The bots root `FREEBOT_WORKSPACE` names, or null for the default under the freebot home. */
 export function envWorkspace(env: Record<string, string | undefined> = process.env): string | null {
   const value = env.FREEBOT_WORKSPACE;
   return value === undefined || value === "" ? null : value;
