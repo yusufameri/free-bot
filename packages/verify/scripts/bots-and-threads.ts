@@ -231,6 +231,10 @@ interface PageFacts {
   readonly library: LibraryFacts;
   /** The page's error banner, or null while it is hidden. The stream failing lands here. */
   readonly error: string | null;
+  /** How many runs this thread's transcript shows a terminal marker for. */
+  readonly runEnds: number;
+  /** How many prompts the transcript shows, which is one per run the thread has taken. */
+  readonly prompts: number;
 }
 
 function factsOf(cdp: Cdp, sessionId: string): Promise<PageFacts> {
@@ -242,6 +246,8 @@ function factsOf(cdp: Cdp, sessionId: string): Promise<PageFacts> {
       thread: ${THREAD},
       library: ${LIB},
       error: document.querySelector('#error').hidden ? null : document.querySelector('#error').textContent,
+      runEnds: document.querySelectorAll('#thread .run-finished, #thread .run-failed').length,
+      prompts: document.querySelectorAll('#thread .message.user .prompt').length,
     })`,
   );
 }
@@ -258,6 +264,7 @@ function describeFacts(facts: PageFacts): string {
     `threads=[${facts.shell.threads.map((row) => `${row.threadId}${row.selected ? "*" : ""}:${row.runs}`).join(" ")}]`,
     `selected=${facts.shell.selectedThreadId ?? "(none)"}`,
     `frames=${facts.thread.frameCount}`,
+    `prompts=${facts.prompts}`,
     `library=${facts.library.state}`,
   ].join(" ");
 }
@@ -358,11 +365,9 @@ const SPECS: readonly FrameSpec[] = [
       "A second run in the same thread: the conversation appends to the one that was there, and the thread's own count is two.",
     claims: [
       { label: "the thread holds two runs", holds: (f) => f.shell.threads[0]?.runs === 2 },
-      {
-        label: "the transcript shows the second prompt after the first",
-        holds: (f) => f.thread.deltas.length > 0 && f.thread.frameCount > 6,
-      },
-      { label: "the second run reached its end", holds: (f) => f.thread.done === true },
+      { label: "the transcript shows both prompts", holds: (f) => f.prompts === 2 },
+      { label: "both runs left their terminal marker", holds: (f) => f.runEnds === 2 },
+      { label: "the second run's text is on the page", holds: (f) => f.thread.deltas.length > 1 },
     ],
     visible: "#thread .message.user",
   },
@@ -642,7 +647,24 @@ function clickExpression(cdp: Cdp, sessionId: string, expression: string): Promi
   return evalJson(cdp, sessionId, `${expression}.click()`);
 }
 
-const SETTLED = `(${THREAD}.done === true || document.querySelector('#thread .run-failed') !== null)`;
+/**
+ * The end of one run, counted rather than observed: a thread that has already run holds a finished
+ * marker, so "a run ended" is an increment over the count this run started from, not a marker's
+ * presence. Without the count a second run in one thread looks settled the moment it starts.
+ */
+const ENDS = `#thread .run-finished, #thread .run-failed`;
+
+function endedAfter(baseline: number): string {
+  return `document.querySelectorAll(${JSON.stringify(ENDS)}).length > ${baseline}`;
+}
+
+async function ends(cdp: Cdp, page: string): Promise<number> {
+  return await evalJson<number>(
+    cdp,
+    page,
+    `document.querySelectorAll(${JSON.stringify(ENDS)}).length`,
+  );
+}
 const CONNECTED = `document.querySelector('#conn').textContent === 'connected'`;
 
 /**
@@ -662,12 +684,14 @@ async function answerUntilSettled(
   log: Log,
   page: string,
   decision: "allow" | "deny",
+  baseline: number,
   timeoutMs = 180_000,
 ): Promise<string[]> {
   const sent: string[] = [];
+  const settled = endedAfter(baseline);
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
-    if (await evalJson<boolean>(cdp, page, SETTLED)) break;
+    if (await evalJson<boolean>(cdp, page, settled)) break;
     const approvalId = await evalJson<string | null>(
       cdp,
       page,
@@ -684,7 +708,7 @@ async function answerUntilSettled(
     }
     await sleep(150);
   }
-  await waitTrue(cdp, page, "the answered run to settle", SETTLED);
+  await waitTrue(cdp, page, "the answered run to settle", settled);
   return sent;
 }
 
@@ -715,9 +739,15 @@ async function runPrompt(
   log: Log,
   page: string,
   prompt: string,
-  options: { answer?: "allow" | null; before?: number; launch?: Launched | null } = {},
+  options: {
+    answer?: "allow" | null;
+    before?: number;
+    ends?: number;
+    launch?: Launched | null;
+  } = {},
 ): Promise<void> {
   const before = options.before ?? (await factsOf(cdp, page)).thread.frameCount;
+  const baseline = options.ends ?? (await ends(cdp, page));
   await evalJson(
     cdp,
     page,
@@ -732,14 +762,19 @@ async function runPrompt(
     // parking: the second case is a run whose model asked for nothing, and it fails here loudly
     // rather than after a timeout, with the page's own state recorded.
     try {
-      await waitTrue(cdp, page, "the parked approval", `${WAITING}.length >= 1 || ${SETTLED}`);
+      await waitTrue(
+        cdp,
+        page,
+        "the parked approval",
+        `${WAITING}.length >= 1 || ${endedAfter(baseline)}`,
+      );
     } catch (error) {
       log.note(
         `the run never parked; the page said:\n  ${await dumpState(cdp, page, options.launch ?? null)}`,
       );
       throw error;
     }
-    if (await evalJson<boolean>(cdp, page, SETTLED)) {
+    if (await evalJson<boolean>(cdp, page, endedAfter(baseline))) {
       const state = await factsOf(cdp, page);
       log.note(
         `the run ended without parking: cards ${JSON.stringify(state.thread.cards)}, text ${JSON.stringify(state.thread.deltas.join(""))}, error ${JSON.stringify(state.error)}`,
@@ -749,7 +784,7 @@ async function runPrompt(
   } else {
     await waitTrue(cdp, page, "the run's first frames", `${THREAD}.frameCount > ${before}`);
   }
-  await answerUntilSettled(cdp, log, page, options.answer ?? "allow");
+  await answerUntilSettled(cdp, log, page, options.answer ?? "allow", baseline);
 }
 
 // ---------------------------------------------------------------------------
