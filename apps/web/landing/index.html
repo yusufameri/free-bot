@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FreeBot</title>
+<style>
+  /* tokens:begin. Generated from packages/ui/src/tokens.ts by `bun packages/ui/scripts/emit-tokens.ts --write`. */
+  :root {
+    --bg:           #000000;
+    --surface:      #0a0a0a;
+    --fg:           #ffffff;
+    --muted:        #737373;
+    --border:       #242424;
+    --accent:       #000000;
+    --accent-2:     #0f172a;
+    --hover:        color-mix(in oklch, var(--fg) 7%, transparent);
+    --hover-2:      color-mix(in oklch, var(--fg) 12%, transparent);
+    --fg-soft:      color-mix(in oklch, var(--fg) 5%, transparent);
+    --muted-2:      color-mix(in oklch, var(--muted) 45%, transparent);
+    --font-display: 'Geist', 'Geist Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --font-body:    'Geist', 'Geist Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    --font-mono:    ui-monospace, 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace;
+    --fs-h1:        clamp(30px, 4.4vw, 46px);
+    --fs-h2:        24px;
+    --fs-h3:        17px;
+    --fs-body:      15px;
+    --fs-meta:      12.5px;
+    --radius:       8px;
+    --aside-w:      384px;
+    --sb-w:         264px;
+    --dur-fast:     0.12s; /* derived, see freebot-prototype.html:230 .sb-row { transition: background 0.12s ease } */
+    --dur:          0.15s; /* derived, see freebot-prototype.html:120 .btn { transition: background 0.15s ease, ... } */
+    --dur-slow:     0.18s; /* derived, see freebot-prototype.html:332 .disc .chev { transition: transform 0.18s ease } */
+    --dur-enter:    0.25s; /* derived, see freebot-prototype.html:201 .flowline { animation: slide 0.25s ease } */
+    --dur-pulse:    1.5s; /* derived, see freebot-prototype.html:110 .pulse { animation: pulse 1.5s ease-in-out infinite } */
+    --dur-spin:     1s; /* derived, see freebot-prototype.html:112 .spin { animation: spin 1s linear infinite } */
+    --ease:         ease; /* derived, see freebot-prototype.html:120 the easing keyword every transition writes */
+  }
+  /* tokens:end */
+
+  /* ── base ────────────────────────────────────────────────────────────────
+     The export's base rules for the landing region
+     (freebot-prototype.html:43-64). The landing is one scrolling page rather than the export's
+     three-screen frame, so `body` scrolls and the shell's `overflow: hidden` is not carried. */
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: var(--font-body); font-size: var(--fs-body); line-height: 1.55;
+    text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 { font-family: var(--font-display); margin: 0; font-weight: 600; letter-spacing: -0.015em; text-wrap: balance; }
+  p { margin: 0; text-wrap: pretty; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
+  ::selection { background: var(--fg); color: var(--bg); }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; border: 3px solid var(--bg); }
+
+  /* ── the export's primitives (freebot-prototype.html:56-115, :116-135, :421-434) ───────── */
+  .h1 { font-family: var(--font-display); font-size: var(--fs-h1); line-height: 1.05; letter-spacing: -0.03em; font-weight: 600; }
+  .h2 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.15; font-weight: 600; }
+  .mono { font-family: var(--font-mono); }
+  .muted { color: var(--muted); }
+  .fs-meta { font-size: var(--fs-meta); }
+  .stack { display: flex; flex-direction: column; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .grow { flex: 1; min-width: 0; }
+  .wrap { flex-wrap: wrap; }
+  .cap {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 10px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .hint { color: var(--muted); font-size: var(--fs-meta); line-height: 1.5; }
+  .rule { border: 0; border-top: 1px solid var(--border); margin: 0; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px;
+    border: 1px solid var(--border); border-radius: 999px;
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--muted); white-space: nowrap;
+  }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 38px; padding: 0 16px; border-radius: var(--radius);
+    border: 1px solid transparent; font-size: 14px; font-weight: 500;
+    white-space: nowrap; transition: background var(--dur), border-color var(--dur), color var(--dur);
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-sm { height: 30px; padding: 0 11px; font-size: 13px; gap: 6px; }
+  .btn-primary { background: var(--fg); color: var(--bg); }
+  .btn-primary:hover { background: color-mix(in oklch, var(--fg) 84%, var(--bg)); }
+  .btn-secondary { border-color: var(--border); color: var(--fg); }
+  .btn-secondary:hover { border-color: var(--fg); background: var(--hover); }
+  .btn-ghost { color: var(--muted); }
+  .btn-ghost:hover { color: var(--fg); background: var(--hover); }
+  .listcard { border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+  .listrow {
+    display: flex; align-items: center; gap: 12px; padding: 13px 15px;
+    border-bottom: 1px solid var(--border); transition: background var(--dur-fast);
+  }
+  .listrow:last-child { border-bottom: 0; }
+  .listrow:hover { background: var(--hover); }
+  .monogram {
+    width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border);
+    display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px;
+    flex: none; background: var(--bg); letter-spacing: 0.02em;
+  }
+
+  /* ── the landing's own layout ────────────────────────────────────────────
+     The hero keeps the export's onboard composition (freebot-prototype.html:178-187): a centred
+     column, its own measure, and the brandmark above it. The export's `.onboard` is one viewport
+     tall with its own scroller; this route carries a second section under the hero, so the band is
+     measured by its content and the page scrolls once. */
+  .onboard { display: grid; place-items: center; padding: 56px 28px; }
+  .onboard .inner { width: 100%; max-width: 520px; }
+  .brandmark { display: flex; align-items: center; gap: 9px; margin-bottom: 34px; }
+  .brandmark .glyph {
+    width: 26px; height: 26px; border: 1px solid var(--fg); border-radius: 7px;
+    display: grid; place-items: center;
+  }
+  .brandmark .glyph i { width: 9px; height: 9px; background: var(--fg); border-radius: 2px; display: block; }
+  .brandmark .word { font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+
+  #landing-hero { margin: 12px 0 14px; }
+  #landing-statement { font-size: 15px; color: var(--muted); max-width: 46ch; }
+  #landing-controls { margin-top: 28px; gap: 8px; }
+  #landing-controls .btn { width: 100%; }
+  #landing-controls-note { margin-top: 12px; max-width: 46ch; }
+
+  .page-inner { max-width: 1040px; margin: 0 auto; padding: 8px 26px 72px; }
+  .section-head { margin: 0 0 18px; }
+  .section-head .h2 { margin-bottom: 8px; }
+  .section-head .hint { max-width: 62ch; }
+  .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; }
+  .facts > * { min-width: 0; }
+  .commands { margin-top: 22px; }
+  .cmd {
+    display: flex; align-items: center; gap: 10px; padding: 11px 13px;
+    border-top: 1px solid var(--border);
+  }
+  .cmd:first-of-type { border-top: 0; }
+  .cmd code { font-family: var(--font-mono); font-size: 12.5px; }
+  .cmd .grow { overflow-wrap: anywhere; }
+  #landing-copied { min-height: 1.5em; margin-top: 10px; }
+  .footer { margin-top: 28px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  @media (max-width: 860px) {
+    .onboard { padding: 40px 16px; }
+    .page-inner { padding: 8px 16px 56px; }
+    .facts { grid-template-columns: minmax(0, 1fr); }
+  }
+</style>
+</head>
+<body>
+<!-- The export's landing region (freebot-prototype.html:566-613): its brandmark, its hero, and its
+     two controls, in its order, with its copy. The provider panel that the export reveals under the
+     hero is not carried here: this app's real connect flow, with its real smoke test, is page 1 of
+     the app itself, and the primary control opens it. docs/landing.md records the deviation. -->
+<main class="landing">
+  <section class="onboard" data-landing="hero">
+    <div class="inner">
+      <div class="brandmark" data-landing="brand">
+        <span class="glyph"><i></i></span>
+        <span class="word">FreeBot</span>
+      </div>
+
+      <p class="eyebrow">Local agent workspace</p>
+      <h1 class="h1" id="landing-hero">Bots that do the work, on a computer that stays yours.</h1>
+      <p class="hint" id="landing-statement">FreeBot ships no subscription. You bring a model — OpenAI-compatible, local, or hosted — and it
+        gets its own sandbox, a durable workspace, and an approval gate before anything runs.</p>
+
+      <div class="stack" id="landing-controls" data-landing="controls">
+        <a class="btn btn-primary" id="landing-connect" href="/">Connect a provider</a>
+        <a class="btn btn-ghost" id="landing-replay" href="/">Run in replay mode — see it work without a key</a>
+      </div>
+      <p class="hint" id="landing-controls-note">Both open the app on this computer. The connect flow runs a real tool call before it saves a connection, and a launch with no key in the vault replays the committed transcript instead of calling a model.</p>
+    </div>
+  </section>
+
+  <section class="page-inner" data-landing="runs-today">
+    <div class="section-head">
+      <p class="eyebrow">What runs today</p>
+      <h2 class="h2" id="landing-runs-headline">This is a working local install, and some of it is not built yet.</h2>
+      <p class="hint">Every line below is true of this repository at the commit that served this page. Nothing here waits for a hosted service, and nothing here needs an account.</p>
+    </div>
+
+    <div class="facts">
+      <div class="listcard" id="landing-runs">
+        <div class="listrow">
+          <span class="monogram">01</span>
+          <div class="grow">
+            <p>A Bot is a record with its own sandbox and its own durable workspace at <code class="mono">/workspace</code>.</p>
+          </div>
+        </div>
+        <div class="listrow">
+          <span class="monogram">02</span>
+          <div class="grow">
+            <p>Every tool call the run can offer parks on an approval card until you press <span class="tag">Allow once</span> or <span class="tag">Deny</span>. The gate is fail-closed.</p>
+          </div>
+        </div>
+        <div class="listrow">
+          <span class="monogram">03</span>
+          <div class="grow">
+            <p>Each run gets one Docker container from the pinned image <code class="mono" id="landing-image">freebot-sandbox:u0.6</code>, removed when the run ends.</p>
+          </div>
+        </div>
+        <div class="listrow">
+          <span class="monogram">04</span>
+          <div class="grow">
+            <p>Your model key lives in your own vault at mode 600. This project ships no key and owns no account.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="listcard" id="landing-gaps">
+        <div class="listrow">
+          <span class="tag">Not built</span>
+          <div class="grow">
+            <p>There is no control in the page that cancels a run. The route exists and the page has no button for it.</p>
+          </div>
+        </div>
+        <div class="listrow">
+          <span class="tag">Not built</span>
+          <div class="grow">
+            <p>The spend cap is computed per run and the run loop does not consult it yet.</p>
+          </div>
+        </div>
+        <div class="listrow">
+          <span class="tag">Not built</span>
+          <div class="grow">
+            <p>Settings, routines, skills, connectors in the page, search, and the computer view are later phases.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="commands" id="landing-commands">
+      <p class="cap">Run it on this computer</p>
+      <div class="listcard">
+        <div class="cmd">
+          <span class="grow"><code id="landing-cmd-up">bun run up</code></span>
+          <button class="btn btn-ghost btn-sm" id="landing-copy" type="button">Copy</button>
+        </div>
+        <div class="cmd">
+          <span class="grow"><code id="landing-cmd-replay">bun run up --replay</code></span>
+          <span class="hint">needs no key</span>
+        </div>
+      </div>
+      <p class="hint" id="landing-copied" role="status" aria-live="polite"></p>
+    </div>
+
+    <div class="footer">
+      <a class="btn btn-secondary btn-sm" id="landing-repo" href="https://github.com/yusufameri/free-bot">The repository</a>
+      <a class="btn btn-ghost btn-sm" id="landing-running" href="https://github.com/yusufameri/free-bot/blob/main/docs/RUNNING.md">How to run it</a>
+    </div>
+  </section>
+</main>
+<script type="module" src="/landing.js"></script>
+</body>
+</html>

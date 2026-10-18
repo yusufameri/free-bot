@@ -9,6 +9,7 @@
   "dependencies": {
     "@freebot/connectors": "workspace:*",
     "@freebot/core": "workspace:*",
+    "@freebot/sandbox": "workspace:*",
     "emulate": "^0.12.2"
   }
 }

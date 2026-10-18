@@ -3,6 +3,11 @@
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable"]
   },
-  "include": ["host/**/*.ts", "../packages/ui/browser/**/*.ts", "../packages/ui/src/**/*.ts"],
+  "include": [
+    "host/**/*.ts",
+    "landing/**/*.ts",
+    "../packages/ui/browser/**/*.ts",
+    "../packages/ui/src/**/*.ts"
+  ],
   "exclude": ["**/*.test.ts"]
 }
