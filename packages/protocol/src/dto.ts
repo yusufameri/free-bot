@@ -276,6 +276,134 @@ export type WorkspaceReadRefusal = z.infer<typeof workspaceReadRefusalSchema>;
 export const READ_FILE_MAX_BYTES = 262_144;
 
 // ---------------------------------------------------------------------------
+// The provider connection: UX.md page 1, "Welcome, then connect a provider"
+// ---------------------------------------------------------------------------
+
+/**
+ * The three things the page takes. The key is written to the vault and stored nowhere else, so this
+ * input exists for the one call that saves it and no output ever carries it back.
+ *
+ * A newline in any field is refused at this boundary rather than at the writer: the vault is one
+ * `KEY=value` per line, so a value that spans lines would rewrite the file's shape.
+ */
+/** The vault is one `KEY=value` per line, so a value that spans lines would rewrite the file. */
+export function isOneLine(value: string): boolean {
+  return !/[\r\n]/.test(value);
+}
+
+export const PROVIDER_BASE_URL_MAX = 2048;
+export const PROVIDER_MODEL_MAX = 200;
+export const PROVIDER_KEY_MAX = 4096;
+
+/** The base URL is the endpoint prefix, so it has to be one the client can post to. */
+export function isProviderBaseUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+export const providerConfigInput = z.strictObject({
+  baseUrl: z
+    .string()
+    .min(1)
+    .max(PROVIDER_BASE_URL_MAX)
+    .refine(isOneLine, "the base URL must be one line")
+    .refine(isProviderBaseUrl, "the base URL must be an http or https URL"),
+  model: z.string().min(1).max(PROVIDER_MODEL_MAX).refine(isOneLine, "the model must be one line"),
+  key: z.string().min(1).max(PROVIDER_KEY_MAX).refine(isOneLine, "the key must be one line"),
+});
+
+export type ProviderConfigInput = z.infer<typeof providerConfigInput>;
+
+/**
+ * How capable the connection was when it was last tested. `capable` is a native tool call in the
+ * test's reply, `limited` is a reply without one, and `untested` covers both a connection nobody has
+ * tested and one whose test the provider refused.
+ */
+export const PROVIDER_STATUSES = ["untested", "capable", "limited"] as const;
+
+export const providerStatusSchema = z.enum(PROVIDER_STATUSES);
+
+export type ProviderStatus = z.infer<typeof providerStatusSchema>;
+
+/**
+ * The flags the test's own turn produced, derived from what was observed and never from the model's
+ * name. A `null` field means that path was not exercised, which is not the same as a refusal.
+ */
+export const providerFlagsSchema = z.object({
+  toolCalling: z.enum(["strong", "weak", "none"]),
+  streaming: z.boolean().nullable(),
+  structuredOutput: z.boolean().nullable(),
+  contextWindow: z.number().int().positive().nullable(),
+  notes: z.array(z.string()),
+});
+
+export type ProviderFlags = z.infer<typeof providerFlagsSchema>;
+
+/** What the provider said when it refused the test. The status code is the point of the message. */
+export const providerRefusalSchema = z.object({
+  /** The HTTP status, or null when the test failed before the provider answered. */
+  status: z.number().int().positive().nullable(),
+  message: z.string(),
+});
+
+export type ProviderRefusal = z.infer<typeof providerRefusalSchema>;
+
+/**
+ * The connection as a surface reads it: the endpoint, the model, and what the last test found. There
+ * is no key field, and there is no shape here a key could be smuggled into.
+ */
+export const providerConnectionSchema = z.object({
+  baseUrl: z.string(),
+  model: z.string(),
+  status: providerStatusSchema,
+  /** When the last test ran, or null when the connection has never been tested. */
+  testedAt: tsSchema.nullable(),
+  flags: providerFlagsSchema.nullable(),
+  refusal: providerRefusalSchema.nullable(),
+  /** The model's own reply from the test turn, or null when the test produced none. */
+  answer: z.string().nullable(),
+});
+
+export type ProviderConnection = z.infer<typeof providerConnectionSchema>;
+
+/** What a caller may know about the vault file, which is its path, its presence, and its mode. */
+export const providerVaultSchema = z.object({
+  path: z.string(),
+  present: z.boolean(),
+  mode: z.string().nullable(),
+});
+
+export type ProviderVault = z.infer<typeof providerVaultSchema>;
+
+/**
+ * Page 1's whole state. `connection: null` is the keyless machine, which is the page's empty state;
+ * a connection carries the endpoint and the flags and never the key.
+ */
+export const providerStateSchema = z.object({
+  vault: providerVaultSchema,
+  connection: providerConnectionSchema.nullable(),
+});
+
+export type ProviderState = z.infer<typeof providerStateSchema>;
+
+/** Read page 1's state. It names nothing: the install holds one active connection. */
+export const getProviderInput = z.strictObject({});
+
+export const getProviderOutput = providerStateSchema;
+
+/**
+ * Save a connection and test it. The save happens first and the test's outcome is the answer, so a
+ * refused test still lands a connection the page can show as `untested`.
+ */
+export const connectProviderInput = providerConfigInput;
+
+export const connectProviderOutput = providerConnectionSchema;
+
+// ---------------------------------------------------------------------------
 // The operation registry
 // ---------------------------------------------------------------------------
 
@@ -292,6 +420,8 @@ export const API_OPERATIONS = {
   deny: { input: denyInput, output: denyOutput },
   list_files: { input: listFilesInput, output: listFilesOutput },
   read_file: { input: readFileInput, output: readFileOutput },
+  get_provider: { input: getProviderInput, output: getProviderOutput },
+  connect_provider: { input: connectProviderInput, output: connectProviderOutput },
 } as const;
 
 export type ApiOperation = keyof typeof API_OPERATIONS;

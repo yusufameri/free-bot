@@ -4,7 +4,8 @@
  * This is the slice a server can implement and a client can call today: three unary run procedures
  * (`start_run`, `cancel_run`, `get_run`), one subscription (`subscribe_events`) that yields the
  * named thread's log in seq order, the two records a run belongs to (`list_bots`, `create_bot`,
- * `list_threads`, `create_thread`), and the workspace's two reads (`list_files`, `read_file`).
+ * `list_threads`, `create_thread`), the workspace's two reads (`list_files`, `read_file`), and the
+ * provider page's two arms (`get_provider`, `connect_provider`).
  * `dto.ts` stays the source of truth for the shapes it already owns; this file wires those schemas
  * into oRPC and adds only the shapes oRPC needs that did not exist.
  *
@@ -22,10 +23,14 @@ import { z } from "zod";
 import {
   cancelRunInput,
   cancelRunOutput,
+  connectProviderInput,
+  connectProviderOutput,
   createBotInput,
   createBotOutput,
   createThreadInput,
   createThreadOutput,
+  getProviderInput,
+  getProviderOutput,
   listBotsInput,
   listBotsOutput,
   listFilesInput,
@@ -179,6 +184,16 @@ const subscribeEventsProcedure = oc
 
 const getRunProcedure = oc.input(getRunInput).output(getRunOutput).errors(BOT_ERRORS);
 
+/**
+ * Page 1's two arms. Neither names a caller and neither carries a key back: `get_provider` reports
+ * the vault's path, presence and mode plus the saved connection, and `connect_provider` writes the
+ * vault and answers with what its test found. A refused test is a successful call whose answer says
+ * so, because the connection is saved either way.
+ */
+const getProviderProcedure = oc.input(getProviderInput).output(getProviderOutput);
+
+const connectProviderProcedure = oc.input(connectProviderInput).output(connectProviderOutput);
+
 export type ListFilesOutput = z.infer<typeof listFilesOutput>;
 export type ReadFileOutput = z.infer<typeof readFileOutput>;
 
@@ -209,6 +224,8 @@ export const apiContract = {
   create_thread: createThreadProcedure,
   list_files: listFilesProcedure,
   read_file: readFileProcedure,
+  get_provider: getProviderProcedure,
+  connect_provider: connectProviderProcedure,
 };
 
 export type ApiContract = typeof apiContract;
@@ -225,6 +242,8 @@ export const API_PROCEDURES = [
   "create_thread",
   "list_files",
   "read_file",
+  "get_provider",
+  "connect_provider",
 ] as const;
 
 export type ApiProcedure = (typeof API_PROCEDURES)[number];
