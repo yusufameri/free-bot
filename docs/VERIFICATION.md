@@ -231,7 +231,7 @@ one adapter sits under a vendor-neutral interface: `packages/connectors/src/conn
 four operations a model-facing tool needs plus a `TokenRef` that can be shown and not spent,
 `mcp-client.ts` is the JSON-RPC 2.0 streamable-HTTP transport (revision 2025-06-18) written here so
 the package's import graph holds no vendor, and `boundary.test.ts` enforces both halves of that
-promise over the package's own source — a bare import outside the vendor-facing allowlist fails (the
+promise over the package's own source. A bare import outside the vendor-facing allowlist fails (the
 list was empty at this commit and holds `composio.ts` since U8.3; the row below carries the current
 state), and a stub adapter sharing no code with the MCP adapter is driven through the same
 consumer, which is U8.3's "Composio without touching the seam" as a test rather than a sentence. A
