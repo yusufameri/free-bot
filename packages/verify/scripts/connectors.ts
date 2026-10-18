@@ -1,6 +1,10 @@
 #!/usr/bin/env bun
 /**
- * The U8.1 evidence driver: the connector seam, end to end, over an emulated service.
+ * The connector evidence driver: the seam, the credential, the second vendor, and gate 8.
+ *
+ * Three units' evidence live here, all at one head. U8.1 is the seam end to end over an emulated
+ * service and one real run path; U8.2 is the credential's path from the vault through the route
+ * surface; U8.3 is the second adapter behind that same seam plus gate 8's Composio-out contract test.
  *
  * One interface, one emulated service, one real run path. The launcher is spawned the way a person
  * spawns it (`bun run up --no-open`), over a bots root and a freebot home this driver made, with a
@@ -21,16 +25,23 @@
  * - the reset is the service's own `reset()`, followed by a second run that has to work again from
  *   empty;
  * - the sandbox is a real container from the pinned image, and it is asked, in its own words,
- *   whether it can act on the service and whether it holds either credential.
+ *   whether it can act on the service and whether it holds either credential;
+ * - the second vendor is two services this process serves, modeled on the vendor's own documented API
+ *   rather than on a mock of one SDK: a session route that mints an endpoint from the person's own
+ *   project key, and an MCP endpoint whose tools act on the account over HTTP. The adapter drives
+ *   both over real sockets, and the delete test below moves the adapter aside and runs the real gates.
+ *   No Composio account and no network to Composio is involved anywhere in this file.
  *
  * Run from the repo root: bun packages/verify/scripts/connectors.ts
  */
 
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -38,7 +49,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { connectorRef, McpConnector } from "@freebot/connectors";
+import { connectorRef, createMcpServer, McpConnector, type McpServer } from "@freebot/connectors";
 import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
 import { type GithubFixture, type IssueRow, startGithubFixture } from "../src/emulator.ts";
 import { createGithubConnector, type GithubConnector } from "../src/github-mcp.ts";
@@ -112,6 +123,8 @@ const made: string[] = [];
 const secrets: string[] = [];
 let fixture: GithubFixture | null = null;
 let connector: GithubConnector | null = null;
+/** The emulated second vendor, so the shutdown below closes it whether the run passed or crashed. */
+let composio: ComposioVendor | null = null;
 
 // ---------------------------------------------------------------------------
 // Small facts about this machine
@@ -154,6 +167,244 @@ function git(args: readonly string[]): string {
   const proc = Bun.spawnSync(["git", ...args]);
   if (proc.exitCode !== 0) throw new Error(proc.stderr.toString());
   return proc.stdout.toString().trim();
+}
+
+/** One shell command, as its exit code and the two ends of its output. */
+function command(args: readonly string[]): { code: number; output: string } {
+  const proc = Bun.spawnSync([...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
+  const raw = `${proc.stdout.toString()}${proc.stderr.toString()}`.trim();
+  return { code: proc.exitCode ?? -1, output: raw };
+}
+
+/** The tail of a command's output, so an artifact keeps the summary rather than the whole log. */
+function tail(text: string, lines = 6): string {
+  return text.split("\n").slice(-lines).join(" | ");
+}
+
+/** The sha256 of a file's bytes, so a moved file can be proven to have come back unchanged. */
+async function sha256Of(path: string): Promise<string> {
+  const hasher = new Bun.CryptoHasher("sha256");
+  hasher.update(await Bun.file(path).arrayBuffer());
+  return hasher.digest("hex");
+}
+
+// ---------------------------------------------------------------------------
+// The second vendor, emulated: the session route, and the MCP endpoint it names
+// ---------------------------------------------------------------------------
+
+/**
+ * Composio's documented facts, as literals this driver asserts rather than imports. The adapter itself
+ * is loaded through a computed specifier (see `loadComposioAdapter`), because a static import would
+ * fail this driver's own typecheck in the deleted state gate 8 exists to prove.
+ */
+const COMPOSIO_SESSION_PATH_LITERAL = "/api/v3.1/tool_router/session";
+const COMPOSIO_KEY_HEADER_LITERAL = "x-api-key";
+
+interface ComposioVendor {
+  /** The API base: the session route's address, and the account the tools act on. */
+  readonly apiBase: string;
+  /** The session route, as a literal, so the request line the artifact shows is the real one. */
+  readonly sessionPath: string;
+  /** The person's own project key this vendor minted. It reaches the session route and nothing else. */
+  readonly projectKey: string;
+  /** The endpoint's own credential, which the session answer hands back and the endpoint's gate wants. */
+  readonly sessionToken: string;
+  /** Every session request this vendor served, with the key it arrived carrying and its body. */
+  readonly sessionRequests: Array<{ key: string | null; body: string }>;
+  /** Every `authorization` header the MCP endpoint's gate saw, in order. */
+  readonly endpointAuthorizations: Array<string | null>;
+  /** The notes the account holds, read over the vendor's own REST surface. */
+  notes(): Promise<Array<{ number: number; text: string }>>;
+  /** Empty the account, the way a fresh vendor would look. */
+  reset(): void;
+  /** Every tool call the MCP endpoint served. */
+  calls(): readonly string[];
+  close(): Promise<void>;
+}
+
+/**
+ * The emulated vendor, in this process. It is two services because the vendor's own API is two: the
+ * session route that mints an endpoint from the project key, and the endpoint that holds the tools.
+ * Neither is a mock of one SDK's client: the adapter's session request is a real POST over a real
+ * socket, and the MCP endpoint is `packages/connectors`' own streamable-HTTP server.
+ *
+ * Two credentials, and which reaches where is the custody claim: the project key opens the session
+ * route, the session token the answer carries opens the endpoint, and the endpoint's gate refuses a
+ * request that arrives with the key instead.
+ */
+async function startComposioVendor(): Promise<ComposioVendor> {
+  const projectKey = `composio-project-${crypto.randomUUID()}`;
+  const sessionToken = `composio-session-${crypto.randomUUID()}`;
+  secrets.push(projectKey, sessionToken);
+  const store: Array<{ number: number; text: string }> = [];
+  const sessionRequests: Array<{ key: string | null; body: string }> = [];
+  const endpointAuthorizations: Array<string | null> = [];
+  let endpointUrl = "";
+
+  const api = Bun.serve({
+    port: 0,
+    hostname: "127.0.0.1",
+    async fetch(request) {
+      const url = new URL(request.url);
+      if (url.pathname === COMPOSIO_SESSION_PATH_LITERAL) {
+        const raw = await request.text();
+        const key = request.headers.get(COMPOSIO_KEY_HEADER_LITERAL);
+        sessionRequests.push({ key, body: raw });
+        if (key !== projectKey) {
+          // The vendor's own refusal for a request that carries no key of its project's.
+          return new Response("invalid api key", { status: 401 });
+        }
+        // The shape the vendor's reference documents: the session id, and an `mcp` object whose type
+        // is `http` and whose url is the endpoint. `headers` is the field the SDK exposes beside it.
+        return Response.json(
+          {
+            session_id: `session-${sessionRequests.length}`,
+            mcp: {
+              type: "http",
+              url: `${endpointUrl}/mcp`,
+              headers: { authorization: `Bearer ${sessionToken}` },
+            },
+            tool_router_tools: ["create_note", "list_notes"],
+            config_version: 1,
+          },
+          { status: 201 },
+        );
+      }
+      if (url.pathname === "/api/v3.1/notes" && request.method === "POST") {
+        if (request.headers.get("authorization") !== `Bearer ${sessionToken}`) {
+          return new Response("no session credential", { status: 401 });
+        }
+        const parsed: unknown = JSON.parse(await request.text());
+        const text =
+          typeof parsed === "object" && parsed !== null && "text" in parsed
+            ? String((parsed as { text: unknown }).text)
+            : "";
+        const note = { number: store.length + 1, text };
+        store.push(note);
+        return Response.json(note, { status: 201 });
+      }
+      if (url.pathname === "/api/v3.1/notes") {
+        if (request.headers.get("authorization") !== `Bearer ${sessionToken}`) {
+          return new Response("no session credential", { status: 401 });
+        }
+        return Response.json(store);
+      }
+      return new Response("no such route", { status: 404 });
+    },
+  });
+  const apiBase = `http://127.0.0.1:${api.port}`;
+
+  const endpoint: McpServer = createMcpServer({
+    name: "composio-fixture",
+    version: "1.0.0",
+    tools: [
+      {
+        name: "create_note",
+        description: "Store a note in the person's own account.",
+        parameters: {
+          type: "object",
+          properties: { text: { type: "string" } },
+          required: ["text"],
+        },
+        run: async (args) => {
+          const text =
+            typeof args === "object" && args !== null && "text" in args
+              ? (args as { text: unknown }).text
+              : null;
+          if (typeof text !== "string") return { text: "create_note needs text", isError: true };
+          const response = await fetch(`${apiBase}/api/v3.1/notes`, {
+            method: "POST",
+            headers: {
+              authorization: `Bearer ${sessionToken}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ text }),
+          });
+          if (response.status !== 201) {
+            return { text: `the account refused: ${response.status}`, isError: true };
+          }
+          return { text: await response.text() };
+        },
+      },
+      {
+        name: "list_notes",
+        description: "List the notes in the person's own account.",
+        parameters: { type: "object", properties: {} },
+        run: async () => {
+          const response = await fetch(`${apiBase}/api/v3.1/notes`, {
+            headers: { authorization: `Bearer ${sessionToken}` },
+          });
+          return { text: await response.text() };
+        },
+      },
+    ],
+    // The endpoint's own gate: exact match on the header the session answered with. A call carrying
+    // the project key instead is refused here, which is half of the custody proof.
+    authorize: (request) => {
+      const authorization = request.headers.get("authorization");
+      endpointAuthorizations.push(authorization);
+      return authorization === `Bearer ${sessionToken}` ? null : "no session credential";
+    },
+  });
+  endpointUrl = endpoint.url;
+
+  return {
+    apiBase,
+    sessionPath: COMPOSIO_SESSION_PATH_LITERAL,
+    projectKey,
+    sessionToken,
+    sessionRequests,
+    endpointAuthorizations,
+    async notes() {
+      const response = await fetch(`${apiBase}/api/v3.1/notes`, {
+        headers: { authorization: `Bearer ${sessionToken}` },
+      });
+      return (await response.json()) as Array<{ number: number; text: string }>;
+    },
+    reset(): void {
+      store.length = 0;
+    },
+    calls: () => endpoint.calls,
+    async close() {
+      await endpoint.close();
+      await api.stop(true);
+    },
+  };
+}
+
+/**
+ * The Composio adapter, loaded without a static import.
+ *
+ * The specifier is computed rather than literal on purpose. A static import of `composio.ts` anywhere
+ * in this process would fail this driver's own typecheck the moment the contract test below moves that
+ * file aside, and the contract test has to run the real gates. A computed specifier is not resolved by
+ * the type checker, so the build stays whole in the state gate 8 exists to prove.
+ */
+interface ComposioModule {
+  readonly ComposioConnector: new (options: {
+    readonly id: string;
+    readonly userId: string;
+    readonly apiBase: string;
+    readonly credential: {
+      readonly ref: unknown;
+      headers(): Record<string, string>;
+    };
+    readonly toolkits?: readonly string[];
+  }) => {
+    readonly id: string;
+    readonly ref: unknown;
+    describe(): Promise<readonly { readonly name: string; readonly parameters: unknown }[]>;
+    call(tool: string, args: unknown): Promise<{ readonly ok: boolean; readonly output: string }>;
+    health(): Promise<{ readonly ok: boolean; readonly detail: string }>;
+  };
+  readonly COMPOSIO_API_BASE: string;
+  readonly COMPOSIO_SESSION_PATH: string;
+  readonly COMPOSIO_KEY_HEADER: string;
+}
+
+async function loadComposioAdapter(): Promise<ComposioModule> {
+  const specifier = join(root, "packages/connectors/src/composio.ts");
+  return (await import(specifier)) as ComposioModule;
 }
 
 /** Every file under `dir` carrying `secret`, as paths, for the credential scans. */
@@ -535,6 +786,7 @@ async function cleanup(): Promise<void> {
   }
   if (connector !== null) await connector.close().catch(() => {});
   if (fixture !== null) await fixture.close().catch(() => {});
+  if (composio !== null) await composio.close().catch(() => {});
   for (const path of made.splice(0)) rmSync(path, { recursive: true, force: true });
 }
 
@@ -682,6 +934,154 @@ async function main(): Promise<number> {
     "the service still holds no issue, so the refused call created nothing",
     await service.issues(),
     [],
+  );
+
+  // -------------------------------------------------------------------------
+  // The second vendor: Composio behind the same seam, emulated
+  // -------------------------------------------------------------------------
+  log.section("the second vendor, emulated: the session route, and the endpoint it names");
+  const vendor = await startComposioVendor();
+  composio = vendor;
+  log.note(
+    `the vendor's API base is ${vendor.apiBase}, answering ${vendor.sessionPath} for a request carrying its own project key in the ${COMPOSIO_KEY_HEADER_LITERAL} header`,
+  );
+  log.note(
+    `the listening socket: ${JSON.stringify(listeners(Number(new URL(vendor.apiBase).port)))}`,
+  );
+  const adapter = await loadComposioAdapter();
+  log.check(
+    "the adapter's own constants are the vendor's documented base, session route and key header",
+    [adapter.COMPOSIO_API_BASE, adapter.COMPOSIO_SESSION_PATH, adapter.COMPOSIO_KEY_HEADER],
+    ["https://backend.composio.dev", COMPOSIO_SESSION_PATH_LITERAL, COMPOSIO_KEY_HEADER_LITERAL],
+  );
+  const composioConnector = new adapter.ComposioConnector({
+    id: "emulate-composio",
+    userId: "freebot-fixture-person",
+    apiBase: vendor.apiBase,
+    credential: {
+      ref: connectorRef("emulate-composio"),
+      headers: () => ({ [COMPOSIO_KEY_HEADER_LITERAL]: vendor.projectKey }),
+    },
+  });
+  const composioTools = await composioConnector.describe();
+  log.check(
+    "the session route was asked once, over the documented path, with the person's own key and user id",
+    [
+      vendor.sessionRequests.length,
+      vendor.sessionRequests[0]?.key === vendor.projectKey,
+      vendor.sessionRequests[0]?.body,
+    ],
+    [1, true, '{"user_id":"freebot-fixture-person"}'],
+  );
+  log.check(
+    "the tools the seam sees are the endpoint's own list, discovered through the session it minted",
+    composioTools.map((tool) => tool.name),
+    ["create_note", "list_notes"],
+  );
+  log.check(
+    "the vendor's account holds nothing before the call, read over its own REST surface",
+    await vendor.notes(),
+    [],
+  );
+  const composioCall = await composioConnector.call("create_note", { text: "through-composio" });
+  log.note(`the call's answer: ${JSON.stringify(composioCall)}`);
+  log.check(
+    "the call reached the endpoint's tool and answered with the account's own report",
+    [composioCall.ok, composioCall.output],
+    [true, '{"number":1,"text":"through-composio"}'],
+  );
+  log.check(
+    "the vendor's account now holds exactly that note: the call changed the service's own state",
+    await vendor.notes(),
+    [{ number: 1, text: "through-composio" }],
+  );
+  log.check(
+    "the endpoint's own server served exactly the one call, and this connector's object minted one session",
+    [vendor.calls(), vendor.sessionRequests.length],
+    [['create_note {"text":"through-composio"}'], 1],
+  );
+  log.check(
+    "the project key reached the session route and no other request anywhere",
+    [
+      vendor.sessionRequests.every((request) => request.key === vendor.projectKey),
+      vendor.endpointAuthorizations.length > 0,
+      vendor.endpointAuthorizations.every((value) => String(value).includes(vendor.sessionToken)),
+      vendor.endpointAuthorizations.some((value) => String(value).includes(vendor.projectKey)),
+    ],
+    [true, true, true, false],
+  );
+
+  log.section("the second vendor's account, reset, and driven again from empty");
+  vendor.reset();
+  log.check("the vendor's own reset leaves its account holding no note", await vendor.notes(), []);
+  const afterReset = await composioConnector.call("create_note", { text: "after-the-reset" });
+  log.check(
+    "the same connector object calls again after the reset, and the account numbers the new note from empty",
+    [afterReset.ok, afterReset.output, await vendor.notes()],
+    [true, '{"number":1,"text":"after-the-reset"}', [{ number: 1, text: "after-the-reset" }]],
+  );
+  const composioHealth = await composioConnector.health();
+  log.note(`the health row: ${JSON.stringify(composioHealth)}`);
+  log.check(
+    "the health row carries the endpoint's own report and no credential of either kind",
+    [
+      composioHealth.ok,
+      composioHealth.detail.includes(vendor.projectKey),
+      composioHealth.detail.includes(vendor.sessionToken),
+    ],
+    [true, false, false],
+  );
+
+  // -------------------------------------------------------------------------
+  // Gate 8: the build and the suite with the adapter deleted
+  // -------------------------------------------------------------------------
+  log.section("gate 8, the Composio-out contract test: the adapter moved aside, the gates run");
+  const adapterPath = join(root, "packages", "connectors", "src", "composio.ts");
+  const adapterTestPath = join(root, "packages", "connectors", "src", "composio.test.ts");
+  const adapterDigest = await sha256Of(adapterPath);
+  // The adapter's own unit test goes aside with it: it imports the file it tests, so a build with the
+  // adapter gone cannot compile it either. Both come back, byte for byte, before this driver writes.
+  const movedAside = join(made[0] ?? tmpdir(), "composio-out");
+  mkdirSync(movedAside, { recursive: true });
+  renameSync(adapterPath, join(movedAside, "composio.ts"));
+  renameSync(adapterTestPath, join(movedAside, "composio.test.ts"));
+  try {
+    log.note(
+      `moved aside: packages/connectors/src/composio.ts and its own test, sha256 ${adapterDigest} before the move`,
+    );
+    log.check(
+      "the adapter file is gone from the package, so nothing the seam ships can reach the vendor",
+      [existsSync(adapterPath), existsSync(adapterTestPath)],
+      [false, false],
+    );
+    const deleteTypecheck = command(["bun", "run", "typecheck"]);
+    log.note(
+      `bun run typecheck with the adapter deleted: exit ${deleteTypecheck.code}, ${tail(deleteTypecheck.output)}`,
+    );
+    log.check("the build passes with the adapter deleted", deleteTypecheck.code, 0);
+    const deleteTests = command(["bun", "test"]);
+    log.note(
+      `bun test with the adapter deleted: exit ${deleteTests.code}, ${tail(deleteTests.output)}`,
+    );
+    log.check("the suite passes with the adapter deleted", deleteTests.code, 0);
+    log.check(
+      "the suite really ran rather than reporting nothing: its own summary names the passing count",
+      /\d+ pass/.test(deleteTests.output),
+      true,
+    );
+    log.check(
+      "and the adapter was not quietly skipped: with no composio file, no composio test ran",
+      deleteTests.output.includes("composio.test.ts"),
+      false,
+    );
+  } finally {
+    renameSync(join(movedAside, "composio.ts"), adapterPath);
+    renameSync(join(movedAside, "composio.test.ts"), adapterTestPath);
+  }
+  log.check(
+    "the adapter is back at its own path, byte for byte, so the rest of this driver runs against it",
+    [existsSync(adapterPath), (await sha256Of(adapterPath)) === adapterDigest],
+    [true, true],
   );
 
   // -------------------------------------------------------------------------
@@ -1268,6 +1668,11 @@ async function main(): Promise<number> {
     filesCarrying(root, side.token),
     [],
   );
+  log.check(
+    "no file of the worktree carries the second vendor's project key or its session token",
+    [...filesCarrying(root, vendor.projectKey), ...filesCarrying(root, vendor.sessionToken)],
+    [],
+  );
   const report1 = log.lines.join("\n");
   log.check(
     "no line of this artifact carries the operator token",
@@ -1285,6 +1690,11 @@ async function main(): Promise<number> {
     false,
   );
   log.check(
+    "no line of this artifact carries the second vendor's project key or its session token",
+    [report1.includes(vendor.projectKey), report1.includes(vendor.sessionToken)],
+    [false, false],
+  );
+  log.check(
     "no line of this artifact carries a key-shaped literal",
     /FREEBOT_BYOK_KEY=\S{8,}/.test(report1),
     false,
@@ -1292,7 +1702,7 @@ async function main(): Promise<number> {
 
   log.lines.push("");
   log.lines.push(
-    `three really launched \`bun run up\` processes over one home and one bots root; the service is the emulate GitHub fixture on 0.0.0.0, its state read over its own REST surface; the connector is packages/connectors' MCP client against its own MCP server; the sandbox is a container of ${SANDBOX_IMAGE}, driven by hand for the reachability probe and by the run path for the landed bash turn`,
+    `three really launched \`bun run up\` processes over one home and one bots root; the service is the emulate GitHub fixture on 0.0.0.0, its state read over its own REST surface; the connector is packages/connectors' MCP client against its own MCP server; the sandbox is a container of ${SANDBOX_IMAGE}, driven by hand for the reachability probe and by the run path for the landed bash turn; the second vendor is the Composio adapter against a session route and an MCP endpoint this process serves, and gate 8 ran the real typecheck and the real suite with the adapter moved aside`,
   );
   log.lines.push(log.result());
 
