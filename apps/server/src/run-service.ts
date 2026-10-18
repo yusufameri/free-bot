@@ -27,6 +27,7 @@
  */
 
 import { join } from "node:path";
+import type { Connector } from "@freebot/connectors";
 import {
   type BotRecord,
   BotStore,
@@ -54,10 +55,14 @@ import {
   createReviewGate,
   DockerRunSandbox,
   destructiveTool,
+  governedTools,
   type PendingApprovals,
   RUN_UNIT,
   RUN_WORKSPACE,
+  type RunTool,
+  RunToolExecutor,
   runToolDefinitions,
+  runToolsFor,
 } from "./run-ports.ts";
 import { freebotHome, readVault, type VaultEntry } from "./vault.ts";
 import {
@@ -115,6 +120,12 @@ export interface RunServiceOptions {
    * directory under the freebot home, which is where the single-Bot app already kept its own. */
   readonly botsRoot?: string;
   readonly transcript?: string;
+  /**
+   * The connectors this server's runs may call. Each contributes one governed tool arm per tool its
+   * server offers, so the run's table is built once per run, when the run starts. Empty by default:
+   * a machine nobody has connected anything on runs exactly as it did before.
+   */
+  readonly connectors?: readonly Connector[];
   /** How the factory picks the model. `auto` follows the vault, `replay` records, `live` demands a
    * key. Defaults to `auto`. */
   readonly mode?: ProviderMode;
@@ -207,10 +218,10 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
   const grants = new GrantStore();
   const refusals = new Set<string>();
   const approvals = createPendingApprovals();
-  const gate = createReviewGate(grants, refusals, { now });
   const cancelled = new Set<string>();
   const inflight: Array<Promise<unknown>> = [];
   const transcript = options.transcript ?? DEFAULT_TRANSCRIPT;
+  const connectors = options.connectors ?? [];
   const vaultEntry = options.readVaultEntry ?? readVault;
   const runtimes = new Map<string, ThreadRuntime>();
   const readers = new Map<string, WorkspaceReader>();
@@ -280,8 +291,11 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     return created;
   }
 
-  /** This run's provider, from the factory's choice. The prompt is the model's user message. */
-  async function providerFor(prompt: string): Promise<ProviderPort> {
+  /**
+   * This run's provider, from the factory's choice. The prompt is the model's user message, and the
+   * run's own tool table decides which calls the gate governs.
+   */
+  async function providerFor(prompt: string, tools: readonly RunTool[]): Promise<ProviderPort> {
     if (options.provider !== undefined) return await options.provider(prompt);
     const choice = chooseProvider({
       mode: options.mode ?? "auto",
@@ -290,7 +304,8 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     });
     return await createProviderPort(choice, {
       prompt,
-      destructive: destructiveTool,
+      destructive: (name) => destructiveTool(name, tools),
+      tools: governedTools(tools),
       ...(options.note === undefined ? {} : { note: options.note }),
     });
   }
@@ -425,12 +440,17 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
           ? injected()
           : (injected ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT })));
       const run = (async () => {
-        const provider = await providerFor(input.prompt);
+        // The run's table, discovered when the run starts: the landed arms, plus one arm per tool
+        // the run's connectors offer. A connector that cannot be reached right now contributes no
+        // arms and says so on the note line, rather than failing a run that the other tools could
+        // still finish.
+        const tools = await runToolsFor(connectors, options.note);
+        const provider = await providerFor(input.prompt, tools);
         return await runRunLoop(
           {
-            sandbox,
+            sandbox: new RunToolExecutor(sandbox, tools),
             provider,
-            gate,
+            gate: createReviewGate(grants, refusals, { now, tools }),
             approvals,
             store: runtime.store,
             log: logPort,
@@ -450,7 +470,7 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
               // makes them outlive the run, and it is what keeps one Bot's files out of another's.
               mounts: [{ host: readerFor(bot.id).root, container: RUN_WORKSPACE }],
             },
-            tools: runToolDefinitions(),
+            tools: runToolDefinitions(tools),
           },
         );
       })();

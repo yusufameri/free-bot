@@ -70,6 +70,14 @@ export function turnForTool(
   return turns.find((turn) => turn.calls.some((call) => call.toolName === toolName));
 }
 
+/** The first block that asked for any of `toolNames`, in recorded order. */
+export function firstTurnForTools(
+  turns: readonly RecordedTurn[],
+  toolNames: readonly string[],
+): RecordedTurn | undefined {
+  return turns.find((turn) => turn.calls.some((call) => toolNames.includes(call.toolName)));
+}
+
 /**
  * The loop's turns for one recorded block. Pi runs the call and the follow-up text as two turns in
  * one prompt, so the block becomes two: the call, then the text the result produced, with no call

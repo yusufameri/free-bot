@@ -27,8 +27,14 @@
 
 import { type RunStatus as CoreRunStatus, isTerminal } from "@freebot/core";
 import type { ApiContext } from "@freebot/protocol";
-import { apiContract, BOT_ERRORS, WORKSPACE_READ_ERRORS } from "@freebot/protocol";
+import {
+  apiContract,
+  BOT_ERRORS,
+  CONNECTOR_ERRORS,
+  WORKSPACE_READ_ERRORS,
+} from "@freebot/protocol";
 import { implement, ORPCError } from "@orpc/server";
+import { ConnectorRegistry, UnknownConnectorError } from "./connectors.ts";
 import { createProviderSetup, type ProviderSetup } from "./provider-setup.ts";
 import { type RunService, UnknownRecordError } from "./run-service.ts";
 import { WorkspaceReadError } from "./workspace-files.ts";
@@ -54,6 +60,12 @@ function refuse(error: unknown): never {
       status: BOT_ERRORS[error.refusal].status,
     });
   }
+  if (error instanceof UnknownConnectorError) {
+    throw new ORPCError("connector_not_found", {
+      message: error.message,
+      status: CONNECTOR_ERRORS.connector_not_found.status,
+    });
+  }
   throw error;
 }
 
@@ -74,6 +86,7 @@ const PROTOCOL_STATUS: Record<CoreRunStatus, "running" | "finished" | "failed"> 
 export function createApiRouter(
   service: RunService,
   providers: ProviderSetup = createProviderSetup(),
+  connectors: ConnectorRegistry = ConnectorRegistry.fromEntries([]),
 ) {
   return {
     start_run: api.start_run.handler(({ input }) => {
@@ -216,5 +229,29 @@ export function createApiRouter(
     connect_provider: api.connect_provider.handler(
       async ({ input }) => await providers.connect(input),
     ),
+
+    /**
+     * The connector surface. Both arms read the registry the launcher built from the person's own
+     * file, and neither can answer with a credential: a row carries the credential's reference.
+     * The arrays are copied here because the contract's shape is mutable and the seam's is not.
+     */
+    list_connectors: api.list_connectors.handler(async () => ({
+      connectors: (await connectors.list()).map((row) => ({
+        id: row.id,
+        url: row.url,
+        ref: row.ref,
+        tools: [...row.tools],
+        health: row.health,
+      })),
+    })),
+
+    test_connector: api.test_connector.handler(async ({ input }) => {
+      try {
+        const tested = await connectors.test(input.id);
+        return { ...tested, tools: [...tested.tools] };
+      } catch (error) {
+        refuse(error);
+      }
+    }),
   };
 }

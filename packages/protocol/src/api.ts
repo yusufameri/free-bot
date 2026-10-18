@@ -33,6 +33,8 @@ import {
   getProviderOutput,
   listBotsInput,
   listBotsOutput,
+  listConnectorsInput,
+  listConnectorsOutput,
   listFilesInput,
   listFilesOutput,
   listThreadsInput,
@@ -41,6 +43,8 @@ import {
   readFileOutput,
   startRunInput,
   startRunOutput,
+  testConnectorInput,
+  testConnectorOutput,
   threadIdSchema,
   updateBotInput,
   updateBotOutput,
@@ -131,6 +135,15 @@ export const BOT_ERRORS = {
 export type BotRefusal = keyof typeof BOT_ERRORS;
 
 /**
+ * The one refusal the connector arms raise: an id this install does not hold. A connector that is
+ * there and does not answer is a row with `ok: false`, not a refusal, because a surface lists the
+ * broken ones.
+ */
+export const CONNECTOR_ERRORS = {
+  connector_not_found: { status: 404, message: "no such connector" },
+} as const;
+
+/**
  * The named refusals a `list_files` or `read_file` call can end in, each with the status the wire
  * answers with. The code IS the refusal name, so a surface branches on `error.code` rather than
  * matching a sentence. These are error codes oRPC does not know, so they are declared here; the
@@ -197,6 +210,23 @@ const getRunProcedure = oc.input(getRunInput).output(getRunOutput).errors(BOT_ER
 
 const connectProviderProcedure = oc.input(connectProviderInput).output(connectProviderOutput);
 
+/**
+ * The connector surface's two arms. `list_connectors` probes each connector once and answers with a
+ * row per connector including the ones that did not answer, because a surface that lists connectors
+ * has to show the broken one. `test_connector` runs the probe a person runs when they add one, and a
+ * refusal is a successful call whose answer says so. Neither arm carries a credential: the row names
+ * the credential's reference and the route never reads the file's headers.
+ */
+const listConnectorsProcedure = oc
+  .input(listConnectorsInput)
+  .output(listConnectorsOutput)
+  .errors(CONNECTOR_ERRORS);
+
+const testConnectorProcedure = oc
+  .input(testConnectorInput)
+  .output(testConnectorOutput)
+  .errors(CONNECTOR_ERRORS);
+
 export type ListFilesOutput = z.infer<typeof listFilesOutput>;
 export type ReadFileOutput = z.infer<typeof readFileOutput>;
 
@@ -231,6 +261,8 @@ export const apiContract = {
   read_file: readFileProcedure,
   get_provider: getProviderProcedure,
   connect_provider: connectProviderProcedure,
+  list_connectors: listConnectorsProcedure,
+  test_connector: testConnectorProcedure,
 };
 
 export type ApiContract = typeof apiContract;
@@ -250,6 +282,8 @@ export const API_PROCEDURES = [
   "read_file",
   "get_provider",
   "connect_provider",
+  "list_connectors",
+  "test_connector",
 ] as const;
 
 export type ApiProcedure = (typeof API_PROCEDURES)[number];

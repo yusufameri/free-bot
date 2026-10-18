@@ -429,6 +429,47 @@ export const connectProviderInput = providerConfigInput;
 
 export const connectProviderOutput = providerConnectionSchema;
 
+/**
+ * The connectors this install holds. A row names the connector, where it is, which credential it
+ * uses (as a reference), what it offers, and whether it answered the last probe. There is no header
+ * field and no token field here, so a route cannot answer with a credential even by accident: the
+ * file's headers stay in the object that holds them.
+ */
+export const connectorToolSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  parameters: z.record(z.string(), z.unknown()),
+});
+
+export type ConnectorToolRow = z.infer<typeof connectorToolSchema>;
+
+export const connectorRowSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  ref: z.string(),
+  tools: z.array(connectorToolSchema),
+  health: z.object({ ok: z.boolean(), detail: z.string() }),
+});
+
+export type ConnectorRow = z.infer<typeof connectorRowSchema>;
+
+/** List the install's connectors. It names nothing: the install holds one set of them. */
+export const listConnectorsInput = z.strictObject({});
+
+export const listConnectorsOutput = z.object({ connectors: z.array(connectorRowSchema) });
+
+/** Test one connector the way a person checks a connection: with its own credential, then report. */
+export const testConnectorInput = z.strictObject({ id: z.string().min(1) });
+
+export const testConnectorOutput = z.object({
+  id: z.string(),
+  ok: z.boolean(),
+  detail: z.string(),
+  tools: z.array(connectorToolSchema),
+});
+
+export type TestConnectorOutput = z.infer<typeof testConnectorOutput>;
+
 // ---------------------------------------------------------------------------
 // The operation registry
 // ---------------------------------------------------------------------------
@@ -449,6 +490,8 @@ export const API_OPERATIONS = {
   read_file: { input: readFileInput, output: readFileOutput },
   get_provider: { input: getProviderInput, output: getProviderOutput },
   connect_provider: { input: connectProviderInput, output: connectProviderOutput },
+  list_connectors: { input: listConnectorsInput, output: listConnectorsOutput },
+  test_connector: { input: testConnectorInput, output: testConnectorOutput },
 } as const;
 
 export type ApiOperation = keyof typeof API_OPERATIONS;
