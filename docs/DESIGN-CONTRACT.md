@@ -225,7 +225,6 @@ outside its artifact directory is that temporary directory, which it deletes on 
 | The mobile drawers (`.aside.open` at 1120px, `.sidebar.open` and `.mob-only` at 860px) | no unit yet. U6.3 declares the delta; below 1120px this app has no way to reach the pane at all. |
 | The command palette, the modal and the popover (`.palette`, `.picker`, `.menu`) | U6.4 |
 | The approval card, the tool call, the turn marker, the Bot status dot and Bot groups | U6.5 |
-| First run's three panes and the provider welcome (`#firstrun`) | U6.2 |
 | The landing page | U6.6 |
 | The item-level states inside every one of the above | U6.7 owns the pass that audits them |
 

@@ -32,8 +32,9 @@ strings (`pre-run-4f3a`, `Teach a task`, `waiting on approval`) appear nowhere i
 driver asserts that over each tab's own rendered text, over the document, and over the bundle the
 server serves.
 
-Two things only the host can do leave the pane through callbacks: `Open` on a provider notice goes to
-page 1, and a Library row opens the file in the Library surface's own viewer rather than in the pane.
+Two things only the host can do leave the pane through callbacks: opening a Library row asks the
+Library surface to show the file in its own viewer, and opening the Library tab asks it to re-read
+the workspace, so the pane and that surface render one listing rather than two.
 
 ## The width
 
