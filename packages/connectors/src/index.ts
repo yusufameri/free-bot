@@ -10,6 +10,7 @@ export {
   type ConnectorResult,
   type ConnectorTool,
   type CredentialSource,
+  connectorRef,
   namespacedToolName,
   type OfferedTool,
   offeredTools,
