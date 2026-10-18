@@ -11,15 +11,20 @@ bun run up
 ## What you need
 
 - **bun** 1.2 or later (`bun --version`).
-- **Docker running** (Docker Desktop on this Mac). A run creates one container from the pinned
-  image `freebot-sandbox:u0.6` and removes it when the run ends. The adapter builds the image on
-  first use if it is not there yet, which takes a few minutes once.
+- **A sandbox backend: Docker, or microsandbox.** Docker Desktop on this Mac is the reference, and a
+  run creates one container from the pinned image `freebot-sandbox:u0.6` and removes it when the run
+  ends; the adapter builds the image on first use if it is not there yet, which takes a few minutes
+  once. A machine with no Docker can run the same runs on microsandbox instead, one microVM per
+  sandbox, no account and no payment (order 34). Install it with
+  `curl -fsSL https://install.microsandbox.dev | sh` and read `docs/microsandbox.md`, which carries
+  the licence, the pinned version and what the adapter does when the tool is absent. `bun run up`
+  picks between them itself; see "The sandbox backend" below.
 - **A model key, or none.** Gate G1 is open, so a run calls a real model when
   `~/.freebot/provider.env` holds `FREEBOT_BYOK_KEY`, with `FREEBOT_BYOK_BASE_URL` and
   `FREEBOT_BYOK_MODEL` beside it. Without a key the run replays
   `packages/pi-bridge/fixtures/rpc-handshake.jsonl` and the launcher says so at startup. The key is
   read out of that file by the server and never out of the environment (order 8). Everything else is
-  real either way: the gate, the run store, the log, the container, the page and its stream. See
+  real either way: the gate, the run store, the log, the sandbox, the page and its stream. See
   "The model" below and `docs/providers.md`.
 - **A browser.** On macOS the launcher opens it for you. Chrome is only needed for the evidence
   driver, not for running freebot.
@@ -29,18 +34,60 @@ bun run up
 ```
 $ bun run up
 freebot up: page and run on 127.0.0.1:60203, tunnel on 127.0.0.1:60202
+freebot up: sandbox backend docker (chosen by auto: the Docker daemon answered)
 freebot up: model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)
 freebot up: vault /Users/you/.freebot/provider.env present, mode 600
-freebot up: workspace /Users/you/.freebot/bots/bot-local/workspace mounted at /workspace, kept across runs
+freebot up: bots under /Users/you/.freebot/bots; each Bot's workspace is mounted at /workspace and kept across runs
 freebot up: the operator token rides the URL's fragment and is printed nowhere else
 freebot up: opened the URL in your browser
-freebot up: Ctrl-C stops the servers and removes this launch's sandbox containers
+freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (docker)
 http://127.0.0.1:60203/#token=<43 url-safe characters>
 ```
 
 The lines above the URL are diagnostics on stderr. The last line is stdout, and it is the only URL the
 launcher prints. The token is in the fragment, the one URL part a browser never sends to a server,
 so it reaches no access log and no `Referer` (`docs/one-run-path.md` has the token contract).
+
+## The sandbox backend
+
+`bun run up` runs every run's sandbox on one backend for the whole launch, and it decides which one
+at boot from `apps/server/src/cli/sandbox-backend.ts`. The backend it chose is printed on stderr,
+with the fact that decided it, so the line an evidence driver asserts is the launcher's own account
+of what it built.
+
+| Value | Backend |
+| --- | --- |
+| `docker` | Docker, the reference implementation. |
+| `microsandbox` | microsandbox, one microVM per sandbox, no account. `docs/microsandbox.md`. |
+| `auto` | The default. Docker if the daemon answers, otherwise microsandbox. |
+
+```bash
+bun run up --sandbox microsandbox     # one launch, on microsandbox
+FREEBOT_SANDBOX=microsandbox bun run up   # the default for a started process
+```
+
+`--sandbox` wins over `FREEBOT_SANDBOX`, and both take the three values above. A value naming no
+backend is refused by name rather than guessed at, because auto-detecting past a misspelled request
+would run somewhere the person did not ask for. `auto` tries Docker first and microsandbox second,
+which is plan Part 12's order, so the reference backend wins a tie; its boot line names both probes:
+
+```
+freebot up: sandbox backend microsandbox (chosen by auto: the Docker daemon did not answer; msb doctor answered)
+```
+
+An explicit request is honoured or it fails, never quietly replaced. Asking for `docker` on a machine
+whose daemon is down, or for `microsandbox` where `msb` is absent, exits 2 and names what was missing
+and what to install. With neither present, `auto` exits 2 naming both install paths rather than
+starting a launch whose runs could not run:
+
+```
+freebot up: no sandbox backend: the Docker daemon did not answer; msb doctor did not answer; install and start Docker Desktop (docs/RUNNING.md, "What you need") or install microsandbox: `curl -fsSL https://install.microsandbox.dev | sh` (docs/microsandbox.md)
+```
+
+Every backend that table can select is free and needs no account (order 34). The table is a `Record`
+over the id union, so a backend added to the type and forgotten there fails the typecheck instead of
+becoming unreachable; that is the slot plan Part 12's E2B Embed grows into.
+
 
 ## The Library
 
@@ -132,28 +179,36 @@ loop, so the run ends and the next one starts fresh.
 | `--no-open` | Print the URL, do not open a browser. This is the path the evidence driver uses. |
 | `--live` | Use the key in `~/.freebot/provider.env`, and refuse to start without one. |
 | `--replay` | Replay the committed transcript instead of calling a model. |
+| `--sandbox <id>` | The sandbox backend: `docker`, `microsandbox`, or `auto`. Default `auto`. |
 | `--api-port <n>` | The page and its stream. Default 0, which asks the OS for a free port. |
 | `--tunnel-port <n>` | The tunnel leg. Default 0, which asks the OS for a free port. |
 | `-h`, `--help` | Print the usage. |
 
 `--no-open --api-port <n>` on a port that is already taken exits 1 and names the port. Two launches
 on the default flags cannot collide, because each takes a free port. `--live` on a machine whose
-vault holds no key exits 2 and names the file it looked at, rather than quietly replaying.
+vault holds no key exits 2 and names the file it looked at, rather than quietly replaying. A
+`--sandbox` value naming no backend, or naming one this machine cannot run, also exits 2 and names
+what was missing; see "The sandbox backend".
 
 ## Stopping it
 
-Ctrl-C stops both listeners, then removes the sandbox containers this launch created, and exits 0:
+Ctrl-C stops both listeners, then removes the sandboxes this launch created, through whichever
+backend's adapter the launch chose, and exits 0:
 
 ```
 freebot up: stopping
-freebot up: removed sandbox container freebot-sbx-run-1-fglyezgr
+freebot up: removed sandbox freebot-sbx-run-1-fglyezgr (docker)
 freebot up: stopped
 ```
 
-A container left behind by a `SIGKILL` (not a Ctrl-C) belongs to a launch that no longer exists, so
+On microsandbox the same line names the sandbox and `(microsandbox)`. A launch that cannot remove
+one says `FAILED to remove sandbox <name>` and exits 1 rather than reporting a clean stop.
+
+A sandbox left behind by a `SIGKILL` (not a Ctrl-C) belongs to a launch that no longer exists, so
 nothing this launch does removes it. `docker ps -a --filter label=freebot.unit=u1.7` lists the
-containers this repo's runs create, including that one. Cleanup is always label- and name-scoped to
-the containers a launch made, never a `prune` (order 22).
+containers this repo's runs create, including that one; on microsandbox the same question is
+`msb ls --label freebot.unit=u1.7`. Cleanup is always label- and name-scoped to the sandboxes a
+launch made, never a `prune` (order 22).
 
 ## Confirming it worked
 

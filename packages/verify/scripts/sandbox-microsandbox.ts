@@ -1,39 +1,29 @@
 #!/usr/bin/env bun
 /**
- * The U9.2 evidence driver: microsandbox answers U9.1's conformance suite on this Mac, once more
+ * The U9.5 evidence driver: microsandbox answers U9.1's conformance suite on this Mac, once more
  * with two operations sabotaged, and end to end through a really launched app whose run executes a
  * command inside a microsandbox.
  *
- * Real: the app's own server (`startServer` + `createRunService`, the pair `bun run up` boots), its
- * listeners, its oRPC router, its run loop, its approval gate, the engine's own microVM, and the
- * pinned OCI image inside it. Injected: the run's sandbox port is a microsandbox-backed one, because
- * the shipped `bun run up` still hardcodes the Docker adapter (a deviation this artifact records).
- * The model is whatever the vault selects: the keyed path when a key is present, the replay when not.
+ * Real: `bun run up` itself, spawned the way a person types it, on a `PATH` that holds no `docker`,
+ * so the launcher's own backend selector is what reaches this backend. Its listeners, its oRPC
+ * router, its run loop, its approval gate, the engine's own microVM and the pinned OCI image inside
+ * it are all the launcher's. Nothing about the run path is injected, so the backend this artifact
+ * names is the one the boot line printed, which is what U9.2 could not yet show.
+ *
+ * The model is pinned to the committed transcript, so the run path is deterministic and no live
+ * provider is billed (order 9). Both runs therefore replay the same recorded bash turn: the first is
+ * answered and finishes, the second is left parked at its gate, which is the sandbox the suite's
+ * sweep must not touch.
  *
  * Run from the repo root: bun packages/verify/scripts/sandbox-microsandbox.ts
  */
 
 import { randomBytes } from "node:crypto";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { SandboxPort } from "@freebot/core";
-import { startServer } from "../../../apps/server/src/index.ts";
-import {
-  chooseProvider,
-  createProviderPort,
-  DEFAULT_TRANSCRIPT,
-} from "../../../apps/server/src/provider.ts";
-import {
-  DockerRunSandbox,
-  destructiveTool,
-  governedTools,
-  RUN_UNIT,
-} from "../../../apps/server/src/run-ports.ts";
-import { createRunService } from "../../../apps/server/src/run-service.ts";
-import { describeVault, readVault } from "../../../apps/server/src/vault.ts";
-import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
+import { RUN_UNIT } from "../../../apps/server/src/run-ports.ts";
 import {
   CONFORMANCE_OPERATIONS,
   type ConformanceDecoy,
@@ -52,10 +42,11 @@ const FEATURE = "sandbox-microsandbox";
 /** Fixed names cannot collide with another run of this driver on the shared engine. */
 const TOKEN = `${process.pid.toString(36)}-${randomBytes(3).toString("hex")}`;
 const RUN_LABEL = `${DEFAULT_UNIT}-run-${TOKEN}`;
-/** The nonce the keyed model is asked to write into this Bot's workspace. */
-const LINE = `freebot-u9.2 ${randomBytes(6).toString("hex")}`;
-/** The prompt whose run stays parked at its gate; it selects the recorded turn, not the model. */
-const PARKED_PROMPT = "parked-run: run one gated command";
+/** The one bash call the committed transcript records, which every replayed run therefore makes. */
+const RECORDED_COMMAND = "native-should-not-run";
+/** The two prompts. The text is the driver's own label for each run; the recorded turn is the same. */
+const FINISHING_PROMPT = "u9.5 run one: a command answered at its gate, to completion";
+const PARKED_PROMPT = "u9.5 run two: the same recorded turn, left parked at its gate";
 
 const lines: string[] = [];
 const failures: string[] = [];
@@ -150,6 +141,24 @@ async function goneSync(name: string): Promise<boolean> {
   return (await sandboxStatus(name)) === "gone";
 }
 
+/** One sandbox's own account of itself: its liveness and the ownership labels it carries. */
+async function inspectSandbox(name: string): Promise<{
+  readonly running: boolean;
+  readonly labels: Record<string, string>;
+}> {
+  const outcome = await msbOutcome(["inspect", name, "--format", "json"]);
+  if (outcome.exitCode !== 0) return { running: false, labels: {} };
+  const parsed = JSON.parse(outcome.stdout.toString("utf8")) as {
+    status?: unknown;
+    active_config?: { labels?: Record<string, string> };
+    config?: { labels?: Record<string, string> };
+  };
+  return {
+    running: typeof parsed.status === "string" && parsed.status.trim().toLowerCase() === "running",
+    labels: parsed.active_config?.labels ?? parsed.config?.labels ?? {},
+  };
+}
+
 /** The engine's own census under one ownership label: ``name=status`` per sandbox, sorted. */
 async function census(label: string): Promise<string[]> {
   const listed = await msbCli(["ls", "--label", label, "-q"]);
@@ -208,85 +217,158 @@ async function cleanUp(token: string, decoys: readonly ConformanceDecoy[]): Prom
   for (const decoy of decoys) shell(["msb", "rm", "-f", decoy.name]);
 }
 
-const botsRoot = mkdtempSync(join(tmpdir(), `freebot-u92-bots-${TOKEN}-`));
-const scratch = mkdtempSync(join(tmpdir(), `freebot-u92-scratch-${TOKEN}-`));
+/**
+ * A `PATH` with no `docker` on it, and the proof that it has none.
+ *
+ * Criterion 2 asks for Docker's absence to be shown rather than assumed, and hiding it by naming a
+ * fixed short `PATH` would be an assumption about where this machine keeps its tools. This removes
+ * every directory that actually resolves a `docker` executable and then re-resolves, so the fact
+ * the artifact records is the result of the same lookup the launcher would do.
+ */
+function dockerFreePath(): { readonly path: string; readonly removed: readonly string[] } {
+  const removed: string[] = [];
+  const kept = (process.env.PATH ?? "").split(":").filter((dir) => {
+    if (dir === "") return false;
+    const candidate = join(dir, "docker");
+    if (!existsSync(candidate)) return true;
+    removed.push(dir);
+    return false;
+  });
+  return { path: kept.join(":"), removed };
+}
 
-/** The names the injected sandbox port created, so cleanup removes exactly those and nothing else. */
-const createdSandboxes: string[] = [];
-/** One engine fact per created sandbox, captured while it exists (the app destroys its own). */
+interface App {
+  readonly port: number;
+  readonly token: string;
+  readonly url: string;
+  readonly stdout: () => string;
+  readonly stderr: () => string;
+  stop(): void;
+  exited(): Promise<number>;
+}
+
+/**
+ * `bun run up --sandbox microsandbox`, exactly as a person types it, over a home and a bots root of
+ * our own, on a `PATH` this driver has proved holds no `docker`. The launcher's own selector is what
+ * reaches this backend, so the backend the boot line prints is the one the run really used.
+ *
+ * The model is pinned to the committed transcript: this driver asserts the run path, not a model,
+ * and a replay bills nobody (order 9).
+ */
+async function launchApp(home: string, bots: string, path: string): Promise<App> {
+  const proc = Bun.spawn(["bun", "run", "up", "--no-open", "--sandbox", "microsandbox"], {
+    cwd: root,
+    env: {
+      ...process.env,
+      PATH: path,
+      FREEBOT_PROVIDER: "replay",
+      FREEBOT_HOME: home,
+      FREEBOT_WORKSPACE: bots,
+    },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  let out = "";
+  let err = "";
+  for (const [stream, keep] of [
+    [proc.stdout, (text: string) => (out += text)],
+    [proc.stderr, (text: string) => (err += text)],
+  ] as const) {
+    void (async () => {
+      const decoder = new TextDecoder();
+      for await (const chunk of stream) keep(decoder.decode(chunk));
+    })();
+  }
+  let url = "";
+  const launched = await settled(
+    () => {
+      url = /^(http:\/\/127\.0\.0\.1:\d+\/#token=\S+)$/m.exec(out)?.[1] ?? "";
+      return url !== "";
+    },
+    "the launcher's one URL line",
+    60_000,
+  );
+  if (!launched) throw new Error(`the launcher printed no URL; its output was:\n${out}\n${err}`);
+  const parsed = new URL(url);
+  return {
+    port: Number(parsed.port),
+    token: new URLSearchParams(parsed.hash.replace(/^#/, "")).get("token") ?? "",
+    url,
+    stdout: () => out,
+    stderr: () => err,
+    stop: () => proc.kill("SIGINT"),
+    exited: async () => await proc.exited,
+  };
+}
+
+const home = mkdtempSync(join(tmpdir(), `freebot-u95-home-${TOKEN}-`));
+const botsRoot = mkdtempSync(join(tmpdir(), `freebot-u95-bots-${TOKEN}-`));
+const scratch = mkdtempSync(join(tmpdir(), `freebot-u95-scratch-${TOKEN}-`));
+
+/**
+ * The sandboxes the launched app created for this driver's own runs, by name.
+ *
+ * A sandbox is claimed only when it is both listed under the app's unit label and named for a run
+ * this driver itself started, so a concurrent launch of something else is never in scope (order 22).
+ * Names, never a pattern: whatever this driver does not see it does not touch.
+ */
+const appSandboxes = new Set<string>();
+/** One engine fact per claimed sandbox, captured while it existed. */
 const sandboxFacts = new Map<string, string>();
 
-let server: ReturnType<typeof startServer> | null = null;
+let app: App | null = null;
 let socket: WebSocket | null = null;
 
 try {
-  section("the engine, and the image it caches");
+  section("the engine, and the proof that Docker is not reachable for this launch");
   const doctor = shell(["msb", "doctor"]);
   record(`msb --version: ${shell(["msb", "--version"]).out}`);
   record(`msb doctor exit: ${doctor.code}`);
   expect(doctor.code === 0, "msb doctor reports a ready host");
-
-  section("the app, started with a microsandbox-backed run sandbox");
-  const vault = readVault();
-  const choice = chooseProvider({ mode: "auto", vault });
-  const described = describeVault();
+  const hostDocker = shell(["sh", "-c", "command -v docker || true"]).out;
+  record(`docker on this driver's own PATH: ${hostDocker === "" ? "(absent)" : hostDocker}`);
+  const { path: sandboxPath, removed } = dockerFreePath();
   record(
-    `the vault at ${described.path} is ${described.present ? `present, mode ${described.mode ?? "unknown"}` : "absent"}`,
+    `PATH directories dropped because they resolve a docker executable: ${removed.length === 0 ? "(none)" : removed.join(", ")}`,
   );
+  const stillThere = shell([
+    "sh",
+    "-c",
+    `PATH=${JSON.stringify(sandboxPath)} command -v docker || true`,
+  ]).out;
   record(
-    choice.kind === "keyed"
-      ? `the run's model: keyed, ${choice.model} via ${new URL(choice.baseUrl).host}; this driver never reads the key's value`
-      : `the run's model: replaying the committed transcript (${choice.why}); the recorded turn echoes rather than writing a file`,
+    `docker on the launched app's PATH after the drop: ${stillThere === "" ? "(absent)" : stillThere}`,
+  );
+  expect(
+    stillThere === "",
+    "the PATH the launched app gets resolves no docker executable, so its backend cannot be Docker",
   );
 
-  server = startServer({
-    service: createRunService({
-      sandbox: (): SandboxPort => {
-        const port = new DockerRunSandbox(new MicrosandboxAdapter({ unit: RUN_UNIT }));
-        return {
-          create: async (spec) => {
-            createdSandboxes.push(spec.name);
-            await port.create(spec);
-            // The app destroys a run's sandbox as the run settles, so the engine's own account of it
-            // is captured here, while it exists, rather than after the run.
-            sandboxFacts.set(
-              spec.name,
-              shell(["msb", "inspect", spec.name, "--format", "json"]).out,
-            );
-          },
-          execute: (call) => port.execute(call),
-          destroy: () => port.destroy(),
-        };
-      },
-      // The run that is meant to stay parked uses the recorded turn, so the park this driver asserts
-      // does not depend on a live model's timing; every other run uses the vault's own choice.
-      provider: async (prompt) =>
-        await createProviderPort(
-          prompt === PARKED_PROMPT
-            ? { kind: "replay", transcript: DEFAULT_TRANSCRIPT, why: "asked-for-replay" }
-            : choice,
-          {
-            prompt,
-            destructive: (name) => destructiveTool(name),
-            tools: governedTools(),
-          },
-        ),
-      botsRoot,
-    }),
-  });
-  const page = await fetch(`http://127.0.0.1:${server.apiPort}/`);
-  record(
-    `GET http://127.0.0.1:${server.apiPort}/#token=<redacted> -> ${page.status} ${page.headers.get("content-type") ?? ""}`,
+  section("the app, launched by `bun run up --sandbox microsandbox` on that PATH");
+  app = await launchApp(home, botsRoot, sandboxPath);
+  const shown = app.url.replace(/token=\S+/, "token=<redacted>");
+  record(`launcher line: ${shown}`);
+  const bootLines = `${app.stdout()}\n${app.stderr()}`
+    .split("\n")
+    .filter((it) => it.startsWith("freebot up:"));
+  for (const line of bootLines) record(`launcher said: ${line}`);
+  const backendLine = bootLines.find((it) => it.includes("sandbox backend")) ?? "";
+  expect(
+    backendLine.includes("sandbox backend microsandbox") &&
+      backendLine.includes("--sandbox=microsandbox"),
+    `the launcher's own boot line names microsandbox and why: ${JSON.stringify(backendLine)}`,
   );
-  expect(page.status === 200, `the launched app serves its own URL: ${page.status}`);
+  const page = await fetch(app.url);
+  record(`GET ${shown} -> ${page.status} ${page.headers.get("content-type") ?? ""}`);
+  expect(page.status === 200, `the launched app serves its own printed URL: ${page.status}`);
 
-  const bot = rpc(server.apiPort, "/rpc/create_bot", server.token, '{"json":{"name":"Micro Bot"}}');
+  const bot = rpc(app.port, "/rpc/create_bot", app.token, '{"json":{"name":"Micro Bot"}}');
   const botId = /"botId":"([a-z0-9-]+)"/.exec(bot.body)?.[1];
   expect(bot.status === "200" && botId !== undefined, `create_bot -> ${bot.status} ${bot.body}`);
   const thread = rpc(
-    server.apiPort,
+    app.port,
     "/rpc/create_thread",
-    server.token,
+    app.token,
     `{"json":{"botId":"${botId ?? ""}"}}`,
   );
   const threadId = /"threadId":"([a-z0-9-]+)"/.exec(thread.body)?.[1];
@@ -295,157 +377,178 @@ try {
     `create_thread -> ${thread.status} ${thread.body}`,
   );
 
-  section("the run: a real approval answered on the app's own stream, inside a microsandbox");
+  section("run one: a real approval answered on the app's own stream, inside a microsandbox");
   socket = new WebSocket(
-    `ws://127.0.0.1:${server.apiPort}/events?token=${server.token}&thread_id=${threadId ?? ""}&last_seen_seq=0`,
+    `ws://127.0.0.1:${app.port}/events?token=${app.token}&thread_id=${threadId ?? ""}&last_seen_seq=0`,
   );
   const frames: Array<{ type?: unknown; runId?: unknown; payload?: Record<string, unknown> }> = [];
-  let finished = false;
-  /** The only run whose approvals this driver answers; the parked run's are left waiting. */
-  let answerForRun = "";
   socket.onmessage = (event) => {
-    const message = JSON.parse(String(event.data)) as {
-      type?: unknown;
-      runId?: unknown;
-      payload?: Record<string, unknown>;
-    };
-    frames.push(message);
-    if (message.type === "approval.requested" && message.runId === answerForRun) {
-      const approvalId = message.payload?.approvalId;
-      if (typeof approvalId === "string") {
-        socket?.send(JSON.stringify({ type: "answer", decision: "allow", approvalId }));
-        record(
-          `answered approval ${approvalId} with allow, for command ${JSON.stringify(message.payload?.command ?? "")}`,
-        );
-      }
-    }
-    if (message.type === "run.finished" || message.type === "run.failed") finished = true;
+    frames.push(
+      JSON.parse(String(event.data)) as {
+        type?: unknown;
+        runId?: unknown;
+        payload?: Record<string, unknown>;
+      },
+    );
   };
   await settled(() => socket?.readyState === WebSocket.OPEN, "the events socket to open", 10_000);
-  const writePrompt = `Use the bash tool to write exactly this, and nothing else, into the file /workspace/note.txt: '${LINE}' followed by a newline. Create no other file and read nothing. Then reply with one short sentence.`;
-  const started = rpc(
-    server.apiPort,
-    "/rpc/start_run",
-    server.token,
-    `{"json":{"prompt":${JSON.stringify(writePrompt)},"botId":"${botId ?? ""}","threadId":"${threadId ?? ""}"}}`,
-  );
-  const runId = /"runId":"([a-z0-9-]+)"/.exec(started.body)?.[1];
-  answerForRun = runId ?? "";
-  expect(
-    started.status === "200" && runId !== undefined,
-    `start_run -> ${started.status} ${started.body}`,
-  );
-  const runSettled = await settled(() => finished, "the run's terminal frame", 300_000);
-  record(`frames this run produced: ${frames.map((frame) => String(frame.type)).join(", ")}`);
-  record(`the run's sandbox names: ${createdSandboxes.join(", ")}`);
-  expect(
-    runSettled,
-    `the run reached its terminal frame on the app's own stream: ${String(frames.at(-1)?.type ?? "(no frame)")}`,
-  );
-  const results = frames.filter((frame) => frame.type === "tool_call.result");
-  for (const result of results) record(`tool_call.result: ${JSON.stringify(result.payload)}`);
-  // The socket follows this thread, so answering here would answer the parked run's approval too.
-  // From here on the driver leaves every approval waiting, which is what keeps the next run parked.
-  answerForRun = "";
 
-  section("the sandbox the app's run used is a microsandbox, not a container");
-  const runSandboxName = createdSandboxes[0] ?? "";
-  const runFact = sandboxFacts.get(runSandboxName) ?? "";
-  expect(
-    runFact.includes('"freebot.provider": "microsandbox"') &&
-      runFact.includes(`"freebot.sandbox": ${JSON.stringify(runSandboxName)}`),
-    `the run's sandbox ${runSandboxName} carried freebot.provider=microsandbox and its own name when the run created it`,
-  );
-
-  section("the file the run wrote: through the app's route, and off the host");
-  const workspace = botWorkspacePath(botsRoot, botId ?? "");
-  const onDiskPath = join(workspace, "note.txt");
-  const onDisk = (() => {
-    try {
-      return statSync(onDiskPath).isFile() ? readFileSync(onDiskPath, "utf8") : null;
-    } catch {
-      return null;
-    }
-  })();
-  record(`read off the host at ${onDiskPath}: ${JSON.stringify(onDisk)}`);
-  const read = rpc(
-    server.apiPort,
-    "/rpc/read_file",
-    server.token,
-    `{"json":{"botId":"${botId ?? ""}","path":"note.txt"}}`,
-  );
-  record(`read_file -> ${read.status} ${read.body}`);
-  if (choice.kind === "keyed") {
-    expect(
-      onDisk?.includes(LINE) === true,
-      `the keyed model's file carries this run's nonce, read off the host: ${JSON.stringify(onDisk)}`,
+  /**
+   * Claim the sandbox a run this driver started created, and read the engine's own account of it
+   * while it is still alive. The name is matched against the run id the app just handed back, so a
+   * sandbox belonging to anything else is never claimed (order 22).
+   */
+  async function claimSandbox(runId: string): Promise<string> {
+    let claimed = "";
+    await settled(
+      async () => {
+        const names = await census(`freebot.unit=${RUN_UNIT}`);
+        const mine = names.find((entry) => entry.startsWith(`${runId}-`));
+        if (mine === undefined) return false;
+        claimed = mine.slice(0, mine.indexOf("="));
+        if (!appSandboxes.has(claimed)) {
+          appSandboxes.add(claimed);
+          sandboxFacts.set(claimed, JSON.stringify(await inspectSandbox(claimed)));
+        }
+        return true;
+      },
+      `the sandbox the app's run ${runId} created`,
+      120_000,
     );
-    let routeText = "";
-    try {
-      routeText = (JSON.parse(read.body) as { json: { text: string } }).json.text;
-    } catch {
-      routeText = "";
-    }
-    expect(
-      routeText.includes(LINE),
-      `the app's read_file route returns the same bytes: ${JSON.stringify(routeText)}`,
-    );
-  } else {
-    // The committed transcript's recorded turn runs `echo native-should-not-run`: it runs inside the
-    // microVM but writes nothing, so the file claim is not made and the command claim is.
-    const ranInSandbox = results.some((frame) =>
-      JSON.stringify(frame.payload ?? {}).includes("native-should-not-run"),
-    );
-    record(
-      "the vault holds no key, so this run replayed; the recorded turn writes no file and the command claim is asserted instead",
-    );
-    expect(ranInSandbox, "the replayed turn's own command ran inside the microsandbox");
+    return claimed;
   }
 
-  section(
-    "a second run of the app, parked at its gate, so the sweep meets a sandbox it does not own",
+  const startRun = (prompt: string): { status: string; runId: string } => {
+    const started = rpc(
+      app?.port ?? 0,
+      "/rpc/start_run",
+      app?.token ?? "",
+      `{"json":{"prompt":${JSON.stringify(prompt)},"botId":"${botId ?? ""}","threadId":"${threadId ?? ""}"}}`,
+    );
+    const runId = /"runId":"([a-z0-9-]+)"/.exec(started.body)?.[1] ?? "";
+    expect(
+      started.status === "200" && runId !== "",
+      `start_run(${JSON.stringify(prompt.slice(0, 24))}...) -> ${started.status} ${started.body}`,
+    );
+    return { status: started.status, runId };
+  };
+
+  const runOne = startRun(FINISHING_PROMPT);
+  const gateOne = await settled(
+    () => frames.some((f) => f.type === "approval.requested" && f.runId === runOne.runId),
+    "run one to reach its gate",
+    180_000,
   );
-  const parked = rpc(
-    server.apiPort,
-    "/rpc/start_run",
-    server.token,
-    `{"json":{"prompt":${JSON.stringify(PARKED_PROMPT)},"botId":"${botId ?? ""}","threadId":"${threadId ?? ""}"}}`,
+  const approvalOne = frames.find(
+    (f) => f.type === "approval.requested" && f.runId === runOne.runId,
   );
-  const parkedId = /"runId":"([a-z0-9-]+)"/.exec(parked.body)?.[1];
-  expect(parked.status === "200", `the parked run started -> ${parked.status} ${parked.body}`);
-  const parkedParked = await settled(
-    () =>
-      frames.some(
-        (frame) =>
-          frame.runId === parkedId &&
-          (frame.type === "approval.requested" ||
-            frame.type === "run.finished" ||
-            frame.type === "run.failed"),
-      ),
-    "the parked run to reach its gate",
-    120_000,
+  const approvalId = approvalOne?.payload?.approvalId;
+  expect(
+    gateOne && typeof approvalId === "string",
+    `run one is parked at its own gate: ${JSON.stringify(approvalOne?.payload?.command ?? "(no approval)")}`,
   );
-  const parkedApproval = frames.find(
-    (frame) => frame.type === "approval.requested" && frame.runId === parkedId,
-  );
+
+  section("the sandbox the app's run used is a microsandbox, inspected while it lived");
+  const runOneSandbox = await claimSandbox(runOne.runId);
+  const runOneFact = (JSON.parse(sandboxFacts.get(runOneSandbox) ?? "{}") ?? {}) as {
+    labels?: Record<string, string>;
+    running?: boolean;
+  };
   record(
-    parkedApproval === undefined
-      ? "the parked run ended without parking"
-      : `the parked run is waiting on approval ${JSON.stringify(parkedApproval.payload?.approvalId ?? "")} for ${JSON.stringify(parkedApproval.payload?.command ?? "")}, unanswered`,
+    `inspect ${runOneSandbox}, while it lived: ${sandboxFacts.get(runOneSandbox) ?? "(none)"}`,
   );
   expect(
-    parkedParked && parkedApproval !== undefined,
-    "the parked run is really parked at its own gate, unanswered, while the suite runs",
+    runOneFact.labels?.["freebot.provider"] === "microsandbox",
+    `the run's sandbox ${runOneSandbox} carried freebot.provider=microsandbox while the run was in it`,
   );
-  const parkedLive = await settled(
-    async () =>
-      createdSandboxes.length >= 2 && (await census(`freebot.unit=${RUN_UNIT}`)).length === 1,
-    "the parked run's own sandbox, with the finished run's gone",
+  expect(
+    runOneFact.labels?.["freebot.sandbox"] === runOneSandbox,
+    `the run's sandbox carried its own name as freebot.sandbox: ${JSON.stringify(runOneFact.labels?.["freebot.sandbox"])}`,
+  );
+  expect(
+    runOneFact.running === true,
+    `the run's sandbox was really running: ${runOneFact.running}`,
+  );
+
+  // Run two starts before run one is answered, and on purpose. Both runs replay the same recorded
+  // turn, so the same `bash` call: the grant run one's answer mints would satisfy run two's call and
+  // it would never park. Started while run one is still waiting, run two parks on its own, and the
+  // answer below names run one's approval id, so run two is left waiting — which is the app-owned
+  // sandbox the suite's sweep must not touch.
+  section(
+    "run two: the same recorded turn, left parked, so the sweep meets a sandbox it does not own",
+  );
+  const runTwo = startRun(PARKED_PROMPT);
+  const gateTwo = await settled(
+    () => frames.some((f) => f.type === "approval.requested" && f.runId === runTwo.runId),
+    "run two to reach its gate",
+    180_000,
+  );
+  const approvalTwo = frames.find(
+    (f) => f.type === "approval.requested" && f.runId === runTwo.runId,
+  );
+  record(
+    `run two is waiting on approval ${JSON.stringify(approvalTwo?.payload?.approvalId ?? "")} for ${JSON.stringify(approvalTwo?.payload?.command ?? "")}, unanswered`,
+  );
+  expect(
+    gateTwo && approvalTwo !== undefined,
+    "run two is really parked at its own gate, unanswered, while the suite runs",
+  );
+  expect(
+    approvalTwo?.payload?.approvalId !== approvalId,
+    `the two runs parked on their own approvals: ${JSON.stringify(approvalId)} and ${JSON.stringify(approvalTwo?.payload?.approvalId)}`,
+  );
+  const runTwoSandbox = await claimSandbox(runTwo.runId);
+  record(`the app's sandboxes this driver claimed: ${[...appSandboxes].join(", ")}`);
+  expect(
+    runTwoSandbox !== "" && runOneSandbox !== "" && runTwoSandbox !== runOneSandbox,
+    `each of the app's two runs created its own sandbox: ${runOneSandbox}, ${runTwoSandbox}`,
+  );
+  expect(
+    (await census(`freebot.unit=${RUN_UNIT}`)).length >= 1,
+    `the parked run's own sandbox is alive for the suite to find: ${JSON.stringify(await census(`freebot.unit=${RUN_UNIT}`))}`,
+  );
+
+  section("run one's gate answer: only that run's approval, so run two stays parked");
+  if (typeof approvalId === "string") {
+    socket.send(JSON.stringify({ type: "answer", decision: "allow", approvalId }));
+    record(
+      `answered approval ${approvalId} with allow; ${JSON.stringify(approvalTwo?.payload?.approvalId ?? "")} stays unanswered`,
+    );
+  }
+  const runOneSettled = await settled(
+    () => frames.some((f) => f.runId === runOne.runId && f.type === "run.finished"),
+    "run one's terminal frame",
+    300_000,
+  );
+  record(`frames run one produced: ${frames.map((f) => String(f.type)).join(", ")}`);
+  expect(runOneSettled, "run one reached run.finished on the app's own stream");
+  const results = frames.filter((f) => f.type === "tool_call.result");
+  for (const result of results) record(`tool_call.result: ${JSON.stringify(result.payload)}`);
+  expect(
+    results.some((f) => JSON.stringify(f.payload ?? {}).includes(RECORDED_COMMAND)),
+    `the recorded turn's own command ran inside the microsandbox: ${RECORDED_COMMAND}`,
+  );
+  expect(
+    !frames.some((f) => f.runId === runTwo.runId && f.type === "run.finished"),
+    "run two did not finish: its approval is still the one nobody answered",
+  );
+  // The run loop emits `run.finished` before its own `finally` destroys the sandbox, so the census
+  // is read through the same bounded wait the reaper uses rather than sampled the instant the frame
+  // lands: a fact that is still converging is not yet a leak.
+  const runOneReaped = await settled(
+    async () => (await census(`freebot.unit=${RUN_UNIT}`)).length === 1,
+    "run one's own sandbox to be destroyed with its run",
     60_000,
   );
-  expect(parkedLive, `the parked run created its own sandbox: ${createdSandboxes.join(", ")}`);
   const appCensusBefore = await census(`freebot.unit=${RUN_UNIT}`);
   for (const entry of appCensusBefore) record(`the engine holds, under ${RUN_UNIT}: ${entry}`);
+  expect(
+    runOneReaped &&
+      appCensusBefore.length === 1 &&
+      appCensusBefore[0]?.startsWith(`${runTwoSandbox}=`) === true,
+    `run one's own sandbox is gone with its run, leaving run two's: ${JSON.stringify(appCensusBefore)}`,
+  );
 
   section("the conformance suite, against microsandbox");
   const suiteResult = await runSuite(TOKEN, scratch, null);
@@ -472,8 +575,7 @@ try {
     `the app's own sandbox is unchanged by the suite's sweep: ${appCensusBefore.length} before, ${appCensusAfter.length} after`,
   );
   expect(
-    appCensusAfter.length === 1 &&
-      appCensusAfter[0]?.startsWith(`${createdSandboxes[1] ?? ""}=`) === true,
+    appCensusAfter.length === 1 && appCensusAfter[0]?.startsWith(`${runTwoSandbox}=`) === true,
     `the sandbox the sweep left alone is the app's parked run's own: ${JSON.stringify(appCensusAfter)}`,
   );
   expect(
@@ -530,19 +632,43 @@ try {
 } catch (error) {
   expect(false, `the driver threw: ${error instanceof Error ? error.message : String(error)}`);
 } finally {
-  section("cleanup: the app, its run's sandbox, and every sandbox this driver made");
+  section("cleanup: the launched app stops the way a person stops it, and reaps its own sandboxes");
   socket?.close();
-  server?.stop();
-  server?.service.close();
-  for (const name of createdSandboxes) shell(["msb", "rm", "-f", name]);
-  await settled(
-    async () => {
-      const left = await Promise.all(createdSandboxes.map((name) => goneSync(name)));
-      return left.every((it) => it);
-    },
-    "the app's run sandboxes to be gone",
-    60_000,
-  );
+  if (app !== null) {
+    // Ctrl-C is the path this asserts: the launcher's own reaper, over the backend it chose, is what
+    // removes the runs' sandboxes. Anything this driver removes by hand afterwards is named, never a
+    // pattern (order 22).
+    app.stop();
+    record(`launcher exited with ${await app.exited()}`);
+    const reaped = await settled(
+      async () =>
+        (await Promise.all([...appSandboxes].map((name) => goneSync(name)))).every((it) => it),
+      "the launcher's own reaper to remove the sandboxes it created",
+      90_000,
+    );
+    const removalLines = `${app.stdout()}\n${app.stderr()}`
+      .split("\n")
+      .filter((it) => it.includes("removed sandbox") || it.includes("FAILED to remove sandbox"));
+    for (const line of removalLines) record(`launcher said: ${line}`);
+    for (const entry of await census(`freebot.unit=${RUN_UNIT}`)) {
+      record(`still held under ${RUN_UNIT} after the app stopped: ${entry}`);
+    }
+    const left = await Promise.all([...appSandboxes].map((name) => goneSync(name)));
+    record(
+      `of the ${appSandboxes.size} sandboxes this driver claimed, gone after the app's own reap: ${left.filter((it) => it).length}`,
+    );
+    expect(
+      reaped && left.every((it) => it),
+      `the launched app reaped every sandbox it created: ${[...appSandboxes].join(", ")}`,
+    );
+    let listening = true;
+    try {
+      await fetch(app.url);
+    } catch {
+      listening = false;
+    }
+    expect(!listening, "nothing answers the printed URL after the app stopped");
+  }
   await cleanUp(TOKEN, decoySpecs(TOKEN));
   const survives = await census(`freebot.unit=${RUN_LABEL}`);
   record(`sandboxes left under the suite's label ${RUN_LABEL}: ${survives.length}`);
@@ -552,7 +678,7 @@ try {
     decoysGone.every((it) => it),
     "the driver's own cleanup removed every decoy it created",
   );
-  for (const dir of [botsRoot, scratch]) rmSync(dir, { recursive: true, force: true });
+  for (const dir of [home, botsRoot, scratch]) rmSync(dir, { recursive: true, force: true });
   record("this driver left no sandbox behind");
 }
 

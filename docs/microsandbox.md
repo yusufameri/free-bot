@@ -37,6 +37,14 @@ token, no Docker. `FREEBOT_MSB_BIN` names a different binary; without it the ada
 Nothing in this repository depends on the tool being present (order 27): the adapter shells out to a
 host CLI, which is not a repository dependency.
 
+**Reaching it from `bun run up`.** U9.2 shipped the adapter but the launcher still built the Docker
+adapter directly, so this backend was unreachable from the one command a person types. U9.5 closed
+that: `apps/server/src/cli/sandbox-backend.ts` is now the single place the launcher decides, from
+`--sandbox` or `FREEBOT_SANDBOX` when given and otherwise by auto-detection — Docker if the daemon
+answers, then this backend if `msb doctor` does. `bun run up --sandbox microsandbox` runs every run's
+sandbox here, and the boot line names the backend and the fact that decided it. `docs/RUNNING.md`
+carries the values, the auto-detection order and the failure message a machine with neither prints.
+
 - **Tool absent**: `packages/sandbox/src/microsandbox.test.ts` **skips** and prints why, so a machine
   without microsandbox still passes `bun run test`, `bun run verify` and `bun run lint`. The skip
   names the command that fixes it. `FREEBOT_MSB_TESTS=require bun test
@@ -137,23 +145,27 @@ Each of these is a fact from `msb 0.7.8` on this Mac, not an assumption:
   (`sandbox not found`), and a run's own `destroy` reaches that path. `docs/sandbox-conformance.md`
   records that Docker throws here and that naming converge-on-absence would settle it; this adapter
   converges.
-- **U9.1's `sweep` sabotage is Docker-coupled.** `sabotageOperation(subject, "sweep", names)` removes
-  its decoys with `dockerCli`. Against a non-Docker backend that removes nothing, and
-  `docker rm -f <missing>` exits **0** on Docker 28.3.2, so the sabotaged sweep passes and the drill
-  proves nothing. The driver records that as a finding and seeds the same defect through `msb rm` so
-  the census assertion is still shown to fail. Fixing the arm to remove decoys through the subject's
-  own ownership port would close it for every backend.
+- **U9.1's `sweep` sabotage was Docker-coupled, and U9.5 closed it.** `sabotageOperation(subject,
+  "sweep", names)` removed its decoys with `dockerCli`. Against a non-Docker backend that removed
+  nothing, and `docker rm -f <missing>` exits **0** on Docker 28.3.2, so the sabotaged sweep passed
+  and the drill proved nothing while reading as a pass. The arm now removes its decoys through the
+  subject's own ownership port (`removeDecoys` in `packages/sandbox/src/conformance.ts`), which every
+  subject answers with its own engine: `docker rm -f` on Docker, `msb rm -f` here. The defect is
+  therefore seeded on whatever engine the subject runs on, and the census catches it on both. This
+  driver now records the sabotaged sweep **failing** with the decoy's literal census change, the same
+  shape Docker's drill has, rather than the `PASS FINDING` it used to carry.
 
 ## Evidence
 
 `bun packages/verify/scripts/sandbox-microsandbox.ts` writes
-`packages/verify/artifacts/sandbox-microsandbox/<short sha>/assert.txt`. It boots the app's real
-server with a microsandbox-backed sandbox port, drives one run with the vault's own model choice
-(keyed when a key is present, the replay when not), answers the approval on the app's `events` socket,
-and reads the file the run wrote both through `read_file` and off the host; it then runs the suite,
-and it runs three negative controls (a sabotaged upload, the finding above, and the engine-seeded
-sweep). `bun test packages/sandbox/src/microsandbox.test.ts` drives the same suite inside the repo's
-own test run and skips where `msb` is absent.
+`packages/verify/artifacts/sandbox-microsandbox/<short sha>/assert.txt`. It spawns the real launcher,
+`bun run up --sandbox microsandbox`, on a `PATH` the driver has proved resolves no `docker`, so the
+launcher's own backend selector is what reaches this backend and the boot line it prints is the
+driver's own evidence. It drives two runs on the vault's own model, answers one approval on the app's
+`events` socket and leaves the other parked, so the app owns a live microsandbox across the suite's
+sweep; it then runs the suite, and it runs two negative controls (a sabotaged upload and a sabotaged
+sweep, each failing where it must). `bun test packages/sandbox/src/microsandbox.test.ts` drives the
+same suite inside the repo's own test run and skips where `msb` is absent.
 
 This unit adds no user-visible surface: no web route, no page, no copy. The one surface that could
 render the backend's words is the provider list, and the beta label is recorded here and in
