@@ -1,0 +1,150 @@
+feature: keyed-run
+command: bun packages/verify/scripts/keyed-run.ts
+timestamp: 2026-10-18T01:38:12.261Z
+git sha: 3c3a9e77aab59e3856b5f95943a6e594dd133dfb
+git sha short: 3c3a9e7
+branch: u6.1-design-contract
+runtime: bun 1.2.5 on darwin arm64
+the year the container's own stdout is asserted to carry: 2026
+
+# keyed-run live-ui frames
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open`, with no provider flag, so the mode is `auto` and the model is whatever the vault selects. The prompt is typed into the page's own box. The model's request line, its text and its tool call are read out of the server's stderr, and the container's stdout is read off the page.
+containers before the first run (label freebot.unit=u1.7): 0
+
+## the launcher's own provider choice
+the printed URL, redacted: http://127.0.0.1:56182/#token=<redacted>
+the launcher's line: freebot up: model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)
+ok - the launcher selected the keyed path from the vault, with no flag asking for it: [true,true]
+ok - and named the vault's endpoint and model, and never the key's name or value: [true,true,false]
+the launcher's vault line: freebot up: vault /Users/yusufameri/.freebot/provider.env present, mode 600
+ok - the vault it read is present, so the keyed path is the real one: true
+the thread the page's stream follows: thread-1
+ok - a page stream with no token is refused: "refused"
+ok - a page stream with the URL's own token and a real thread is accepted: "open"
+cdp: Chrome/155.0.8059.84, headless, remote debugging on the DevToolsActivePort file (dynamic)
+
+## the prompt typed into the page, parked at the gate
+ok - first launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:56182","fragmentKey":"#token=","search":""}
+ok - first launch: operator mode is on, so the prompt box is the way in: false
+ok - frame 01-armed: the page held still across the capture: "{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null}"
+ok - frame 01-armed: the element the caption is about is inside the captured pixels (#operator): [true,0]
+ok - frame 01-armed: the driver's own DOM read agrees with the page's facts hook: [0,0,[],[]]
+ok - frame 01-armed: claim - no message is rendered: true
+ok - frame 01-armed: claim - the run has not finished: true
+ok - frame 01-armed: claim - no approval is pending: true
+frame 01-armed: 01-armed.png (45269 bytes, sha256 7733d94b80941cad0ea748790621e0fde78b8f0d6e30feaa5521decb108447a0) - last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text ""
+ok - first launch: the run is the one the page started: "run run-1"
+ok - first launch: the prompt the page sent is the run's prompt: "Use the bash tool to print today's date in the sandbox, then tell me what it printed."
+ok - first launch: the buttons are the two real answers: ["Allow once","Deny"]
+ok - first launch: the run's own status frame is rendered, so a parked run does not look frozen: 1
+ok - first launch: the parked command is a bash call and is not the committed transcript's: [true,false]
+first launch: the card's command, read off the page: bash {"command":"date"}
+first launch: the assistant text before the park: "I'll run the date command in the sandbox."
+ok - the parked run holds one live container, this launch's own: [1,1]
+containers while the run is parked: 1 (freebot-sbx-run-1-n1kjtb7n)
+ok - frame 02-parked: the page held still across the capture: "{\"lastSeq\":7,\"done\":false,\"frameCount\":7,\"turns\":1,\"cards\":[[\"call_00_wsc0tu1cuga6xhftdmlru2ib\",\"awaiting approval\"]],\"outputShown\":[false],\"approvals\":[null],\"deltas\":[\"I'll run the date command in the sandbox.\"],\"resume\":null,\"streamEnd\":null}"
+ok - frame 02-parked: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
+ok - frame 02-parked: the driver's own DOM read agrees with the page's facts hook: [7,7,["awaiting approval"],[null]]
+ok - frame 02-parked: claim - an approval card is waiting: true
+ok - frame 02-parked: claim - the governed card waits for the answer: true
+ok - frame 02-parked: claim - the run has not finished: true
+ok - frame 02-parked: claim - one rendered message per seq: true
+frame 02-parked: 02-parked.png (72567 bytes, sha256 f647c2f7e2220725ddd83ac4eba87bb961ca96bf8cb97e58b4aef5246da61206) - last seq 7 · done false · turns 1 · cards [call_00_wsc0tu1cuga6xhftdmlru2ib:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text "I'll run the date command in the sandbox."
+
+## the request the app made, and the model's own answer
+provider stderr: freebot provider: turn 1 request POST https://api.commandcode.ai/provider/v1/chat/completions model=deepseek/deepseek-v4.1-flash messages=2 tools=bash authorization="Bearer <redacted>"
+provider stderr: freebot provider: turn 1 text "I'll run the date command in the sandbox."
+provider stderr: freebot provider: turn 1 tool_call call_00_wsc0tu1cuga6xhftdmlru2ib bash {"command": "date"}
+provider stderr: freebot provider: turn 1 done finish=tool_calls usage=384/47/431
+ok - the app posted to the vault's endpoint with the vault's model id, and never printed the key: {"endpoint":"https://api.commandcode.ai/provider/v1/chat/completions","model":"deepseek/deepseek-v4.1-flash","messages":"2","tools":"bash","authorization":"Bearer <redacted>"}
+the model's own tool call, as the server read it off the wire: {"id":"call_00_wsc0tu1cuga6xhftdmlru2ib","name":"bash","args":"{\"command\": \"date\"}"}
+the model's own text line: freebot provider: turn 1 text "I'll run the date command in the sandbox."
+the turn's end, with the provider's own usage: freebot provider: turn 1 done finish=tool_calls usage=384/47/431
+ok - the call the model asked for is a bash call, and it is the call the human was asked about: ["bash",true]
+
+## allowed once: the container's own stdout, and the model's closing turn
+first launch: answered run-1:call_00_wsc0tu1cuga6xhftdmlru2ib with allow
+provider stderr after the allow: freebot provider: turn 2 request POST https://api.commandcode.ai/provider/v1/chat/completions model=deepseek/deepseek-v4.1-flash messages=4 tools=bash authorization="Bearer <redacted>"
+provider stderr after the allow: freebot provider: turn 2 text "I ran `date` in the sandbox, and it printed: `Sun Oct 18 01:38:15 UTC 2026` — so the sandbox reports today as Sunday, October 18, 2026, at 01:38:15 UTC (note that this is the sandbox's clock, which may not match real-world time)."
+provider stderr after the allow: freebot provider: turn 2 done finish=stop usage=459/125/584
+ok - the model answered the result on the wire with text of its own, in a later turn: true
+the run's status frames: ["run running","run awaiting_approval","run running","run done"]
+the decision markers: ["decision call_00_wsc0tu1cuga6xhftdmlru2ib: allow"]
+the governance result on the card: "allowed once"
+the container's own stdout: "Sun Oct 18 01:38:15 UTC 2026\n"
+the assistant text on the page: "I'll run the date command in the sandbox.I ran `date` in the sandbox, and it printed: `Sun Oct 18 01:38:15 UTC 2026` — so the sandbox reports today as Sunday, October 18, 2026, at 01:38:15 UTC (note that this is the sandbox's clock, which may not match real-world time)."
+ok - the allowed run failed nowhere: [null,null]
+ok - the run reported done: [true,null]
+ok - the card shows the allow the human gave: "allowed once"
+ok - the governed call ran: its decision is an allow: true
+ok - the output block holds the container's own stdout, and not the committed transcript's: [true,false,true]
+ok - the model closed the run with text of its own, which no recording can produce for this run: true
+ok - frame 03-finished: the page held still across the capture: "{\"lastSeq\":17,\"done\":true,\"frameCount\":17,\"turns\":2,\"cards\":[[\"call_00_wsc0tu1cuga6xhftdmlru2ib\",\"done\"]],\"outputShown\":[true],\"approvals\":[\"allow\"],\"deltas\":[\"I'll run the date command in the sandbox.\",\"I ran `date` in the sandbox, and it printed: `Sun Oct 18 01:38:15 UTC 2026` — so the sandbox reports today as Sunday, October 18, 2026, at 01:38:15 UTC (note that this is the sandbox's clock, which may not match real-world time).\"],\"resume\":null,\"streamEnd\":\"stream complete\"}"
+ok - frame 03-finished: the element the caption is about is inside the captured pixels (#thread .run-finished): [true,0]
+ok - frame 03-finished: the driver's own DOM read agrees with the page's facts hook: [17,17,["done"],["allow"]]
+ok - frame 03-finished: claim - the approval card shows the allow decision: true
+ok - frame 03-finished: claim - a tool card is done with its output open: true
+ok - frame 03-finished: claim - the run reported done: true
+ok - frame 03-finished: claim - the terminal marker is rendered: true
+ok - frame 03-finished: claim - one rendered message per seq: true
+frame 03-finished: 03-finished.png (110688 bytes, sha256 621fb1dffa75172e1eac5b96ec94495c00301833eea4432a2dfd2c9d71f84095) - last seq 17 · done true · turns 2 · cards [call_00_wsc0tu1cuga6xhftdmlru2ib:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "I ran `date` in the sandbox, and it printed: `Sun Oct 18 01:38:15 UTC 2026` — so the sandbox reports today as Sunday, October 18, 2026, at 01:38:15 UTC (note that this is the sandbox's clock, which may not match real-world time)."
+
+## a second launch, denied
+ok - the second launch took a page port of its own: true
+ok - second launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:56221","fragmentKey":"#token=","search":""}
+ok - second launch: operator mode is on, so the prompt box is the way in: false
+ok - second launch: the run is the one the page started: "run run-1"
+ok - second launch: the prompt the page sent is the run's prompt: "Print today's date in the sandbox with bash again, please."
+ok - second launch: the buttons are the two real answers: ["Allow once","Deny"]
+ok - second launch: the run's own status frame is rendered, so a parked run does not look frozen: 1
+ok - second launch: the parked command is a bash call and is not the committed transcript's: [true,false]
+second launch: the card's command, read off the page: bash {"command":"date"}
+second launch: the assistant text before the park: ""
+second launch: answered run-1:call_00_7n33mixm2piec2tbhzbax1hx with deny
+the denial's decision markers: ["decision call_00_7n33mixm2piec2tbhzbax1hx: deny (user_denied)"]
+the container's stdout for the denied call: ""
+ok - the card shows the deny the human gave: "denied"
+ok - the refusal is named user_denied and no command ran: [true,""]
+ok - frame 04-denied: the page held still across the capture: "{\"lastSeq\":16,\"done\":true,\"frameCount\":16,\"turns\":2,\"cards\":[[\"call_00_7n33mixm2piec2tbhzbax1hx\",\"denied\"]],\"outputShown\":[false],\"approvals\":[\"deny\"],\"deltas\":[\"My `date` command was refused by the gate, and since that denial is final I didn't retry it or try a workaround like reading the clock another way. So I have no way to report today's date from inside the sandbox — the only thing I can tell you is that the request was blocked, not that it failed technically.\"],\"resume\":null,\"streamEnd\":\"stream complete\"}"
+ok - frame 04-denied: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
+ok - frame 04-denied: the driver's own DOM read agrees with the page's facts hook: [16,16,["denied"],["deny"]]
+ok - frame 04-denied: claim - the approval card shows the deny decision: true
+ok - frame 04-denied: claim - a tool card shows denied with no output: true
+ok - frame 04-denied: claim - one rendered message per seq: true
+frame 04-denied: 04-denied.png (101987 bytes, sha256 dc7fe48c105b0d8d9f949c4cc6f8f2c44a0b8bc5d941f8c09c052657ffed701d) - last seq 16 · done true · turns 2 · cards [call_00_7n33mixm2piec2tbhzbax1hx:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "My `date` command was refused by the gate, and since that denial is final I didn't retry it or try a workaround like reading the clock another way. So I have no way to report today's date from inside the sandbox — the only thing I can tell you is that the request was blocked, not that it failed technically."
+
+## shutdown, and the containers this driver created
+ok - the second launch: exits zero on SIGINT: 0
+the second launch: removed 1 container(s): freebot-sbx-run-1-c580e4oo
+ok - the second launch: every container it says it removed is gone from Docker: []
+ok - the first launch: exits zero on SIGINT: 0
+the first launch: removed 1 container(s): freebot-sbx-run-1-n1kjtb7n
+ok - the first launch: every container it says it removed is gone from Docker: []
+ok - the label's container set is back where it started: true
+ok - nothing listens on the first launch's page port: []
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+
+## frame index
+name -> asserted DOM facts -> caption
+01-armed -> last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text "" -> The URL the launcher printed, opened: the real engine is connected, the vault's model is selected, and the prompt box is the way in.
+  unmet claims: []
+02-parked -> last seq 7 · done false · turns 1 · cards [call_00_wsc0tu1cuga6xhftdmlru2ib:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text "I'll run the date command in the sandbox." -> A prompt typed into the page parked at the gate: the approval card names the command the live model asked for, and the governed card waits for the answer.
+  unmet claims: []
+03-finished -> last seq 17 · done true · turns 2 · cards [call_00_wsc0tu1cuga6xhftdmlru2ib:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "I ran `date` in the sandbox, and it printed: `Sun Oct 18 01:38:15 UTC 2026` — so the sandbox reports today as Sunday, October 18, 2026, at 01:38:15 UTC (note that this is the sandbox's clock, which may not match real-world time)." -> Allowed once, then finished: the card shows the allow, the call ran in the container so its output block holds that container's own stdout, and the model's closing turn is on the page.
+  unmet claims: []
+04-denied -> last seq 16 · done true · turns 2 · cards [call_00_7n33mixm2piec2tbhzbax1hx:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "My `date` command was refused by the gate, and since that denial is final I didn't retry it or try a workaround like reading the clock another way. So I have no way to report today's date from inside the sandbox — the only thing I can tell you is that the request was blocked, not that it failed technically." -> A second launch, denied: the same page and the same engine on a free port of its own, where the refusal is recorded as user_denied and no command runs.
+  unmet claims: []
+
+## the committed artifact carries no token and no key
+ok - frames: one committed PNG per key state: 4
+artifact: 01-armed.png (45269 bytes)
+artifact: 02-parked.png (72567 bytes)
+artifact: 03-finished.png (110688 bytes)
+artifact: 04-denied.png (101987 bytes)
+ok - no committed line carries any launch's operator token: [false,false]
+ok - no committed line carries a key-shaped literal: false
+
+chrome Google Chrome over CDP; really launched `bun run up --no-open`; the model is the vault's keyed provider; containers from the pinned image
+RESULT: PASS (69/69)
