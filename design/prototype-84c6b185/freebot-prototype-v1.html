@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>FreeBot · bring your own model, get a Bot that does the work</title>
+<style>
+  /* ── tokens — Inbox Zero system. No raw hex below this block. ───────── */
+  :root{
+    --bg:#000000; --surface:#0a0a0a; --surface-2:#0f172a;
+    --fg:#ffffff; --muted:#737373; --border:#242424;
+    --accent:#000000; /* high-signal, spent on light fills only */
+    --font-display:'Geist',system-ui,-apple-system,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+    --font-body:'Geist',system-ui,-apple-system,'Segoe UI','Helvetica Neue',Arial,sans-serif;
+    --font-mono:ui-monospace,SFMono-Regular,'SF Mono',Menlo,Consolas,monospace;
+    --radius:8px; --radius-sm:6px;
+    --sb-w:268px; --aside-w:360px;
+    --fs-xs:11px; --fs-sm:12.5px; --fs-md:14px; --fs-lg:16px;
+  }
+
+  *,*::before,*::after{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--font-body);
+    font-size:var(--fs-md);line-height:1.5;text-rendering:optimizeLegibility;
+    -webkit-font-smoothing:antialiased;overflow:hidden}
+  img,svg{display:block;max-width:100%}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  input,textarea{font:inherit}
+  p{margin:0;text-wrap:pretty}
+  h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;letter-spacing:-.02em}
+  :focus-visible{outline:2px solid var(--fg);outline-offset:2px;border-radius:4px}
+  ::selection{background:var(--fg);color:var(--bg)}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  .mono{font-family:var(--font-mono)}
+  .muted{color:var(--muted)}
+  .ic{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .ic-sm{width:14px;height:14px}
+  .hidden{display:none !important}
+
+  /* ── buttons ─────────────────────────────────────────────────────────── */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:38px;
+    padding:0 16px;border-radius:var(--radius);border:1px solid transparent;font-size:var(--fs-md);
+    font-weight:500;white-space:nowrap;transition:transform .12s ease,background .12s ease,border-color .12s ease}
+  .btn-primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 0 0 3px var(--border)}
+  .btn-primary:active{transform:translateY(0);box-shadow:none}
+  .btn-secondary{background:transparent;color:var(--fg);border-color:var(--border)}
+  .btn-secondary:hover{background:var(--surface);border-color:var(--fg)}
+  .btn-ghost{background:transparent;color:var(--muted);padding:0 10px}
+  .btn-ghost:hover{color:var(--fg);background:var(--surface)}
+  .btn-sm{height:30px;padding:0 11px;font-size:var(--fs-sm)}
+  .btn[disabled]{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+  .iconbtn{display:inline-grid;place-items:center;width:32px;height:32px;border-radius:var(--radius-sm);
+    color:var(--muted);border:1px solid transparent}
+  .iconbtn:hover{background:var(--surface);color:var(--fg);border-color:var(--border)}
+
+  /* ── fields ──────────────────────────────────────────────────────────── */
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field > label{font-size:var(--fs-sm);color:var(--muted)}
+  .input{width:100%;height:40px;padding:0 12px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--fg);font-size:var(--fs-md);outline:none}
+  textarea.input{height:auto;padding:10px 12px;resize:vertical;line-height:1.5}
+  .input::placeholder{color:var(--muted)}
+  .input:focus{border-color:var(--fg);box-shadow:0 0 0 3px var(--border)}
+  .hint{font-size:var(--fs-sm);color:var(--muted)}
+  .chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;
+    border:1px solid var(--border);color:var(--muted);font-size:var(--fs-sm);background:transparent}
+  .chip:hover{border-color:var(--fg);color:var(--fg)}
+  .tag{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:999px;
+    border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono);font-size:var(--fs-xs);
+    letter-spacing:.04em;text-transform:uppercase}
+  kbd{font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--muted);border:1px solid var(--border);
+    border-radius:4px;padding:1px 5px}
+
+  /* ── onboarding screens ──────────────────────────────────────────────── */
+  .screen{height:100vh;overflow-y:auto}
+  .wordmark{display:flex;align-items:center;gap:9px;font-weight:600;letter-spacing:-.02em;font-size:15px}
+  .mark{width:22px;height:22px;border-radius:6px;background:var(--fg);color:var(--bg);
+    display:grid;place-items:center;font-size:11px;font-weight:700;font-family:var(--font-mono)}
+  .onb{max-width:940px;margin:0 auto;padding:28px 32px 72px}
+  .onb-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:56px;align-items:start;margin-top:64px}
+  .onb-grid.one{grid-template-columns:minmax(0,1fr);max-width:640px}
+  .onb h1{font-size:clamp(34px,4.4vw,50px);line-height:1.05}
+  .lead{color:var(--muted);font-size:var(--fs-lg);max-width:46ch;margin-top:18px}
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+  .stack{display:flex;flex-direction:column;gap:14px}
+  .flowline{font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--muted);
+    border-left:1px solid var(--border);padding:2px 0 2px 12px}
+  .stat-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+    padding:9px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
+  .stat-row:last-child{border-bottom:0}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;background:var(--muted)}
+  .dot.on{background:var(--fg)}
+  .dot.ring{background:transparent;border:1.5px solid var(--fg)}
+  .wizard{max-width:560px;margin:0 auto;padding:72px 24px}
+  .wizard .step{font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--muted);letter-spacing:.08em}
+  .prog{display:flex;gap:6px;margin:14px 0 40px}
+  .prog i{height:2px;flex:1;background:var(--border);border-radius:2px}
+  .prog i.on{background:var(--fg)}
+  .suggest{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+
+  /* ── app shell ───────────────────────────────────────────────────────── */
+  .app{display:grid;grid-template-columns:var(--sb-w) minmax(0,1fr) var(--aside-w);height:100vh;overflow:hidden}
+  body.collapsed .app{grid-template-columns:var(--sb-w) minmax(0,1fr) 0}
+  body.collapsed .aside{display:none}
+
+  /* sidebar */
+  .sidebar{display:flex;flex-direction:column;min-height:0;border-right:1px solid var(--border);background:var(--bg)}
+  .sb-head{display:flex;gap:8px;padding:12px 12px 8px}
+  .sb-search{flex:1;display:flex;align-items:center;gap:9px;height:34px;padding:0 10px;border-radius:var(--radius);
+    border:1px solid var(--border);color:var(--muted);font-size:var(--fs-md);text-align:left}
+  .sb-search:hover{border-color:var(--fg);color:var(--fg)}
+  .sb-search kbd{margin-left:auto}
+  .sb-new{display:grid;place-items:center;width:34px;height:34px;border-radius:var(--radius);
+    border:1px solid var(--border);color:var(--fg)}
+  .sb-new:hover{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  .sb-scroll{flex:1;overflow-y:auto;padding:6px 8px 12px}
+  .sb-label{display:flex;align-items:center;gap:6px;width:100%;padding:8px 8px 4px;font-family:var(--font-mono);
+    font-size:var(--fs-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .sb-row{display:flex;align-items:center;gap:9px;width:100%;height:34px;padding:0 8px;border-radius:var(--radius-sm);
+    color:var(--muted);font-size:var(--fs-md);text-align:left}
+  .sb-row:hover{background:var(--surface);color:var(--fg)}
+  .sb-row.is-active{background:var(--surface-2);color:var(--fg)}
+  .sb-row .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sb-row .sub{font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--muted)}
+  .pulse{width:7px;height:7px;border-radius:50%;background:var(--fg);animation:pulse 1.3s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+  .sb-foot{border-top:1px solid var(--border);padding:8px}
+  .sb-acct{display:flex;align-items:center;gap:10px;width:100%;padding:8px;border-radius:var(--radius);text-align:left}
+  .sb-acct:hover{background:var(--surface)}
+  .avatar{width:26px;height:26px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);
+    display:grid;place-items:center;font-family:var(--font-mono);font-size:10px;color:var(--fg)}
+
+  /* conversation column */
+  .main{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .chead{display:flex;align-items:center;gap:10px;height:56px;padding:0 16px;border-bottom:1px solid var(--border)}
+  .chead .botname{display:flex;align-items:center;gap:9px;height:34px;padding:0 10px;border-radius:var(--radius);
+    font-weight:500}
+  .chead .botname:hover{background:var(--surface)}
+  .chead .spacer{flex:1}
+  .banner{display:flex;align-items:center;gap:10px;padding:9px 16px;background:var(--surface-2);
+    border-bottom:1px solid var(--border);font-size:var(--fs-sm);color:var(--fg)}
+  .transcript{flex:1;overflow-y:auto;min-height:0;padding:22px 0 6px}
+  .col{max-width:768px;margin:0 auto;padding:0 24px;display:flex;flex-direction:column;gap:14px}
+  .msg-user{margin-left:auto;max-width:78%;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius) 12px 3px 12px;padding:11px 14px}
+  .msg-bot{max-width:88%;color:var(--fg)}
+  .msg-bot p + p{margin-top:8px}
+  .tm{display:flex;align-items:center;gap:9px;color:var(--muted);font-size:var(--fs-sm)}
+  .attach{display:flex;align-items:center;gap:8px;margin-top:9px;padding:7px 9px;border:1px solid var(--border);
+    border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--muted)}
+  .tcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .tcard-head{display:flex;align-items:center;gap:9px;padding:10px 13px;border-bottom:1px solid var(--border)}
+  .tcard-head .ttl{flex:1;font-size:var(--fs-md);font-weight:500}
+  .tcard-body{padding:12px 13px}
+  .cmd{font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--fg);background:var(--bg);
+    border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 11px;overflow-x:auto;white-space:pre}
+  .cmd .g{color:var(--muted)}
+  details.disclose > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;
+    color:var(--muted);font-size:var(--fs-sm);padding:2px 0}
+  details.disclose > summary:hover{color:var(--fg)}
+  details.disclose > summary::-webkit-details-marker{display:none}
+  details.disclose[open] > summary .ic{transform:rotate(90deg)}
+  details.disclose > summary .ic{transition:transform .15s ease}
+  details.disclose > summary::before{content:''}
+  .gate{border-color:var(--muted)}
+  .gate .tcard-head{background:var(--surface-2)}
+  .gate .bar{height:2px;background:var(--fg);width:100%}
+  .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .scope{display:flex;gap:14px;flex-wrap:wrap;font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--muted)}
+  .tbl-scroll{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius-sm)}
+  table.ds{border-collapse:collapse;font-size:var(--fs-sm);min-width:640px;width:100%}
+  table.ds th,table.ds td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+  table.ds th{font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:.05em;text-transform:uppercase;
+    color:var(--muted);font-weight:500}
+  table.ds tbody tr:last-child td{border-bottom:0}
+  table.ds tbody tr:hover{background:var(--bg)}
+  .filecard{display:flex;align-items:center;gap:12px}
+  .fthumb{width:64px;height:44px;flex:none;border-radius:var(--radius-sm);border:1px solid var(--border);
+    background:var(--bg);overflow:hidden}
+  .codeblk{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);
+    padding:11px 13px;font-family:var(--font-mono);font-size:var(--fs-sm);white-space:pre;overflow-x:auto;color:var(--fg)}
+  .codeblk .c{color:var(--muted)}
+  .cap{font-family:var(--font-mono);font-size:var(--fs-xs);color:var(--muted);letter-spacing:.04em;
+    text-transform:uppercase;margin-bottom:9px}
+  .failed{display:flex;align-items:center;gap:10px;padding:10px 13px;border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--fg);font-size:var(--fs-sm)}
+  .failed .spacer{flex:1}
+
+  /* composer */
+  .composer{padding:12px 24px 18px;border-top:1px solid var(--border)}
+  .composer-inner{max-width:768px;margin:0 auto;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:10px 12px 8px}
+  .composer-inner:focus-within{border-color:var(--fg)}
+  .composer textarea{width:100%;background:none;border:0;color:var(--fg);resize:none;height:42px;outline:none;font-size:var(--fs-md)}
+  .composer textarea::placeholder{color:var(--muted)}
+  .composer-bar{display:flex;align-items:center;gap:6px;margin-top:4px}
+  .composer-bar .spacer{flex:1}
+  .pop{position:absolute;bottom:94px;left:50%;transform:translateX(-50%);width:min(560px,90%);
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:6px;z-index:20}
+  .pop-item{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:var(--radius-sm);
+    text-align:left;font-size:var(--fs-md);color:var(--fg)}
+  .pop-item:hover,.pop-item[aria-selected="true"]{background:var(--surface-2)}
+  .pop-item .sub{color:var(--muted);font-family:var(--font-mono);font-size:var(--fs-xs);margin-left:auto}
+
+  /* right pane */
+  .aside{display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--border);position:relative;background:var(--bg)}
+  .resizer{position:absolute;left:-4px;top:0;width:9px;height:100%;cursor:col-resize;z-index:5}
+  .resizer:hover{background:var(--border)}
+  .aside-tabs{display:flex;gap:2px;padding:8px;border-bottom:1px solid var(--border);overflow-x:auto}
+  .aside-tab{height:28px;padding:0 10px;border-radius:var(--radius-sm);font-size:var(--fs-sm);color:var(--muted);white-space:nowrap}
+  .aside-tab:hover{color:var(--fg);background:var(--surface)}
+  .aside-tab.is-active{background:var(--surface);color:var(--fg)}
+  .aside-body{flex:1;overflow-y:auto;padding:14px}
+  .desktop{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+  .desktop-bar{display:flex;align-items:center;gap:6px;padding:7px 9px;border-bottom:1px solid var(--border)}
+  .desktop-bar i{width:7px;height:7px;border-radius:50%;border:1px solid var(--muted);display:block}
+  .desktop-win{padding:12px;font-family:var(--font-mono);font-size:var(--fs-sm);color:var(--muted);line-height:1.7}
+  .desktop-win b{color:var(--fg);font-weight:400}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);font-size:var(--fs-sm)}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-family:var(--font-mono);text-align:right}
+
+  /* overlays */
+  .scrim{position:fixed;inset:0;background:var(--bg);opacity:.72;z-index:30}
+  .picker{position:fixed;top:96px;left:50%;transform:translateX(-50%);width:min(520px,92vw);z-index:31;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px}
+  .picker input{width:100%;height:38px;padding:0 12px;background:var(--bg);border:1px solid var(--border);
+    border-radius:var(--radius);color:var(--fg);outline:none}
+  .picker input:focus{border-color:var(--fg)}
+  .picker-list{margin-top:8px;max-height:340px;overflow-y:auto}
+  .palette{position:fixed;top:14vh;left:50%;transform:translateX(-50%);width:min(640px,92vw);z-index:31;
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px}
+  .palette input{width:100%;height:44px;padding:0 6px;background:none;border:0;border-bottom:1px solid var(--border);
+    color:var(--fg);font-size:var(--fs-lg);outline:none}
+  .palette-list{margin-top:8px;max-height:400px;overflow-y:auto}
+  .menu{position:fixed;z-index:40;min-width:214px;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:5px}
+  .menu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:var(--radius-sm);
+    text-align:left;font-size:var(--fs-md);color:var(--fg)}
+  .menu button:hover{background:var(--surface-2)}
+  .menu button.danger:hover{background:var(--fg);color:var(--bg)}
+  .menu hr{border:0;border-top:1px solid var(--border);margin:5px 0}
+  .menu .lbl{padding:6px 10px 2px;font-family:var(--font-mono);font-size:var(--fs-xs);letter-spacing:.08em;
+    text-transform:uppercase;color:var(--muted)}
+
+  @media (max-width:980px){
+    .app{grid-template-columns:minmax(0,1fr)}
+    .sidebar,.aside{display:none}
+    body.collapsed .app{grid-template-columns:minmax(0,1fr)}
+    .onb-grid{grid-template-columns:1fr;gap:36px}
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5L16.8 16.8"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-chevd" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M5 14v5a1 1 0 001 1h12a1 1 0 001-1v-5"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M8.5 12.5l6.8-6.8a3 3 0 014.2 4.2l-8.5 8.5a5 5 0 01-7-7l8-8"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v3"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M3 12h2l2-5 3 10 3-7 2 4h6"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 20V5M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5H7a2 2 0 00-2 2v8"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M8 11l4 4 4-4M5 20h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 4l2.4 5 5.6.8-4 3.9 1 5.5-5-2.6-5 2.6 1-5.5-4-3.9 5.6-.8z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3h6l-1 6 3 3H7l3-3z"/><path d="M12 12v9"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M4 4l16 16"/><path d="M10.6 6.3A7.4 7.4 0 0112 6c6 0 10 7 10 7a17 17 0 01-3 3.7M6.5 8.4A17 17 0 002 13s4 7 10 7a9.6 9.6 0 004.3-1"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 15l-5-5-9 9"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 13l4 4L19 6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 5l8 14H4z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0116 0"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M15 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8"/><path d="M14 9l3 3-3 3M18 12h-8"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 01-13.7 5.6M4 12A8 8 0 0117.7 6.4"/><path d="M20 5v5h-5M4 19v-5h5"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="3.5"/><path d="M10.5 12.5L20 3M16 7l2 2M13.5 9.5l2 2"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v6M15 3v6M6 9h12v3a6 6 0 01-12 0z"/><path d="M12 18v3"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M10 3v3M14 3v3M10 18v3M14 18v3M3 10h3M3 14h3M18 10h3M18 14h3"/></symbol>
+</defs></svg>
+
+<!-- ═══════════════ PAGE 1 · Welcome, then connect a provider (MVP · own) ═══ -->
+<section class="screen" id="screenWelcome" data-od-id="welcome-provider">
+  <div class="onb">
+    <div class="wordmark"><span class="mark">FB</span> FreeBot</div>
+    <div class="onb-grid one" id="onbGrid">
+      <div>
+        <p class="tag" style="margin-bottom:18px">Setup · connect a provider</p>
+        <h1>Bring your own model. Get a Bot that does the work.</h1>
+        <p class="lead">FreeBot ships without a subscription. Point it at any OpenAI-compatible endpoint, and it runs a real tool call before it accepts the connection.</p>
+        <div class="actions" style="margin-top:26px">
+          <button class="btn btn-primary" id="toProvider" data-od-id="cta-connect-provider">Connect a provider</button>
+          <button class="btn btn-ghost" id="toReplay" data-od-id="cta-replay">Run in replay mode</button>
+        </div>
+        <p class="hint" style="margin-top:14px">Replay mode drives the interface from a recorded Pi transcript. No key, no network.</p>
+      </div>
+
+      <div class="panel stack hidden" id="providerCard" data-od-id="provider-form">
+        <div class="field">
+          <label for="pUrl">Base URL</label>
+          <input class="input mono" id="pUrl" value="https://api.groq.com/openai/v1" spellcheck="false" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="pModel">Model</label>
+          <input class="input mono" id="pModel" value="llama-3.3-70b-versatile" spellcheck="false" autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="pKey">API key</label>
+          <input class="input mono" id="pKey" type="password" placeholder="sk-…  ·  stays in the vault" autocomplete="off" />
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="runTest" data-od-id="cta-save-and-test">Save and test</button>
+          <span class="hint" id="testHint">Runs a real tool call.</span>
+        </div>
+        <div id="testOut" class="stack hidden" aria-live="polite"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PAGE 2 · First run (MVP · parity) ═══════════════════════ -->
+<section class="screen hidden" id="screenFirstRun" data-od-id="first-run">
+  <div class="wizard">
+    <div class="wordmark" style="margin-bottom:34px"><span class="mark">FB</span> FreeBot</div>
+    <div class="prog"><i class="on"></i><i></i><i></i><i></i></div>
+    <p class="step mono" id="frStep">01 / 03 — NAME</p>
+
+    <div id="frPane1">
+      <h2 style="font-size:30px;line-height:1.15;margin-bottom:18px">What should we call your first Bot?</h2>
+      <div class="field"><input class="input" id="frName" placeholder="Atlas" autocomplete="off" /></div>
+    </div>
+    <div id="frPane2" class="hidden">
+      <h2 style="font-size:30px;line-height:1.15;margin-bottom:18px">What is it for?</h2>
+      <div class="field"><textarea class="input" id="frPurpose" rows="3" placeholder="Keeps the release pipeline moving and tells me what needs a decision."></textarea></div>
+    </div>
+    <div id="frPane3" class="hidden">
+      <h2 style="font-size:30px;line-height:1.15;margin-bottom:18px">Pick something to start with.</h2>
+      <p class="hint">Each one becomes the first message. You can edit it before it sends.</p>
+      <div class="suggest">
+        <button class="chip" data-task="Audit the repo for committed secrets and open a PR with a fix plan.">Audit the repo for secrets</button>
+        <button class="chip" data-task="Summarise what changed on main since the last release tag.">Summarise main since the last release</button>
+        <button class="chip" data-task="Set up a routine that checks the deploy health every morning.">Set up a morning health check</button>
+      </div>
+      <div class="panel stack" style="margin-top:22px" id="frProvision">
+        <div class="stat-row"><span class="tm"><span class="dot on" id="frDotA"></span> Starting your computer</span><span class="mono hint" id="frProvA">pending</span></div>
+        <div class="stat-row"><span class="tm"><span class="dot" id="frDotB"></span> Updating your computer</span><span class="mono hint" id="frProvB">pending</span></div>
+      </div>
+    </div>
+    <div class="actions" style="margin-top:30px">
+      <button class="btn btn-primary" id="frNext" data-od-id="cta-first-run-next">Continue</button>
+      <button class="btn btn-ghost" id="frSkip">Skip</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ PAGES 3–7 · The shell ═══════════════════════════════════ -->
+<div class="app hidden" id="app">
+
+  <!-- PAGE 3 · Bots and the sidebar (MVP · parity) -->
+  <section class="sidebar" data-od-id="sidebar">
+    <div class="sb-head">
+      <button class="sb-search" id="sbSearch" data-od-id="sidebar-search">
+        <svg class="ic ic-sm"><use href="#i-search"/></svg> Search <kbd>⌘K</kbd>
+      </button>
+      <button class="sb-new" id="sbNew" aria-label="New chat" data-od-id="sidebar-new-chat">
+        <svg class="ic"><use href="#i-plus"/></svg>
+      </button>
+    </div>
+
+    <div class="sb-scroll" id="sbList">
+      <p class="sb-label">Pinned</p>
+      <button class="sb-row is-active" data-bot="Atlas" data-state="running" data-primary="1" data-od-id="bot-row-atlas">
+        <span class="pulse"></span><span class="name">Atlas</span>
+        <span class="sub">running</span>
+      </button>
+
+      <p class="sb-label">Bots</p>
+      <button class="sb-row" data-bot="Ledger" data-state="idle" data-od-id="bot-row-ledger">
+        <span class="dot"></span><span class="name">Ledger</span>
+      </button>
+      <button class="sb-row" data-bot="Scout" data-state="unread" data-od-id="bot-row-scout">
+        <span class="dot on"></span><span class="name">Scout</span><span class="sub">unread</span>
+      </button>
+      <button class="sb-row" data-bot="Patch" data-state="attention" data-od-id="bot-row-patch">
+        <span class="dot on"></span><span class="name">Patch</span><span class="sub">needs an answer</span>
+      </button>
+
+      <p class="sb-label">Q4 launch <svg class="ic ic-sm" style="margin-left:auto"><use href="#i-chevd"/></svg></p>
+      <button class="sb-row" data-bot="Quill" data-state="failed" data-od-id="bot-row-quill">
+        <span class="dot ring"></span><span class="name">Quill</span><span class="sub">container failed</span>
+      </button>
+
+      <p class="sb-label">Group chats</p>
+      <button class="sb-row" data-bot="Launch room" data-state="group" data-od-id="bot-row-launch-room">
+        <svg class="ic ic-sm"><use href="#i-user"/></svg><span class="name">Launch room</span><span class="sub">2 Bots</span>
+      </button>
+
+      <button class="sb-label" id="hiddenToggle" data-od-id="hidden-bots-toggle" style="margin-top:4px">
+        <svg class="ic ic-sm" id="hiddenCaret"><use href="#i-chev"/></svg> Hidden Bots
+        <span class="sub" style="margin-left:auto">2</span>
+      </button>
+      <div id="hiddenGroup" class="hidden">
+        <button class="sb-row" data-bot="Warehouse" data-state="hidden" data-od-id="bot-row-warehouse">
+          <svg class="ic ic-sm"><use href="#i-eyeoff"/></svg><span class="name">Warehouse</span>
+        </button>
+        <button class="sb-row" data-bot="Old Scout" data-state="hidden" data-od-id="bot-row-old-scout">
+          <svg class="ic ic-sm"><use href="#i-eyeoff"/></svg><span class="name">Old Scout</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sb-foot">
+      <button class="sb-row" id="connectApps" data-od-id="connect-apps">
+        <svg class="ic ic-sm"><use href="#i-plug"/></svg><span class="name">Connect apps</span>
+        <span class="sub">3</span>
+      </button>
+      <button class="sb-row" id="providerRow" data-od-id="sidebar-provider-row">
+        <span class="dot on"></span><span class="name">Groq</span><span class="sub">llama-3.3-70b</span>
+      </button>
+      <button class="sb-acct" id="acctBtn" data-od-id="account-row">
+        <span class="avatar">YA</span>
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font-size:var(--fs-md)">yusuf@local</span>
+          <span class="mono" style="font-size:var(--fs-xs);color:var(--muted)">local · single user</span>
+        </span>
+        <svg class="ic ic-sm"><use href="#i-chevd"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- PAGE 5 · The conversation (MVP · parity) -->
+  <section class="main" data-od-id="conversation">
+    <header class="chead" data-od-id="conversation-header">
+      <button class="botname" id="botNameBtn" data-od-id="conversation-details-open">
+        <span class="dot on"></span><span id="botName" data-od-id="conversation-bot-name">Atlas</span>
+        <svg class="ic ic-sm"><use href="#i-chevd"/></svg>
+      </button>
+      <div class="spacer"></div>
+      <button class="iconbtn" id="shareBtn" aria-label="Share menu" data-od-id="conversation-share">
+        <svg class="ic"><use href="#i-share"/></svg>
+      </button>
+      <button class="btn btn-secondary btn-sm" id="asideToggle" data-od-id="computer-preview-toggle">
+        <svg class="ic ic-sm"><use href="#i-monitor"/></svg> Computer
+      </button>
+    </header>
+
+    <div class="banner hidden" id="reconnect" role="status" data-od-id="reconnect-banner">
+      <span class="pulse"></span> Reconnecting to the event stream — the transcript will refill from where it left off.
+    </div>
+
+    <div class="banner hidden" id="groupBar" data-od-id="group-members">
+      <svg class="ic ic-sm"><use href="#i-user"/></svg>
+      <button class="chip gm" data-member="Atlas">Atlas · working</button>
+      <button class="chip gm" data-member="Quill">Quill · waiting</button>
+      <span class="tag">/shared</span>
+      <span style="flex:1"></span>
+      <button class="btn btn-secondary btn-sm" data-group="add">Add a Bot</button>
+      <button class="btn btn-ghost btn-sm" data-group="handoff">Hand off</button>
+    </div>
+
+    <div class="transcript" id="transcript" data-od-id="transcript">
+      <div class="col" id="tcol">
+
+        <div class="msg-user" data-od-id="item-user-message">
+          <p>Audit the repo for committed secrets and open a PR with a fix plan.</p>
+          <span class="attach"><svg class="ic ic-sm"><use href="#i-file"/></svg> repo-tree.txt · 2.1 KB</span>
+        </div>
+
+        <div class="msg-bot" data-od-id="item-bot-text">
+          <p>On it. I'll scan tracked files first, then the build output, and tell you what actually needs to change.</p>
+        </div>
+
+        <div class="tm" id="turnMarker" data-od-id="item-turn-marker">
+          <span class="pulse"></span><span id="turnText">Thinking it through</span>
+        </div>
+
+        <div class="tcard" data-od-id="item-tool-call">
+          <div class="tcard-head">
+            <svg class="ic ic-sm"><use href="#i-cpu"/></svg>
+            <span class="ttl">Scan tracked files for key-shaped strings</span>
+            <span class="tag">done · 412 ms</span>
+          </div>
+          <div class="tcard-body stack">
+            <div class="cmd"><span class="g">$</span> rg -n --hidden -g '!.git' 'sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}' .</div>
+            <details class="disclose">
+              <summary><svg class="ic ic-sm"><use href="#i-chev"/></svg> Output · 2 matches</summary>
+              <div class="codeblk" style="margin-top:9px">apps/web/.env.local:4:GROQ_API_KEY=sk-live-…<span class="c">  (masked in the transcript)</span>
+dist/assets/index-a91f.js:1:…sk-live-…<span class="c">  (build artifact, regenerated)</span></div>
+              <button class="btn btn-ghost btn-sm" data-copy="apps/web/.env.local  dist/assets/index-a91f.js" style="margin-top:8px">
+                <svg class="ic ic-sm"><use href="#i-copy"/></svg> Copy paths</button>
+            </details>
+          </div>
+        </div>
+
+        <div class="msg-bot">
+          <p>Two matches. The build artifact is regenerated on every deploy, so I'll leave it. <b>apps/web/.env.local</b> is tracked, and that one matters.</p>
+        </div>
+
+        <!-- PAGE 6 · Approval cards (MVP · parity) -->
+        <div class="tcard gate" id="approvalCard" data-od-id="item-approval-card">
+          <div class="tcard-head">
+            <svg class="ic ic-sm"><use href="#i-key"/></svg>
+            <span class="ttl">Approval needed</span>
+            <span class="tag" id="gateState">pending</span>
+          </div>
+          <div class="bar" id="gateBar"></div>
+          <div class="tcard-body stack">
+            <p>Stop tracking <b>apps/web/.env.local</b> in git and add it to <b>.gitignore</b>. The file itself stays on disk.</p>
+            <details class="disclose">
+              <summary><svg class="ic ic-sm"><use href="#i-chev"/></svg> View the full request</summary>
+              <div class="cmd" style="margin-top:9px">git rm --cached apps/web/.env.local
+printf '\n.env.local\n' >> .gitignore</div>
+            </details>
+            <div class="scope"><span>scope · repository index</span><span>network · none</span><span class="mono" id="gateClock">expires in 4:58</span></div>
+            <div class="actions" id="gateActions">
+              <button class="btn btn-primary btn-sm" id="gateAllow" data-od-id="approval-allow-once">Allow once</button>
+              <button class="btn btn-secondary btn-sm" id="gateDeny" data-od-id="approval-deny">Deny</button>
+              <span class="hint">Always allow writes a rule · arrives in phase 5</span>
+            </div>
+            <p class="hint hidden" id="gateResolved"></p>
+          </div>
+        </div>
+
+        <div class="msg-bot hidden" id="afterGate" data-od-id="item-bot-after-gate">
+          <p id="afterGateText">Removed from the index. The file is untouched on disk, and the PR is open as draft.</p>
+        </div>
+
+        <div class="tcard hidden" id="fileCard" data-od-id="item-file-card">
+          <div class="tcard-head"><svg class="ic ic-sm"><use href="#i-file"/></svg><span class="ttl">.gitignore</span>
+            <span class="tag">edited</span></div>
+          <div class="tcard-body stack">
+            <div class="filecard">
+              <span class="fthumb" aria-hidden="true">
+                <svg viewBox="0 0 64 44" role="img"><title>Diff preview of .gitignore</title>
+                  <rect width="64" height="44" fill="#0a0a0a"/>
+                  <rect x="8" y="9" width="30" height="3" rx="1.5" fill="#242424"/>
+                  <rect x="8" y="18" width="22" height="3" rx="1.5" fill="#242424"/>
+                  <rect x="8" y="27" width="34" height="3" rx="1.5" fill="#ffffff"/>
+                  <rect x="8" y="34" width="16" height="3" rx="1.5" fill="#242424"/>
+                </svg>
+              </span>
+              <span style="flex:1;min-width:0">
+                <span style="display:block">+1 line added, 0 removed</span>
+                <span class="mono hint">apps/web/.env.local</span>
+              </span>
+              <button class="iconbtn" data-copy=".env.local" aria-label="Download .gitignore"><svg class="ic"><use href="#i-download"/></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tcard" data-od-id="item-table-card">
+          <div class="tcard-head"><svg class="ic ic-sm"><use href="#i-folder"/></svg><span class="ttl">Findings</span>
+            <span class="tag">3 rows</span></div>
+          <div class="tcard-body">
+            <div class="tbl-scroll">
+              <table class="ds">
+                <thead><tr><th>Path</th><th>Line</th><th>Rule</th><th>Tracked</th><th>Action</th></tr></thead>
+                <tbody>
+                  <tr><td class="mono">apps/web/.env.local</td><td class="mono">4</td><td class="mono">sk-live-*</td><td>yes</td><td>untrack in this PR</td></tr>
+                  <tr><td class="mono">dist/assets/index-a91f.js</td><td class="mono">1</td><td class="mono">sk-live-*</td><td>no</td><td>leave · regenerated</td></tr>
+                  <tr><td class="mono">packages/core/fixtures/env.ts</td><td class="mono">12</td><td class="mono">AKIA*</td><td>yes</td><td>replace with a placeholder</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="hint" style="margin-top:9px">Scrolls sideways when the table is wider than the column.</p>
+          </div>
+        </div>
+
+        <div class="tcard" data-od-id="item-code-card">
+          <div class="tcard-head"><svg class="ic ic-sm"><use href="#i-file"/></svg><span class="ttl">gitignore.diff</span>
+            <button class="btn btn-ghost btn-sm" data-copy="+ .env.local" style="margin-left:auto">
+              <svg class="ic ic-sm"><use href="#i-copy"/></svg> Copy</button>
+          </div>
+          <div class="tcard-body"><div class="codeblk"><span class="c">@@ .gitignore @@</span>
++ .env.local</div></div>
+        </div>
+
+        <div class="tcard" data-od-id="item-question-card">
+          <div class="tcard-head"><svg class="ic ic-sm"><use href="#i-alert"/></svg><span class="ttl">I need one value before I open the PR</span></div>
+          <div class="tcard-body stack">
+            <p>Which branch should the PR target?</p>
+            <div class="actions">
+              <button class="chip qc">main</button>
+              <button class="chip qc">release/0.2</button>
+              <input class="input" id="qOther" placeholder="or type a branch" style="max-width:200px" />
+            </div>
+          </div>
+        </div>
+
+        <div class="tcard" data-od-id="item-secret-card">
+          <div class="tcard-head"><svg class="ic ic-sm"><use href="#i-key"/></svg><span class="ttl">Secret request</span>
+            <span class="tag">not stored in the transcript</span></div>
+          <div class="tcard-body stack">
+            <p>Paste a read-only GitHub token so I can open the PR. It goes straight to the vault.</p>
+            <div class="actions">
+              <input class="input mono" id="secretInput" type="password" placeholder="ghp_…" style="max-width:260px" autocomplete="off" />
+              <button class="btn btn-secondary btn-sm" id="secretSend">Send once</button>
+            </div>
+            <p class="hint" id="secretNote">Never written to the transcript, never placed in the sandbox filesystem.</p>
+          </div>
+        </div>
+
+        <div class="failed" id="failedSend" data-od-id="item-failed-send">
+          <svg class="ic ic-sm"><use href="#i-alert"/></svg>
+          <span>Couldn't reach the endpoint — the request never left this machine.</span>
+          <span class="spacer"></span>
+          <button class="btn btn-ghost btn-sm" id="resendBtn">Resend</button>
+          <button class="btn btn-ghost btn-sm" id="deleteBtn">Delete</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PAGE 5 · composer -->
+    <div class="composer" data-od-id="composer">
+      <div class="composer-inner">
+        <textarea id="composerInput" rows="1" placeholder="Ask Atlas to do something…  ⌘K for everything else"
+          data-od-id="composer-input"></textarea>
+        <div class="composer-bar">
+          <button class="iconbtn" id="attachBtn" aria-label="Attach a file" data-od-id="composer-attach"><svg class="ic"><use href="#i-clip"/></svg></button>
+          <button class="iconbtn" data-insert="/" aria-label="Skills" data-od-id="composer-skills"><span class="mono">/</span></button>
+          <button class="iconbtn" data-insert="@" aria-label="Mentions" data-od-id="composer-mentions"><span class="mono">@</span></button>
+          <button class="iconbtn" id="dictBtn" aria-label="Dictate" data-od-id="composer-dictate"><svg class="ic"><use href="#i-mic"/></svg></button>
+          <button class="iconbtn" id="voiceBtn" aria-label="Voice chat" data-od-id="composer-voice"><svg class="ic"><use href="#i-wave"/></svg></button>
+          <div class="spacer"></div>
+          <button class="btn btn-ghost btn-sm hidden" id="stopBtn" data-od-id="composer-stop">
+            <svg class="ic ic-sm"><use href="#i-stop"/></svg> Stop now</button>
+          <button class="iconbtn" id="sendBtn" aria-label="Send" data-od-id="composer-send" style="background:var(--fg);color:var(--bg)">
+            <svg class="ic"><use href="#i-send"/></svg></button>
+        </div>
+      </div>
+      <p class="hint mono" style="max-width:768px;margin:8px auto 0;text-align:center">Shift+Enter for a newline · Stop now ends the turn, it does not undo finished work</p>
+    </div>
+
+    <div class="pop hidden" id="pop" role="listbox" aria-label="Suggestions"></div>
+  </section>
+
+  <!-- PAGE 7 · Bot details, tasks, library, media, computer (MVP/3 · own) -->
+  <section class="aside" id="aside" data-od-id="details-pane">
+    <span class="resizer" id="resizer" role="separator" aria-orientation="vertical" aria-label="Resize details pane"></span>
+    <div class="aside-tabs" role="tablist" data-od-id="details-tabs">
+      <button class="aside-tab is-active" data-tab="computer" role="tab" data-od-id="tab-computer">Computer</button>
+      <button class="aside-tab" data-tab="details" role="tab" data-od-id="tab-details">Details</button>
+      <button class="aside-tab" data-tab="tasks" role="tab" data-od-id="tab-tasks">Tasks</button>
+      <button class="aside-tab" data-tab="library" role="tab" data-od-id="tab-library">Library</button>
+      <button class="aside-tab" data-tab="media" role="tab" data-od-id="tab-media">Media</button>
+    </div>
+    <div class="aside-body" id="asideBody"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $=(s,r)=>(r||document).querySelector(s), $$=(s,r)=>[...(r||document).querySelectorAll(s)];
+  const store={
+    get(k,d){try{const v=localStorage.getItem('freebot.'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+    set(k,v){try{localStorage.setItem('freebot.'+k,JSON.stringify(v))}catch(e){}}
+  };
+
+  /* ── screens ───────────────────────────────────────────────────────── */
+  function screen(id){
+    ['screenWelcome','screenFirstRun','app'].forEach(s=>$('#'+s).classList.toggle('hidden',s!==id));
+    store.set('screen',id);
+  }
+  screen(store.get('screen','screenWelcome'));
+
+  /* ── page 1 · provider smoke test ──────────────────────────────────── */
+  const out=$('#testOut'), hint=$('#testHint');
+  function line(t,cls){const p=document.createElement('div');p.className='flowline'+(cls?' '+cls:'');p.textContent=t;out.appendChild(p);return p}
+  function resetOut(){out.innerHTML='';out.classList.remove('hidden')}
+
+  $('#toProvider').addEventListener('click',()=>{
+    $('#providerCard').classList.remove('hidden');
+    $('#onbGrid').classList.remove('one');
+    $('#toProvider').classList.add('hidden');
+    $('#pKey').focus();
+  });
+  $('#toReplay').addEventListener('click',()=>{
+    screen('app');turnText.textContent='Working on your computer';
+    setBot('Atlas');
+  });
+
+  $('#runTest').addEventListener('click',()=>{
+    const url=$('#pUrl').value.trim(), key=$('#pKey').value.trim(), model=$('#pModel').value.trim();
+    resetOut(); hint.textContent='Running…'; $('#runTest').disabled=true;
+    const steps=['POST /v1/chat/completions','tool_choice: {"type":"function","function":{"name":"bash"}}','waiting for the tool call…'];
+    if(!url){line('POST /v1/chat/completions');line('GET /v1/models');}
+    let i=0; const tick=setInterval(()=>{ line(steps[i]); i++;
+      if(i>=steps.length){clearInterval(tick);
+        if(!key||key.length<8){fail(401,'Missing or invalid API key. The provider rejected the Authorization header.','Paste the key from the provider console and run the test again.');}
+        else if(!/^https?:\/\//.test(url)){fail(403,'Base URL is not reachable. Expected an absolute http:// or https:// URL.','Check for a missing scheme or a trailing path segment.')}
+        else if(/rate|429/i.test(key)){fail(429,'Rate limit reached on this key. The model never ran.','Wait for the window to reset, or use another key.')}
+        else pass(model);
+      }},260);
+  });
+  function fail(code,msg,fix){
+    $('#runTest').disabled=false; hint.textContent='Test failed';
+    const p=document.createElement('div');p.className='stack';
+    p.innerHTML='<div class="stat-row"><span class="tm"><span class="dot ring"></span> '+code+' · '+msg.split('.')[0]+'</span><span class="mono hint">failed</span></div>'+
+      '<p class="hint"></p>';
+    p.querySelector('.hint').textContent=fix;
+    out.appendChild(p);
+  }
+  function pass(model){
+    $('#runTest').disabled=false; hint.textContent='Connected';
+    const p=document.createElement('div'); p.className='stack';
+    p.innerHTML='<div class="stat-row"><span class="tm"><span class="dot on"></span> Test passed</span><span class="mono hint">200 OK</span></div>'+
+      '<div class="flowline">model reply · "Cleanup done. I removed the two stale build directories and left node_modules alone."</div>'+
+      '<div class="stat-row"><span class="k muted">Tool calling</span><span class="mono">yes</span></div>'+
+      '<div class="stat-row"><span class="k muted">Structured-output fallback</span><span class="mono">not needed</span></div>'+
+      '<div class="stat-row"><span class="k muted">Multi-turn</span><span class="mono">yes</span></div>'+
+      '<div class="actions"><button class="btn btn-primary btn-sm" id="toFirstRun">Continue to first run</button></div>';
+    out.appendChild(p);
+    $('#toFirstRun').addEventListener('click',()=>{screen('screenFirstRun')});
+    const pr=$('#providerRow .sub'); if(pr) pr.textContent=model.slice(0,16);
+  }
+
+  /* ── page 2 · first run ────────────────────────────────────────────── */
+  let frStep=1;
+  function fr(){
+    [1,2,3].forEach(n=>$('#frPane'+n).classList.toggle('hidden',n!==frStep));
+    $$('.prog i').forEach((el,i)=>el.classList.toggle('on',i<frStep));
+    $('#frStep').textContent=['01 / 03 — NAME','02 / 03 — PURPOSE','03 / 03 — FIRST TASK'][frStep-1];
+    $('#frNext').textContent=frStep===3?'Start working':'Continue';
+  }
+  $('#frNext').addEventListener('click',()=>{
+    if(frStep<3){frStep++;fr();return}
+    // provisioning
+    $('#frNext').disabled=true; $('#frNext').textContent='Provisioning…';
+    $('#frDotA').classList.add('on'); $('#frProvA').textContent='starting';
+    setTimeout(()=>{$('#frProvA').textContent='ready';$('#frDotB').classList.add('on');$('#frProvB').textContent='updating'},900);
+    setTimeout(()=>{$('#frProvB').textContent='ready';
+      const name=$('#frName').value.trim()||'Atlas';
+      $('.sb-row[data-bot="Atlas"] .name').textContent=name;
+      screen('app'); setBot(name);
+      if($('#frPurpose').value.trim()) $('#tcol').insertBefore(
+        (()=>{const d=document.createElement('div');d.className='msg-bot';d.innerHTML='<p></p>';
+          d.querySelector('p').textContent='Got it — '+$('#frPurpose').value.trim();return d})(),
+        $('#tcol').children[1]);
+    },1900);
+  });
+  $('#frSkip').addEventListener('click',()=>{screen('app')});
+  $$('#frPane3 .chip').forEach(c=>c.addEventListener('click',()=>{
+    $$('#frPane3 .chip').forEach(x=>x.style.borderColor='');
+    c.style.borderColor='var(--fg)';
+    $('#composerInput').value=c.dataset.task;
+  }));
+
+  /* ── shell state ───────────────────────────────────────────────────── */
+  const asideBody=$('#asideBody'); const botNameEl=$('#botName');
+  function setBot(name){
+    botNameEl.textContent=name;
+    $$('.sb-row').forEach(r=>r.classList.toggle('is-active',r.dataset.bot===name));
+    const row=$(`.sb-row[data-bot="${name}"]`); if(row&&row.dataset.state==='unread'){
+      row.dataset.state='idle'; row.querySelector('.sub')?.remove(); row.querySelector('.dot')?.classList.remove('on');
+    }
+    const group=name==='Launch room';
+    $('#groupBar').classList.toggle('hidden',!group);
+    $('#composerInput').placeholder=group?'Ask the room · one member holds the turn':
+      `Ask ${name} to do something…  ⌘K for everything else`;
+    store.set('bot',name);
+  }
+  $$('#groupBar .gm').forEach(c=>c.addEventListener('click',()=>{
+    const m=c.dataset.member, paused=c.textContent.includes('paused');
+    c.textContent=m+(paused?' · '+(m==='Atlas'?'working':'waiting'):' · paused');
+    toast(m+(paused?' resumed':' paused'));
+  }));
+  $$('#groupBar [data-group]').forEach(b=>b.addEventListener('click',()=>toast(b.dataset.group==='add'?'Add a Bot · phase 4':'Hand off · phase 4')));
+  $$('.sb-row[data-bot]').forEach(r=>{
+    r.addEventListener('click',()=>{setBot(r.dataset.bot); renderTab(curTab)});
+    r.addEventListener('contextmenu',e=>{e.preventDefault(); openRowMenu(e.clientX,e.clientY,r)});
+  });
+
+  /* aside tabs */
+  let curTab=store.get('tab','computer');
+  const TABS={
+    computer:()=>`
+      <div class="cap">sandbox · docker · per Bot</div>
+      <div class="desktop">
+        <div class="desktop-bar"><i></i><i></i><i></i><span class="mono hint" style="margin-left:6px">atlas-desktop</span>
+          <span class="tag" style="margin-left:auto">run 4f3a</span></div>
+        <div class="desktop-win">
+          <div><b>$</b> pi --mode rpc --session atlas</div>
+          <div><b>&gt;</b> reading /workspace/…</div>
+          <div><b>&gt;</b> bash: rg -n --hidden "sk-…" .</div>
+          <div><b>&gt;</b> <span style="color:var(--fg)">waiting on approval</span> <span class="pulse" style="display:inline-block"></span></div>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn btn-secondary btn-sm" data-needs="takeover">Take control</button>
+        <button class="btn btn-ghost btn-sm" data-needs="recover">Recover</button>
+        <button class="btn btn-ghost btn-sm" data-needs="update">Update</button>
+      </div>
+      <p class="hint" style="margin-top:10px">Takeover is for passwords, 2FA, CAPTCHA, and payment steps. Files survive Update; Reset rebuilds from the snapshot.</p>
+      <div class="cap" style="margin-top:18px">lifecycle</div>
+      <div class="kv"><span class="k">Status</span><span class="v">running</span></div>
+      <div class="kv"><span class="k">Idle auto-stop</span><span class="v">10 min</span></div>
+      <div class="kv"><span class="k">Egress</span><span class="v">default deny · proxy only</span></div>
+      <div class="kv"><span class="k">Snapshot</span><span class="v">pre-run-4f3a</span></div>`,
+    details:()=>`
+      <div class="cap">identity</div>
+      <div class="field" style="margin-bottom:12px"><label for="soulName">Name</label>
+        <input class="input" id="soulName" value="${botNameEl.textContent}" /></div>
+      <div class="field" style="margin-bottom:12px"><label for="soulRole">Role</label>
+        <input class="input" id="soulRole" value="Chief of staff" /></div>
+      <div class="field"><label for="soulText">Soul</label>
+        <textarea class="input" id="soulText" rows="6">Keeps the release pipeline moving. Reports what changed, what it decided on its own, and what needs a human. Never edits a lockfile without asking.</textarea></div>
+      <p class="hint" style="margin-top:8px">The soul is the system prompt for this Bot only. Ownership rules apply — only the owner sees Rename.</p>
+      <div class="cap" style="margin-top:18px">runtime</div>
+      <div class="kv"><span class="k">Model</span><span class="v">llama-3.3-70b</span></div>
+      <div class="kv"><span class="k">Provider</span><span class="v">Groq · OpenAI-compatible</span></div>
+      <div class="kv"><span class="k">Sandbox</span><span class="v">docker · atlas-1</span></div>
+      <div class="kv"><span class="k">Workspace</span><span class="v">/workspace · durable</span></div>
+      <div class="kv"><span class="k">Memory</span><span class="v">phase 3</span></div>
+      <div class="actions" style="margin-top:14px">
+        <button class="btn btn-secondary btn-sm" id="soulSave">Save soul</button>
+        <button class="btn btn-ghost btn-sm" data-needs="rename">Rename Bot</button>
+      </div>`,
+    tasks:()=>`
+      <div class="cap">current run</div>
+      <div class="tcard"><div class="tcard-head"><span class="pulse"></span><span class="ttl">Repo secret audit</span><span class="tag">waiting</span></div>
+        <div class="tcard-body stack">
+          <div class="kv"><span class="k">Started</span><span class="v">14:18</span></div>
+          <div class="kv"><span class="k">Steps</span><span class="v">3 of 5</span></div>
+          <div class="kv"><span class="k">Blocked on</span><span class="v">approval · git rm</span></div>
+          <div class="actions"><button class="btn btn-secondary btn-sm" id="cancelRun">Stop now</button></div>
+        </div></div>
+      <div class="cap" style="margin-top:18px">recent runs</div>
+      <div class="kv"><span class="k">Changelog draft</span><span class="v">done · 12:04</span></div>
+      <div class="kv"><span class="k">Dependency sweep</span><span class="v">failed · 09:41</span></div>`,
+    library:()=>`
+      <div class="cap">/workspace</div>
+      <div class="kv"><span class="k"><svg class="ic ic-sm" style="display:inline"><use href="#i-folder"/></svg> free-bot/</span><span class="v">repo</span></div>
+      <div class="kv"><span class="k"><svg class="ic ic-sm" style="display:inline"><use href="#i-file"/></svg> secret-audit.md</span><span class="v">4 KB</span></div>
+      <div class="kv"><span class="k"><svg class="ic ic-sm" style="display:inline"><use href="#i-file"/></svg> repo-tree.txt</span><span class="v">2.1 KB</span></div>
+      <div class="kv"><span class="k"><svg class="ic ic-sm" style="display:inline"><use href="#i-folder"/></svg> shared/</span><span class="v">group volume</span></div>
+      <p class="hint" style="margin-top:10px">Files here survive hibernation and image updates. Deleting a Bot does not delete them.</p>
+      <div class="actions" style="margin-top:12px"><button class="btn btn-ghost btn-sm" data-needs="upload">Upload</button>
+        <button class="btn btn-ghost btn-sm" data-needs="download">Download all</button></div>`,
+    media:()=>`
+      <div class="cap">captures · run 4f3a</div>
+      <img src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 320 200'%3E%3Crect width='320' height='200' fill='%230a0a0a'/%3E%3Crect x='0' y='0' width='320' height='22' fill='%23000000'/%3E%3Ccircle cx='12' cy='11' r='3' fill='none' stroke='%23737373'/%3E%3Ccircle cx='24' cy='11' r='3' fill='none' stroke='%23737373'/%3E%3Crect x='18' y='42' width='118' height='6' rx='3' fill='%23242424'/%3E%3Crect x='18' y='60' width='196' height='6' rx='3' fill='%23242424'/%3E%3Crect x='18' y='78' width='150' height='6' rx='3' fill='%23ffffff'/%3E%3Crect x='18' y='96' width='210' height='6' rx='3' fill='%23242424'/%3E%3Crect x='18' y='120' width='90' height='6' rx='3' fill='%23737373'/%3E%3Crect x='18' y='138' width='132' height='6' rx='3' fill='%23242424'/%3E%3C/svg%3E"
+        width="320" height="200" alt="Captured editor view of apps/web/.env.local with the key line highlighted" style="border:1px solid var(--border);border-radius:8px;width:100%;height:auto" />
+      <p class="hint" style="margin-top:9px">apps/web/.env.local · key line highlighted by the run</p>
+      <div class="kv" style="margin-top:14px"><span class="k">Frames captured</span><span class="v">1</span></div>
+      <div class="kv"><span class="k">Kept for</span><span class="v">this run only</span></div>`
+  };
+  function renderTab(t){
+    curTab=t; store.set('tab',t);
+    $$('.aside-tab').forEach(b=>{const on=b.dataset.tab===t;b.classList.toggle('is-active',on);b.setAttribute('aria-selected',on)});
+    asideBody.innerHTML=TABS[t]();
+    asideBody.querySelectorAll('[data-needs]').forEach(b=>b.addEventListener('click',()=>toast(b.dataset.needs)));
+    $('#soulSave')?.addEventListener('click',e=>{e.target.textContent='Saved';setTimeout(()=>e.target.textContent='Save soul',1200)});
+    $('#cancelRun')?.addEventListener('click',()=>stopRun());
+  }
+  $$('.aside-tab').forEach(b=>b.addEventListener('click',()=>renderTab(b.dataset.tab)));
+  renderTab(curTab);
+
+  /* resize + collapse */
+  const res=$('#resizer'), root=document.documentElement;
+  root.style.setProperty('--aside-w',store.get('asideW',360)+'px');
+  if(store.get('collapsed',false)) document.body.classList.add('collapsed');
+  let drag=false;
+  res.addEventListener('pointerdown',e=>{drag=true;res.setPointerCapture(e.pointerId);document.body.style.userSelect='none'});
+  res.addEventListener('pointermove',e=>{if(!drag)return;
+    const w=Math.min(560,Math.max(300,window.innerWidth-e.clientX));
+    root.style.setProperty('--aside-w',w+'px');store.set('asideW',w)});
+  res.addEventListener('pointerup',e=>{drag=false;document.body.style.userSelect='';res.releasePointerCapture(e.pointerId)});
+  $('#asideToggle').addEventListener('click',()=>{
+    const on=document.body.classList.toggle('collapsed'); store.set('collapsed',on);
+    if(!on) root.style.setProperty('--aside-w',store.get('asideW',360)+'px');
+  });
+  $('#botNameBtn').addEventListener('click',()=>{document.body.classList.remove('collapsed');renderTab('details')});
+
+  /* ── page 4 · new chat and the Bot picker ──────────────────────────── */
+  const scrim=document.createElement('div'); scrim.className='scrim hidden'; document.body.appendChild(scrim);
+  const picker=document.createElement('div'); picker.className='picker hidden'; picker.setAttribute('data-od-id','bot-picker');
+  picker.innerHTML='<input id="pkInput" placeholder="Search Bots, or type a name to create one" autocomplete="off" /><div class="picker-list" id="pkList"></div>';
+  document.body.appendChild(picker);
+  const ALL=['Atlas','Ledger','Scout','Patch','Quill','Warehouse','Old Scout'];
+  function renderPicker(){
+    const q=$('#pkInput').value.trim(); const list=$('#pkList'); list.innerHTML='';
+    const rows=[];
+    if(q.length>=1) rows.push({create:true,label:'Create “'+q+'” Bot'});
+    else rows.push({create:true,label:'Create new Bot'});
+    if(q.length>=3){ ALL.filter(n=>n.toLowerCase().includes(q.toLowerCase())).forEach(n=>rows.push({name:n})); }
+    else { ALL.forEach(n=>rows.push({name:n})); }
+    rows.forEach(r=>{
+      const b=document.createElement('button'); b.className='pop-item';
+      b.innerHTML='<span class="dot '+(r.create?'':'')+'"></span><span>'+(r.create?r.label:r.name)+'</span>'+(r.create?'':'<span class="sub">Bot</span>');
+      b.addEventListener('click',()=>{
+        if(r.create){ const name=q||'New Bot';
+          b.querySelector('span:nth-child(2)').textContent='Creating…'; b.disabled=true;
+          setTimeout(()=>{ closePicker(); toast('Created “'+name+'” · working in the background') },700);
+        } else { closePicker(); setBot(r.name); }
+      }); list.appendChild(b);
+    });
+    if(q.length>0&&q.length<3) { const h=document.createElement('p'); h.className='hint'; h.style.padding='8px 10px';
+      h.textContent='Type '+(3-q.length)+' more character'+((3-q.length)===1?'':'s')+' to search Bots.'; list.appendChild(h); }
+  }
+  function openPicker(){$('#pkInput').value='';renderPicker();picker.classList.remove('hidden');scrim.classList.remove('hidden');$('#pkInput').focus()}
+  function closePicker(){picker.classList.add('hidden');scrim.classList.add('hidden')}
+  $('#pkInput').addEventListener('input',renderPicker);
+  $('#sbNew').addEventListener('click',openPicker);
+  scrim.addEventListener('click',()=>{closePicker();closePalette();closeMenus()});
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){closePicker();closePalette();closeMenus()}
+    const meta=e.metaKey||e.ctrlKey;
+    if(meta&&e.shiftKey&&e.key.toLowerCase()==='f'){e.preventDefault();openPalette('bots')}
+    else if(meta&&e.key.toLowerCase()==='k'){e.preventDefault();openPalette('all')}
+  });
+
+  /* ── command palette ───────────────────────────────────────────────── */
+  const pal=document.createElement('div'); pal.className='palette hidden';
+  pal.setAttribute('data-od-id','command-palette');
+  pal.innerHTML='<input id="palInput" placeholder="Bots, settings, actions, routines — or &quot;a quoted phrase&quot; for messages" autocomplete="off" /><div class="palette-list" id="palList"></div>';
+  document.body.appendChild(pal);
+  const ITEMS=[['Bot','Atlas'],['Bot','Ledger'],['Bot','Scout'],['Bot','Patch'],['Bot','Quill'],
+    ['Group chat','Launch room'],['Setting','Notifications'],['Setting','Appearance'],['Setting','Spend cap'],
+    ['Action','Export the transcript'],['Action','Simulate a dropped stream'],['Action','Reconnect the stream'],
+    ['Routine','Morning deploy health'],['Routine','Weekly dependency sweep'],
+    ['Message','“secrets audit”'],['Message','“changelog”']];
+  function openPalette(mode){ pal.classList.remove('hidden'); scrim.classList.remove('hidden'); $('#palInput').value=''; renderPal(mode); $('#palInput').focus(); }
+  function closePalette(){ pal.classList.add('hidden'); scrim.classList.add('hidden'); }
+  function renderPal(mode){
+    const q=$('#palInput').value.trim().toLowerCase(); const list=$('#palList'); list.innerHTML='';
+    const quoted=q.startsWith('"');
+    let items=ITEMS.filter(([g,n])=> quoted ? g==='Message' : g!=='Message');
+    if(q && !quoted) items=items.filter(([g,n])=>n.toLowerCase().includes(q)||g.toLowerCase().includes(q));
+    if(q && quoted) items=items.filter(([g,n])=>n.toLowerCase().includes(q.replace(/"/g,'')));
+    if(!items.length){const p=document.createElement('p');p.className='hint';p.style.padding='12px 10px';
+      p.textContent='Nothing matched. A quoted term searches messages only.';list.appendChild(p);return}
+    items.forEach(([g,n])=>{ const b=document.createElement('button'); b.className='pop-item';
+      b.innerHTML='<span>'+n+'</span><span class="sub">'+g+'</span>';
+      b.addEventListener('click',()=>{closePalette();act(g,n)}); list.appendChild(b); });
+  }
+  $('#palInput').addEventListener('input',()=>renderPal('all'));
+  $('#sbSearch').addEventListener('click',()=>openPalette('all'));
+
+  /* ── menu helper ───────────────────────────────────────────────────── */
+  function menu(x,y,html){ closeMenus(); const m=document.createElement('div'); m.className='menu'; m.innerHTML=html;
+    document.body.appendChild(m); const w=m.offsetWidth,h=m.offsetHeight;
+    m.style.left=Math.max(10,Math.min(x,window.innerWidth-w-10))+'px';
+    m.style.top=Math.max(10,Math.min(y,window.innerHeight-h-10))+'px';
+    return m; }
+  function closeMenus(){ $$('.menu').forEach(m=>m.remove()) }
+  document.addEventListener('click',e=>{ if(!e.target.closest('.menu')) closeMenus() });
+
+  function openRowMenu(x,y,row){
+    const hidden=row.dataset.state==='hidden';
+    const m=menu(x,y,`
+      <div class="lbl">${row.dataset.bot}</div>
+      ${hidden?'':'<button data-a="pin"><svg class="ic ic-sm"><use href="#i-pin"/></svg> Pin</button>'}
+      ${hidden?'<button data-a="show"><svg class="ic ic-sm"><use href="#i-eye"/></svg> Show in sidebar</button>'
+              :'<button data-a="hide"><svg class="ic ic-sm"><use href="#i-eyeoff"/></svg> Hide from sidebar</button>'}
+      <hr>
+      <button data-a="newsec">Move to new section</button>
+      <button data-a="move">Move to</button>
+      <button data-a="unread">Mark as unread</button>
+      <button data-a="rename">Rename Bot</button>
+      <button data-a="copyid">Copy conversation ID</button>
+      <hr>
+      <button data-a="delete" class="danger">Delete</button>`);
+    m.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',()=>{
+      const a=b.dataset.a; closeMenus();
+      if(a==='hide'){row.dataset.state='hidden';$('#hiddenGroup').appendChild(row);toast('hide:'+row.dataset.bot)}
+      if(a==='show'){row.dataset.state='idle';$('#sbList').insertBefore(row,$('#hiddenToggle'));toast('show:'+row.dataset.bot)}
+      if(a==='unread'){row.dataset.state='unread';toast('unread:'+row.dataset.bot)}
+      if(a==='copyid'){navigator.clipboard&&navigator.clipboard.writeText('conv_4f3a91c7');toast('copyid')}
+      if(a==='rename'){row.querySelector('.name').textContent=prompt('Rename Bot',row.dataset.bot)||row.dataset.bot;toast('rename')}
+      if(a==='delete')toast('delete:'+row.dataset.bot);
+      if(a==='pin')toast('pin:'+row.dataset.bot);
+      if(a==='newsec'||a==='move')toast(a);
+    }));
+  }
+
+  let toastT;
+  function toast(msg){
+    const el=document.createElement('div'); el.className='menu'; el.style.left='50%'; el.style.top='14%';
+    el.style.transform='translateX(-50%)'; el.style.minWidth='0'; el.setAttribute('role','status');
+    el.innerHTML='<button style="pointer-events:none;color:var(--fg)"></button>';
+    el.querySelector('button').textContent=msg;
+    document.body.appendChild(el); clearTimeout(toastT); toastT=setTimeout(()=>el.remove(),2200);
+  }
+
+  $('#hiddenToggle').addEventListener('click',()=>{
+    const g=$('#hiddenGroup'); const open=g.classList.toggle('hidden'); 
+    $('#hiddenCaret').style.transform=open?'':'rotate(90deg)';
+    store.set('hiddenOpen',!open);
+  });
+  if(store.get('hiddenOpen',false)){$('#hiddenGroup').classList.remove('hidden');$('#hiddenCaret').style.transform='rotate(90deg)'}
+
+  $('#acctBtn').addEventListener('click',e=>{
+    const m=menu(e.clientX-150,e.clientY-190,`
+      <div class="lbl">This week</div>
+      <button style="pointer-events:none"><span>Usage</span><span class="sub mono" style="margin-left:auto;color:var(--muted)">—</span></button>
+      <p class="hint" style="padding:0 10px 6px">Local mode is not metered. A hosted backend would fill this in.</p>
+      <hr>
+      <button data-a="plan"><svg class="ic ic-sm"><use href="#i-cpu"/></svg> Plan · FreeBot local</button>
+      <button data-a="settings">Settings</button>
+      <hr>
+      <button data-a="out"><svg class="ic ic-sm"><use href="#i-out"/></svg> Sign out</button>`);
+    m.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',()=>{closeMenus();toast(b.dataset.a)}));
+  });
+  $('#shareBtn').addEventListener('click',e=>{
+    const m=menu(e.clientX-190,e.clientY+8,`
+      <div class="lbl">Share</div>
+      <button data-a="link">Copy conversation link</button>
+      <button data-a="export">Export transcript</button>
+      <button data-a="team">Share with a teammate · team edition</button>`);
+    m.querySelectorAll('[data-a]').forEach(b=>b.addEventListener('click',()=>{closeMenus();toast(b.dataset.a==='link'?'Copied link':b.dataset.a)}));
+  });
+  $('#providerRow').addEventListener('click',()=>{screen('screenWelcome')});
+  $('#connectApps').addEventListener('click',()=>toast('Connect apps · phase 5'));
+
+  function act(g,n){
+    if(n==='Simulate a dropped stream'){$('#reconnect').classList.remove('hidden');setTimeout(()=>$('#reconnect').classList.add('hidden'),3200);return}
+    toast(g+': '+n);
+  }
+
+  /* ── page 5 · the turn ─────────────────────────────────────────────── */
+  const turnText=$('#turnText'), marker=$('#turnMarker'), stopBtn=$('#stopBtn');
+  let running=false, runTimer=null;
+  const PHASES=['Thinking it through','Working on your computer','Waiting on results'];
+  function startRun(){
+    running=true; stopBtn.classList.remove('hidden'); marker.classList.remove('hidden'); $('#voiceBtn').classList.add('hidden');
+    let i=0; turnText.textContent=PHASES[0]; clearInterval(runTimer);
+    runTimer=setInterval(()=>{ i++; if(i<PHASES.length) turnText.textContent=PHASES[i];
+      else { clearInterval(runTimer); turnText.textContent='Waiting on an approval'; } },1600);
+  }
+  function stopRun(){
+    running=false; clearInterval(runTimer);
+    stopBtn.classList.add('hidden'); marker.classList.add('hidden');
+    $('#voiceBtn').classList.remove('hidden');
+    if($('#gateState').textContent==='pending'){$('#gateState').textContent='expired';$('#gateClock').textContent='run ended unanswered';
+      $('#gateResolved').classList.remove('hidden');$('#gateResolved').textContent='Did not run. In phase 5 this card offers “Always allow this in the future”.'}
+    toast('Stopped · finished work is kept');
+  }
+  stopBtn.addEventListener('click',stopRun);
+  $('#sendBtn').addEventListener('click',send);
+  $('#composerInput').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}
+    if(e.key==='/'||e.key==='@')showPop(e.key);
+  });
+  function send(){
+    const v=$('#composerInput').value.trim(); if(!v)return;
+    $('#composerInput').value='';
+    const u=document.createElement('div'); u.className='msg-user'; u.setAttribute('data-od-id','item-user-message');
+    u.innerHTML='<p></p>'; u.querySelector('p').textContent=v;
+    $('#tcol').appendChild(u);
+    const b=document.createElement('div'); b.className='msg-bot'; b.innerHTML='<p></p>';
+    b.querySelector('p').textContent='Starting now. I will report each step and stop before anything that changes state.';
+    $('#tcol').appendChild(b);
+    $('#transcript').scrollTop=$('#transcript').scrollHeight;
+    startRun();
+  }
+  $('#gateAllow').addEventListener('click',()=>resolveGate(true));
+  $('#gateDeny').addEventListener('click',()=>resolveGate(false));
+  function resolveGate(allow){
+    $('#gateState').textContent=allow?'allowed':'denied';
+    $('#gateBar').style.background=allow?'var(--fg)':'var(--muted)';
+    $('#gateClock').textContent=allow?'decided by you · 14:22':'decided by you · 14:22';
+    $('#gateActions').classList.add('hidden'); $('#gateResolved').classList.remove('hidden');
+    $('#gateResolved').textContent=allow?'Allowed once. Scope is bound to this exact command; a changed command asks again.'
+      :'Denied. Nothing ran, and the file index is unchanged.';
+    if(allow){
+      $('#afterGate').classList.remove('hidden'); $('#fileCard').classList.remove('hidden');
+      if(running){running=false;clearInterval(runTimer);stopBtn.classList.add('hidden');marker.classList.add('hidden');$('#voiceBtn').classList.remove('hidden')}
+    } else { $('#afterGate').classList.remove('hidden'); $('#afterGateText').textContent='Understood — I made no changes and stopped the run.'; }
+  }
+  $$('.qc').forEach(c=>c.addEventListener('click',()=>{
+    $$('.qc').forEach(x=>x.style.borderColor=''); c.style.borderColor='var(--fg)'; toast('Answered: '+c.textContent);
+  }));
+  $('#secretSend').addEventListener('click',()=>{
+    const v=$('#secretInput').value;
+    if(!v){$('#secretNote').textContent='Nothing to send.';return}
+    $('#secretInput').value=''; $('#secretNote').textContent='Sent to the vault. This card keeps no copy of the value.';
+  });
+  $('#resendBtn').addEventListener('click',()=>{$('#failedSend').remove();send()});
+  $('#deleteBtn').addEventListener('click',()=>$('#failedSend').remove());
+
+  /* copy buttons */
+  document.addEventListener('click',e=>{
+    const b=e.target.closest('[data-copy]'); if(!b)return;
+    navigator.clipboard&&navigator.clipboard.writeText(b.dataset.copy);
+    const old=b.innerHTML; b.innerHTML='<svg class="ic ic-sm"><use href="#i-check"/></svg> Copied';
+    setTimeout(()=>b.innerHTML=old,1300);
+  });
+
+  /* / and @ popovers */
+  const POP={
+    '/':[['Repo audit','skill'],['Release notes','skill'],['Inbox triage','skill']],
+    '@':[['Atlas','Bot'],['Launch room','group'],['Morning deploy health','routine'],['Connect apps','apps']]
+  };
+  function showPop(ch){
+    const p=$('#pop'); p.innerHTML='';
+    POP[ch].forEach(([n,k])=>{const b=document.createElement('button');b.className='pop-item';
+      b.innerHTML='<span>'+ch+n+'</span><span class="sub">'+k+'</span>';
+      b.addEventListener('click',()=>{const t=$('#composerInput');t.value=(t.value.replace(/[\/@]$/,''))+ch+n+' ';p.classList.add('hidden');t.focus()});
+      p.appendChild(b)});
+    p.classList.remove('hidden');
+  }
+  $$('[data-insert]').forEach(b=>b.addEventListener('click',()=>showPop(b.dataset.insert)));
+  document.addEventListener('click',e=>{if(!e.target.closest('#pop')&&!e.target.closest('[data-insert]')&&e.target.id!=='composerInput')$('#pop').classList.add('hidden')});
+  $('#attachBtn').addEventListener('click',()=>toast('Attach · paste or drop works too'));
+
+  /* voice control only when the box is empty */
+  const ci=$('#composerInput');
+  ci.addEventListener('input',()=>{ $('#voiceBtn').classList.toggle('hidden',ci.value.length>0) });
+
+  setBot(store.get('bot','Atlas')||'Atlas');
+})();
+</script>
+</body>
+</html>
