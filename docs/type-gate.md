@@ -105,8 +105,8 @@ It writes `packages/verify/artifacts/type-gate/<short-sha>/probe.txt` and exits 
 failed check. Per run it does all of this against the real gate, `bun run typecheck`. The artifact
 for the blind-set change U4.1 made is `packages/verify/artifacts/type-gate/e7cb536/probe.txt`, and the
 one U4.2 made, which adds `packages/ui/browser/shell.ts` to the list, is
-`packages/verify/artifacts/type-gate/bdf5f12/probe.txt`, and one U4.3 makes for
-`packages/ui/browser/provider.ts`.
+`packages/verify/artifacts/type-gate/bdf5f12/probe.txt`, and the one U4.3 makes, which adds
+`packages/ui/browser/provider.ts`, is `packages/verify/artifacts/type-gate/d22c487/probe.txt`.
 
 1. The clean tree passes.
 2. A census compares the program against the tree. It asserts the root include is exactly the nine
