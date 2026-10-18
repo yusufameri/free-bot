@@ -230,8 +230,9 @@ Source: `apps/server/src/vault.ts`; the rule is `preferences.md` order 8.
 
 **verdict.** The label a `docs/VERIFICATION.md` row carries for one feature: `live-ui-verified` when a
 driver drove the real surface, `unit-test-verified` when a test suite is the surface, `type-check-only`
-for the type gate, or `spike-verified` where a spike's own driver is the only cover. CI green is an
-input to a verdict, never the verdict.
+for the type gate, `spike-verified` where a spike's own driver is the only cover, or `docs-only` where
+the check is a reading of a document and no driver runs. CI green is an input to a verdict, never the
+verdict.
 
 Source: `docs/VERIFICATION.md`; the values are named in `VISION.md`.
 
