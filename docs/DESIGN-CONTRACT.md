@@ -1,0 +1,283 @@
+# The design contract
+
+Order 32 makes the exported prototype the visual contract. It governs visuals, geometry, tokens,
+motion and the responsive matrix, and where it conflicts with `UX.md` on a visual question the export
+wins. This document records what the export says, which of its two files governs which surface, and
+every place the app still differs from it.
+
+The contract is enforced in three places, and a claim here that none of them checks is a claim this
+document should not make.
+
+- `packages/ui/src/tokens.ts` is the only place a token value is written, and
+  `packages/ui/src/tokens.test.ts` asserts each value against a literal.
+- `bun packages/ui/scripts/emit-tokens.ts --check` (and the same comparison inside
+  `tokens.test.ts`) fails when `apps/web/host/index.html` or this document drifts from that table.
+- `packages/verify/scripts/design-contract.ts` opens the app and `freebot-prototype.html` in the same
+  headless browser at each of the nine viewports, measures both, and prints a delta per field. Its
+  transcript is the evidence artifact named in `docs/VERIFICATION.md`.
+
+## The export's four files
+
+Committed byte-identical at `design/prototype-84c6b185/`, with the checksums in that directory's
+README. They are a frozen artifact. Nothing reads them at runtime, and `biome.json` excludes the
+directory so the formatter and the linter leave them alone.
+
+| File | Role |
+| --- | --- |
+| `DESIGN-HANDOFF.md` | The export tool's prose handoff. Names `freebot-prototype-v1.html` as the entry file. |
+| `DESIGN-MANIFEST.json` | The machine-readable map: screens, token names, interaction states, and the nine `responsiveViewports`. |
+| `freebot-prototype-v1.html` | 72 KB. The handoff's declared entry. One media query, at 980px. The older token set. |
+| `freebot-prototype.html` | 214 KB. Two media queries, at 1120px and 860px. The token set plan Part 10 enumerates. |
+
+### Which file governs which surface
+
+| Surface | Governing file | Why |
+| --- | --- | --- |
+| Tokens | `freebot-prototype.html` | Its `:root` carries the set plan Part 10 and this unit's acceptance name: `--sb-w: 264px`, `--aside-w: 384px`, the `--fs-h1` .. `--fs-meta` scale, the four `color-mix` fills, `--accent-2` as the selection wash. The v1 file carries an older set instead: `268px`/`360px`, `--fs-xs`..`--fs-lg`, no derived fills. |
+| Shell geometry | `freebot-prototype.html` | Its `.app` is the three-column grid this unit builds, with a 5px resizer track between the thread column and the aside. The v1 file's `.app` has no resizer track. |
+| Breakpoints | `freebot-prototype.html` | 1120px and 860px, two thresholds that separate "no aside" from "no sidebar". |
+| Motion | `freebot-prototype.html` | The fuller set of durations. The v1 file uses two of them. |
+| The nine-viewport matrix | `DESIGN-MANIFEST.json` | `responsiveViewports` names the nine widths and heights, each with `mustAvoidHorizontalScroll: true`. |
+| The two screens (`welcome-provider`, `first-run`) | Neither, yet | Both files carry them; U6.2 builds page 2 and U4.3 already built page 1. Their structure is the same in both files. |
+| A 980px single-collapse | `freebot-prototype-v1.html` | Only the v1 file has it. Recorded below as superseded, not implemented. |
+
+### The reconciliation
+
+The handoff declares `freebot-prototype-v1.html` as its entry file and names only that one in its
+`Source map`. The manifest repeats it as `entryFile` while listing both files under
+`sourceFiles.all`. Read against the two files, that declaration is the tool's first-listed file
+rather than the newer one:
+
+- `freebot-prototype.html` carries tokens the v1 file does not have at all (the four `color-mix`
+  fills, `--accent-2`, the fluid `--fs-h1` scale) and a shell geometry the v1 file does not have (the
+  resizer track). Plan Part 10 §10.1 enumerates the fuller set as the export's, and this unit's
+  acceptance names 264px and 384px, which only the fuller file writes.
+- Both files name the same two screens, `welcome-provider` and `app`, so the screen-level
+  disagreement is nil. Where they disagree, it is always the fuller file that carries more.
+
+So the fuller file governs every visual question, and the handoff's entry line is recorded here as a
+declaration about which file to open first, not about which file is newer. A reader who starts from
+the v1 file as instructed will find an older token set and must not implement it.
+
+**The 980px breakpoint is not implemented.** The v1 file's single
+`@media (max-width:980px)` collapses both the sidebar and the aside at once. The fuller file replaces
+it with two thresholds, and at 861px to 980px the two files want opposite things. The fuller file
+keeps the sidebar and hides only the aside, and the v1 file hides both. Implementing the 980px collapse
+would hide the Bot list across a 120px band where the governing file keeps it. Recorded rather than
+approximated, per plan §10.3.
+
+## The tokens
+
+Extracted from `freebot-prototype.html`'s `:root` block. `origin` marks which values the export
+writes as tokens and which are names this repo gives to values the export writes literally inside a
+rule. The table below is generated from `packages/ui/src/tokens.ts`; the `Source` column is the
+export and line each value was read from.
+
+<!-- tokens:begin. Generated from packages/ui/src/tokens.ts by `bun packages/ui/scripts/emit-tokens.ts --write`. -->
+| Token | Value | Source |
+| --- | --- | --- |
+| `--bg` | `#000000` | `freebot-prototype.html:12` |
+| `--surface` | `#0a0a0a` | `freebot-prototype.html:13` |
+| `--fg` | `#ffffff` | `freebot-prototype.html:14` |
+| `--muted` | `#737373` | `freebot-prototype.html:15` |
+| `--border` | `#242424` | `freebot-prototype.html:16` |
+| `--accent` | `#000000` | `freebot-prototype.html:17` |
+| `--accent-2` | `#0f172a` | `freebot-prototype.html:18` |
+| `--hover` | `color-mix(in oklch, var(--fg) 7%, transparent)` | `freebot-prototype.html:21` |
+| `--hover-2` | `color-mix(in oklch, var(--fg) 12%, transparent)` | `freebot-prototype.html:22` |
+| `--fg-soft` | `color-mix(in oklch, var(--fg) 5%, transparent)` | `freebot-prototype.html:23` |
+| `--muted-2` | `color-mix(in oklch, var(--muted) 45%, transparent)` | `freebot-prototype.html:24` |
+| `--font-display` | `'Geist', 'Geist Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif` | `freebot-prototype.html:26` |
+| `--font-body` | `'Geist', 'Geist Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif` | `freebot-prototype.html:27` |
+| `--font-mono` | `ui-monospace, 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace` | `freebot-prototype.html:28` |
+| `--fs-h1` | `clamp(30px, 4.4vw, 46px)` | `freebot-prototype.html:30` |
+| `--fs-h2` | `24px` | `freebot-prototype.html:31` |
+| `--fs-h3` | `17px` | `freebot-prototype.html:32` |
+| `--fs-body` | `15px` | `freebot-prototype.html:33` |
+| `--fs-meta` | `12.5px` | `freebot-prototype.html:34` |
+| `--radius` | `8px` | `freebot-prototype.html:36` |
+| `--aside-w` | `384px` | `freebot-prototype.html:37` |
+| `--sb-w` | `264px` | `freebot-prototype.html:38` |
+| `--dur-fast` | `0.12s` | `freebot-prototype.html:230 .sb-row { transition: background 0.12s ease }` |
+| `--dur` | `0.15s` | `freebot-prototype.html:120 .btn { transition: background 0.15s ease, ... }` |
+| `--dur-slow` | `0.18s` | `freebot-prototype.html:332 .disc .chev { transition: transform 0.18s ease }` |
+| `--dur-enter` | `0.25s` | `freebot-prototype.html:201 .flowline { animation: slide 0.25s ease }` |
+| `--dur-pulse` | `1.5s` | `freebot-prototype.html:110 .pulse { animation: pulse 1.5s ease-in-out infinite }` |
+| `--dur-spin` | `1s` | `freebot-prototype.html:112 .spin { animation: spin 1s linear infinite }` |
+| `--ease` | `ease` | `freebot-prototype.html:120 the easing keyword every transition writes` |
+<!-- tokens:end -->
+
+The seven `derived` rows are the motion timings, because the export declares no motion custom
+properties of its own. Its durations are read off the rules that use them. `design-contract.ts` compares the `export` rows
+against the export by name, and the motion by effect rather than by name, on a paired element's
+computed `transition-duration`.
+
+## The shell's geometry
+
+The export's `.app` is
+`grid-template-columns: var(--sb-w) minmax(0, 1fr) 5px var(--aside-w)` on a `100vh` grid. The app's
+`.shell[data-operator="true"]` is the same declaration with the same tokens. Measured by
+`design-contract.ts` at each of the nine viewports, in `assert.txt` beside the PNGs.
+
+| Region | App | Export |
+| --- | --- | --- |
+| Sidebar | `#sidebar` | `.sidebar` |
+| Thread column | `#center` | `.main` |
+| Resizer track | `#resizer` | `.resizer` |
+| Details aside | `#aside` | `.aside` |
+
+The app's aside is a frame and nothing else. Its tabs, its body, and the resizer's drag behavior with
+a persisted width are U6.3's; this unit ships the 384px region, its `border-left`, and the 5px track,
+so that U6.3 has the geometry to fill. The empty state is visible at the three viewports where the
+export shows the aside, and it is recorded here rather than dressed up. Nothing in this frame
+pretends to be the details panel.
+
+Three things the harness asserts rather than assumes, per viewport:
+
+- Every visible region's left edge is where the grid template puts it, in the order sidebar, thread
+  column, resizer track, aside. A region that rendered somewhere else fails even if its width is
+  right.
+- Every token name the export declares is read from both pages twice, once from the `:root` rule
+  and once from `documentElement`. The first read is what the page declares and the second is what it
+  uses. The declared values are the contract; the used values are compared as well, because that is
+  where an inline override would show up. One name, `--aside-w`, is declared differently by the export and is listed
+  below.
+- No region's content is wider than the region. The document pair the matrix asks for is reported
+  per viewport, and because this frame's `body` carries the export's `overflow: hidden`, that pair is
+  trivially equal on any page that cannot scroll; the region pairs are what actually catch a
+  horizontal overflow, and they are reported for `#center`, `#sidebar`, `#aside`, `#resizer`,
+  `#thread`, `#library`, `#tabs`, `#operator`, `header` and `.meta`.
+
+The harness earned its keep on its first green-candidate run. It found the sidebar 45px wider than
+itself at every viewport above 860px. The footer's row carries a model id and a status
+(`providerRowLabel`), and a realistic id such as `deepseek/deepseek-v4.1-flash` is longer than the
+246px the row has, so a `white-space: nowrap` label pushed the sidebar's scroll width to 308px. The
+fix is the export's own treatment for a long row label, the ellipsis on `.sb-row .name` at
+`freebot-prototype.html:234`, applied to `#provider-open`. Before that fix the run reported
+`#sidebar scrollWidth 308 > clientWidth 263` at each of the four viewports wide enough to show the
+sidebar; after it, the pair is equal at all nine.
+
+## The breakpoints
+
+| Threshold | Governing file and line | Effect |
+| --- | --- | --- |
+| 1120px | `freebot-prototype.html:540` | The aside and the resizer track leave the grid; the sidebar and the thread column remain. |
+| 860px | `freebot-prototype.html:549` | The grid becomes one column and the sidebar leaves it. |
+| 980px | `freebot-prototype-v1.html:248` | Superseded. Not implemented, per the reconciliation above. |
+
+Both governing media queries also carry drawer behavior for the hidden region (`.aside.open`,
+`.sidebar.open`, and a `.mob-only` trigger). This frame does not have the drawers. At 1120px and
+below the aside is unreachable, and at 860px and below the Bot list is unreachable, because there is
+no trigger for either. That is a real gap in the app rather than a difference in rendering, so it is
+named here and in the delta list below.
+
+## The responsive matrix
+
+The nine viewports from `DESIGN-MANIFEST.json`, each with `mustAvoidHorizontalScroll: true`. Every
+one of them is captured and asserted by `design-contract.ts`, one PNG each, at the manifest's exact
+width and height.
+
+| Name | Width | Height | Category | Sidebar | Resizer | Aside |
+| --- | --- | --- | --- | --- | --- | --- |
+| mobile-compact | 360 | 800 | mobile | hidden | hidden | hidden |
+| mobile-standard | 390 | 844 | mobile | hidden | hidden | hidden |
+| mobile-large | 430 | 932 | mobile | hidden | hidden | hidden |
+| foldable-small-tablet | 600 | 960 | foldable-tablet | hidden | hidden | hidden |
+| tablet-portrait | 820 | 1180 | tablet | hidden | hidden | hidden |
+| tablet-landscape | 1024 | 768 | tablet | shown, 264px | hidden | hidden |
+| laptop | 1366 | 768 | desktop | shown, 264px | shown, 5px | shown |
+| desktop | 1440 | 900 | desktop | shown, 264px | shown, 5px | shown |
+| wide | 1920 | 1080 | wide | shown, 264px | shown, 5px | shown |
+
+The last three columns are what the two breakpoints produce, and they are what the harness asserts
+per viewport rather than a table anyone maintains by hand. Each viewport's row in `assert.txt` is
+the measured width, the export's width at the same viewport, and the delta between them.
+
+## The evidence artifact
+
+`packages/verify/artifacts/design-contract/<short-sha>/` holds `assert.txt` and one PNG per viewport
+at the manifest's exact width, plus the export's own shot of the same viewport under `reference/` so
+a reviewer can compare the two without running anything. `assert.txt` carries the nine rows with
+their per-field deltas, the two token assertions per row, the nine document overflow pairs, the ten
+region overflow pairs per viewport, the token table with its source lines, and the pixel share with
+its reason.
+
+Run it yourself from the repo root: `bun packages/verify/scripts/design-contract.ts`. It boots the
+app with `bun run up --no-open --replay` over a temporary home and bots root of its own, so it
+touches no Bot, no run and no provider, and it needs no Docker and no key. The one thing it writes
+outside its artifact directory is that temporary directory, which it deletes on the way out.
+
+## Follow-ups this unit leaves
+
+- Six drivers still carry their own copy of the CDP client this unit extracted into
+  `packages/verify/src/cdp.ts`: `packages/verify/scripts/{launch,keyed-run,files-surface,type-gate}.ts`
+  and `apps/web/scripts/{capture,one-run-path}.ts`. Their copies are untouched on purpose, so this
+  diff stays reviewable; moving them onto the shared module is a follow-up, not a rewrite smuggled
+  in with a visual change.
+- No route serves a font file, so Geist cannot be vendored without one. Either `apps/server` grows a
+  static route for `apps/web/host/fonts/`, or the family stays unresolved, per the delta above.
+
+## Surfaces the export has and the app does not yet
+
+| Export surface | Owner |
+| --- | --- |
+| The details pane's seven tabs and their bodies (`.aside-tabs`, `.aside-body`) | U6.3 |
+| The resizer's drag and its persisted width | U6.3 |
+| The mobile drawers (`.aside.open` at 1120px, `.sidebar.open` and `.mob-only` at 860px) | U6.3 |
+| The notices stack and the reconnect banner (`.notice-stack`, `.banner`) | U6.3 |
+| The command palette, the modal and the popover (`.palette`, `.picker`, `.menu`) | U6.4 |
+| The approval card, the tool call, the turn marker, the Bot status dot and Bot groups | U6.5 |
+| First run's three panes and the provider welcome (`#firstrun`) | U6.2 |
+| The landing page | U6.6 |
+| The item-level states inside every one of the above | U6.7 owns the pass that audits them |
+
+## Deltas this frame cannot close
+
+**The aside is 384px here and 372px in the export's own rendering.** `--aside-w: 384px` is the
+export's declared token, at `freebot-prototype.html:37`, and it is the value plan Part 10 §10.1 and
+this unit's acceptance both name. The export's script then overwrites its own token at boot:
+`freebot-prototype.html:2248` runs
+`document.documentElement.style.setProperty('--aside-w', (S.asideW || 372) + 'px')`, with
+`asideW: 372` in its seed state at line 829, so the export renders a 372px aside on a fresh profile.
+The token is the contract, so the frame is 384px, and the harness prints the 12px delta per viewport
+rather than hiding it. The 372 is the prototype's own default for a user-draggable width, which is
+U6.3's; if U6.3 persists a width it will be that unit's number, not this one's.
+
+**Geist is not vendored, and it does not resolve on the build host.** The three stacks name
+`'Geist'` first, exactly as the export's do, and the font binary is neither in the repo nor fetched:
+the host serves `/` and `/main.js` and nothing else (`apps/server/src/api-server.ts`), so a vendored
+woff2 would need a route in `apps/server`, which this unit must not write. The harness measures
+rather than asks, because `document.fonts.check('16px Geist')` answers `true` on a machine that has
+no Geist at all. It compares the advance width of a Geist-family string against an absent family's
+fallback and against `system-ui`. At this head all three numbers are in `assert.txt`; Geist measures
+the same as the absent family on both pages, so the family resolves through the stack's fallback and
+the rendered metrics are the system's, not Geist's. The type scale is unaffected, because font sizes
+are tokens and the harness measures them; the glyph shapes are not, and a reviewer comparing the PNGs
+against the export's is comparing two different typefaces until a route serves the font.
+
+**The provider row's label is cut rather than allowed to widen the sidebar.** Recorded in the
+geometry section above as the one overflow this unit's own harness found.
+
+**A whole-page pixel difference is not this frame's pass condition, and the harness says so.** The
+export renders prototype data (Bots named Atlas, Scout, Patch, Quill, a launch room, threads that
+were never run) while the app renders real records and an empty conversation. Two pages whose
+content differs render different pixels whatever their styling, so `design-contract.ts` reports the
+differing-pixel share as information with that reason attached, and asserts geometry and computed
+styles instead. A number that cannot be attributed to a cause is not a pass, and this frame does not
+present one. The share runs from 59.43% at 360x800 down to 29.41% at 1920x1080, which follows
+the same content story rather than a styling one. On the narrow viewports the export paints a
+populated conversation across the whole width while the app paints one line of metadata, and the
+wider the viewport the larger the share of the frame that is chrome both pages agree on. The literal
+per-viewport numbers, and the export's own shot of each viewport under `reference/`, are in the
+evidence artifact above.
+
+**`color-scheme: dark` is an addition.** It is not in the export's token block. It is here so the
+page's own controls and scrollbars are dark; the export instead styles `::-webkit-scrollbar` and has
+no `color-scheme` of its own. Both are present in the app.
+
+**The reconnect banner and the error box have no export colour to match.** The export's palette is
+monochrome, and it has no error token and no warning token. The app's `#resume` uses the soft wash
+the export uses for a notice (`.gate-head`, `--fg-soft`) and `#error` uses the strongest line in the
+system (`--fg`), because a monochrome system distinguishes by line weight and wash rather than by
+hue. U6.5 owns the item-level treatment; this maps the values onto tokens without inventing a colour
+the export does not have.

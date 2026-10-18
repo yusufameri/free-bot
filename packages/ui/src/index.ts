@@ -3,6 +3,7 @@ export * from "./bots.ts";
 export * from "./frames.ts";
 export * from "./provider.ts";
 export * from "./thread.ts";
+export * from "./tokens.ts";
 
 /** Surface that hosts the shared TypeScript UI core. */
 export type SurfaceId = "web" | "desktop" | "mobile";
