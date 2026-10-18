@@ -1,0 +1,133 @@
+feature: sandbox-conformance
+command: bun packages/verify/scripts/sandbox-conformance.ts
+timestamp: 2026-10-18T07:09:37.858Z
+git sha: c631efbdfc36d9717ea69486e2a9b1afb3006d7a
+git sha short: c631efb
+branch: u9.5-sandbox-selector
+runtime: bun 1.2.5 on darwin arm64
+docker server: 28.3.2
+run token: 1me-32edbd (this run owns freebot.unit=u1.2-run-1me-32edbd; the launched app owns u1.7)
+
+
+## the app, launched the way a person launches it
+launcher line: http://127.0.0.1:60448/#token=<redacted>
+launcher said: freebot up: page and run on 127.0.0.1:60448, tunnel on 127.0.0.1:60447
+launcher said: freebot up: sandbox backend docker (chosen by auto: the Docker daemon answered)
+launcher said: freebot up: model mode replay, keyless, replaying /Users/yusufameri/projects/free-bot-u9.5/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+launcher said: freebot up: vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1me-32edbd-mhwtbD/provider.env absent
+launcher said: freebot up: bots under /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-bots-1me-32edbd-lU79VB; each Bot's workspace is mounted at /workspace and kept across runs
+launcher said: freebot up: connectors none; records /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1me-32edbd-mhwtbD/connectors.json, credential vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1me-32edbd-mhwtbD/connectors.env at mode 600
+launcher said: freebot up: the operator token rides the URL's fragment and is printed nowhere else
+launcher said: freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (docker)
+GET http://127.0.0.1:60448/#token=<redacted> -> 200 text/html; charset=utf-8
+PASS the launched app serves its own printed URL: 200
+
+## the app's own run, so the sweep meets containers it does not own
+PASS create_bot -> 200 {"json":{"botId":"bot-local","name":"Conformance Bot","role":"","purpose":"","createdAt":1792307349443,"threadCount":0}}
+PASS create_thread -> 200 {"json":{"threadId":"thread-1","botId":"bot-local","title":"New conversation","createdAt":1792307349453,"runs":[]}}
+PASS start_run -> 200 {"json":{"runId":"run-1"}}
+the app's own container: freebot-sbx-run-1-8mk2ltz3=e909b38262e218a0b8ed4cfde2df4260dde2e5d223e8ff5cbebd59e7c18483ed running
+PASS the launched app's run holds a container under u1.7
+
+## the conformance suite, against Docker
+check create: handle={"provider":"docker","id":"u91-main-1me-32edbd"} engine=5823deee4831 running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1me-32edbd","freebot.unit":"u1.2-run-1me-32edbd","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=866b680baf095e93e035de8d45024f751a3ff4f227bfd1cc0b31e8f4076ab622 the sandbox's sha256sum=866b680baf095e93e035de8d45024f751a3ff4f227bfd1cc0b31e8f4076ab622 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=866b680baf095e93e035de8d45024f751a3ff4f227bfd1cc0b31e8f4076ab622
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-1me-32edbd: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1me-32edbd is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1me-32edbd:u91-round-trip ref=sha256:cff6ae9917b414f09868697b58c69eeffa85987aa172f70deda69a8fc5ed809f createdAt=2026-10-18T07:09:13.96216397Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1me-32edbd booted from sha256:cff6ae9917b414f09868697b58c69eeffa85987aa172f70deda69a8fc5ed809f reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1me-32edbd is gone from the engine
+check idle-kill: u91-idle-1me-32edbd (idleTtlMs=600) stopped after 2719ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 600ms ttl
+census before sweep, decoy (another unit's label): u91-decoy-foreign-unit-1me-32edbd=e8ca4f448c24b57cdd980015ecc1ca49e4aa5a42624f77d689c8c8a07415f4fd running
+census before sweep, decoy (a sibling run of this suite): u91-decoy-sibling-run-1me-32edbd=bccfb81bbeac32ed8e793922045bd007277fb1cf63d0c0db0c2610b3ea8fd583 running
+census before sweep, decoy (no labels at all): u91-decoy-bare-1me-32edbd=bf3ede8b78696a258f34961bf7c0bcaf69fafab4120ee3c809533f3a8927a125 running
+census before sweep, this run: u91-main-1me-32edbd=5823deee4831
+census before sweep, this run: u91-no-link-1me-32edbd=gone
+census before sweep, this run: u91-restored-1me-32edbd=gone
+census before sweep, this run: u91-idle-1me-32edbd=6b02c0f7399c
+check sweep: removed 2 of 2 live sandboxes: 6b02c0f7399c, 5823deee4831
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+census after sweep, decoy unchanged: u91-decoy-foreign-unit-1me-32edbd=e8ca4f448c24b57cdd980015ecc1ca49e4aa5a42624f77d689c8c8a07415f4fd running
+census after sweep, decoy unchanged: u91-decoy-sibling-run-1me-32edbd=bccfb81bbeac32ed8e793922045bd007277fb1cf63d0c0db0c2610b3ea8fd583 running
+census after sweep, decoy unchanged: u91-decoy-bare-1me-32edbd=bf3ede8b78696a258f34961bf7c0bcaf69fafab4120ee3c809533f3a8927a125 running
+PASS operation create
+PASS operation exec
+PASS operation upload
+PASS operation download
+PASS operation tunnel
+PASS operation snapshot-resume
+PASS operation idle-kill
+PASS operation sweep
+PASS the suite ran all 8 operations in order: create exec upload download tunnel snapshot-resume idle-kill sweep
+PASS the Docker backend passes all 8 operations
+
+## the sweep's census, including the containers the app owns
+the app's own container after the suite: freebot-sbx-run-1-8mk2ltz3=e909b38262e218a0b8ed4cfde2df4260dde2e5d223e8ff5cbebd59e7c18483ed running
+PASS the app's own containers are unchanged by the suite's sweep: 1 before, 1 after
+PASS the suite's own label u1.2-run-1me-32edbd holds nothing after its sweep
+decoy held after the suite: u91-decoy-foreign-unit-1me-32edbd=e8ca4f448c24b57cdd980015ecc1ca49e4aa5a42624f77d689c8c8a07415f4fd running
+decoy held after the suite: u91-decoy-sibling-run-1me-32edbd=bccfb81bbeac32ed8e793922045bd007277fb1cf63d0c0db0c2610b3ea8fd583 running
+decoy held after the suite: u91-decoy-bare-1me-32edbd=bf3ede8b78696a258f34961bf7c0bcaf69fafab4120ee3c809533f3a8927a125 running
+PASS all 3 decoys of the suite's census survived the sweep and are still running
+PASS the driver's own cleanup removed every decoy it created
+
+## the negative control: one operation sabotaged, twice
+check create: handle={"provider":"docker","id":"u91-main-1me-32edbdb"} engine=ed39133dabbe running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1me-32edbdb","freebot.unit":"u1.2-run-1me-32edbdb","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+sabotaged upload: create:true exec:true upload:false
+PASS the suite reports the sabotaged upload: upload failed
+sabotaged upload, literal: the uploaded bytes, hashed inside the sandbox: expected "de73bb2c4896b8544807495e071bd554d990b4dff842aa79249e9d614240ea4b", got "71cbdbeec021b7f441e73b1594b1a99d2366ffe2011bb71d9a0c256d616c34c3"
+check create: handle={"provider":"docker","id":"u91-main-1me-32edbds"} engine=de935df6edca running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1me-32edbds","freebot.unit":"u1.2-run-1me-32edbds","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=bfb5525d24b054eb097567cfa88838b24157887944762018543dbd5220b27363 the sandbox's sha256sum=bfb5525d24b054eb097567cfa88838b24157887944762018543dbd5220b27363 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=bfb5525d24b054eb097567cfa88838b24157887944762018543dbd5220b27363
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-1me-32edbds: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1me-32edbds is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1me-32edbds:u91-round-trip ref=sha256:794a508a1a7dd97a3141b4bb51cd5d1237f184f31426f5d7c686d4214d2eeb25 createdAt=2026-10-18T07:09:29.358685713Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1me-32edbds booted from sha256:794a508a1a7dd97a3141b4bb51cd5d1237f184f31426f5d7c686d4214d2eeb25 reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1me-32edbds is gone from the engine
+check idle-kill: u91-idle-1me-32edbds (idleTtlMs=600) stopped after 2742ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 600ms ttl
+census before sweep, decoy (another unit's label): u91-decoy-foreign-unit-1me-32edbds=479e05a31ed5ec3058816e9d613554882ac185f46b39aca39ab79114959fc5d7 running
+census before sweep, decoy (a sibling run of this suite): u91-decoy-sibling-run-1me-32edbds=c77d9b31b8e351365a8d71770eaf35bcf90d6b06c42d718fa3e4ffeaac58c4ed running
+census before sweep, decoy (no labels at all): u91-decoy-bare-1me-32edbds=4c296d1bccbd02da79af0d5072e792cd3d7261e150d6e7fc0d5f9fa6588ffe8a running
+census before sweep, this run: u91-main-1me-32edbds=de935df6edca
+census before sweep, this run: u91-no-link-1me-32edbds=gone
+census before sweep, this run: u91-restored-1me-32edbds=gone
+census before sweep, this run: u91-idle-1me-32edbds=a40332583bd3
+check sweep: removed 2 of 2 live sandboxes: a40332583bd3, de935df6edca
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+sabotaged sweep: create:true exec:true upload:true download:true tunnel:true snapshot-resume:true idle-kill:true sweep:false
+PASS the suite reports the sabotaged sweep: sweep failed
+PASS every operation before the sabotaged sweep passed: 7 of 7
+sabotaged sweep, literal: the decoy another unit's label: expected "u91-decoy-foreign-unit-1me-32edbds=479e05a31ed5ec3058816e9d613554882ac185f46b39aca39ab79114959fc5d7 running", got "u91-decoy-foreign-unit-1me-32edbds=gone"
+
+## cleanup: the launched app, stopped the way a person stops it
+launcher exited with 0
+PASS the launched app reaped its own containers on SIGINT
+PASS nothing answers the printed URL after the app stopped
+PASS nothing survives under the suite's label u1.2-run-1me-32edbd
+this driver left no container behind
+
+PASS sandbox-conformance
