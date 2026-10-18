@@ -10,7 +10,9 @@
  *
  * Real: the loop, the gate and its grant ledger, the run store, the seq-ordered log, the container
  * from the pinned image, the page, the stream. Replayed: the model's turns, read from the committed
- * Pi transcript, because gate G1 parks the keyed provider. Pinned: the sandbox image.
+ * Pi transcript, because this driver boots the driver-facing `apps/server/src/index.ts`, which states
+ * the replay provider so a recorded turn is what its assertions hold (order 9); it is not a missing
+ * key. Pinned: the sandbox image.
  *
  * Run from the repo root: bun apps/web/scripts/one-run-path.ts
  */
@@ -797,7 +799,7 @@ async function main(): Promise<number> {
   log.note(`# one-run-path live-ui frames — ${new Date().toISOString()}`);
   log.note(`worktree ${root}  head ${sha}  branch ${branch}`);
   log.note(
-    "DRIVER DISCLOSURE: the model's turns are replayed from packages/pi-bridge/fixtures/rpc-handshake.jsonl (gate G1 parks the keyed provider) and the sandbox is the pinned image. The loop, the gate, the grant ledger, the run store, the log, the container, the server, the stream and the DOM are real.",
+    "DRIVER DISCLOSURE: the model's turns are replayed from packages/pi-bridge/fixtures/rpc-handshake.jsonl (this driver boots apps/server/src/index.ts, which states the replay provider so a recorded turn is what its assertions hold, order 9; no gate parks it) and the sandbox is the pinned image. The loop, the gate, the grant ledger, the run store, the log, the container, the server, the stream and the DOM are real.",
   );
 
   const api = await bootServer();

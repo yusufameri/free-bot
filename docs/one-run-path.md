@@ -96,7 +96,7 @@ exactly one run.
 
 | Real | Replayed | Pinned |
 | --- | --- | --- |
-| the loop, the gate and its grant ledger, the run store, the seq log | the model's turns, from `packages/pi-bridge/fixtures/rpc-handshake.jsonl`, because gate G1 parks the keyed provider | the sandbox image, `freebot-sandbox:u0.6` |
+| the loop, the gate and its grant ledger, the run store, the seq log | the model's turns, from `packages/pi-bridge/fixtures/rpc-handshake.jsonl`, because this driver boots the driver-facing `apps/server/src/index.ts`, which states the replay provider so a recorded turn is what the assertions hold (order 9) | the sandbox image, `freebot-sandbox:u0.6` |
 | the container the run creates and destroys, and its stdout | | |
 | the server, the two sockets, the page and the DOM | | |
 
@@ -145,8 +145,11 @@ per-launch tag.
 - **A page that joins an existing log replays all of it**, including runs that finished before it
   opened. That is the resume contract working as designed, and it is what makes the second path's
   fresh server necessary in the evidence.
-- **G1 (the BYOK key) still parks the model.** The provider is the replay provider; the swap is one
-  factory in `run-service.ts`.
+- **The keyed model is not this unit's.** This unit's evidence pins the replay provider, because it
+  boots the driver-facing `apps/server/src/index.ts` and asserts a recorded turn (order 9). The real
+  path is the factory's choice: `auto` follows the vault and builds a real `KeyedProvider` when
+  `~/.freebot/provider.env` holds a key. `packages/verify/scripts/keyed-run.ts` (U2.4) is the driver
+  that exercises it and asserts the model's own turns.
 - **`get_events`, `approve` and `deny`** still have zod shapes and no contract arm. The page's stream
   is how an approval is answered today, and the oRPC contract gains `approve` and `deny` when a
   client that needs them lands. `list_files` and `read_file` gained their arms in U4.1, backed by the
