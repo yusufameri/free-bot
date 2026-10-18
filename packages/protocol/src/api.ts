@@ -5,7 +5,9 @@
  * (`start_run`, `cancel_run`, `get_run`), one subscription (`subscribe_events`) that yields the
  * named thread's log in seq order, the two records a run belongs to (`list_bots`, `create_bot`,
  * `update_bot`, `list_threads`, `create_thread`), the workspace's two reads (`list_files`,
- * `read_file`), and the provider page's two arms (`get_provider`, `connect_provider`).
+ * `read_file`), the provider page's two arms (`get_provider`, `connect_provider`), and the
+ * connector surface's four (`list_connectors`, `connect_connector`, `test_connector`,
+ * `remove_connector`).
  * `dto.ts` stays the source of truth for the shapes it already owns; this file wires those schemas
  * into oRPC and adds only the shapes oRPC needs that did not exist.
  *
@@ -23,6 +25,8 @@ import { z } from "zod";
 import {
   cancelRunInput,
   cancelRunOutput,
+  connectConnectorInput,
+  connectConnectorOutput,
   connectProviderInput,
   connectProviderOutput,
   createBotInput,
@@ -41,6 +45,8 @@ import {
   listThreadsOutput,
   readFileInput,
   readFileOutput,
+  removeConnectorInput,
+  removeConnectorOutput,
   startRunInput,
   startRunOutput,
   testConnectorInput,
@@ -211,21 +217,31 @@ const getRunProcedure = oc.input(getRunInput).output(getRunOutput).errors(BOT_ER
 const connectProviderProcedure = oc.input(connectProviderInput).output(connectProviderOutput);
 
 /**
- * The connector surface's two arms. `list_connectors` probes each connector once and answers with a
+ * The connector surface's four arms. `list_connectors` probes each connector once and answers with a
  * row per connector including the ones that did not answer, because a surface that lists connectors
- * has to show the broken one. `test_connector` runs the probe a person runs when they add one, and a
- * refusal is a successful call whose answer says so. Neither arm carries a credential: the row names
- * the credential's reference and the route never reads the file's headers.
+ * has to show the broken one. `connect_connector` takes the person's own credential, saves it to the
+ * vault and answers with what its probe found, so a refused connection is still saved and shown.
+ * `test_connector` runs the same probe again on demand. `remove_connector` takes the credential out
+ * of the vault and the record out of the store. None of them carries a credential back: a row names
+ * the credential's reference, and the only place a header value exists is the vault file.
  */
 const listConnectorsProcedure = oc
   .input(listConnectorsInput)
   .output(listConnectorsOutput)
   .errors(CONNECTOR_ERRORS);
 
+const connectConnectorProcedure = oc
+  .input(connectConnectorInput)
+  .output(connectConnectorOutput)
+  .errors(CONNECTOR_ERRORS);
+
 const testConnectorProcedure = oc
   .input(testConnectorInput)
   .output(testConnectorOutput)
   .errors(CONNECTOR_ERRORS);
+
+/** Removing one this install does not hold is a `removed: false` answer, not a refusal. */
+const removeConnectorProcedure = oc.input(removeConnectorInput).output(removeConnectorOutput);
 
 export type ListFilesOutput = z.infer<typeof listFilesOutput>;
 export type ReadFileOutput = z.infer<typeof readFileOutput>;
@@ -262,7 +278,9 @@ export const apiContract = {
   get_provider: getProviderProcedure,
   connect_provider: connectProviderProcedure,
   list_connectors: listConnectorsProcedure,
+  connect_connector: connectConnectorProcedure,
   test_connector: testConnectorProcedure,
+  remove_connector: removeConnectorProcedure,
 };
 
 export type ApiContract = typeof apiContract;
@@ -283,7 +301,9 @@ export const API_PROCEDURES = [
   "get_provider",
   "connect_provider",
   "list_connectors",
+  "connect_connector",
   "test_connector",
+  "remove_connector",
 ] as const;
 
 export type ApiProcedure = (typeof API_PROCEDURES)[number];

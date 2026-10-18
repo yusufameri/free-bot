@@ -26,7 +26,7 @@ export interface UpArgs {
   readonly providerMode: ProviderMode;
   /** The transcript a keyless run replays, or null for the committed one. */
   readonly transcript: string | null;
-  /** The file the person's connectors live in, or null for `connectors.json` under the home. */
+  /** The file the person's connector records live in, or null for `connectors.json` under the home. */
   readonly connectors: string | null;
   /** The directory that holds the Bot registry and one workspace per Bot, or null for the default. */
   readonly workspace: string | null;
@@ -45,7 +45,7 @@ export const UP_USAGE = [
   "  --live             use the key in ~/.freebot/provider.env, and refuse to start without one",
   "  --replay           replay the committed transcript instead of calling a model",
   "  --transcript <p>   the transcript a keyless run replays (default packages/pi-bridge's)",
-  "  --connectors <p>   the file the person's connectors live in (default connectors.json)",
+  "  --connectors <p>   the file the person's connector records live in (default connectors.json)",
   "  --api-port <n>     the page and its stream (default 0, a free port)",
   "  --tunnel-port <n>  the tunnel leg (default 0, a free port)",
   "  -h, --help         print this",
@@ -55,10 +55,12 @@ export const UP_USAGE = [
   "process, which is how an evidence driver pins the recorded provider. FREEBOT_TRANSCRIPT and",
   "FREEBOT_CONNECTORS set the two paths the same way.",
   "",
-  "A connectors file lists the MCP servers this install may call, each with the headers its own",
-  "server wants. The headers are the person's credential: they reach one request header and appear",
-  "in no route's answer, no log line and no artifact. connectors.json under the freebot home is",
-  "read by default, and its absence is the no-connectors machine.",
+  "A connectors file lists the connectors this install may call, each with the endpoint its own",
+  "server answers at. It is the non-secret half: what those servers need as a credential lives in",
+  "the vault beside it, `connectors.env` at mode 600, and reaches one request header. No route,",
+  "log line or artifact carries a header value. connectors.json under the freebot home is read by",
+  "default, the vault beside it is derived from it, and the absence of both is the no-connectors",
+  "machine.",
   "",
   "The Bot's workspace is a host directory, mounted into every run at /workspace, so the files a",
   "run writes outlive it. Every Bot has one of its own, and the Bot records live beside them.",

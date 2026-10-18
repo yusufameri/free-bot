@@ -1,0 +1,220 @@
+
+## what this driver runs
+artifact directory: packages/verify/artifacts/aside/513a592/
+launch A: `bun run up --no-open --replay` over a fresh FREEBOT_HOME and bots root, its own placeholder vault at mode 600, its page opened through this driver's own TCP relay
+launch B: `bun run up --no-open` over the same kind of fresh home, so the mode is `auto` and the vault's placeholder endpoint is what a run reaches: http://127.0.0.1:9/…, a port nothing listens on. Nothing is billed and no packet leaves the loopback interface.
+the real vault at ~/.freebot/provider.env is never read, printed or copied by this driver; the only vault files it opens are its own, under the temp directories named below
+mobile-compact 360x800 mobile mustAvoidHorizontalScroll=true
+mobile-standard 390x844 mobile mustAvoidHorizontalScroll=true
+mobile-large 430x932 mobile mustAvoidHorizontalScroll=true
+foldable-small-tablet 600x960 foldable-tablet mustAvoidHorizontalScroll=true
+tablet-portrait 820x1180 tablet mustAvoidHorizontalScroll=true
+tablet-landscape 1024x768 tablet mustAvoidHorizontalScroll=true
+laptop 1366x768 desktop mustAvoidHorizontalScroll=true
+desktop 1440x900 desktop mustAvoidHorizontalScroll=true
+wide 1920x1080 wide mustAvoidHorizontalScroll=true
+containers before this driver runs anything (label freebot.unit=u1.7): 0
+launch A home: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-aside-replay-dJ4t2U
+launch A workspace: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-aside-replay-dJ4t2U/bots/bot-local/workspace
+launch A url, redacted: http://127.0.0.1:58148/#token=<redacted>
+launch A relay: 127.0.0.1:58151 -> 127.0.0.1:58148; the page is opened at 127.0.0.1:58151, so its own origin is the relay
+chrome Chrome/155.0.8059.84 over CDP
+the witness socket: a second /events client this driver opened on the origin, following thread thread-1 from seq 0, reading the server's log while the page cannot
+
+## the pane's frame
+the shell's own title line: "Aside Check · New conversation"
+ok   the pane's strip carries the export's tablist role: "tablist"
+ok   the pane's tabs are the four with a real source, in UX.md's order: [["computer","Computer"],["details","Details"],["tasks","Tasks"],["library","Library"]]
+ok   every tab carries the export's tab role: ["tab","tab","tab","tab"]
+ok   exactly the default tab is selected, by class and by aria-selected: [["computer"],["computer"],"computer"]
+ok   the export's two extra tabs and the Media delta are absent: 0
+ok   the pane's the strip carries the export's close button, labelled `Collapse the pane`, drawing the sprite's x: ["Collapse the pane","#i-x"]
+ok   the header's own control reads Details, pressed, labelled with what it does: ["Details","true","Collapse the pane"]
+ok   the frame renders the export's default width, in the grid and in the token: [372,372,"372px"]
+ok   and the stylesheet still declares the export's own token, so the settlement is real and not a token edit: "384px"
+ok   the resizer is the export's 5px track: 5
+the 384/372 settlement: the export declares --aside-w: 384px (freebot-prototype.html:37) and overwrites it at boot with S.asideW || 372 (:2248, seeded 372 at :829), so the export renders 372. This app keeps the declared token and renders the same 372, which closes both the aside and the thread deltas: the export's rendered aside is 372px and so is this app's.
+artifact 01-pane-open.png (78595 bytes)
+
+## the notices, from the records they come from
+get_provider over /rpc answers: {"baseUrl":"http://127.0.0.1:9/aside-not-a-provider","model":"aside-replay-placeholder","status":"untested","testedAt":null,"flags":null,"refusal":null,"answer":null}
+ok   the provider record this launch holds is `untested`, which is the notice's own signal: "untested"
+ok   the stack holds exactly the provider notice, its text the provider page's own headline, with its Open action: [["provider-untested"],["The connection did not pass its test"],["open-provider"]]
+ok   the dismiss controls are the export's: an Open button and a Dismiss control, then Dismiss all: [[["btn btn-secondary btn-xs",null,null,"Open"],["iconbtn","Dismiss","#i-x",""],["btn btn-ghost btn-xs",null,null,"Dismiss all"]]]
+ok   the stack is on the page, and the banner is not: nothing has dropped yet: [1,false,false,true,"Reconnecting — the stream dropped. The transcript refills from the last event it held."]
+the run notice is absent for a run that has not failed: `noticesFrom` raises one only for a thread whose newest run failed, and this launch has no run yet
+ok   Dismiss takes the one notice off the page and remembers it: [[],0,["provider-untested"]]
+ok   and it is still dismissed after a reload, while the signal it came from is still there: [[],0,["provider-untested"],"untested"]
+ok   a page with no dismissals shows the notice again, so the stack is the signal's and not a fixture: [["provider-untested"],1,[]]
+
+## the resizer: a real drag, the export's clamps, and a reload
+the viewport this section drags in: 1440x900
+ok   a drag to one page x sets the width from the right edge: [430,430,"430px"]
+ok   a drag past the left edge clamps at the export's 560: [560,560]
+artifact 05-resizer-560.png (77040 bytes)
+ok   a drag past the right edge clamps at the export's 280: [280,280]
+artifact 06-resizer-280.png (80421 bytes)
+ok   a third drag lands where the pointer says, not on a clamp: 430
+ok   the width survives a reload, in the grid and in what the page stored: [430,430,430]
+
+## collapse and expand, from the conversation header's own control
+ok   the header's control collapses the pane: the column goes to zero, the pane stands down, and the control says so: [true,"none",0,true,"false","Show details pane"]
+artifact 07-collapsed.png (49265 bytes)
+ok   and the collapsed state survives a reload: [true,"none","false"]
+ok   the same control expands it again, back to the width the drag left: [false,"flex",430,"true","Collapse the pane"]
+ok   and the expanded state survives a reload too: [false,430]
+
+## a run the page itself starts, and every tab read back against its own source
+containers before the first run: 0
+ok   the run's approvals were answered from the page's own cards, one card per approval the store holds: [1,[["run-1:call_stub_11","allow"]],1]
+containers while the page's run is on screen: []
+the thread record's own run: {"runId":"run-1","prompt":"check the workspace and report","status":"done","startedAt":1792299817375}
+ok   the run the page started is the thread's one real run, and it finished: "done"
+ok   the transcript the page rendered holds one frame per seq the server's log holds, and no gaps: [[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16],[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]]
+the wire's own tool call: "bash {\"command\":\"echo native-should-not-run\"}"
+the wire's own result: "native-should-not-run\n"
+ok   tab computer: clicking its own strip button selects it, alone: ["computer",["computer"]]
+tab computer: body text "This run's computerRunrun-1StatusdoneStarted22:03This app gives a run its own container and removes it when the run ends, so the computer is the run's, not the Bot's.StreamconnectedFrames16Seq16The last command it ranbashdonebash {\"command\":\"echo native-should-not-run\"}Decisionallownative-should-not-run\nIdle auto-stop, egress, snapshots and the recovery controls are the export's per-Bot container;"
+ok   tab computer: the run rows are the thread record's own run: ["run-1","done",["This run's computer","The last command it ran"]]
+ok   tab computer: the command card is the wire's own command and output, not a placeholder: [["bash {\"command\":\"echo native-should-not-run\"}"],"native-should-not-run\n"]
+ok   tab computer: the stream rows are the page's own counters, and its seq is the log's last seq: ["16","16","connected"]
+ok   no export placeholder string is on the page with tab computer shown: []
+ok   tab details: clicking its own strip button selects it, alone: ["details",["details"]]
+tab details: body text "This BotNameAside CheckLabelnot setPurposenot setThreads1Created22:03This threadTitleNew conversationRuns1Created22:03The modelModelaside-replay-placeholderConnectionuntestedTestedneverEndpoint127.0.0.1:9"
+ok   tab details: the Bot rows are the Bot record's own fields: ["Aside Check","not set","not set","1"]
+ok   tab details: the thread rows are the thread record's own fields: ["New conversation","1"]
+ok   tab details: the model rows are the provider record's own fields: ["aside-replay-placeholder","untested","never","127.0.0.1:9"]
+ok   tab details: its caps are the pane's own sections: ["This Bot","This thread","The model"]
+ok   no export placeholder string is on the page with tab details shown: []
+ok   tab tasks: clicking its own strip button selects it, alone: ["tasks",["tasks"]]
+tab tasks: body text "Latest runcheck the workspace and reportdoneRunrun-1Started22:03Recent runsrun-1 · 22:03done"
+ok   tab tasks: the latest run card is the thread's newest run, with the wire's status word: ["run-1","done","check the workspace and report"]
+ok   tab tasks: the recent-runs rows are every run the thread records: [["run-1"],["done"]]
+ok   no export placeholder string is on the page with tab tasks shown: []
+ok   tab library: clicking its own strip button selects it, alone: ["library",["library"]]
+tab library: body text "/workspacepinnedTodaysrcsrcnotes.mdnotes.md46 Breport.txtreport.txt9 B"
+the workspace route's own listing: [{"name":"src","path":"src","kind":"dir","size":0,"mtimeMs":1792299814814},{"name":"notes.md","path":"notes.md","kind":"file","size":46,"mtimeMs":1792299814814},{"name":"report.txt","path":"report.txt","kind":"file","size":9,"mtimeMs":1792299814814}]
+ok   tab library: the rows are the workspace route's own entries, name, path and kind: [["src","src","dir"],["notes.md","notes.md","file"],["report.txt","report.txt","file"]]
+ok   tab library: the pinned path row is the /workspace mount, with its tag: ["/workspace","pinned",["Today"]]
+ok   tab library: a row's size is the byte count the file really has: "46 B"
+ok   no export placeholder string is on the page with tab library shown: []
+
+## where the placeholder strings were looked for
+scanned: the whole rendered document (54760 bytes of outerHTML, 1066 bytes of innerText) with each of the four tabs shown in turn, and the served bundle GET /main.js (136995 bytes, 200)
+ok   no export placeholder string is in the document or in the bundle the server serves: []
+pre-run-4f3a: absent from both
+Teach a task: absent from both
+waiting on approval: absent from both
+artifact 02-tab-computer.png (121277 bytes)
+artifact 03-tab-details.png (110049 bytes)
+artifact 04-tab-tasks.png (96760 bytes)
+artifact 05-tab-library.png (94363 bytes)
+
+## the banner, over a stream really severed
+the severing is the relay's: every relayed connection is destroyed and every new one is ended on sight, so the page's own socket to /events really closes, with no class toggled by hand.
+the run that fills the log while the page is blind is started over the witness socket, with the same `start` control frame the page's own composer sends. A second run from the page could not park: this launch's first allow consumed the grant for the fixture's one destructive call, and the policy refuses a consumed grant rather than asking again (`packages/review/src/policy.ts:143`, `packages/core/src/run-loop.ts:203`), so a second run would run to the end in under a second and leave nothing in flight to miss.
+the page's own cursor is seq 16 and its connection reads connected
+the witness has read the log to seq 16 by then
+severing the relay now: every relayed connection is destroyed and new ones are ended on sight. The page's socket to /events is one of them.
+ok   the banner appears on a stream that really dropped, with the export's sentence and its pulse: [true,false,"Reconnecting — the stream dropped. The transcript refills from the last event it held.","reconnecting","pulse"]
+ok   and the page's transcript stopped moving at the cursor it had: 16
+ok   and nothing was missed yet: the page's cursor is still the log's own tail, so the banner reports the socket and not a gap in the log: [16,16]
+artifact 08-banner-reconnecting.png (124254 bytes)
+starting the next run over the witness socket, with the same `start` control frame the page's own composer sends, so the log grows while the page cannot see any of it
+ok   the run the witness started really ran to its end while the page was blind: [true,true,true]
+ok   the log really grew while the page was blind, and the page really did not see it: [true,16]
+the store went from seq 16 to seq 28 while the page's own cursor stayed at 16
+restoring the relay; the page's own retry loop is what reconnects
+ok   the banner clears when the socket answers again, with no class toggled by hand: [false,true,"connected"]
+ok   the transcript refilled from the store with no gap: every seq the page missed is rendered, and nothing else was lost: [12,12,28,true]
+ok   and the page resumed from exactly where its own cursor had stopped: [16,16]
+artifact 09-resumed.png (121692 bytes)
+ok   the two runs this launch holds are the thread's own records, the page's run and the witness's, both settled: [["run-1","done"],["run-2","done"]]
+ok   and a run that finished raises no notice, so the stack still holds only the provider's: ["provider-untested"]
+
+## the nine viewports, with the pane present, and both clamps
+ok   mobile-compact: documentElement.scrollWidth <= window.innerWidth: true
+ok   mobile-compact: no region overflows its own box: []
+ok   mobile-compact: the export's own 1120px threshold stands the pane down, and its 860px one decides the sidebar (freebot-prototype.html:540-551): ["none","none",1]
+ok   mobile-compact: the header's control is there exactly where the pane is: "none"
+artifact 10-viewport-mobile-compact.png (44326 bytes)
+ok   mobile-standard: documentElement.scrollWidth <= window.innerWidth: true
+ok   mobile-standard: no region overflows its own box: []
+ok   mobile-standard: the export's own 1120px threshold stands the pane down, and its 860px one decides the sidebar (freebot-prototype.html:540-551): ["none","none",1]
+ok   mobile-standard: the header's control is there exactly where the pane is: "none"
+ok   mobile-large: documentElement.scrollWidth <= window.innerWidth: true
+ok   mobile-large: no region overflows its own box: []
+ok   mobile-large: the export's own 1120px threshold stands the pane down, and its 860px one decides the sidebar (freebot-prototype.html:540-551): ["none","none",1]
+ok   mobile-large: the header's control is there exactly where the pane is: "none"
+ok   foldable-small-tablet: documentElement.scrollWidth <= window.innerWidth: true
+ok   foldable-small-tablet: no region overflows its own box: []
+ok   foldable-small-tablet: the export's own 1120px threshold stands the pane down, and its 860px one decides the sidebar (freebot-prototype.html:540-551): ["none","none",1]
+ok   foldable-small-tablet: the header's control is there exactly where the pane is: "none"
+ok   tablet-portrait: documentElement.scrollWidth <= window.innerWidth: true
+ok   tablet-portrait: no region overflows its own box: []
+ok   tablet-portrait: the export's own 1120px threshold stands the pane down, and its 860px one decides the sidebar (freebot-prototype.html:540-551): ["none","none",1]
+ok   tablet-portrait: the header's control is there exactly where the pane is: "none"
+ok   tablet-landscape: documentElement.scrollWidth <= window.innerWidth: true
+ok   tablet-landscape: no region overflows its own box: []
+ok   tablet-landscape: the export's own 1120px threshold stands the pane down, and its 860px one decides the sidebar (freebot-prototype.html:540-551): ["none","flex",2]
+ok   tablet-landscape: the header's control is there exactly where the pane is: "none"
+ok   laptop: documentElement.scrollWidth <= window.innerWidth: true
+ok   laptop: no region overflows its own box: []
+ok   laptop: the pane is laid out at the width the token names (430px): ["flex",430,430]
+ok   laptop: the header's control is there exactly where the pane is: "flex"
+ok   desktop: documentElement.scrollWidth <= window.innerWidth: true
+ok   desktop: no region overflows its own box: []
+ok   desktop: the pane is laid out at the width the token names (430px): ["flex",430,430]
+ok   desktop: the header's control is there exactly where the pane is: "flex"
+ok   wide: documentElement.scrollWidth <= window.innerWidth: true
+ok   wide: no region overflows its own box: []
+ok   wide: the pane is laid out at the width the token names (430px): ["flex",430,430]
+ok   wide: the header's control is there exactly where the pane is: "flex"
+artifact 10-viewport-wide.png (137526 bytes)
+
+## the nine viewports, one line each
+01-mobile-compact 360x800: documentElement 360 <= 360 ok; regions over: 0; pane none 0px; token 430px; control none
+02-mobile-standard 390x844: documentElement 390 <= 390 ok; regions over: 0; pane none 0px; token 430px; control none
+03-mobile-large 430x932: documentElement 430 <= 430 ok; regions over: 0; pane none 0px; token 430px; control none
+04-foldable-small-tablet 600x960: documentElement 600 <= 600 ok; regions over: 0; pane none 0px; token 430px; control none
+05-tablet-portrait 820x1180: documentElement 820 <= 820 ok; regions over: 0; pane none 0px; token 430px; control none
+06-tablet-landscape 1024x768: documentElement 1024 <= 1024 ok; regions over: 0; pane none 0px; token 430px; control none
+07-laptop 1366x768: documentElement 1366 <= 1366 ok; regions over: 0; pane flex 430px; token 430px; control flex
+08-desktop 1440x900: documentElement 1440 <= 1440 ok; regions over: 0; pane flex 430px; token 430px; control flex
+09-wide 1920x1080: documentElement 1920 <= 1920 ok; regions over: 0; pane flex 430px; token 430px; control flex
+
+## both clamps at every viewport that carries the pane
+ok   laptop at 560px: the drag landed and the document does not overflow: [560,true]
+ok   laptop at 280px: the drag landed and the document does not overflow: [280,true]
+ok   desktop at 560px: the drag landed and the document does not overflow: [560,true]
+ok   desktop at 280px: the drag landed and the document does not overflow: [280,true]
+ok   wide at 560px: the drag landed and the document does not overflow: [560,true]
+ok   wide at 280px: the drag landed and the document does not overflow: [280,true]
+
+## launch B: a run against the placeholder endpoint, and what a failed run raises
+launch B home: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-aside-failing-yqd4gf
+launch B url, redacted: http://127.0.0.1:58218/#token=<redacted>
+launch B's own line about the model: freebot up: model mode auto, model aside-failing-placeholder via 127.0.0.1:9 (key from the vault)
+launch B's thread record: [{"runId":"run-1","prompt":"this one cannot reach its model","status":"failed","startedAt":1792299824654}]
+ok   the failed run is the thread record's own failed run, and the notice names it: [[["run-1","failed"]],[["provider-untested","The connection did not pass its test"],["run-failed-run-1","Run run-1 failed."]]]
+ok   the banner is not on that page either: nothing was severed there: [false,"connected"]
+ok   the pane's computer tab reads the failed run off the same record, with the honest no-command note: ["run-1","failed",true]
+artifact 12-failed-run-notice.png (92461 bytes)
+ok   Dismiss all takes both notices off and remembers both ids: [0,["provider-untested","run-failed-run-1"],true]
+ok   both stay dismissed across a reload although both signals are still there: [0,["provider-untested","run-failed-run-1"],"untested"]
+
+## launch B with its signal taken away: a page that has none renders no stack
+launch B's vault and provider record removed; a second Bot (bot-2) with a thread and no runs made over /rpc
+the page boots into page 1 because the machine holds no connection; its own replay control is the way on, which is the path a person takes
+ok   the thread on screen has no runs, this machine has no connection, and the stack is not on the page: [[0],[],0,true,false]
+ok   the page's own state: the stream is up, so an absent banner is not an absent connection: ["connected",[]]
+ok   and the pane says what it really holds: no connection, no run, no command: ["none","not set"]
+artifact 13-no-signal.png (65317 bytes)
+
+## containment: what this driver left behind
+launch A's home removed with its process; its containers are the runs' own and were removed with them
+ok   the label's container set is back where it started: true
+artifact 14-follow-up.png (121692 bytes)
+
+chrome Chrome/155.0.8059.84; two real launches (`bun run up --no-open --replay` and `bun run up --no-open`), one relay the driver severed, one witness socket on the server's own log
+RESULT: PASS (111/111)

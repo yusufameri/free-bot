@@ -1,0 +1,40 @@
+feature: sandbox-provider
+command: bun test packages/sandbox/src/docker.test.ts
+timestamp: 2026-10-18T05:04:00.976Z
+git short sha: 513a592 (branch u6.3-aside)
+runtime: bun 1.2.5 on darwin arm64
+docker server: 28.3.2
+run token: 1uab-15a299 (this run owns freebot.unit=u1.2-run-1uab-15a299)
+check pinned image: tag=freebot-sandbox:u0.6 id=sha256:cffdae520c9ef9146051aeaa67eb86b8c1f4f2c6c5c0926f30ea60178cf3dc3c layers=7/7 matching docs/sandbox-image.md
+check pre-suite sweep (this run's unit label u1.2-run-1uab-15a299 only, a fresh token finds nothing): removed=0
+check decoys created: u12-decoy-foreign-unit-1uab-15a299 (unit=u0.11), u12-decoy-sibling-run-1uab-15a299 (unit=u1.2-run-6f890b), u12-decoy-bare-1uab-15a299 (unit=none) status=running, running, running
+check create: handle={"provider":"docker","id":"u12-main-1uab-15a299"} labels={"freebot.provider":"docker","freebot.sandbox":"u12-main-1uab-15a299","freebot.unit":"u1.2-run-1uab-15a299","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check container image content: 7 RootFS layers equal the U0.6-recorded set
+check exec echo: exit=0 stdout="hello-from-sandbox"
+check exec stream: exit=0 streamed="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check detached exec: {started:true} then marker="detached-marker"
+check upload/download: bytes=4096 sha256=06aeee6d7670a44181a6317a61e7c0271a68a629ba1a67fa84fce238a93bf73e same-in-sandbox=true round-trip-equal=true
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote ack seq=7, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u12-no-link-1uab-15a299: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check exposePort: http://127.0.0.1:58422 -> "exposed-body"
+check snapshot: tag=freebot-snapshot/u12-main-1uab-15a299:u12-round-trip ref=sha256:94a7992698173edd0f78643024e40e056a6c7300cee73a68ad9fd8f787f6bba4 createdAt=2026-10-18T05:04:05.134929087Z
+check stop/resume: exited -> running, marker="round-trip-marker\n"
+check disk-only restore: u12-from-snap-1uab-15a299 from the snapshot reads marker="round-trip-marker\n"
+check idle-kill: u12-idle-1uab-15a299 (idleTtlMs=600) stopped after 2742ms with no adapter call (docker stop -t 2)
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 600ms ttl
+containers before sweep (label freebot.unit=u1.2-run-1uab-15a299):
+867bc8591c90|freebot-sbx-u12-idle-1uab-15a299|Up 1 second
+8e37c6e39c2e|freebot-sbx-u12-from-snap-1uab-15a299|Up 4 seconds
+6f9438083405|freebot-sbx-u12-main-1uab-15a299|Up 4 seconds
+containers before sweep (foreign unit u0.11):
+d9d5113077cd|u12-decoy-foreign-unit-1uab-15a299|Up 11 seconds
+containers before sweep (a sibling run of this suite):
+9479de4b856e|u12-decoy-sibling-run-1uab-15a299|Up 10 seconds
+containers before sweep (unlabelled decoy):
+ae182200bc40|u12-decoy-bare-1uab-15a299|Up 10 seconds
+check sweep removed 3 containers with label freebot.unit=u1.2-run-1uab-15a299: 867bc8591c90, 8e37c6e39c2e, 6f9438083405
+containers after sweep (label freebot.unit=u1.2-run-1uab-15a299):
+(none)
+containers after sweep, unchanged: u12-decoy-foreign-unit-1uab-15a299=d9d5113077cd7e22f510cff7f5b46ea9ef79e22816c0daf627a0933f483cba66 running, u12-decoy-sibling-run-1uab-15a299=9479de4b856ee75b7986e1602dd0847c3b07a871f0d7ea1b0e4a1b0f1337dad8 running, u12-decoy-bare-1uab-15a299=ae182200bc40383dfe18145bcd946bb186c3ce48f887268deeb020b1b185ad79 running

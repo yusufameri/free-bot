@@ -51,6 +51,15 @@ export interface LibraryHandle {
   show(tab: LibraryTab): Promise<void>;
   /** Re-read the listing on screen. */
   refresh(): Promise<void>;
+  /** The state a second surface renders: what the listing holds and what it last said. */
+  listing(): {
+    readonly path: string;
+    readonly entries: readonly FileEntry[];
+    readonly state: LibraryState;
+    readonly refusal: string | null;
+  };
+  /** Open a row as the list does: a directory lists, a file reads. */
+  open(path: string): Promise<void>;
   facts(): LibraryFacts;
 }
 
@@ -85,6 +94,8 @@ export function mountLibrary(config: {
   readonly now?: () => number;
   /** Fired after the tab changes, so the host can apply what only it knows (operator mode). */
   readonly onTab?: (tab: LibraryTab) => void;
+  /** Fired after any change the second surface reads: a listing, a refusal, an open file. */
+  readonly onChange?: () => void;
 }): LibraryHandle {
   const now = config.now ?? Date.now;
   const libraryEl = must<HTMLElement>("#library");
@@ -157,7 +168,7 @@ export function mountLibrary(config: {
         if (entry.kind === "file") button.append(span("library-size", humanSize(entry.size)));
         button.addEventListener("click", () => {
           if (entry.kind === "dir") void list(entry.path);
-          else void open(entry.path);
+          else void openFile(entry.path);
         });
         item.append(button);
         groupList.append(item);
@@ -188,10 +199,12 @@ export function mountLibrary(config: {
 
   async function list(path: string): Promise<void> {
     setState("loading", LIBRARY_LOADING);
+    config.onChange?.();
     try {
       const listing = await config.calls.list(path);
       entries = listing.entries;
       listPath = listing.path;
+      refused = null;
       paintList();
       setState(
         listing.entries.length === 0 ? "empty" : "loaded",
@@ -200,12 +213,14 @@ export function mountLibrary(config: {
     } catch (error) {
       entries = [];
       listPath = path;
+      refused = codeOf(error);
       paintList();
-      setState("refused", statusLine("refused", path, codeOf(error)));
+      setState("refused", statusLine("refused", path, refused));
     }
+    config.onChange?.();
   }
 
-  async function open(path: string): Promise<void> {
+  async function openFile(path: string): Promise<void> {
     try {
       const file = await config.calls.read(path);
       openPath = file.path;
@@ -218,6 +233,7 @@ export function mountLibrary(config: {
       refused = codeOf(error);
       showView(path, null, refused);
     }
+    config.onChange?.();
   }
 
   conversationTab.addEventListener("click", () => void handle.show("conversation"));
@@ -232,6 +248,12 @@ export function mountLibrary(config: {
     },
     async refresh() {
       await list(listPath);
+    },
+    listing: () => ({ path: listPath, entries, state, refusal: refused }),
+    async open(path) {
+      const entry = entries.find((candidate) => candidate.path === path);
+      if (entry?.kind === "dir") await list(path);
+      else await openFile(path);
     },
     facts() {
       return {

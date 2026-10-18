@@ -44,6 +44,14 @@ export function tokenRef(name: string): TokenRef {
 }
 
 /**
+ * The reference an app-held connector's credential carries. The app names a credential after the
+ * connector's own id, so one spelling of the name lives here rather than in every row that shows it.
+ */
+export function connectorRef(id: string): TokenRef {
+  return tokenRef(`connector:${id}`);
+}
+
+/**
  * Where a connector's credential comes from. `headers()` is read at call time, so a credential
  * rotated in place needs no rebuild, and what it returns reaches one request header and no log, no
  * artifact and no response body. U8.2 supplies the vault-backed implementation; this unit's

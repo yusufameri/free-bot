@@ -221,27 +221,106 @@ outside its artifact directory is that temporary directory, which it deletes on 
 
 | Export surface | Owner |
 | --- | --- |
-| The details pane's seven tabs and their bodies (`.aside-tabs`, `.aside-body`) | U6.3 |
-| The resizer's drag and its persisted width | U6.3 |
-| The mobile drawers (`.aside.open` at 1120px, `.sidebar.open` and `.mob-only` at 860px) | U6.3 |
-| The notices stack and the reconnect banner (`.notice-stack`, `.banner`) | U6.3 |
+| The strip's `Memory`, `Routines` and `Media` tabs and their bodies | no unit yet. `Memory` and `Routines` are Phase 3 (`UX.md:198`, `:200-214`) and no record in this app carries either; `Media`'s subject is a screen capture and this app captures no screen. U6.3 ships the other four. |
+| The mobile drawers (`.aside.open` at 1120px, `.sidebar.open` and `.mob-only` at 860px) | no unit yet. U6.3 declares the delta; below 1120px this app has no way to reach the pane at all. |
 | The command palette, the modal and the popover (`.palette`, `.picker`, `.menu`) | U6.4 |
 | The approval card, the tool call, the turn marker, the Bot status dot and Bot groups | U6.5 |
-| First run's three panes and the provider welcome (`#firstrun`) | U6.2 |
 | The landing page | U6.6 |
 | The item-level states inside every one of the above | U6.7 owns the pass that audits them |
 
+## The pane's width, settled
+
+The frame before this one declared `--aside-w: 384px` and rendered 384, twelve pixels wider than the
+export, and carried the difference as a declared delta. U6.3 renders the export's own number. The
+token stays 384px, because the export's stylesheet declares it there (`freebot-prototype.html:37`),
+and the page writes 372px at boot, because the export's own script does: `:2248` runs
+`setProperty('--aside-w', (S.asideW || 372) + 'px')`, over the seed `asideW: 372` at `:829`. The
+app's write is `packages/ui/browser/aside.ts`'s; 372 is the width the export gives a fresh profile.
+The user's drag then moves it, clamped to 280 through 560 at `:2252`, and `localStorage` under
+`freebot.aside` holds the width, the tab and the collapsed state, so a reload restores all three.
+
+The measurement is in `design-contract`'s `assert.txt`, per viewport: at 1366 the aside is 372px on
+both pages and the thread column is 725px on both; at 1440 it is 372px and 799px; at 1920 it is 372px
+and 1279px; below 1120 both pages stand the pane down and both measure 0. Delta 0 on every geometry
+row. `DECLARED_DELTAS` in `packages/verify/scripts/design-contract.ts` is empty and prints `none`
+where it used to list the entry, and the `--aside-w` token note now explains a write both pages make
+rather than a difference between them. A nonzero delta here means one side's boot write or drag
+default moved.
+
 ## Deltas this frame cannot close
 
-**The aside is 384px here and 372px in the export's own rendering.** `--aside-w: 384px` is the
-export's declared token, at `freebot-prototype.html:37`, and it is the value plan Part 10 §10.1 and
-this unit's acceptance both name. The export's script then overwrites its own token at boot:
-`freebot-prototype.html:2248` runs
-`document.documentElement.style.setProperty('--aside-w', (S.asideW || 372) + 'px')`, with
-`asideW: 372` in its seed state at line 829, so the export renders a 372px aside on a fresh profile.
-The token is the contract, so the frame is 384px, and the harness prints the 12px delta per viewport
-rather than hiding it. The 372 is the prototype's own default for a user-draggable width, which is
-U6.3's; if U6.3 persists a width it will be that unit's number, not this one's.
+**The strip carries four of the export's seven tabs.** `freebot-prototype.html:1183` lists `computer`,
+`details`, `memory`, `routines`, `tasks`, `library`, `media`, and `UX.md:33` names five of them,
+calling the split FreeBot's own. This frame ships `computer`, `details`, `tasks` and `library`, which
+is `UX.md:33`'s list minus `Media`. `Media`'s subject is a screen capture, and this app captures no
+screen: a run produces a filesystem and a transcript, not frames, so the tab's body could only be an
+empty state for a feature no record can fill. The export's other two, `Memory` and `Routines`, are
+Phase 3 (`UX.md:198` for memory, `:200-214` for routines) and no record in this app carries either.
+The ids, the order, the roles (`role="tablist"`, one `role="tab"` per tab with `aria-selected`), the
+`is-active` class and the strip's own `Collapse the pane` button (`:1187-1188`) are the export's.
+
+**The header's control is one stable button; the export's are three that come and go.** The export
+opens details from the Bot's own name (`:1035`), from a `Details` button that is present only while
+the pane is collapsed (`:1040`), and from a mobile-only icon (`:1041`); the pane's own strip closes
+it. This frame ships one labelled control, `Details`, at every width that carries the pane: it
+collapses and expands, keeps its text in both states, and carries `aria-pressed` plus an aria-label
+naming which direction the next press goes. A frame with no drawer and no Bot-name button needs one
+place that does both directions.
+
+**Below 1120px the pane and its control are both gone, and the export answers with a drawer.** The
+export's `.aside.open` with its `.mob-only` details icon is how a narrow screen reaches the pane, and
+`.sidebar.open` with `Open the Bot list` does the same for the sidebar below 860px (`:540-551`).
+This frame ships neither drawer and hides the header's control with the pane, because a control that
+cannot show anything is worse than no control. A narrow screen therefore has no way to the pane at
+all, which is the largest surface this unit leaves open and which no unit in this plan owns yet.
+
+**The Details tab reports the record; the export's edits the Bot.** The export's `tabDetails`
+(`:1229-1277`) is a profile editor: name and label inputs bound to the Bot's record, an avatar with
+three controls, a notifications switch, the soul text with its version, diff and save, a model
+override, a tool allowlist, a Runtime block whose Memory row counts memory rows, and
+`Rename Bot`/`Duplicate`/`Delete`. This app's Bot is a name, a role, a purpose, a creation time and a
+thread count (`packages/protocol/src/dto.ts`), and it has no soul, no avatar and no memory, so this
+tab reports those five fields, the current thread's title, runs and creation time, and the model
+connection's model, status, last test and endpoint. Every row is read-only here: the record is
+written where it is asked for, and an in-place editor belongs to the unit that owns the Bot's own
+settings, which is not a T6 unit.
+
+**The Computer tab reports the run's computer; the export's reports the Bot's.** The export's
+`tabComputer` (`:1199-1226`) paints a mock desktop, `Full screen`/`Take control`/`Skip the step`/
+`Teach a task`, a Lifecycle block (`Idle auto-stop`, `Egress`, `Snapshot`, `Isolation`) and a
+Recovery block (`Retry`, `Recover computer`, `Update computer`, `Reset computer`), all of them a
+per-Bot container's controls. This app's sandbox is per-run: a container is created for a run and
+removed when the run ends, so none of those controls has a subject, and the delta is stated on the
+tab itself rather than papered over. What the tab reports instead is what the page really holds — the
+live run's id, status and start, the stream's connection, frame count and last sequence, and the last
+command the run made with its decision and output. `Teach a task` is absent for the same reason the
+tab cannot render it: no record of a taught task exists.
+
+**The Tasks tab reports a run and does not stop one.** The export's `Current run` card carries
+`Stop now` (`:1345`), a `Steps 3 of 5` row and a `Blocked on` row (`:1342-1344`). This app's card
+shows the live run's id, its status and when it started, and the thread's recent runs read from the
+run store. `Stop now` is left off — `cancel_run` exists in the contract
+(`packages/protocol/src/dto.ts`) and in `apps/server/src/router.ts`, so this is a missing control
+rather than a missing source, and it belongs with whatever unit owns the controls the run itself
+carries. `Steps` and `Blocked on` are absent because the thread model holds no step counter and the
+parked approval is the card on the conversation, which is U6.5's surface.
+
+**The Library tab lists the same workspace, and its rows open rather than download.** The export's
+`tabLibrary` (`:1354-1372`) carries `Files · page 11`, `Download all`, and a per-row `Download` and
+`Copy the path`. This frame renders the Library surface's own listing — the same `groupEntries`
+grouping, the same pinned `/workspace` row, name, path and size per file — and a row opens the file
+in the Library's own view, because this app reads a workspace and has no download route. The result
+is one listing with two views rather than two reads that can disagree.
+
+**The notices are bound to real signals, and the export's are seeded.** The export seeds two
+(`:870-871`: Atlas waiting on an approval, and a run at 82% of a monthly cap) and offers
+`Set credit limit` and `Raise the cap` on the second (`:1049`). This app raises a notice from the
+provider connection's own outcome — `untested`, `limited`, or a refusal, over page 1's own headline
+and refusal sentence — and from a run the thread's store reports as failed. It has no credit cap to
+raise, and a parked approval is the conversation's own card rather than a notice. `Open` leads to
+page 1's provider surface; `Dismiss` and `Dismiss all` are the export's controls, and the dismissals
+persist in `localStorage` under `freebot.notices.dismissed`, which the export's in-memory state does
+not do.
 
 **Geist is not vendored, and it does not resolve on the build host.** The three stacks name
 `'Geist'` first, exactly as the export's do, and the font binary is neither in the repo nor fetched:

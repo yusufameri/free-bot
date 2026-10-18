@@ -5,8 +5,10 @@ seq-ordered log) and proved the lifecycle against frames; this unit makes the li
 those frames. `start_run` drives a real sandbox, a provider turn produces a tool call, the gate
 intercepts it, an approval parks and resolves, the result feeds the next turn, and the run finishes.
 
-The loop is keyless today. Gate G1 parks the BYOK key, so the provider path replays a committed Pi
-transcript instead of calling a model. Nothing else is a stand-in.
+The loop's model is the factory's choice, not a fixed replay. `apps/server/src/provider.ts` builds a
+real `KeyedProvider` when the vault holds a key and a replay provider when it does not, so a keyed
+machine calls a real model. This unit's evidence run pins the replay provider on purpose so its
+assertions hold a fixed turn (order 9). Nothing else is a stand-in.
 
 ## Shape
 
@@ -164,8 +166,9 @@ survives until the run removes it itself.
 
 ## What remains
 
-- **G1 (the BYOK key).** The provider path is replay. Swapping in the keyed path is one factory in
-  `run-service.ts` and one adapter that drives Pi in the sandbox; the loop does not change.
+- **The keyed model.** This unit's evidence run pins the replay provider; a run under `bun run up`
+  uses the vault's keyed model, selected by the factory in `apps/server/src/provider.ts` and asserted
+  by `packages/verify/scripts/keyed-run.ts` (U2.4). The loop does not change between the two.
 - **The scheduler.** Idle-kill and auto-stop still belong to it. The loop destroys its own sandbox at
   the end of a run and carries `idleTtlMs` on the spec, but nothing stops an idle sandbox between
   runs, and nothing resumes a run parked at `sandbox_lost_mid_run`. The rejoin contract exists (the

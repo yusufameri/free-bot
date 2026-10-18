@@ -4,9 +4,10 @@
  *
  * One interface, one emulated service, one real run path. The launcher is spawned the way a person
  * spawns it (`bun run up --no-open`), over a bots root and a freebot home this driver made, with a
- * transcript that asks for a connector tool and a `connectors.json` that holds the connector's
- * credential with mode 600. The model is the replay provider: keyless, and pinned to this driver's
- * own recorded turn, so the run bills nobody and varies from nothing (order 9).
+ * transcript that asks for a connector tool and the person's two connector files: the record (no
+ * credential) and the vault beside it at mode 600 (the credential, read at call time). The model is
+ * the replay provider: keyless, and pinned to this driver's own recorded turn, so the run bills
+ * nobody and varies from nothing (order 9).
  *
  * What makes this evidence rather than a fixture with a mock behind it:
  *
@@ -37,7 +38,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ConnectorRegistry } from "../../../apps/server/src/connectors.ts";
+import { connectorRef, McpConnector } from "@freebot/connectors";
 import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
 import { type GithubFixture, type IssueRow, startGithubFixture } from "../src/emulator.ts";
 import { createGithubConnector, type GithubConnector } from "../src/github-mcp.ts";
@@ -232,7 +233,7 @@ async function launch(input: {
   readonly home: string;
   readonly botsRoot: string;
   readonly transcript: string;
-  readonly connectorsFile: string;
+  readonly recordsFile: string;
 }): Promise<Launched> {
   const proc = Bun.spawn(
     [
@@ -244,7 +245,7 @@ async function launch(input: {
       "--transcript",
       input.transcript,
       "--connectors",
-      input.connectorsFile,
+      input.recordsFile,
     ],
     {
       cwd: root,
@@ -568,7 +569,7 @@ async function main(): Promise<number> {
   ];
   log.note("# connectors evidence: one seam, one emulated service, one container");
   log.note(
-    "DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open --replay --transcript <this run's turn> --connectors <this run's file>` with FREEBOT_HOME and FREEBOT_WORKSPACE pointing at fresh directories. No account, no provider key and no third-party credential is involved: the service is a GitHub emulator this process serves, seeded with a token this run minted, and the model is the recorded turn this driver rendered. The credential the connector uses lives in a mode-600 file under the driver's own home and reaches one request header.",
+    "DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open --replay --transcript <this run's turn> --connectors <this run's record>` with FREEBOT_HOME and FREEBOT_WORKSPACE pointing at fresh directories. No account, no provider key and no third-party credential is involved: the service is a GitHub emulator this process serves, seeded with a token this run minted, and the model is the recorded turn this driver rendered. The credential the connector uses lives in a mode-600 vault under the driver's own home and reaches one request header.",
   );
 
   // -------------------------------------------------------------------------
@@ -630,10 +631,16 @@ async function main(): Promise<number> {
   // The seam, in this process, against that server
   // -------------------------------------------------------------------------
   log.section("the seam itself, over the wire, in this process");
-  const seam = ConnectorRegistry.fromEntries([
-    { id: CONNECTOR_ID, url: mcpUrl, headers: { authorization: `Bearer ${side.token}` } },
-  ]).connectors()[0];
-  if (seam === undefined) throw new Error("the registry built no connector");
+  // The seam's own adapter, over a credential this process holds. The app's registry reads its
+  // credentials from the vault; this section is about the seam, so it builds one directly.
+  const seam = new McpConnector({
+    id: CONNECTOR_ID,
+    url: mcpUrl,
+    credential: {
+      ref: connectorRef(CONNECTOR_ID),
+      headers: () => ({ authorization: `Bearer ${side.token}` }),
+    },
+  });
   const seamTools = await seam.describe();
   log.check(
     "the tools the seam sees are the server's own list, under the connector's own names",
@@ -650,20 +657,22 @@ async function main(): Promise<number> {
     [`connector:${CONNECTOR_ID}`, false, true],
   );
   log.note(`the health row: ${JSON.stringify(await seam.health())}`);
-  const wrongCredential = ConnectorRegistry.fromEntries([
-    { id: CONNECTOR_ID, url: mcpUrl, headers: { authorization: "Bearer not-the-credential" } },
-  ]).connectors()[0];
-  const wrongCall =
-    wrongCredential === undefined
-      ? "no connector"
-      : await wrongCredential
-          .call("create_issue", { title: "refused" })
-          .then(() => "ran")
-          .catch((error: Error) =>
-            error.message.includes("401") && !error.message.includes("not-the-credential")
-              ? "refused, and the message names no value"
-              : `unexpected: ${error.message}`,
-          );
+  const wrongCredential = new McpConnector({
+    id: CONNECTOR_ID,
+    url: mcpUrl,
+    credential: {
+      ref: connectorRef(CONNECTOR_ID),
+      headers: () => ({ authorization: "Bearer not-the-credential" }),
+    },
+  });
+  const wrongCall = await wrongCredential
+    .call("create_issue", { title: "refused" })
+    .then(() => "ran")
+    .catch((error: Error) =>
+      error.message.includes("401") && !error.message.includes("not-the-credential")
+        ? "refused, and the message names no value"
+        : `unexpected: ${error.message}`,
+    );
   log.check(
     "a call the server refuses fails, and the failure carries no credential",
     wrongCall,
@@ -686,29 +695,52 @@ async function main(): Promise<number> {
     return path;
   });
   const titles = [1, 2].map((run) => `connector-seam ${nonce} run ${run}`);
-  const connectorsFile = join(home, "connectors.json");
+  // The person's two files: the record (never a credential) and the vault beside it (only
+  // credentials), which is what U8.2 replaced `connectors.json`'s header map with.
+  const recordsFile = join(home, "connectors.json");
+  const vaultFile = join(home, "connectors.env");
   writeFileSync(
-    connectorsFile,
+    recordsFile,
     `${JSON.stringify(
       {
-        connectors: [
-          { id: CONNECTOR_ID, url: mcpUrl, headers: { authorization: `Bearer ${side.token}` } },
-        ],
+        connectors: [{ id: CONNECTOR_ID, label: "Emulated GitHub", url: mcpUrl }],
       },
       null,
       2,
     )}\n`,
     { mode: 0o600 },
   );
-  log.note(`the connector's home: ${connectorsFile}`);
+  writeFileSync(
+    vaultFile,
+    [
+      "# freebot's connector vault. Written by the app's connector routes and read by the seam alone.",
+      `FREEBOT_CONNECTOR_${CONNECTOR_ID}=${JSON.stringify({ authorization: `Bearer ${side.token}` })}`,
+      "",
+    ].join("\n"),
+    { mode: 0o600 },
+  );
+  log.note(`the connector's record: ${recordsFile}`);
+  log.note(`the connector's credential vault: ${vaultFile}`);
+  log.check(
+    "the record file holds no credential: one JSON line names the id, the label and the address",
+    [
+      readFileSync(recordsFile, "utf8").includes(side.token),
+      readFileSync(recordsFile, "utf8").includes("Bearer"),
+      JSON.parse(readFileSync(recordsFile, "utf8")).connectors[0].label,
+    ],
+    [false, false, "Emulated GitHub"],
+  );
   log.check(
     "the file holding the connector's credential is readable by its owner alone",
-    statSync(connectorsFile).mode & 0o777,
+    statSync(vaultFile).mode & 0o777,
     0o600,
   );
   log.check(
-    "it is under the driver's own home, not in the repository",
-    [connectorsFile.startsWith(home), relative(root, connectorsFile).startsWith("..")],
+    "both files are under the driver's own home, not in the repository",
+    [
+      recordsFile.startsWith(home) && vaultFile.startsWith(home),
+      relative(root, vaultFile).startsWith(".."),
+    ],
     [true, true],
   );
   log.check(
@@ -730,7 +762,7 @@ async function main(): Promise<number> {
   log.note(
     `run containers before this driver: ${baseline.length}${baseline.length === 0 ? "" : ` (${baseline.join(", ")})`}`,
   );
-  const first = await launch({ home, botsRoot, transcript: turns[0] ?? "", connectorsFile });
+  const first = await launch({ home, botsRoot, transcript: turns[0] ?? "", recordsFile });
   log.note(`the printed URL, redacted: ${redacted(first.url)}`);
   const modeLine = await waitForMatch(
     () => first.stderr(),
@@ -756,7 +788,7 @@ async function main(): Promise<number> {
   log.check(
     "the launcher named the file it read and the connector in it, by id and address, and no header",
     [
-      connectorsLine.includes(connectorsFile),
+      connectorsLine.includes(recordsFile),
       connectorsLine.includes(CONNECTOR_ID),
       connectorsLine.includes(mcpUrl),
       connectorsLine.includes("Bearer"),
@@ -894,17 +926,18 @@ async function main(): Promise<number> {
   log.note(`the request: ${listed.request}`);
   log.note(`the answer: ${listed.status} ${listed.body}`);
   log.check(
-    "a route lists the connector as a row with a credential reference, its tools and a health probe, and no credential",
+    "a route lists the connector as a row with a credential reference, its tools and the state its own service left it in, and no credential",
     (() => {
       const rows = (
         JSON.parse(listed.body) as {
           json: {
             connectors: Array<{
               id: string;
+              label: string;
               url: string;
               ref: string;
+              state: string;
               tools: Array<{ name: string }>;
-              health: { ok: boolean };
             }>;
           };
         }
@@ -913,10 +946,11 @@ async function main(): Promise<number> {
         listed.status,
         rows.map((row) => [
           row.id,
+          row.label,
           row.url,
           row.ref,
+          row.state,
           row.tools.map((tool) => tool.name),
-          row.health.ok,
         ]),
         listed.body.includes(side.token),
         listed.body.includes("Bearer"),
@@ -924,7 +958,16 @@ async function main(): Promise<number> {
     })(),
     [
       200,
-      [[CONNECTOR_ID, mcpUrl, `connector:${CONNECTOR_ID}`, ["create_issue", "list_issues"], true]],
+      [
+        [
+          CONNECTOR_ID,
+          "Emulated GitHub",
+          mcpUrl,
+          `connector:${CONNECTOR_ID}`,
+          "connected",
+          ["create_issue", "list_issues"],
+        ],
+      ],
       false,
       false,
     ],
@@ -933,14 +976,14 @@ async function main(): Promise<number> {
   log.note(`the request: ${tested.request}`);
   log.note(`the answer: ${tested.status} ${tested.body}`);
   log.check(
-    "the test arm probes with the person's credential and reports the tools",
+    "the test arm probes with the person's own credential and reports the state and the tools",
     [
       tested.status,
-      (JSON.parse(tested.body) as { json: { ok: boolean } }).json.ok,
+      (JSON.parse(tested.body) as { json: { state: string } }).json.state,
       (JSON.parse(tested.body) as { json: { tools: unknown[] } }).json.tools.length,
       tested.body.includes(side.token),
     ],
-    [200, true, 2, false],
+    [200, "connected", 2, false],
   );
   const unknown = await post(first, "test_connector", { id: "not-a-connector" });
   log.note(`the request: ${unknown.request}`);
@@ -981,7 +1024,7 @@ async function main(): Promise<number> {
   log.check("the first launch exits zero on SIGINT", await first.exited(), 0);
   log.check("nothing listens on the first launch's page port", listeners(first.apiPort), []);
 
-  const second = await launch({ home, botsRoot, transcript: turns[1] ?? "", connectorsFile });
+  const second = await launch({ home, botsRoot, transcript: turns[1] ?? "", recordsFile });
   log.note(`the second printed URL, redacted: ${redacted(second.url)}`);
   const threadsBefore = await post(second, "list_threads", { botId });
   log.note(`the request: ${threadsBefore.request}`);
@@ -1156,7 +1199,7 @@ async function main(): Promise<number> {
     home,
     botsRoot,
     transcript: LANDED_TRANSCRIPT,
-    connectorsFile,
+    recordsFile,
   });
   log.note(`the third printed URL, redacted: ${redacted(third.url)}`);
   const thirdLine = await waitForMatch(
