@@ -10,6 +10,7 @@
 import { describe, expect, test } from "bun:test";
 import type { RegionDiff } from "./diff.ts";
 import {
+  canonicalJson,
   compareRuns,
   type RegionReport,
   type RunReport,
@@ -164,6 +165,95 @@ describe("sumDiffs", () => {
   });
 });
 
+describe("canonicalJson", () => {
+  test("a short array of numbers stays on one line, as the repo's formatter prints it", () => {
+    expect(canonicalJson({ a: [360, 360] })).toBe('{\n  "a": [360, 360]\n}');
+  });
+
+  test("an array too wide for the budget expands with its elements indented one level deeper", () => {
+    // The nested array's own indent is the parent key's indent plus two spaces, not the flat ones.
+    const text = canonicalJson({ long: ["a".repeat(80), "b".repeat(40)] });
+    expect(text).toBe(`{\n  "long": [\n    "${"a".repeat(80)}",\n    "${"b".repeat(40)}"\n  ]\n}`);
+  });
+
+  test("an array of objects always expands, because an object is never inline", () => {
+    const text = canonicalJson({ e: [{ f: 1 }, { g: 2 }] });
+    expect(text).toBe(
+      '{\n  "e": [\n    {\n      "f": 1\n    },\n    {\n      "g": 2\n    }\n  ]\n}',
+    );
+  });
+
+  test("an array nested inside a nested object stays flat while it fits the budget", () => {
+    const text = canonicalJson({
+      nested: {
+        deep: {
+          arr: [
+            [1, 2],
+            [3, 4],
+          ],
+        },
+      },
+    });
+    expect(text).toBe(
+      '{\n  "nested": {\n    "deep": {\n      "arr": [[1, 2], [3, 4]]\n    }\n  }\n}',
+    );
+  });
+
+  test("an array of arrays that overflows expands with each inner array still flat", () => {
+    const text = canonicalJson({
+      wide: [
+        [1, 2, 3],
+        ["a".repeat(90), "b"],
+      ],
+    });
+    expect(text).toBe(
+      `{\n  "wide": [\n    [1, 2, 3],\n    [\n      "${"a".repeat(90)}",\n      "b"\n    ]\n  ]\n}`,
+    );
+  });
+
+  test("empty containers, null and booleans print without crashing", () => {
+    expect(canonicalJson({ empty: [], emptyObj: {}, nullish: null, t: true, n: 1.5 })).toBe(
+      '{\n  "empty": [],\n  "emptyObj": {},\n  "nullish": null,\n  "t": true,\n  "n": 1.5\n}',
+    );
+  });
+
+  test("a mixed array expands, its scalar members beside an object and a flat array", () => {
+    const text = canonicalJson({ mixed: [1, "two", { three: 3 }, [4, 5]] });
+    expect(text).toBe(
+      '{\n  "mixed": [\n    1,\n    "two",\n    {\n      "three": 3\n    },\n    [4, 5]\n  ]\n}',
+    );
+  });
+
+  test("the whole summary round-trips, so formatting never loses a number", () => {
+    const summary = JSON.parse(
+      renderJson(run([viewport("01", [region("chrome.x", "chrome", diff(0, 100))])])),
+    ) as unknown;
+    expect(JSON.parse(canonicalJson(summary))).toEqual(summary);
+  });
+
+  test("a long key's array expands even when the array's own text is short", () => {
+    // Biome's budget is the whole line, so the key and its colon count. The run's `files` array is
+    // this case: two short names under an eight-space key, which fits the budget on its own and does
+    // not fit the line. Getting this wrong was the one lint error the first baseline artifact made.
+    const text = canonicalJson({
+      viewport: {
+        files: [
+          "04-foldable-small-tablet-600x960.app.png",
+          "04-foldable-small-tablet-600x960.export.png",
+        ],
+      },
+    });
+    expect(text).toContain('"files": [\n      "04-foldable-small-tablet-600x960.app.png",');
+    // The same two names under a short key stay on one line.
+    const short = canonicalJson({ f: ["a.png", "b.png"] });
+    expect(short).toContain('"f": ["a.png", "b.png"]');
+  });
+
+  test("an undefined property is dropped rather than printed as null", () => {
+    expect(canonicalJson({ a: 1, b: undefined })).toBe('{\n  "a": 1\n}');
+  });
+});
+
 describe("compareRuns", () => {
   test("two runs whose chrome counts are equal are stable at epsilon 0", () => {
     const a = run([viewport("01", [region("chrome.x", "chrome", diff(0, 100))])]);
@@ -229,6 +319,7 @@ describe("renderText", () => {
     expect(text).toContain("0/5400 pixels differ");
     expect(text).toContain("named variance:");
     expect(text).toContain("RESULT: PASS");
+    expect(text).toContain("every chrome region this run carried is within tolerance");
   });
 
   test("an absent region is printed as absent, not as a zero that reads as a match", () => {

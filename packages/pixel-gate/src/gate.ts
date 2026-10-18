@@ -54,6 +54,7 @@ import {
   type Viewport,
 } from "./regions.ts";
 import {
+  canonicalJson,
   compareRuns,
   type ExtentPair,
   type FontFacts,
@@ -415,7 +416,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
 
   if (dir !== null) {
     writeFileSync(join(dir, "assert.txt"), renderText(runReport));
-    writeFileSync(join(dir, "run.json"), `${JSON.stringify(runReport, null, 2)}\n`);
+    writeFileSync(join(dir, "run.json"), `${canonicalJson(runReport)}\n`);
     writeFileSync(join(dir, "summary.json"), renderJson(runReport));
     log("");
     log(`wrote ${join(dir, "assert.txt").replace(`${root}/`, "")}`);

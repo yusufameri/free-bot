@@ -124,6 +124,60 @@ export interface RunReport {
   readonly failures: readonly string[];
 }
 
+/**
+ * JSON the repo's formatter leaves alone.
+ *
+ * `packages/verify/artifacts/**` is committed and `bun run lint` runs Biome over it, so an artifact
+ * this tool writes has to be already in the shape Biome would print. Biome keeps an array of
+ * numbers or short strings on one line when it fits the 100-column budget and otherwise expands one
+ * element per line, which `JSON.stringify(value, null, 2)` does not do. This walks the same rule, so
+ * a run writes an artifact that `biome check` reports clean instead of one that fails the gate.
+ *
+ * The rule is applied to arrays only. Objects are always one key per line, which is what
+ * `JSON.stringify` already does and what Biome does at every width.
+ */
+export function canonicalJson(value: unknown, indent = 2, width = 100): string {
+  const inline = (node: unknown): string | null => {
+    if (Array.isArray(node)) {
+      const parts = node.map(inline);
+      if (parts.some((part) => part === null)) return null;
+      return `[${parts.join(", ")}]`;
+    }
+    if (node !== null && typeof node === "object") return null;
+    return JSON.stringify(node) ?? "null";
+  };
+  /**
+   * `used` is the number of columns already spent on this line before the node starts: the pad plus,
+   * for an object member, the key and its colon. Biome's budget is the whole line, so an array under
+   * a long key expands even when the array's own text is short.
+   */
+  const step = (node: unknown, pad: string, used: number): string => {
+    if (!Array.isArray(node)) {
+      if (node !== null && typeof node === "object") {
+        return object(node as Record<string, unknown>, pad);
+      }
+      return JSON.stringify(node) ?? "null";
+    }
+    if (node.length === 0) return "[]";
+    const flat = inline(node);
+    if (flat !== null && used + flat.length <= width) return flat;
+    const inner = pad + " ".repeat(indent);
+    const body = node.map((item) => `${inner}${step(item, inner, inner.length)}`);
+    return `[\n${body.join(",\n")}\n${pad}]`;
+  };
+  const object = (node: Record<string, unknown>, pad: string): string => {
+    const keys = Object.keys(node).filter((key) => node[key] !== undefined);
+    if (keys.length === 0) return "{}";
+    const inner = pad + " ".repeat(indent);
+    const body = keys.map((key) => {
+      const label = `${inner}${JSON.stringify(key)}: `;
+      return `${label}${step(node[key], inner, label.length)}`;
+    });
+    return `{\n${body.join(",\n")}\n${pad}}`;
+  };
+  return object(value as Record<string, unknown>, "");
+}
+
 const ZERO: RegionDiff = {
   differing: 0,
   total: 0,
@@ -312,9 +366,15 @@ export function renderText(report: RunReport): string {
   lines.push("");
   lines.push("## verdict");
   if (report.failures.length === 0) {
+    const measured = report.viewports.reduce((sum, viewport) => sum + viewport.chromeRegions, 0);
     lines.push(
-      "no chrome region exceeded its tolerance and every chrome region's counterpart agreed",
+      `every chrome region this run carried is within tolerance: ${measured} region measurement(s) across ${report.viewports.length} viewport(s), summed ${report.viewports.reduce((sum, viewport) => sum + viewport.chrome.differing, 0)}/${report.viewports.reduce((sum, viewport) => sum + viewport.chrome.total, 0)} differing pixel(s) against a per-region tolerance of ${report.chromeTolerance}`,
     );
+    if (measured === 0) {
+      lines.push(
+        "no chrome region was carried at all, so this verdict is an empty set: the box deltas and the content regions below are the shell's evidence at these widths",
+      );
+    }
   } else {
     for (const failure of report.failures) lines.push(`FAIL ${failure}`);
   }
@@ -389,7 +449,7 @@ export function renderJson(report: RunReport): string {
         })),
     })),
   };
-  return `${JSON.stringify(summary, null, 2)}\n`;
+  return `${canonicalJson(summary)}\n`;
 }
 
 export interface Stability {

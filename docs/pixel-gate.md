@@ -166,12 +166,14 @@ the page is moving.
 
 And two whole runs agree exactly. `bun packages/pixel-gate/src/cli.ts --stability <a> <b>` compares
 two `run.json` files region by region: 36 chrome region comparisons and nine totals, all at delta 0,
-`RESULT: STABLE`. The committed pair is under the baseline's `stability/`.
+`RESULT: STABLE`. Both runs also carry a digest of each shot's own bytes, and all eighteen digests are
+equal across the two runs, so the two runs did not merely report the same statistic, they captured the
+same pixels. The committed pair is under the baseline's `stability/`.
 
 ## The baseline
 
-The committed baseline is `packages/verify/artifacts/pixel-gate/8132270/`, produced by
-`bun packages/pixel-gate/src/cli.ts` at commit `8132270`, against the app as it stands. The app state
+The committed baseline is `packages/verify/artifacts/pixel-gate/fec983a/`, produced by
+`bun packages/pixel-gate/src/cli.ts` at commit `fec983a`, against the app as it stands. The app state
 is stated in `assert.txt`: booted as `bun run up --no-open --replay` over a fresh temporary
 `FREEBOT_HOME` and bots root, one Bot and one thread created over `/rpc` before the page opens, the
 vault this run's own three-line placeholder at mode 600 in that temporary directory. No key is read,
