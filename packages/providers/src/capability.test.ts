@@ -25,7 +25,11 @@ const completion = (content: string, toolCalls: unknown[] = []) => ({
   choices: [
     {
       index: 0,
-      message: { role: "assistant", content, ...(toolCalls.length === 0 ? {} : { tool_calls: toolCalls }) },
+      message: {
+        role: "assistant",
+        content,
+        ...(toolCalls.length === 0 ? {} : { tool_calls: toolCalls }),
+      },
       finish_reason: toolCalls.length === 0 ? "stop" : "tool_calls",
     },
   ],
@@ -102,11 +106,7 @@ describe("the capability test", () => {
     const second = JSON.parse(transport.requests[1]?.body ?? "{}") as {
       messages: Array<{ role: string; content: string | null }>;
     };
-    expect(second.messages.map((message) => message.role)).toEqual([
-      "user",
-      "assistant",
-      "tool",
-    ]);
+    expect(second.messages.map((message) => message.role)).toEqual(["user", "assistant", "tool"]);
     expect(second.messages.at(-1)?.content).toBe(CAPABILITY_TEXT);
   });
 
@@ -132,7 +132,8 @@ describe("the capability test", () => {
   });
 
   test("an endpoint that answers whole replies reports streaming unknown, not false", async () => {
-    const refusesToStream = () => jsonResponse(400, { error: { message: "stream is not supported" } });
+    const refusesToStream = () =>
+      jsonResponse(400, { error: { message: "stream is not supported" } });
     const client = clientFor([
       refusesToStream(),
       jsonResponse(
@@ -153,9 +154,7 @@ describe("the capability test", () => {
 
     expect(turn.flags.toolCalling).toBe("strong");
     expect(turn.flags.streaming).toBeNull();
-    expect(turn.flags.notes).toContain(
-      "streaming unknown: the endpoint answered whole replies",
-    );
+    expect(turn.flags.notes).toContain("streaming unknown: the endpoint answered whole replies");
     expect(turn.answer).toBe(CAPABILITY_TEXT);
     expect(turn.requests).toBe(2);
   });
@@ -200,8 +199,6 @@ describe("the capability test", () => {
 
     expect(thrown instanceof ProviderAuthError).toBe(true);
     expect((thrown as ProviderAuthError).status).toBe(401);
-    expect((thrown as ProviderAuthError).message).toBe(
-      "auth rejected (401): invalid api key",
-    );
+    expect((thrown as ProviderAuthError).message).toBe("auth rejected (401): invalid api key");
   });
 });

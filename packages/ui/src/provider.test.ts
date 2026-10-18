@@ -8,8 +8,8 @@ import { describe, expect, test } from "bun:test";
 import type { ProviderConnection } from "@freebot/protocol";
 import {
   answerLine,
-  capabilityLines,
   CAPABLE_HEADLINE,
+  capabilityLines,
   endpointLine,
   LIMITED_HEADLINE,
   pageStateOf,
@@ -55,7 +55,9 @@ describe("the page's state", () => {
     expect(providerHeadline("untested")).toBe(UNTESTED_HEADLINE);
     expect(resultLine(null)).toContain("FreeBot ships no subscription");
     expect(resultLine(CONNECTION)).toContain("called a tool");
-    expect(resultLine({ ...CONNECTION, status: "limited" })).toContain("structured output fallback");
+    expect(resultLine({ ...CONNECTION, status: "limited" })).toContain(
+      "structured output fallback",
+    );
     expect(resultLine({ ...CONNECTION, status: "untested", flags: null })).toContain(
       "fails with the provider's own words",
     );
@@ -109,7 +111,12 @@ describe("what the page shows about a connection", () => {
   });
 
   test("a save says what it replaces before it replaces it", () => {
-    expect(replacesLine({ path: "/home/p/.freebot/provider.env", present: true, mode: "600" }, CONNECTION)).toBe(
+    expect(
+      replacesLine(
+        { path: "/home/p/.freebot/provider.env", present: true, mode: "600" },
+        CONNECTION,
+      ),
+    ).toBe(
       "Saving replaces this machine's connection: deepseek/deepseek-v4.1-flash at api.commandcode.ai, held in /home/p/.freebot/provider.env.",
     );
     expect(
@@ -129,6 +136,8 @@ describe("what the page shows about a connection", () => {
     );
     expect(statusLine("capable", "", null)).toBe("Saved.");
     expect(statusLine("untested", "", null)).toBe("Saved, untested.");
-    expect(statusLine("capable", "", "the RPC refused the input")).toBe("the RPC refused the input");
+    expect(statusLine("capable", "", "the RPC refused the input")).toBe(
+      "the RPC refused the input",
+    );
   });
 });

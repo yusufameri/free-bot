@@ -18,8 +18,8 @@
 
 import {
   type ChatMessage,
-  type ChatStreamEvent,
   type ChatResult,
+  type ChatStreamEvent,
   OpenAiCompatibleClient,
   type ToolSpec,
 } from "./client.ts";
@@ -233,7 +233,8 @@ export async function runCapabilityTest(options: CapabilityTestOptions): Promise
       toolCall: outcome.reply.kind === "tool_call",
     };
     if (outcome.reply.kind === "text" && answer.length === 0) answer = outcome.reply.text;
-    if (outcome.failure !== null) notes.push(`the structured output request failed: ${outcome.failure.reason}`);
+    if (outcome.failure !== null)
+      notes.push(`the structured output request failed: ${outcome.failure.reason}`);
   }
 
   const observation: TurnObservation = {

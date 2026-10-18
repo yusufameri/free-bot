@@ -91,7 +91,10 @@ describe("writing the vault", () => {
   test("a save makes the directory it needs, at mode 700", () => {
     const dir = home();
     const nested = join(dir, "freebot");
-    writeVault({ key: FIXTURE_KEY, baseUrl: CAPABLE.baseUrl, model: CAPABLE.model }, join(nested, "provider.env"));
+    writeVault(
+      { key: FIXTURE_KEY, baseUrl: CAPABLE.baseUrl, model: CAPABLE.model },
+      join(nested, "provider.env"),
+    );
 
     expect((statSync(nested).mode & 0o777).toString(8)).toBe("700");
     expect((statSync(join(nested, "provider.env")).mode & 0o777).toString(8)).toBe("600");
@@ -176,7 +179,9 @@ describe("connecting a provider", () => {
       },
     });
 
-    expect(asked).toEqual([{ baseUrl: CAPABLE.baseUrl, model: CAPABLE.model, apiKey: FIXTURE_KEY }]);
+    expect(asked).toEqual([
+      { baseUrl: CAPABLE.baseUrl, model: CAPABLE.model, apiKey: FIXTURE_KEY },
+    ]);
     expect(JSON.stringify(connection)).not.toContain(FIXTURE_KEY);
     expect(readFileSync(paths.record, "utf8")).not.toContain(FIXTURE_KEY);
     expect(JSON.stringify(describeProvider(paths))).not.toContain(FIXTURE_KEY);
@@ -208,7 +213,10 @@ describe("reading page 1's state", () => {
   test("a record measured on another endpoint reads untested, so a stale capable cannot survive", async () => {
     const paths = pathsUnder(home());
     await connectProvider(CAPABLE, { paths, test: async () => turn({}, "save-time-smoke") });
-    writeVault({ key: FIXTURE_KEY, baseUrl: "https://other.example.com/v1", model: "another-model" }, paths.vault);
+    writeVault(
+      { key: FIXTURE_KEY, baseUrl: "https://other.example.com/v1", model: "another-model" },
+      paths.vault,
+    );
 
     const state = describeProvider(paths);
 

@@ -44,7 +44,9 @@ export interface ProviderPaths {
   readonly record: string;
 }
 
-export function providerPaths(env: Record<string, string | undefined> = process.env): ProviderPaths {
+export function providerPaths(
+  env: Record<string, string | undefined> = process.env,
+): ProviderPaths {
   return { vault: vaultPath(env), record: join(freebotHome(env), "provider.json") };
 }
 
@@ -103,7 +105,8 @@ export function describeProvider(paths: ProviderPaths = providerPaths()): Provid
   const entry = readVault(paths.vault);
   if (entry === null) return { vault, connection: null };
   const record = readProviderRecord(paths);
-  const measuredHere = record !== null && record.baseUrl === entry.baseUrl && record.model === entry.model;
+  const measuredHere =
+    record !== null && record.baseUrl === entry.baseUrl && record.model === entry.model;
   return {
     vault,
     connection: {

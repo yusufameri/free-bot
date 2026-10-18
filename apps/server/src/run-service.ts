@@ -41,6 +41,7 @@ import {
 import type { BotRefusal, EventMessage, ListFilesOutput, ReadFileOutput } from "@freebot/protocol";
 import { GrantStore } from "@freebot/review";
 import { DockerAdapter } from "@freebot/sandbox";
+import { envWorkspace } from "./cli/args.ts";
 import {
   chooseProvider,
   createProviderPort,
@@ -58,7 +59,6 @@ import {
   RUN_WORKSPACE,
   runToolDefinitions,
 } from "./run-ports.ts";
-import { envWorkspace } from "./cli/args.ts";
 import { freebotHome, readVault, type VaultEntry } from "./vault.ts";
 import {
   botWorkspacePath,

@@ -29,7 +29,11 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
 import type { ContractRouterClient } from "@orpc/contract";
-import type { apiContract, Message, ProviderConnection } from "../../../packages/protocol/src/index.ts";
+import type {
+  apiContract,
+  Message,
+  ProviderConnection,
+} from "../../../packages/protocol/src/index.ts";
 import { exposeLibraryFacts, mountLibrary } from "../../../packages/ui/browser/library.ts";
 import { exposeProviderFacts, mountProvider } from "../../../packages/ui/browser/provider.ts";
 import { type Connection, exposeFacts, mountThread } from "../../../packages/ui/browser/render.ts";

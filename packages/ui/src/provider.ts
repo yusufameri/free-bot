@@ -143,9 +143,7 @@ export function capabilityLines(flags: ProviderFlags | null): string[] {
 /** The request the test makes, so the `testing` state shows what it is waiting on. */
 export function endpointLine(baseUrl: string, model: string): string {
   const base = baseUrl.replace(/\/+$/, "");
-  return base === "" || model === ""
-    ? ""
-    : `POST ${base}/chat/completions  model ${model}`;
+  return base === "" || model === "" ? "" : `POST ${base}/chat/completions  model ${model}`;
 }
 
 /** What the vault file is, without saying anything that is in it. */
@@ -186,9 +184,7 @@ export function answerLine(connection: ProviderConnection | null): string | null
  * connection and its model and capability are worth showing at a glance.
  */
 export function providerRowLabel(connection: ProviderConnection | null): string {
-  return connection === null
-    ? CONNECT_TITLE
-    : `${connection.model} · ${connection.status}`;
+  return connection === null ? CONNECT_TITLE : `${connection.model} · ${connection.status}`;
 }
 
 /** The state's line under the form, so the panel and the facts hook never disagree. */

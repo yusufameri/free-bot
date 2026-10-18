@@ -14,19 +14,14 @@
  * which is what makes every run in it replay.
  */
 
-import type {
-  ProviderConfigInput,
-  ProviderConnection,
-  ProviderState,
-} from "@freebot/protocol";
+import type { ProviderConfigInput, ProviderConnection, ProviderState } from "@freebot/protocol";
 import {
   answerLine,
-  capabilityLines,
   CONNECT_INTRO,
   CONTINUE_LABEL,
+  capabilityLines,
   endpointLine,
   KEY_KEPT_NOTE,
-  pageStateOf,
   PROVIDER_BASE_URL_LABEL,
   PROVIDER_BASE_URL_PLACEHOLDER,
   PROVIDER_KEY_LABEL,
@@ -35,11 +30,12 @@ import {
   PROVIDER_MODEL_PLACEHOLDER,
   type ProviderFacts,
   type ProviderPageState,
+  pageStateOf,
   providerHeadline,
-  refusalLine,
-  replacesLine,
   REPLAY_LABEL,
   REPLAY_NOTE,
+  refusalLine,
+  replacesLine,
   resultLine,
   SAVE_AND_TEST_LABEL,
   statusLine,
@@ -133,7 +129,8 @@ export function mountProvider(config: {
   let pending: { baseUrl: string; model: string } | null = null;
 
   function endpoint(): string {
-    const shown = testing && pending !== null ? pending : { baseUrl: baseUrlEl.value, model: modelEl.value };
+    const shown =
+      testing && pending !== null ? pending : { baseUrl: baseUrlEl.value, model: modelEl.value };
     return endpointLine(shown.baseUrl, shown.model);
   }
 
@@ -276,7 +273,9 @@ export function mountProvider(config: {
         endpoint: requestEl.textContent ?? "",
         answer: connection === null ? null : answerLine(connection),
         refusal: connection?.refusal ?? null,
-        capabilities: [...capabilitiesEl.querySelectorAll("li")].map((node) => node.textContent ?? ""),
+        capabilities: [...capabilitiesEl.querySelectorAll("li")].map(
+          (node) => node.textContent ?? "",
+        ),
         replaced: replacesEl.hidden ? null : replacesEl.textContent,
         message: statusEl.textContent ?? "",
       };

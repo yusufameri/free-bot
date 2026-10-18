@@ -30,11 +30,11 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
 import { describeVault, readVault } from "../../../apps/server/src/vault.ts";
+import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
+import type { ShellFacts } from "../../../packages/ui/src/bots.ts";
 import type { FrameFacts } from "../../../packages/ui/src/frames.ts";
 import type { ProviderFacts } from "../../../packages/ui/src/provider.ts";
-import type { ShellFacts } from "../../../packages/ui/src/bots.ts";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
@@ -42,7 +42,6 @@ const root = fileURLToPath(new URL("../../..", import.meta.url));
 /** The label every container this repo's runs carry, which scopes the container census (order 22). */
 const UNIT_LABEL = "freebot.unit=u1.7";
 
-const FIRST_BOT_NAME = "Local Bot";
 const LINE = `freebot-u4.3 ${randomBytes(6).toString("hex")}`;
 
 /** The key the refused case presents. A literal, not a credential: the provider is meant to reject it. */
@@ -316,7 +315,10 @@ const SPECS: readonly FrameSpec[] = [
     claims: [
       { label: "page 1 owns the center column", holds: (f) => f.provider.shown === true },
       { label: "the state is empty", holds: (f) => f.provider.state === "empty" },
-      { label: "the headline welcomes the person", holds: (f) => f.headline === "Connect a provider" },
+      {
+        label: "the headline welcomes the person",
+        holds: (f) => f.headline === "Connect a provider",
+      },
       { label: "the vault file is absent", holds: (f) => f.provider.vault.present === false },
       {
         label: "the fields are empty and the key is empty",
@@ -326,11 +328,23 @@ const SPECS: readonly FrameSpec[] = [
           f.provider.fields.keyEmpty === true,
       },
       { label: "the save reads `Save and test`", holds: (f) => f.saveLabel === "Save and test" },
-      { label: "the quiet path reads `Run in replay mode`", holds: (f) => f.replayLabel === "Run in replay mode" },
-      { label: "the request line is empty, because nothing is running", holds: (f) => f.provider.endpoint === "" },
-      { label: "nothing is named as replaced, because the vault held nothing", holds: (f) => f.provider.replaced === null },
+      {
+        label: "the quiet path reads `Run in replay mode`",
+        holds: (f) => f.replayLabel === "Run in replay mode",
+      },
+      {
+        label: "the request line is empty, because nothing is running",
+        holds: (f) => f.provider.endpoint === "",
+      },
+      {
+        label: "nothing is named as replaced, because the vault held nothing",
+        holds: (f) => f.provider.replaced === null,
+      },
       { label: "no Bot list is on screen", holds: (f) => f.sidebarHidden === true },
-      { label: "the conversation and its tabs are out of the way", holds: (f) => f.bodyPage === "connect" },
+      {
+        label: "the conversation and its tabs are out of the way",
+        holds: (f) => f.bodyPage === "connect",
+      },
       { label: "nothing is refused", holds: (f) => f.error === null },
     ],
     visible: "#provider-form",
@@ -341,7 +355,10 @@ const SPECS: readonly FrameSpec[] = [
       "`Save and test` with the request in flight: the page shows the endpoint and the model it is posting to, and the save control is disabled until the reply arrives.",
     claims: [
       { label: "the state is testing", holds: (f) => f.provider.state === "testing" },
-      { label: "the save control is disabled while it runs", holds: (f) => f.saveDisabled === true },
+      {
+        label: "the save control is disabled while it runs",
+        holds: (f) => f.saveDisabled === true,
+      },
       {
         label: "the request line names the endpoint and the model",
         holds: (f) =>
@@ -352,7 +369,10 @@ const SPECS: readonly FrameSpec[] = [
         holds: (f) => f.provider.message.startsWith("Waiting for the reply. POST"),
       },
       { label: "the answer is not on screen yet", holds: (f) => f.provider.answer === null },
-      { label: "the fields still hold what was typed", holds: (f) => f.provider.fields.keyEmpty === false },
+      {
+        label: "the fields still hold what was typed",
+        holds: (f) => f.provider.fields.keyEmpty === false,
+      },
     ],
     visible: "#provider-request",
   },
@@ -363,17 +383,33 @@ const SPECS: readonly FrameSpec[] = [
     claims: [
       { label: "the state is capable", holds: (f) => f.provider.state === "capable" },
       { label: "the headline says so", holds: (f) => f.headline === "This connection is capable" },
-      { label: "the connection is the one that was typed", holds: (f) => f.provider.connection?.status === "capable" },
-      { label: "tool calling was observed, not assumed", holds: (f) => f.provider.capabilities[0] === "tool calling: strong" },
-      { label: "the model's own answer is on the page", holds: (f) => (f.provider.answer ?? "").length > 0 },
+      {
+        label: "the connection is the one that was typed",
+        holds: (f) => f.provider.connection?.status === "capable",
+      },
+      {
+        label: "tool calling was observed, not assumed",
+        holds: (f) => f.provider.capabilities[0] === "tool calling: strong",
+      },
+      {
+        label: "the model's own answer is on the page",
+        holds: (f) => (f.provider.answer ?? "").length > 0,
+      },
       { label: "the key field is empty again", holds: (f) => f.provider.fields.keyEmpty === true },
-      { label: "the vault is written", holds: (f) => f.provider.vault.present === true && f.provider.vault.mode === "600" },
+      {
+        label: "the vault is written",
+        holds: (f) => f.provider.vault.present === true && f.provider.vault.mode === "600",
+      },
       { label: "the page says where the key went", holds: (f) => f.keyKept.includes("mode 600") },
       {
         label: "the save says what a further save would replace",
-        holds: (f) => f.provider.replaced?.includes(f.provider.connection?.model ?? "\u0000") === true,
+        holds: (f) =>
+          f.provider.replaced?.includes(f.provider.connection?.model ?? "\u0000") === true,
       },
-      { label: "the footer row names the model and its capability", holds: (f) => f.footerRow.includes(" · capable") },
+      {
+        label: "the footer row names the model and its capability",
+        holds: (f) => f.footerRow.includes(" · capable"),
+      },
       { label: "nothing is refused", holds: (f) => f.error === null },
     ],
     visible: "#provider-capabilities",
@@ -384,11 +420,23 @@ const SPECS: readonly FrameSpec[] = [
       "A provider that answers with no tool call: the page stores the weaker capability, says the structured output fallback will carry runs, and shows the flags it actually observed.",
     claims: [
       { label: "the state is limited", holds: (f) => f.provider.state === "limited" },
-      { label: "the headline says so", holds: (f) => f.headline === "This connection answers, without a tool call" },
-      { label: "no native call was observed", holds: (f) => f.provider.capabilities[0] === "tool calling: weak" },
-      { label: "the structured fallback was exercised", holds: (f) => f.provider.capabilities[2] === "structured output: true" },
+      {
+        label: "the headline says so",
+        holds: (f) => f.headline === "This connection answers, without a tool call",
+      },
+      {
+        label: "no native call was observed",
+        holds: (f) => f.provider.capabilities[0] === "tool calling: weak",
+      },
+      {
+        label: "the structured fallback was exercised",
+        holds: (f) => f.provider.capabilities[2] === "structured output: true",
+      },
       { label: "the save says what it replaced", holds: (f) => f.provider.replaced !== null },
-      { label: "the footer row follows the connection", holds: (f) => f.footerRow.includes(" · limited") },
+      {
+        label: "the footer row follows the connection",
+        holds: (f) => f.footerRow.includes(" · limited"),
+      },
     ],
     visible: "#provider-capabilities",
   },
@@ -398,11 +446,21 @@ const SPECS: readonly FrameSpec[] = [
       "A key the provider rejects: the page shows the provider's own status code and message, and the connection is saved marked untested so the next run fails loudly instead of replaying.",
     claims: [
       { label: "the state is untested", holds: (f) => f.provider.state === "untested" },
-      { label: "the headline says the test did not pass", holds: (f) => f.headline === "The connection did not pass its test" },
-      { label: "the provider answered with a status of its own", holds: (f) => f.provider.refusal?.status !== null },
+      {
+        label: "the headline says the test did not pass",
+        holds: (f) => f.headline === "The connection did not pass its test",
+      },
+      {
+        label: "the provider answered with a status of its own",
+        holds: (f) => f.provider.refusal?.status !== null,
+      },
       { label: "and with a message", holds: (f) => (f.provider.refusal?.message ?? "").length > 0 },
       { label: "no flags were recorded", holds: (f) => f.provider.capabilities.length === 0 },
-      { label: "the connection was saved anyway", holds: (f) => f.provider.connection?.status === "untested" && f.provider.vault.present === true },
+      {
+        label: "the connection was saved anyway",
+        holds: (f) =>
+          f.provider.connection?.status === "untested" && f.provider.vault.present === true,
+      },
       { label: "the save says what it replaces", holds: (f) => f.provider.replaced !== null },
       { label: "the key field is empty again", holds: (f) => f.provider.fields.keyEmpty === true },
     ],
@@ -413,12 +471,22 @@ const SPECS: readonly FrameSpec[] = [
     caption:
       "A run after the capable save: the model wrote the file through the sandbox and closed the turn, all of it through the connection the page saved rather than through a recording.",
     claims: [
-      { label: "the conversation is on screen", holds: (f) => f.bodyPage === "app" && f.sidebarHidden === false },
+      {
+        label: "the conversation is on screen",
+        holds: (f) => f.bodyPage === "app" && f.sidebarHidden === false,
+      },
       { label: "the run reached its end", holds: (f) => f.thread.done === true },
-      { label: "the governed call ran", holds: (f) => f.thread.cards.length > 0 && f.thread.cards.every(([, status]) => status === "done") },
+      {
+        label: "the governed call ran",
+        holds: (f) =>
+          f.thread.cards.length > 0 && f.thread.cards.every(([, status]) => status === "done"),
+      },
       { label: "the approval was answered", holds: (f) => f.thread.approvals.includes("allow") },
       { label: "the model's own text is on the page", holds: (f) => f.thread.deltas.length > 0 },
-      { label: "the footer row still names the capable connection", holds: (f) => f.footerRow.includes(" · capable") },
+      {
+        label: "the footer row still names the capable connection",
+        holds: (f) => f.footerRow.includes(" · capable"),
+      },
       { label: "nothing is refused", holds: (f) => f.error === null },
     ],
     visible: "#thread .tool-card",
@@ -618,7 +686,13 @@ async function openPage(cdp: Cdp, url: string): Promise<string> {
   await cdp.send("Page.navigate", { url }, sessionId);
   await loaded;
   try {
-    await waitTrue(cdp, sessionId, "the page 1 hook", `typeof window.__providerFacts === 'function'`, 30_000);
+    await waitTrue(
+      cdp,
+      sessionId,
+      "the page 1 hook",
+      `typeof window.__providerFacts === 'function'`,
+      30_000,
+    );
   } catch (error) {
     console.error(`the page never exposed its provider hook; console: ${cdp.console.join(" | ")}`);
     throw error;
@@ -970,7 +1044,11 @@ async function main(): Promise<void> {
   log.section("the launch, over a home and a bots root this driver made");
   const first = await launch(home, botsRoot);
   log.note(`the printed URL, redacted: ${redacted(first.url)}`);
-  const modeLine = await waitForMatch(() => first.stderr(), /^(freebot up: model mode .*)$/m, 30_000);
+  const modeLine = await waitForMatch(
+    () => first.stderr(),
+    /^(freebot up: model mode .*)$/m,
+    30_000,
+  );
   log.note(`the launcher's line: ${modeLine}`);
   log.check(
     "the launcher's boot line says keyless, because the vault it was given is empty",
@@ -1056,13 +1134,7 @@ async function main(): Promise<void> {
     [`POST ${realVault.baseUrl}/chat/completions  model ${realVault.model}`, null],
   );
   await clickSelector(cdp, page, "#provider-save");
-  await waitTrue(
-    cdp,
-    page,
-    "the testing state",
-    `${PROVIDER}.state === 'testing'`,
-    60_000,
-  );
+  await waitTrue(cdp, page, "the testing state", `${PROVIDER}.state === 'testing'`, 60_000);
   try {
     await capture(cdp, page, "02-testing", log);
     capturedNames.push("02-testing");
@@ -1085,7 +1157,12 @@ async function main(): Promise<void> {
     [tested.provider.state, tested.provider.capabilities],
     [
       "capable",
-      ["tool calling: strong", "streaming: true", "structured output: unknown", "context window: unknown"],
+      [
+        "tool calling: strong",
+        "streaming: true",
+        "structured output: unknown",
+        "context window: unknown",
+      ],
     ],
   );
   capturedNames.push("03-capable-saved");
@@ -1111,11 +1188,7 @@ async function main(): Promise<void> {
   );
   const recordPath = join(home, "provider.json");
   const recordText = readFileSync(recordPath, "utf8");
-  log.check(
-    "the record file is mode 600",
-    (statSync(recordPath).mode & 0o777).toString(8),
-    "600",
-  );
+  log.check("the record file is mode 600", (statSync(recordPath).mode & 0o777).toString(8), "600");
   log.check(
     "and carries the capability, and the key value is not in it",
     [JSON.parse(recordText).status, recordText.includes(realVault.key)],
@@ -1129,7 +1202,11 @@ async function main(): Promise<void> {
   };
   log.check(
     "`get_provider` answers with the vault's mode and the connection, and no key reaches the client",
-    [readBack.json.vault.mode, Object.keys(readBack.json.connection).sort(), providerRead.body.includes(realVault.key)],
+    [
+      readBack.json.vault.mode,
+      Object.keys(readBack.json.connection).sort(),
+      providerRead.body.includes(realVault.key),
+    ],
     ["600", ["answer", "baseUrl", "flags", "model", "refusal", "status", "testedAt"], false],
   );
 
@@ -1155,7 +1232,9 @@ async function main(): Promise<void> {
   capturedNames.push("06-run-on-saved-connection");
   await capture(cdp, page, "06-run-on-saved-connection", log);
 
-  const turnLines = [...first.stderr().matchAll(/^(freebot provider: .*)$/gm)].map((m) => m[1] ?? "");
+  const turnLines = [...first.stderr().matchAll(/^(freebot provider: .*)$/gm)].map(
+    (m) => m[1] ?? "",
+  );
   log.note("the server's own per-turn lines, as they arrived:");
   for (const line of turnLines) log.note(`  ${redacted(line)}`);
   log.check(
@@ -1240,19 +1319,15 @@ async function main(): Promise<void> {
       stub.asked.at(-1)?.response_format,
       stub.asked.length,
     ],
-    [
-      ["freebot_smoke_echo"],
-      "auto",
-      true,
-      { type: "json_object" },
-      3,
-    ],
+    [["freebot_smoke_echo"], "auto", true, { type: "json_object" }, 3],
   );
   stub.stop();
 
   log.section("a key the provider itself rejects");
   const beforeRefusal = await factsOf(cdp, page);
-  log.note(`the disclosure before the refused save: ${JSON.stringify(beforeRefusal.provider.replaced)}`);
+  log.note(
+    `the disclosure before the refused save: ${JSON.stringify(beforeRefusal.provider.replaced)}`,
+  );
   log.check(
     "the page said what the refused save would replace before it was pressed",
     beforeRefusal.provider.replaced?.includes("stub-model") === true,
@@ -1270,7 +1345,10 @@ async function main(): Promise<void> {
   );
   log.check(
     "the provider answered with a refusal status of its own, and it is a credential refusal",
-    [refused.provider.refusal?.status ?? 0, [401, 403, 429].includes(refused.provider.refusal?.status ?? 0)],
+    [
+      refused.provider.refusal?.status ?? 0,
+      [401, 403, 429].includes(refused.provider.refusal?.status ?? 0),
+    ],
     [refused.provider.refusal?.status ?? 0, true],
   );
   log.check(

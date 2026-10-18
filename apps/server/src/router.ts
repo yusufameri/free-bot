@@ -25,10 +25,7 @@ import { type RunStatus as CoreRunStatus, isTerminal } from "@freebot/core";
 import type { ApiContext } from "@freebot/protocol";
 import { apiContract, BOT_ERRORS, WORKSPACE_READ_ERRORS } from "@freebot/protocol";
 import { implement, ORPCError } from "@orpc/server";
-import {
-  createProviderSetup,
-  type ProviderSetup,
-} from "./provider-setup.ts";
+import { createProviderSetup, type ProviderSetup } from "./provider-setup.ts";
 import { type RunService, UnknownRecordError } from "./run-service.ts";
 import { WorkspaceReadError } from "./workspace-files.ts";
 
@@ -70,7 +67,10 @@ const PROTOCOL_STATUS: Record<CoreRunStatus, "running" | "finished" | "failed"> 
   cancelled: "failed",
 };
 
-export function createApiRouter(service: RunService, providers: ProviderSetup = createProviderSetup()) {
+export function createApiRouter(
+  service: RunService,
+  providers: ProviderSetup = createProviderSetup(),
+) {
   return {
     start_run: api.start_run.handler(({ input }) => {
       try {
@@ -174,6 +174,8 @@ export function createApiRouter(service: RunService, providers: ProviderSetup = 
 
     get_provider: api.get_provider.handler(() => providers.describe()),
 
-    connect_provider: api.connect_provider.handler(async ({ input }) => await providers.connect(input)),
+    connect_provider: api.connect_provider.handler(
+      async ({ input }) => await providers.connect(input),
+    ),
   };
 }
