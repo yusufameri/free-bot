@@ -7,6 +7,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@freebot/core": "workspace:*"
+    "@freebot/connectors": "workspace:*",
+    "@freebot/core": "workspace:*",
+    "emulate": "^0.12.2"
   }
 }

@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 /**
  * `bun run up`: the one command.
  *
@@ -20,6 +21,7 @@
  * stdout stays the one URL. See docs/RUNNING.md.
  */
 
+import { ConnectorRegistry, connectorsPath as connectorsPathFor } from "../connectors.ts";
 import { startServer } from "../index.ts";
 import {
   type ChoiceDescription,
@@ -42,6 +44,10 @@ export interface Up {
   readonly botsRoot: string;
   /** What the run's model is: the endpoint, the model id, and whether a key is in play. */
   readonly provider: ChoiceDescription;
+  /** The connectors this launch holds, by id and address. Never a credential. */
+  readonly connectors: ReadonlyArray<{ id: string; url: string }>;
+  /** The file those connectors were read from, so a diagnostic names the file it actually read. */
+  readonly connectorsFile: string;
   /** Stop the servers, then remove every container this launch created. 0 only when none survived. */
   stop(): Promise<number>;
 }
@@ -49,13 +55,25 @@ export interface Up {
 export function startUp(args: UpArgs): Up {
   const sandboxes = new LaunchSandboxes();
   const vault = readVault();
-  const choice = chooseProvider({ mode: args.providerMode, vault });
+  // The choice the launcher reports and the choice the service runs are the same fact: both come
+  // from here, with the transcript this launch was asked for. A choice built twice from different
+  // inputs is how a diagnostic comes to name a file the run is not replaying.
+  const choice = chooseProvider({
+    mode: args.providerMode,
+    vault,
+    ...(args.transcript === null ? {} : { transcript: args.transcript }),
+  });
+  const connectorsPath = args.connectors ?? connectorsPathFor();
+  const connectors = ConnectorRegistry.fromFile(connectorsPath);
   const server = startServer({
     tunnelPort: args.tunnelPort,
     apiPort: args.apiPort,
+    connectors,
     service: createRunService({
       sandbox: () => sandboxes.port(),
       mode: args.providerMode,
+      connectors: connectors.connectors(),
+      ...(args.transcript === null ? {} : { transcript: args.transcript }),
       ...(args.workspace === null ? {} : { botsRoot: args.workspace }),
     }),
   });
@@ -66,6 +84,8 @@ export function startUp(args: UpArgs): Up {
     tunnelPort: server.tunnelPort,
     botsRoot,
     provider: describeChoice(choice),
+    connectors: connectors.describe(),
+    connectorsFile: connectorsPath,
     async stop() {
       server.stop();
       server.service.close();
@@ -131,6 +151,13 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   );
   console.error(
     `freebot up: bots under ${up.botsRoot}; each Bot's workspace is mounted at /workspace and kept across runs`,
+  );
+  console.error(
+    up.connectors.length === 0
+      ? `freebot up: connectors ${up.connectorsFile} holds none`
+      : `freebot up: connectors ${up.connectorsFile} holds ${up.connectors
+          .map((connector) => `${connector.id} at ${connector.url}`)
+          .join(", ")}`,
   );
   console.error(
     "freebot up: the operator token rides the URL's fragment and is printed nowhere else",

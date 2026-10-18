@@ -24,6 +24,10 @@ export interface UpArgs {
   readonly open: boolean;
   /** How the run's model is chosen. */
   readonly providerMode: ProviderMode;
+  /** The transcript a keyless run replays, or null for the committed one. */
+  readonly transcript: string | null;
+  /** The file the person's connectors live in, or null for `connectors.json` under the home. */
+  readonly connectors: string | null;
   /** The directory that holds the Bot registry and one workspace per Bot, or null for the default. */
   readonly workspace: string | null;
   /** Print the usage and exit. */
@@ -40,13 +44,21 @@ export const UP_USAGE = [
   "  --no-open          print the URL, do not open a browser",
   "  --live             use the key in ~/.freebot/provider.env, and refuse to start without one",
   "  --replay           replay the committed transcript instead of calling a model",
+  "  --transcript <p>   the transcript a keyless run replays (default packages/pi-bridge's)",
+  "  --connectors <p>   the file the person's connectors live in (default connectors.json)",
   "  --api-port <n>     the page and its stream (default 0, a free port)",
   "  --tunnel-port <n>  the tunnel leg (default 0, a free port)",
   "  -h, --help         print this",
   "",
   "The model defaults to the vault: a key there makes every run call a real model, and no key",
   "replays the transcript. FREEBOT_PROVIDER=live|replay|auto sets that default for a started",
-  "process, which is how an evidence driver pins the recorded provider.",
+  "process, which is how an evidence driver pins the recorded provider. FREEBOT_TRANSCRIPT and",
+  "FREEBOT_CONNECTORS set the two paths the same way.",
+  "",
+  "A connectors file lists the MCP servers this install may call, each with the headers its own",
+  "server wants. The headers are the person's credential: they reach one request header and appear",
+  "in no route's answer, no log line and no artifact. connectors.json under the freebot home is",
+  "read by default, and its absence is the no-connectors machine.",
   "",
   "The Bot's workspace is a host directory, mounted into every run at /workspace, so the files a",
   "run writes outlive it. Every Bot has one of its own, and the Bot records live beside them.",
@@ -73,6 +85,23 @@ export function envWorkspace(env: Record<string, string | undefined> = process.e
   return value === undefined || value === "" ? null : value;
 }
 
+/** A path a flag or the environment names, or null for the default. */
+function envPath(
+  name: string,
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const value = env[name];
+  return value === undefined || value === "" ? null : value;
+}
+
+/** A flag's path argument, refused when it is missing. */
+function path(value: string | undefined, flag: string): string {
+  if (value === undefined || value.length === 0 || value.startsWith("--")) {
+    throw new UpArgError(`${flag} needs a path`);
+  }
+  return value;
+}
+
 function port(value: string | undefined, flag: string): number {
   if (value === undefined) throw new UpArgError(`${flag} needs a port number`);
   const parsed = Number(value);
@@ -91,6 +120,8 @@ export function parseUpArgs(
     tunnelPort: 0,
     open: true,
     providerMode: envProviderMode(env) ?? "auto",
+    transcript: envPath("FREEBOT_TRANSCRIPT", env),
+    connectors: envPath("FREEBOT_CONNECTORS", env),
     workspace: envWorkspace(env),
     help: argv.includes("--help") || argv.includes("-h"),
   };
@@ -112,6 +143,14 @@ export function parseUpArgs(
         break;
       case "--replay":
         next = { ...next, providerMode: "replay" };
+        break;
+      case "--transcript":
+        next = { ...next, transcript: path(argv[index + 1], flag) };
+        index += 1;
+        break;
+      case "--connectors":
+        next = { ...next, connectors: path(argv[index + 1], flag) };
+        index += 1;
         break;
       case "--api-port":
         next = { ...next, apiPort: port(argv[index + 1], flag) };

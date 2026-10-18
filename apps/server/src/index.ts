@@ -9,6 +9,7 @@
 
 import { startApiServer } from "./api-server";
 import { app } from "./app";
+import type { ConnectorRegistry } from "./connectors";
 import { createRunService, type RunService } from "./run-service";
 import { startTunnelServer } from "./tunnel";
 
@@ -34,6 +35,8 @@ export interface ServerOptions {
   apiPort?: number;
   /** The run authority, so a launcher can hand each run its own sandbox. */
   service?: RunService;
+  /** The connectors this launch lists and its runs may call. Empty unless a launcher says so. */
+  connectors?: ConnectorRegistry;
 }
 
 export function startServer(options: ServerOptions = {}): Server {
@@ -47,6 +50,7 @@ export function startServer(options: ServerOptions = {}): Server {
     api = startApiServer({
       port: options.apiPort ?? 0,
       service: options.service ?? createRunService({ mode: "replay" }),
+      ...(options.connectors === undefined ? {} : { connectors: options.connectors }),
     });
   } catch (error) {
     // A port this process cannot take must not leave the tunnel leg listening behind it.

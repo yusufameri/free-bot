@@ -10,6 +10,7 @@
     "start": "bun src/index.ts"
   },
   "dependencies": {
+    "@freebot/connectors": "workspace:*",
     "@freebot/core": "workspace:*",
     "@freebot/pi-bridge": "workspace:*",
     "@freebot/protocol": "workspace:*",

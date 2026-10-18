@@ -51,6 +51,8 @@ const validInputs: Record<(typeof API_OPERATION_NAMES)[number], unknown> = {
     model: "gpt-4o-mini",
     key: "sk-not-a-real-key",
   },
+  list_connectors: {},
+  test_connector: { id: "fixture-github" },
 };
 
 describe("operation registry", () => {
@@ -70,6 +72,8 @@ describe("operation registry", () => {
       "read_file",
       "get_provider",
       "connect_provider",
+      "list_connectors",
+      "test_connector",
     ]);
   });
 
