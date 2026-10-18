@@ -17,7 +17,7 @@ import {
 const TS = 1_792_221_550_000;
 
 function bot(botId: string, name: string, threadCount: number): Bot {
-  return { botId, name, createdAt: TS, threadCount };
+  return { botId, name, role: "", purpose: "", createdAt: TS, threadCount };
 }
 
 function thread(threadId: string, prompts: readonly string[]): Thread {

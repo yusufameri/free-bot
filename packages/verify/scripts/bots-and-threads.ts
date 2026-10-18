@@ -299,11 +299,11 @@ const SPECS: readonly FrameSpec[] = [
   {
     name: "01-sidebar-first-bot",
     caption:
-      "The sidebar on a server that held no Bots: the page created `Local Bot` and its first thread, and the conversation is empty behind it.",
+      "The sidebar on a server that held no Bots: this driver made `Local Bot` and its first thread over the route a page uses, and the conversation is empty behind it.",
     claims: [
       { label: "one Bot is listed", holds: (f) => f.shell.bots.length === 1 },
       {
-        label: "the Bot is the one the page created",
+        label: "the Bot is the one this driver made",
         holds: (f) =>
           f.shell.bots[0]?.name === FIRST_BOT_NAME && f.shell.bots[0]?.selected === true,
       },
@@ -482,6 +482,22 @@ async function capture(cdp: Cdp, sessionId: string, name: string, log: Log): Pro
 // ---------------------------------------------------------------------------
 // The launched command
 // ---------------------------------------------------------------------------
+
+/**
+ * A Bot and a thread of this driver's own, made the way a page makes them. A store with no Bot opens
+ * the first-run screen now, and this driver's subject is the shell over a bots root it made, so the
+ * two records are made here before any page opens.
+ */
+async function makeFirstBot(
+  launch: Launched,
+  name: string,
+): Promise<{ botId: string; threadId: string }> {
+  const botAnswer = await post(launch, "create_bot", { name });
+  const botId = (JSON.parse(botAnswer.body) as { json: { botId: string } }).json.botId;
+  const threadAnswer = await post(launch, "create_thread", { botId });
+  const threadId = (JSON.parse(threadAnswer.body) as { json: { threadId: string } }).json.threadId;
+  return { botId, threadId };
+}
 
 interface Launched {
   readonly url: string;
@@ -1027,7 +1043,9 @@ async function main(): Promise<number> {
 
   const captured: PageFacts[] = [];
 
-  log.section("the page creates the first Bot on a server that holds none");
+  log.section("the first Bot, made the way a page makes one, on a server that holds none");
+  const madeFirst = await makeFirstBot(first, FIRST_BOT_NAME);
+  log.note(`the Bot this driver made over the route a page uses: ${JSON.stringify(madeFirst)}`);
   const page = await openPage(cdp, first.url);
   await waitTrue(
     cdp,
@@ -1047,7 +1065,7 @@ async function main(): Promise<number> {
   );
   const created = await factsOf(cdp, page);
   log.check(
-    "the server held no Bot, and the page made one through the same arm a person's click uses",
+    "the server held no Bot, and this driver made one through the same arm a person's click uses",
     [created.shell.bots.length, created.shell.bots[0]?.name, created.shell.threads.length],
     [1, FIRST_BOT_NAME, 1],
   );

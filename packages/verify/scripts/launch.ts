@@ -1160,6 +1160,10 @@ async function main(): Promise<number> {
     HEALTHZ,
   );
   log.note(`the second launch's URL, redacted: ${redacted(second.url)}`);
+  // A Bot and a thread of this launch's own, over the route a page uses: its bots root is fresh, and
+  // a store with no Bot opens the first-run screen rather than the app (U6.2).
+  const secondThread = await streamTarget(second);
+  log.note(`the second launch's own thread: ${secondThread}`);
   const secondPage = await openArmed(cdp, log, second, "second launch");
   const secondCall = await assertParked(cdp, log, secondPage, "second launch", SECOND_PROMPT);
   await answerAllow(cdp, log, secondPage, "second launch", secondCall);
@@ -1179,6 +1183,8 @@ async function main(): Promise<number> {
     [third.apiPort !== first.apiPort, third.apiPort !== second.apiPort],
     [true, true],
   );
+  const thirdThread = await streamTarget(third);
+  log.note(`the third launch's own thread: ${thirdThread}`);
   const thirdPage = await openArmed(cdp, log, third, "third launch");
   const thirdCall = await assertParked(cdp, log, thirdPage, "third launch", THIRD_PROMPT);
   await answerDeny(cdp, log, thirdPage, "third launch", thirdCall);

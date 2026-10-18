@@ -7,6 +7,12 @@
  * rather than starting a new one. `RunStore` owns the third (`run`, which names the Bot and the
  * thread it belongs to), so the two stores share one discipline and not one record.
  *
+ * A Bot carries a name, a role and a purpose. The name is required at creation; the other two are
+ * asked for afterwards, which is why they have their own command rather than a longer `bot.create`:
+ * a first-run screen asks for the name first and the purpose on the next pane, and a Bot that was
+ * created before its purpose was known must be able to gain one. A journal written before the two
+ * fields existed replays with both empty, so no install needs a migration step to keep its Bots.
+ *
  * The discipline is `run-store.ts`'s, for the same reasons. Every mutation is a command that gets
  * journaled, and every command is idempotent by record id, so a store that reopens a journal left
  * behind by a crash replays to the same records and a command that arrives twice applies once. A
@@ -35,6 +41,16 @@ import { dirname } from "node:path";
 export interface BotRecord {
   id: string;
   name: string;
+  /**
+   * The short label beside the name, e.g. `Chief of staff`. Empty for a Bot that was never given
+   * one, and for every Bot a journal from before this field replays to.
+   */
+  role: string;
+  /**
+   * The one line saying what the Bot is for. It is what the first-run screen's second pane asks
+   * for, and it is the text a Bot's own system prompt is built from.
+   */
+  purpose: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -50,9 +66,10 @@ export interface ThreadRecord {
 
 export type BotCommand =
   | { op: "bot.create"; id: string; name: string; at: number }
+  | { op: "bot.update"; id: string; role: string; purpose: string; at: number }
   | { op: "thread.create"; id: string; botId: string; title: string; at: number };
 
-export const BOT_COMMAND_OPS = ["bot.create", "thread.create"] as const;
+export const BOT_COMMAND_OPS = ["bot.create", "bot.update", "thread.create"] as const;
 
 export interface BotLoadReport {
   /** Lines the journal held and replay accepted as commands. */
@@ -74,6 +91,14 @@ export interface CreateBotInput {
   /** Caller-minted and the idempotency key: the same id twice is the same Bot, never a second one. */
   id: string;
   name: string;
+}
+
+export interface UpdateBotInput {
+  /** The Bot to add the two fields to. An id this store does not hold is refused. */
+  id: string;
+  /** The short label beside the name; the empty string is allowed and means "not given yet". */
+  role: string;
+  purpose: string;
 }
 
 export interface CreateThreadInput {
@@ -116,6 +141,8 @@ export function isBotCommand(value: unknown): value is BotCommand {
   switch (value.op) {
     case "bot.create":
       return typeof value.name === "string" && value.name.length > 0;
+    case "bot.update":
+      return typeof value.role === "string" && typeof value.purpose === "string";
     case "thread.create":
       return (
         typeof value.botId === "string" &&
@@ -158,6 +185,22 @@ export class BotStore {
     };
     this.#commit(command);
     return { record: view(this.#requireBot(input.id)), created: true };
+  }
+
+  /**
+   * Give a Bot the two fields a name is not: its role and its purpose. Applying the same values
+   * twice lands on the same record, so a journal that replayed the command twice converges.
+   */
+  updateBot(input: UpdateBotInput): BotRecord {
+    const command: BotCommand = {
+      op: "bot.update",
+      id: input.id,
+      role: input.role,
+      purpose: input.purpose,
+      at: this.#now(),
+    };
+    this.#commit(command);
+    return view(this.#requireBot(input.id));
   }
 
   /** Idempotent per thread id, and refused for a Bot this store does not hold. */
@@ -272,9 +315,18 @@ export class BotStore {
         this.#bots.set(command.id, {
           id: command.id,
           name: command.name,
+          role: "",
+          purpose: "",
           createdAt: command.at,
           updatedAt: command.at,
         });
+        return;
+      }
+      case "bot.update": {
+        const bot = this.#requireBot(command.id);
+        bot.role = command.role;
+        bot.purpose = command.purpose;
+        bot.updatedAt = command.at;
         return;
       }
       case "thread.create": {

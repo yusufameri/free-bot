@@ -4,8 +4,8 @@
  * This is the slice a server can implement and a client can call today: three unary run procedures
  * (`start_run`, `cancel_run`, `get_run`), one subscription (`subscribe_events`) that yields the
  * named thread's log in seq order, the two records a run belongs to (`list_bots`, `create_bot`,
- * `list_threads`, `create_thread`), the workspace's two reads (`list_files`, `read_file`), and the
- * provider page's two arms (`get_provider`, `connect_provider`).
+ * `update_bot`, `list_threads`, `create_thread`), the workspace's two reads (`list_files`,
+ * `read_file`), and the provider page's two arms (`get_provider`, `connect_provider`).
  * `dto.ts` stays the source of truth for the shapes it already owns; this file wires those schemas
  * into oRPC and adds only the shapes oRPC needs that did not exist.
  *
@@ -42,6 +42,8 @@ import {
   startRunInput,
   startRunOutput,
   threadIdSchema,
+  updateBotInput,
+  updateBotOutput,
   type WorkspaceReadRefusal,
 } from "./dto.ts";
 import { cursorSeqSchema, eventMessageSchema, runIdSchema, tsSchema } from "./envelope.ts";
@@ -165,6 +167,8 @@ const listBotsProcedure = oc.input(listBotsInput).output(listBotsOutput).errors(
 
 const createBotProcedure = oc.input(createBotInput).output(createBotOutput).errors(BOT_ERRORS);
 
+const updateBotProcedure = oc.input(updateBotInput).output(updateBotOutput).errors(BOT_ERRORS);
+
 const listThreadsProcedure = oc
   .input(listThreadsInput)
   .output(listThreadsOutput)
@@ -189,8 +193,7 @@ const getRunProcedure = oc.input(getRunInput).output(getRunOutput).errors(BOT_ER
  * the vault's path, presence and mode plus the saved connection, and `connect_provider` writes the
  * vault and answers with what its test found. A refused test is a successful call whose answer says
  * so, because the connection is saved either way.
- */
-const getProviderProcedure = oc.input(getProviderInput).output(getProviderOutput);
+ */ const getProviderProcedure = oc.input(getProviderInput).output(getProviderOutput);
 
 const connectProviderProcedure = oc.input(connectProviderInput).output(connectProviderOutput);
 
@@ -206,8 +209,9 @@ export type ReadFileOutput = z.infer<typeof readFileOutput>;
  *
  * A Bot is a record, a thread is a record, and a run belongs to both: `list_bots` and `list_threads`
  * are how a surface learns the two ids a run needs, and `create_bot` and `create_thread` are how it
- * makes them. No arm infers a Bot or a thread from context, because the two ids are what the run
- * path is keyed by.
+ * makes them. `update_bot` is how a Bot gains the two fields its name is not, because the first-run
+ * screen asks for the name before it asks what the Bot is for. No arm infers a Bot or a thread from
+ * context, because the two ids are what the run path is keyed by.
  *
  * The operations `dto.ts` declares beyond these (`get_events`, `approve`, `deny`) stay out until
  * each has a handler; a contract arm with no implementation would type a call the server cannot
@@ -220,6 +224,7 @@ export const apiContract = {
   subscribe_events: subscribeEventsProcedure,
   list_bots: listBotsProcedure,
   create_bot: createBotProcedure,
+  update_bot: updateBotProcedure,
   list_threads: listThreadsProcedure,
   create_thread: createThreadProcedure,
   list_files: listFilesProcedure,
@@ -238,6 +243,7 @@ export const API_PROCEDURES = [
   "subscribe_events",
   "list_bots",
   "create_bot",
+  "update_bot",
   "list_threads",
   "create_thread",
   "list_files",

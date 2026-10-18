@@ -41,10 +41,48 @@ describe("bots and threads as records", () => {
     expect(made.record).toEqual({
       id: "bot-local",
       name: "Local Bot",
+      role: "",
+      purpose: "",
       createdAt: 1_000,
       updatedAt: 1_000,
     });
     expect(store.bots()).toEqual([made.record]);
+  });
+
+  test("a Bot gains the role and the purpose a later command gives it", () => {
+    const clock = { at: 1_000 };
+    const store = storeAt(clock);
+    store.createBot({ id: "bot-local", name: "Atlas" });
+
+    clock.at = 2_000;
+    const described = store.updateBot({
+      id: "bot-local",
+      role: "Chief of staff",
+      purpose: "Release pipeline, changelog, dependency sweeps",
+    });
+
+    expect(described).toEqual({
+      id: "bot-local",
+      name: "Atlas",
+      role: "Chief of staff",
+      purpose: "Release pipeline, changelog, dependency sweeps",
+      createdAt: 1_000,
+      updatedAt: 2_000,
+    });
+    const again = store.updateBot({
+      id: "bot-local",
+      role: "Chief of staff",
+      purpose: "Release pipeline, changelog, dependency sweeps",
+    });
+    expect(again).toEqual(described);
+  });
+
+  test("an update for a Bot this store does not hold is refused by name", () => {
+    const store = storeAt({ at: 1_000 });
+    const empty = refusal(() => store.updateBot({ id: "bot-9", role: "x", purpose: "y" }));
+
+    expect(empty.message).toBe("unknown bot: bot-9");
+    expect(store.bots()).toHaveLength(0);
   });
 
   test("a second create of the same id is the same Bot, never a second one or a rewrite", () => {
@@ -212,6 +250,78 @@ describe("the journal", () => {
     expect(store.loadReport.commands).toBe(3);
     expect(store.loadReport.refused).toEqual([{ line: 2, reason: "unknown bot: bot-gone" }]);
     expect(store.threads("bot-local").map((thread) => thread.id)).toEqual(["thread-2"]);
+  });
+
+  test("a Bot's two fields are one more line, and the journal replays them", () => {
+    const clock = { at: 1_000 };
+    const file = journal();
+    const store = storeAt(clock, { file });
+    store.createBot({ id: "bot-local", name: "Atlas" });
+    clock.at = 2_000;
+    store.updateBot({ id: "bot-local", role: "Chief of staff", purpose: "Release pipeline" });
+    store.close();
+
+    const lines = readFileSync(file, "utf8")
+      .split("\n")
+      .filter((line) => line.length > 0)
+      .map((line) => JSON.parse(line) as unknown);
+    const reopened = storeAt(clock, { file });
+
+    expect(lines).toEqual([
+      { op: "bot.create", id: "bot-local", name: "Atlas", at: 1_000 },
+      {
+        op: "bot.update",
+        id: "bot-local",
+        role: "Chief of staff",
+        purpose: "Release pipeline",
+        at: 2_000,
+      },
+    ]);
+    expect(reopened.bot("bot-local")?.purpose).toBe("Release pipeline");
+    expect(reopened.serializeAll()).toBe(store.serializeAll());
+    expect(reopened.reload().converged).toBe(true);
+  });
+
+  test("a journal written before the two fields existed replays with both empty", () => {
+    const file = journal();
+    writeFileSync(
+      file,
+      [
+        '{"op":"bot.create","id":"bot-local","name":"Local Bot","at":1}',
+        '{"op":"thread.create","id":"thread-1","botId":"bot-local","title":"First","at":2}',
+        "",
+      ].join("\n"),
+    );
+
+    const store = storeAt({ at: 1_000 }, { file });
+
+    expect(store.bot("bot-local")).toEqual({
+      id: "bot-local",
+      name: "Local Bot",
+      role: "",
+      purpose: "",
+      createdAt: 1,
+      updatedAt: 1,
+    });
+    expect(store.loadReport).toEqual({ commands: 2, refused: [], tornTrailingLine: false });
+  });
+
+  test("an update for an absent Bot is recorded as refused, not fatal", () => {
+    const file = journal();
+    writeFileSync(
+      file,
+      [
+        '{"op":"bot.update","id":"bot-gone","role":"Owner","purpose":"Everything","at":1}',
+        '{"op":"bot.create","id":"bot-local","name":"Local Bot","at":2}',
+        "",
+      ].join("\n"),
+    );
+
+    const store = storeAt({ at: 1_000 }, { file });
+
+    expect(store.loadReport.commands).toBe(2);
+    expect(store.loadReport.refused).toEqual([{ line: 1, reason: "unknown bot: bot-gone" }]);
+    expect(store.bots()).toHaveLength(1);
   });
 
   test("a store with no journal persists nothing and reloads to the same state", () => {

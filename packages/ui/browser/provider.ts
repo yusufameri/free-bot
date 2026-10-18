@@ -1,5 +1,6 @@
 /**
- * Page 1's DOM: the welcome page that gets an install to a running model.
+ * Page 1's DOM: the welcome page that gets an install to a running model. The first-run screen
+ * mounts the same module a second time, as its provider pane.
  *
  * It decides nothing. `packages/ui/src/provider.ts` owns the copy, the state vocabulary and the flag
  * wording; this module turns those decisions into nodes and reads them back for the evidence
@@ -12,6 +13,13 @@
  * `Run in replay mode` writes nothing. It is the quiet control for anyone who wants to see the
  * product work before holding a key, and it moves to the conversation with the vault still absent,
  * which is what makes every run in it replay.
+ *
+ * One module, two mounts. The `surface` field is the whole of the difference, and it names three
+ * consequences at once: which ids the mount's elements carry, which words its empty state uses, and
+ * whether it owns the page. `welcome` is page 1, whose ids are bare; `first-run` is the first-run
+ * screen's pane, whose ids carry the `fr-` prefix, whose empty state asks for a test in the export's
+ * own words, and which stands inside the screen that holds it. The exits are page 1's, so the first
+ * mut mount does not ship them and the lookups for the three of them tolerate that.
  */
 
 import type { ProviderConfigInput, ProviderConnection, ProviderState } from "@freebot/protocol";
@@ -21,6 +29,10 @@ import {
   CONTINUE_LABEL,
   capabilityLines,
   endpointLine,
+  FIRST_RUN_KEY_NOTE,
+  FIRST_RUN_PROVIDER_EYEBROW,
+  firstRunProviderHeadline,
+  firstRunProviderIntro,
   KEY_KEPT_NOTE,
   PROVIDER_BASE_URL_LABEL,
   PROVIDER_BASE_URL_PLACEHOLDER,
@@ -42,6 +54,9 @@ import {
   TESTING_LABEL,
   vaultLine,
 } from "../src/provider.ts";
+
+/** Which of the two entry points this mount is. See the module comment for what it changes. */
+export type ProviderSurface = "welcome" | "first-run";
 
 /** The two calls page 1 needs, with the token already applied. */
 export interface ProviderCalls {
@@ -70,14 +85,10 @@ declare global {
   }
 }
 
-function must<T extends Element>(selector: string): T {
-  const found = document.querySelector<T>(selector);
-  if (found === null) throw new Error(`missing element ${selector}`);
-  return found;
-}
-
 export function mountProvider(config: {
   readonly calls: ProviderCalls;
+  /** Which entry point this is. Defaults to page 1. */
+  readonly surface?: ProviderSurface;
   /** Fired with the answer the moment a save lands, so the host can show the shell's provider row. */
   readonly onSaved?: (connection: ProviderConnection) => void;
   /** Fired when the person moves on to the conversation, with a connection in hand. */
@@ -85,30 +96,45 @@ export function mountProvider(config: {
   /** Fired when a person takes the replay path, so the host can move on with the vault untouched. */
   readonly onReplay?: () => void;
 }): ProviderHandle {
-  const sectionEl = must<HTMLElement>("#provider");
-  const headlineEl = must<HTMLElement>("#provider-headline");
-  const introEl = must<HTMLElement>("#provider-intro");
-  const formEl = must<HTMLFormElement>("#provider-form");
-  const baseUrlEl = must<HTMLInputElement>("#provider-base-url");
-  const modelEl = must<HTMLInputElement>("#provider-model");
-  const keyEl = must<HTMLInputElement>("#provider-key");
-  const saveEl = must<HTMLButtonElement>("#provider-save");
-  const continueEl = must<HTMLButtonElement>("#provider-continue");
-  const replayEl = must<HTMLButtonElement>("#provider-replay");
-  const replayNoteEl = must<HTMLElement>("#provider-replay-note");
-  const vaultEl = must<HTMLElement>("#provider-vault");
-  const replacesEl = must<HTMLElement>("#provider-replaces");
-  const requestEl = must<HTMLElement>("#provider-request");
-  const statusEl = must<HTMLElement>("#provider-status");
-  const answerEl = must<HTMLElement>("#provider-answer");
-  const refusalEl = must<HTMLElement>("#provider-refusal");
-  const capabilitiesEl = must<HTMLElement>("#provider-capabilities");
-  const keptEl = must<HTMLElement>("#provider-key-kept");
+  const surface = config.surface ?? "welcome";
+  const prefix = surface === "first-run" ? "fr-" : "";
+
+  function pick<T extends Element>(id: string): T | null {
+    return document.querySelector<T>(`#${prefix}${id}`);
+  }
+
+  function must<T extends Element>(id: string): T {
+    const found = pick<T>(id);
+    if (found === null) throw new Error(`missing element #${prefix}${id}`);
+    return found;
+  }
+
+  const sectionEl = must<HTMLElement>("provider");
+  const headlineEl = must<HTMLElement>("provider-headline");
+  const introEl = must<HTMLElement>("provider-intro");
+  const formEl = must<HTMLFormElement>("provider-form");
+  const baseUrlEl = must<HTMLInputElement>("provider-base-url");
+  const modelEl = must<HTMLInputElement>("provider-model");
+  const keyEl = must<HTMLInputElement>("provider-key");
+  const saveEl = must<HTMLButtonElement>("provider-save");
+  const vaultEl = must<HTMLElement>("provider-vault");
+  const replacesEl = must<HTMLElement>("provider-replaces");
+  const requestEl = must<HTMLElement>("provider-request");
+  const statusEl = must<HTMLElement>("provider-status");
+  const answerEl = must<HTMLElement>("provider-answer");
+  const refusalEl = must<HTMLElement>("provider-refusal");
+  const capabilitiesEl = must<HTMLElement>("provider-capabilities");
+  const keptEl = must<HTMLElement>("provider-key-kept");
+  /** Page 1's two exits. The first-run pane's own footer moves a person on, so it ships neither. */
+  const continueEl = pick<HTMLButtonElement>("provider-continue");
+  const replayEl = pick<HTMLButtonElement>("provider-replay");
+  const replayNoteEl = pick<HTMLElement>("provider-replay-note");
+  const eyebrowEl = pick<HTMLElement>("provider-eyebrow");
 
   for (const [selector, text] of [
-    ["#provider-base-url-label", PROVIDER_BASE_URL_LABEL],
-    ["#provider-model-label", PROVIDER_MODEL_LABEL],
-    ["#provider-key-label", PROVIDER_KEY_LABEL],
+    ["provider-base-url-label", PROVIDER_BASE_URL_LABEL],
+    ["provider-model-label", PROVIDER_MODEL_LABEL],
+    ["provider-key-label", PROVIDER_KEY_LABEL],
   ] as const) {
     must<HTMLElement>(selector).textContent = text;
   }
@@ -116,10 +142,11 @@ export function mountProvider(config: {
   modelEl.placeholder = PROVIDER_MODEL_PLACEHOLDER;
   keyEl.placeholder = PROVIDER_KEY_PLACEHOLDER;
   introEl.textContent = CONNECT_INTRO;
-  continueEl.textContent = CONTINUE_LABEL;
-  replayEl.textContent = REPLAY_LABEL;
-  replayNoteEl.textContent = REPLAY_NOTE;
-  keptEl.textContent = KEY_KEPT_NOTE;
+  keptEl.textContent = surface === "first-run" ? FIRST_RUN_KEY_NOTE : KEY_KEPT_NOTE;
+  if (eyebrowEl !== null) eyebrowEl.textContent = FIRST_RUN_PROVIDER_EYEBROW;
+  if (continueEl !== null) continueEl.textContent = CONTINUE_LABEL;
+  if (replayEl !== null) replayEl.textContent = REPLAY_LABEL;
+  if (replayNoteEl !== null) replayNoteEl.textContent = REPLAY_NOTE;
 
   let state: ProviderState = { vault: { path: "", present: false, mode: null }, connection: null };
   let connection: ProviderConnection | null = null;
@@ -137,8 +164,10 @@ export function mountProvider(config: {
   function paint(): void {
     const page = pageStateOf(connection, testing);
     sectionEl.dataset.providerState = page;
-    headlineEl.textContent = providerHeadline(page);
-    introEl.textContent = resultLine(connection);
+    headlineEl.textContent =
+      surface === "first-run" ? firstRunProviderHeadline(page) : providerHeadline(page);
+    introEl.textContent =
+      surface === "first-run" ? firstRunProviderIntro(connection) : resultLine(connection);
     vaultEl.textContent = vaultLine(state.vault);
 
     const replaced = replacesLine(state.vault, connection);
@@ -170,7 +199,7 @@ export function mountProvider(config: {
 
     saveEl.disabled = testing;
     saveEl.textContent = testing ? TESTING_LABEL : SAVE_AND_TEST_LABEL;
-    continueEl.hidden = connection === null;
+    if (continueEl !== null) continueEl.hidden = connection === null;
   }
 
   async function save(): Promise<void> {
@@ -226,8 +255,8 @@ export function mountProvider(config: {
       if (!testing) paint();
     });
   }
-  continueEl.addEventListener("click", () => config.onContinue?.());
-  replayEl.addEventListener("click", () => config.onReplay?.());
+  continueEl?.addEventListener("click", () => config.onContinue?.());
+  replayEl?.addEventListener("click", () => config.onReplay?.());
 
   paint();
 
@@ -245,13 +274,17 @@ export function mountProvider(config: {
     },
     show() {
       sectionEl.hidden = false;
-      sectionEl.dataset.providerPage = "true";
-      document.body.dataset.page = "connect";
+      if (surface === "welcome") {
+        sectionEl.dataset.providerPage = "true";
+        document.body.dataset.page = "connect";
+      }
     },
     hide() {
       sectionEl.hidden = true;
-      sectionEl.dataset.providerPage = "false";
-      document.body.dataset.page = "app";
+      if (surface === "welcome") {
+        sectionEl.dataset.providerPage = "false";
+        document.body.dataset.page = "app";
+      }
     },
     shown: () => !sectionEl.hidden,
     state: () => pageStateOf(connection, testing),
@@ -260,6 +293,7 @@ export function mountProvider(config: {
       return {
         state: pageStateOf(connection, testing),
         shown: !sectionEl.hidden,
+        headline: headlineEl.textContent ?? "",
         vault: state.vault,
         fields: {
           baseUrl: baseUrlEl.value,

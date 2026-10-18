@@ -548,6 +548,22 @@ async function capture(cdp: Cdp, sessionId: string, name: string, log: Log): Pro
 // The launched command
 // ---------------------------------------------------------------------------
 
+/**
+ * A Bot and a thread of this driver's own, made the way a page makes them. A store with no Bot opens
+ * the first-run screen now, and this driver's subject is the shell over a bots root it made, so the
+ * two records are made here before any page opens.
+ */
+async function makeFirstBot(
+  launch: Launched,
+  name: string,
+): Promise<{ botId: string; threadId: string }> {
+  const botAnswer = await post(launch, "create_bot", { name });
+  const botId = (JSON.parse(botAnswer.body) as { json: { botId: string } }).json.botId;
+  const threadAnswer = await post(launch, "create_thread", { botId });
+  const threadId = (JSON.parse(threadAnswer.body) as { json: { threadId: string } }).json.threadId;
+  return { botId, threadId };
+}
+
 interface Launched {
   readonly url: string;
   readonly apiPort: number;
@@ -1104,6 +1120,10 @@ async function main(): Promise<void> {
   const capturedNames: string[] = [];
 
   log.section("page 1 on a machine whose vault holds nothing");
+  // A Bot first, over the route a page uses: a store with no Bot opens the first-run screen now, and
+  // this driver's subject is page 1, which is what a keyless machine with a Bot boots into.
+  const madeFirst = await makeFirstBot(first, "Page One Check");
+  log.note(`the Bot this driver made before page 1 opened: ${JSON.stringify(madeFirst)}`);
   const page = await openPage(cdp, first.url);
   const empty = await capture(cdp, page, "01-no-provider", log);
   capturedNames.push("01-no-provider");

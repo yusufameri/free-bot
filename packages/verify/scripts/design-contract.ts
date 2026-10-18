@@ -310,12 +310,17 @@ interface AppUnderTest {
 }
 
 /**
- * Boot the real launcher over a fresh home and bots root, in replay mode.
+ * Boot the real launcher over a fresh home and bots root, in replay mode, and make the one Bot this
+ * frame measures a shell with.
  *
  * The vault entry this writes is three lines in a temporary directory and a model mode that never
  * reads it: replay is chosen by `--replay`, so no request is made and no key can reach a network.
  * It exists because the page shows the app shell only for a machine that holds a connection
  * (`apps/web/host/main.ts` asks `get_provider` first), and this unit's subject is that shell.
+ *
+ * The Bot is made over the same route a page uses, before the page opens, because a store with no
+ * Bot opens the first-run screen instead of the shell (U6.2). The screen it replaces is the subject
+ * of `packages/verify/scripts/first-run.ts`; this driver's subject stays the shell's geometry.
  */
 async function startApp(): Promise<AppUnderTest> {
   const home = mkdtempSync(join(tmpdir(), "freebot-design-contract-"));
@@ -359,6 +364,7 @@ async function startApp(): Promise<AppUnderTest> {
   }
   void reading;
   const url = /^(http:\/\/127\.0\.0\.1:\d+\/#token=\S+)$/m.exec(out)?.[1] ?? "";
+  await createBot(url);
   return {
     url,
     home,
@@ -368,6 +374,25 @@ async function startApp(): Promise<AppUnderTest> {
       rmSync(home, { recursive: true, force: true });
     },
   };
+}
+
+/** The one Bot this frame needs, made over the route a page would use. */
+async function createBot(url: string): Promise<void> {
+  const parsed = new URL(url);
+  const token = new URLSearchParams(parsed.hash.replace(/^#/, "")).get("token") ?? "";
+  const response = await fetch(`http://${parsed.host}/rpc/create_bot`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${token}`,
+      origin: `http://${parsed.host}`,
+    },
+    body: JSON.stringify({ json: { name: "Frame Check" } }),
+  });
+  const answer = (await response.json()) as { json?: { botId?: string } };
+  if (answer.json?.botId !== "bot-local") {
+    throw new Error(`the frame's first Bot was not made: ${JSON.stringify(answer)}`);
+  }
 }
 
 /**

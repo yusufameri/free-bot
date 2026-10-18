@@ -1,9 +1,13 @@
 /**
- * The contract's implementation: ten handlers over one `RunService`, plus page 1's two arms.
+ * The contract's implementation: eleven handlers over one `RunService`, plus page 1's two arms.
  *
  * The router is built from `apiContract`, so a handler that returns the wrong shape is a compile
  * error and oRPC still validates the input and output on the wire at runtime. `$context` types the
  * per-call context the socket layer injects (the abort signal), and nothing else reads it.
+ *
+ * `update_bot` is the one arm that reaches `RunService`'s registry rather than one of its methods:
+ * a Bot's role and purpose are fields on the record, and the registry is the record's own owner, so
+ * routing the write through the run service would add a pass-through and nothing else.
  *
  * `get_provider` and `connect_provider` are the two arms that do not reach the run path. The second
  * one writes the vault and answers with what its test found, so its input is the only place in the
@@ -110,6 +114,8 @@ export function createApiRouter(
       bots: service.listBots().map(({ bot, threadCount }) => ({
         botId: bot.id,
         name: bot.name,
+        role: bot.role,
+        purpose: bot.purpose,
         createdAt: bot.createdAt,
         threadCount,
       })),
@@ -117,7 +123,40 @@ export function createApiRouter(
 
     create_bot: api.create_bot.handler(({ input }) => {
       const bot = service.createBot(input.name);
-      return { botId: bot.id, name: bot.name, createdAt: bot.createdAt, threadCount: 0 };
+      return {
+        botId: bot.id,
+        name: bot.name,
+        role: bot.role,
+        purpose: bot.purpose,
+        createdAt: bot.createdAt,
+        threadCount: 0,
+      };
+    }),
+
+    /**
+     * The Bot record's own arm, read straight off the registry this service exposes: a Bot's role
+     * and purpose are facts about the record, and no run path is involved in writing them.
+     */
+    update_bot: api.update_bot.handler(({ input }) => {
+      if (service.registry.bot(input.botId) === undefined) {
+        throw new ORPCError("bot_not_found", {
+          message: BOT_ERRORS.bot_not_found.message,
+          status: BOT_ERRORS.bot_not_found.status,
+        });
+      }
+      const bot = service.registry.updateBot({
+        id: input.botId,
+        role: input.role,
+        purpose: input.purpose,
+      });
+      return {
+        botId: bot.id,
+        name: bot.name,
+        role: bot.role,
+        purpose: bot.purpose,
+        createdAt: bot.createdAt,
+        threadCount: service.registry.threads(bot.id).length,
+      };
     }),
 
     list_threads: api.list_threads.handler(({ input }) => {

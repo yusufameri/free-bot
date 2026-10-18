@@ -36,6 +36,12 @@ export const threadIdSchema = idSchema;
 /** The longest name a Bot can carry. The sidebar renders it in one row. */
 export const BOT_NAME_MAX = 60;
 
+/** The longest role a Bot can carry. The row beside the name shows it in one line. */
+export const BOT_ROLE_MAX = 60;
+
+/** The longest purpose a Bot can carry. It is one line, and it becomes the Bot's own instruction. */
+export const BOT_PURPOSE_MAX = 280;
+
 /** The longest title a thread can carry. The thread list renders it in one row. */
 export const THREAD_TITLE_MAX = 120;
 
@@ -133,10 +139,17 @@ export const denyOutput = z.object({
 /**
  * One Bot as the contract reports it. `threadCount` is what the sidebar shows beside the name, and
  * it is computed from the thread records rather than stored, so the two can never disagree.
+ *
+ * `role` and `purpose` are the two fields a first-run screen asks for after the name: the short
+ * label, and the one line saying what the Bot is for. Both may be empty, because a Bot can exist
+ * before either question has been answered, and a record written before the two fields existed
+ * reads back with both empty.
  */
 export const botSchema = z.object({
   botId: botIdSchema,
   name: z.string().min(1),
+  role: z.string(),
+  purpose: z.string(),
   createdAt: tsSchema,
   threadCount: z.number().int().nonnegative(),
 });
@@ -187,6 +200,19 @@ export const createBotInput = z.strictObject({
 });
 
 export const createBotOutput = botSchema;
+
+/**
+ * Give a Bot the two fields a first-run screen asks for after its name. Both are sent together,
+ * because they are one answer to one question, and both are allowed to be empty: a person may leave
+ * the label out, and a Bot whose purpose is not yet known is still a Bot.
+ */
+export const updateBotInput = z.strictObject({
+  botId: botIdSchema,
+  role: z.string().max(BOT_ROLE_MAX),
+  purpose: z.string().max(BOT_PURPOSE_MAX),
+});
+
+export const updateBotOutput = botSchema;
 
 export const listThreadsInput = z.strictObject({
   botId: botIdSchema,
@@ -413,6 +439,7 @@ export const API_OPERATIONS = {
   cancel_run: { input: cancelRunInput, output: cancelRunOutput },
   list_bots: { input: listBotsInput, output: listBotsOutput },
   create_bot: { input: createBotInput, output: createBotOutput },
+  update_bot: { input: updateBotInput, output: updateBotOutput },
   list_threads: { input: listThreadsInput, output: listThreadsOutput },
   create_thread: { input: createThreadInput, output: createThreadOutput },
   get_events: { input: getEventsInput, output: getEventsOutput },

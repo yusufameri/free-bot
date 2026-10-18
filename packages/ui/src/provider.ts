@@ -24,6 +24,18 @@ export const CONNECT_TITLE = "Connect a provider";
 export const CONNECT_INTRO =
   "FreeBot ships no subscription. Point it at a model you already pay for: a base URL, a model, and a key.";
 
+/**
+ * The first-run screen's provider pane. It is the export's own provider block
+ * (`freebot-prototype.html:588-590` and `:609`), which asks for a test rather than for a
+ * connection: page 1's welcome copy is UX.md page 1's own, and the pane that a person meets while
+ * naming their first Bot says what it is about to do with their key.
+ */
+export const FIRST_RUN_PROVIDER_EYEBROW = "Connect a provider";
+export const FIRST_RUN_PROVIDER_TITLE = "Test a real tool call before we save it.";
+export const FIRST_RUN_PROVIDER_HINT =
+  "The smoke test sends one request with a tool definition. What comes back sets this connection's capability flags.";
+export const FIRST_RUN_KEY_NOTE = "Key goes to the vault, never the process env.";
+
 export const PROVIDER_BASE_URL_LABEL = "Base URL";
 export const PROVIDER_MODEL_LABEL = "Model";
 export const PROVIDER_KEY_LABEL = "API key";
@@ -72,6 +84,8 @@ export interface ProviderFacts {
   readonly state: ProviderPageState;
   /** Whether page 1 owns the center column right now. */
   readonly shown: boolean;
+  /** The headline the pane is showing, which is what the state says it should be. */
+  readonly headline: string;
   readonly vault: ProviderVault;
   readonly fields: { baseUrl: string; model: string; keyEmpty: boolean };
   readonly connection: { baseUrl: string; model: string; status: ProviderStatus } | null;
@@ -107,6 +121,20 @@ export function providerHeadline(state: ProviderPageState): string {
     case "untested":
       return UNTESTED_HEADLINE;
   }
+}
+
+/**
+ * The same headline for the first-run screen's pane, whose empty state asks for the test in the
+ * export's words (`freebot-prototype.html:589`) rather than page 1's. Every other state is the
+ * state's own word in both places, because one vocabulary for four outcomes is the point.
+ */
+export function firstRunProviderHeadline(state: ProviderPageState): string {
+  return state === "empty" ? FIRST_RUN_PROVIDER_TITLE : providerHeadline(state);
+}
+
+/** The paragraph under the first-run pane's headline: the export's hint, or the state's own note. */
+export function firstRunProviderIntro(connection: ProviderConnection | null): string {
+  return connection === null ? FIRST_RUN_PROVIDER_HINT : resultLine(connection);
 }
 
 /** The paragraph under the headline: what this state means for the next run. */
