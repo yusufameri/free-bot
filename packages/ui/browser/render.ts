@@ -51,6 +51,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
 export function mountThread(config: {
   onAnswer: (decision: "allow" | "deny", approvalId: string) => void;
   autoAnswer?: "allow" | "deny" | null;
+  /** Fired on every connection change, so a second surface (the banner) reads the same state. */
+  onConnection?: (connection: Connection) => void;
 }): ThreadHandle {
   const connEl = must<HTMLSpanElement>("#conn");
   const lastSeqEl = must<HTMLSpanElement>("#lastseq");
@@ -312,12 +314,18 @@ export function mountThread(config: {
     };
   }
 
+  /** The one place the header's connection word is written, so every writer is also a reporter. */
+  function announceConnection(connection: Connection): void {
+    connEl.textContent = connection;
+    connEl.dataset.connection = connection;
+    config.onConnection?.(connection);
+  }
+
   function showError(message: string): void {
     errorEl.hidden = false;
     errorEl.textContent = `stream error: ${message}`;
     errorEl.dataset.error = message;
-    connEl.textContent = "error";
-    connEl.dataset.connection = "error";
+    announceConnection("error");
   }
 
   updateHeader();
@@ -333,8 +341,7 @@ export function mountThread(config: {
       if (state.error !== null) showError(state.error);
     },
     setConnection(connection: Connection): void {
-      connEl.textContent = connection;
-      connEl.dataset.connection = connection;
+      announceConnection(connection);
     },
     reset(): void {
       state = initialState();

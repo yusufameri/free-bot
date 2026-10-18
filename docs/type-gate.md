@@ -77,9 +77,9 @@ preflight in `apps/web/scripts/capture.ts`.
 
 ## What the gate still does not reach
 
-These eight are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no included
-root reaches. The probe derives that set from the tree and asserts it equals this list, so a new
-unreached file fails the probe.
+These eleven are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no
+included root reaches. The probe derives that set from the tree and asserts it equals this list, so a
+new unreached file fails the probe.
 
 | File | Why | Checked by |
 | --- | --- | --- |
@@ -89,12 +89,18 @@ unreached file fails the probe.
 | `packages/ui/browser/provider.ts` | same, the DOM surface of page 1's provider model (U4.3) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/shell.ts` | same, the DOM surface of the Bot sidebar and thread list (U4.2) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/first-run.ts` | same, the DOM surface of the first-run screen (U6.2) | `apps/web/tsconfig.json` |
+| `packages/ui/browser/aside.ts` | same, the DOM surface of the details pane (U6.3) | `apps/web/tsconfig.json` |
+| `packages/ui/browser/notices.ts` | same, the DOM surface of the banner and notice stack (U6.3) | `apps/web/tsconfig.json` |
+| `packages/ui/browser/icons.ts` | same, the sprite icons the pane and the notices draw (U6.3) | `apps/web/tsconfig.json` |
 | `packages/sandbox/image/replay-ext.ts` | nothing imports it, and `image/` is not `src` or `scripts` | nothing |
 | `packages/pi-bridge/extension/smoke-echo.ts` | nothing imports it (the smoke passes its path as a string) | nothing |
 
-The six DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
+The nine DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
 control-plane and server code call `document` without a complaint, which is a worse trade than
-leaving the browser surface to the app config that already owns it.
+leaving the browser surface to the app config that already owns it. U6.3's three arrived with a real
+defect behind them: `notices.ts` called an unimported helper, and `bun run typecheck` was silent
+because the whole host graph is out of the program. `apps/web/tsconfig.json` catches it, and the
+driver caught it in the browser.
 
 ## The probe
 
@@ -107,15 +113,17 @@ failed check. Per run it does all of this against the real gate, `bun run typech
 for the blind-set change U4.1 made is `packages/verify/artifacts/type-gate/e7cb536/probe.txt`, and the
 one U4.2 made, which adds `packages/ui/browser/shell.ts` to the list, is
 `packages/verify/artifacts/type-gate/bdf5f12/probe.txt`, the one U4.3 makes, which adds
-`packages/ui/browser/provider.ts`, is `packages/verify/artifacts/type-gate/d22c487/probe.txt`, and the
+`packages/ui/browser/provider.ts`, is `packages/verify/artifacts/type-gate/d22c487/probe.txt`, the
 one U6.2 makes, which adds `packages/ui/browser/first-run.ts`, is
-`packages/verify/artifacts/type-gate/<short-sha>/probe.txt` for this branch's head.
+`packages/verify/artifacts/type-gate/<short-sha>/probe.txt` for this branch's head, and the one U6.3
+makes, which adds `packages/ui/browser/aside.ts`, `notices.ts` and `icons.ts`, is
+`packages/verify/artifacts/type-gate/<short-sha>/probe.txt` for U6.3's head.
 
 1. The clean tree passes.
 2. A census compares the program against the tree. It asserts the root include is exactly the nine
    patterns above, measures a temporary `.tsx` file in each of the four `.tsx` families, asserts 12
    named files are in the program, that the program grew, and that the unreached set is exactly the
-   eight above.
+   eleven above.
 3. Three deliberate errors, one per covered location, are placed in the tree together. The
    pre-widening include accepts all three and does not reach them.
 4. Each error alone makes the root typecheck fail and names its file. The file is removed and the
