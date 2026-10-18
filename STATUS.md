@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-18T05:15Z, against `origin/main` `fa029fb`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-18T06:05Z, against `origin/main` `f5454cf`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -36,9 +36,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-45 units in the register: 35 done, 3 running, 6 pending, 1 parked.
+52 units in the register: 37 done, 6 running, 8 pending, 1 parked.
 
-The verification ledger holds 37 rows: 11 `live-ui-verified`, 23 `unit-test-verified`, 2 `type-check-only`, 1 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 39 rows: 11 `live-ui-verified`, 24 `unit-test-verified`, 2 `type-check-only`, 2 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -76,33 +76,40 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U6.2 | First run: the three-pane wizard and the model test | [#29](https://github.com/yusufameri/free-bot/pull/29) |
 | U6.3 | The details pane, its notices, and the reconnect banner, with the measured geometry delta at zero | [#35](https://github.com/yusufameri/free-bot/pull/35) |
 | U7.1 | `GLOSSARY.md` and its map | [#31](https://github.com/yusufameri/free-bot/pull/31) |
+| U7.2 | The documentation truth fix: three documents that still called the keyed path parked | [#37](https://github.com/yusufameri/free-bot/pull/37) |
 | U8.1 | The connector seam, proved against an emulator rather than an account | [#30](https://github.com/yusufameri/free-bot/pull/30) |
 | U8.2 | Connector credentials in the person's own vault, with the routes that write and probe them | [#33](https://github.com/yusufameri/free-bot/pull/33) |
 | U9.1 | The sandbox conformance suite, the one gate every backend passes | [#32](https://github.com/yusufameri/free-bot/pull/32) |
+| U9.2 | The microsandbox backend, a local microVM that needs no account | [#38](https://github.com/yusufameri/free-bot/pull/38) |
 
 ## Not built yet
 
-Running now, three units, each in its own worktree with its own brief.
+Running now, six units, each in its own worktree with its own brief.
 
 | Unit | What it is | State |
 | --- | --- | --- |
 | U6.4 | The overlay primitives, dispatched the moment U6.3 freed its paths | running, branch `u6.4-overlays` |
-| U7.2 | The documentation truth fix for the keyed path, which three documents still call parked | running, branch `u7.2-truth-fix` |
-| U9.2 | The microsandbox backend, the no-account local microVM | running, branch `u9.2-microsandbox` |
+| U6.6 | The landing route | running, branch `u6.6-landing` |
+| U6.7a | The pixel-gate harness, built now so the fidelity pass becomes calibration | running, branch `u6.7a-gate-harness` |
+| U8.3 | The MCP and raw HTTP adapters | running, branch `u8.3-adapters` |
+| U9.5 | The sandbox selector and the sabotage-drill fix | running, branch `u9.5-selector` |
+| U10.1 | The verification record as data plus a check that reads it, dispatched by the reflection that found two rows disagreeing with their own artifacts | running, branch `u10.1-index-check` |
 
 Queued, with no brief written yet, which is deliberate so a queued slice cannot go stale.
 
 | Unit | What it is |
 | --- | --- |
 | U6.5 | The item components and Bot status |
-| U6.6 | The landing route |
-| U6.7 | The fidelity pass: every screen diffed against the export across nine viewports, under order 36's pixel gate, with every delta fixed or written down |
-| U8.3 | The MCP and raw HTTP adapters. Held while U7.2 edits `docs/connectors.md`, since one writer owns a file |
+| U6.7 | The fidelity pass: every screen diffed against the export across nine viewports, under order 36's pixel gate, with every delta fixed or written down. Its brief must carry the shell mask the gate needs, since the export's own baseline contradicts itself in two places |
 | U8.4 | The Composio adapter behind the vendor-neutral seam |
 | U9.3 | The E2B Embed backend for Linux hosts and CI |
+| U10.2 | Artifact hygiene: a real prune script, an ignore rule for the Chrome profiles three throwaway capture scripts left behind, and one shared screenshot helper instead of the ten that hand-roll it |
+| U10.3 | The two partial MVP lines: a control for `cancel_run` in the page, and the spend-cap check wired into the run loop |
+| U10.4 | Transcript persistence, so a restart brings back the conversation and not only the runs |
+| U10.5 | A scheduled sweep that runs the live drivers against current main and files a unit when one fails |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
 
-Four gaps have no unit at all, and they are named here so they are not lost. A transcript does not survive a server restart, since the log is in memory. A run cannot be stopped from the page: `cancel_run` has a route and no control. The details pane's mobile drawers are unowned, so a narrow screen has no way into the pane. And the `Media` tab has no capture source, since this app never records a screen.
+Two notes on honesty that the surface now carries. The verification index is per-unit history rather than coverage of main: an artifact certifies the commit it was produced at, and twelve rows today certify code between 189 and 239 commits behind head, which order 40 and U10.5 address. And the four gaps below have no unit at all, named so they are not lost. A transcript does not survive a server restart, since the log is in memory. A run cannot be stopped from the page: `cancel_run` has a route and no control. The details pane's mobile drawers are unowned, so a narrow screen has no way into the pane. And the `Media` tab has no capture source, since this app never records a screen. Two of those four, the cancel control and the transcript, are MVP predicate lines rather than phase-later work, which is why U10.3 and U10.4 sit ahead of the rest of the queued list.
 
 ## Where things live
 
