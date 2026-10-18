@@ -12,11 +12,7 @@
 
 import type { Bot, Thread } from "@freebot/protocol";
 
-export const SIDEBAR_TITLE = "Bots";
-
 export const BOTS_EMPTY = "No Bots yet.";
-
-export const THREADS_TITLE = "Threads";
 
 export const THREADS_EMPTY = "No threads in this Bot yet.";
 
@@ -85,7 +81,10 @@ export function botRows(bots: readonly Bot[], selectedBotId: string | null): Bot
  * The threads of one Bot, in creation order. `runs` is the server's own count for the thread, so a
  * row cannot claim a conversation the record does not hold.
  */
-export function threadRows(threads: readonly Thread[], selectedThreadId: string | null): ThreadRow[] {
+export function threadRows(
+  threads: readonly Thread[],
+  selectedThreadId: string | null,
+): ThreadRow[] {
   return threads.map((thread) => ({
     threadId: thread.threadId,
     title: thread.title,

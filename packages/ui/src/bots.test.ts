@@ -98,9 +98,7 @@ describe("the counts and the header", () => {
   });
 
   test("the header names the Bot, and the thread when one is open", () => {
-    expect(conversationTitle("Local Bot", "New conversation")).toBe(
-      "Local Bot · New conversation",
-    );
+    expect(conversationTitle("Local Bot", "New conversation")).toBe("Local Bot · New conversation");
     expect(conversationTitle("Local Bot", null)).toBe("Local Bot");
     expect(conversationTitle(null, null)).toBe("");
   });

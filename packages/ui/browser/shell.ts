@@ -4,6 +4,9 @@
  * It decides nothing. `packages/ui/src/bots.ts` owns the rows, the labels and the wording; this
  * module turns those decisions into nodes and reads them back for the evidence harness.
  *
+ * The two section labels are the page's own markup, like the rest of its static chrome; everything
+ * that depends on a record comes from `bots.ts`.
+ *
  * The four calls arrive as `calls`, already carrying the operator token, so nothing here knows what
  * a transport is. The host owns what happens when the selection moves: this module reports it and
  * nothing else, because re-subscribing a stream is not a shell decision.
@@ -20,12 +23,10 @@ import {
   NEW_THREAD_LABEL,
   NEW_THREAD_TITLE,
   runCountLabel,
-  SIDEBAR_TITLE,
   type ShellFacts,
   THREADS_EMPTY,
-  THREADS_TITLE,
-  threadCountLabel,
   type ThreadRow,
+  threadCountLabel,
   threadRows,
 } from "../src/bots.ts";
 
@@ -89,12 +90,8 @@ export function mountShell(config: {
   const newBotNameEl = must<HTMLInputElement>("#new-bot-name");
   const newThreadEl = must<HTMLButtonElement>("#new-thread");
   const titleEl = must<HTMLElement>("#bot-title");
-  const sidebarTitleEl = must<HTMLElement>("#sidebar-title");
-  const threadsTitleEl = must<HTMLElement>("#threads-title");
   const threadsBotEl = must<HTMLElement>("#threads-bot");
 
-  sidebarTitleEl.textContent = SIDEBAR_TITLE;
-  threadsTitleEl.textContent = THREADS_TITLE;
   newBotEl.textContent = NEW_BOT_LABEL;
   newThreadEl.textContent = NEW_THREAD_LABEL;
   newBotNameEl.placeholder = NEW_BOT_PLACEHOLDER;
@@ -204,6 +201,10 @@ export function mountShell(config: {
       try {
         const bot = await config.calls.createBot(name.trim() === "" ? NEW_BOT_LABEL : name.trim());
         await config.calls.createThread(bot.botId, NEW_THREAD_TITLE);
+        // The record the server made is the row the sidebar shows, so the list gains it here rather
+        // than being read back a second time. Its count is one because the thread just above is the
+        // thread it always starts with.
+        bots = [...bots, { ...bot, threadCount: 1 }];
         selectedBotId = bot.botId;
         selectedThreadId = null;
         newBotNameEl.value = "";
@@ -222,6 +223,7 @@ export function mountShell(config: {
       paint();
       try {
         const thread = await config.calls.createThread(selectedBotId, NEW_THREAD_TITLE);
+        threads = [...threads, thread];
         selectedThreadId = thread.threadId;
         await readThreads(selectedBotId);
         selectedThreadId = thread.threadId;
