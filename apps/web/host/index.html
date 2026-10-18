@@ -168,6 +168,66 @@
     margin: 6px 0 0; padding: 9px 12px; border: 1px solid #e3a1a1; border-radius: 8px;
     background: #fdeeee; color: #8d1d1d; font-size: 13px; font-weight: 600;
   }
+  #sidebar-footer { margin-top: 18px; border-top: 1px solid #e2e2dd; padding-top: 12px; }
+  #provider-open {
+    display: block; width: 100%; text-align: left; font: inherit; font-size: 12.5px;
+    padding: 8px 10px; border: 1px solid #d4d4ce; border-radius: 8px; background: #fff; cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+  body[data-page="connect"] #tabs,
+  body[data-page="connect"] #operator,
+  body[data-page="connect"] #thread,
+  body[data-page="connect"] #library,
+  body[data-page="connect"] #resume,
+  body[data-page="connect"] #error,
+  body[data-page="connect"] .meta,
+  body[data-page="connect"] #bot-title { display: none; }
+  #provider { max-width: 640px; padding: 8px 0 0; }
+  #provider[hidden] { display: none; }
+  #provider h2 { margin: 0 0 6px; font-size: 20px; letter-spacing: -0.01em; }
+  #provider-intro { margin: 0 0 4px; font-size: 13.5px; color: #5c6068; }
+  #provider-vault { margin: 0 0 18px; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: #83878f; }
+  #provider-form { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  #provider-form label { font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; color: #83878f; }
+  #provider-form input {
+    font: inherit; font-size: 14px; padding: 9px 11px; border: 1px solid #d4d4ce;
+    border-radius: 8px; background: #fff; margin-bottom: 8px;
+  }
+  #provider-save, #provider-continue {
+    align-self: flex-start; font: inherit; font-size: 13.5px; padding: 9px 18px; border-radius: 8px;
+    border: 1px solid #1f5c1f; background: #1f5c1f; color: #fff; cursor: pointer;
+  }
+  #provider-save:disabled { opacity: 0.45; cursor: default; }
+  #provider-continue[hidden] { display: none; }
+  #provider-replaces {
+    margin: 12px 0 0; padding: 9px 12px; border: 1px solid #dcb253; border-radius: 8px;
+    background: #fffdf3; color: #6b5115; font-size: 12.5px;
+  }
+  #provider-replaces[hidden] { display: none; }
+  #provider-request {
+    margin: 14px 0 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; color: #5c6068;
+  }
+  #provider-status { margin: 6px 0 0; font-size: 13px; color: #83878f; }
+  #provider-answer {
+    margin: 10px 0 0; padding: 10px 12px; border: 1px solid #bcd8bc; border-radius: 8px;
+    background: #f0f7f0; color: #1f5c1f; font-size: 13px; white-space: pre-wrap;
+  }
+  #provider-answer[hidden] { display: none; }
+  #provider-refusal {
+    margin: 10px 0 0; padding: 10px 12px; border: 1px solid #e3a1a1; border-radius: 8px;
+    background: #fdeeee; color: #8d1d1d; font-size: 13px; font-weight: 600;
+  }
+  #provider-refusal[hidden] { display: none; }
+  #provider-capabilities {
+    margin: 12px 0 0; padding-left: 18px; font: 12.5px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; color: #5c6068;
+  }
+  #provider-capabilities[hidden] { display: none; }
+  #provider-replay {
+    margin: 22px 0 0; font: inherit; font-size: 13px; padding: 8px 14px; border-radius: 8px;
+    border: 1px solid #d4d4ce; background: #fff; color: #5c6068; cursor: pointer;
+  }
+  #provider-replay-note { margin: 8px 0 0; font-size: 12px; color: #83878f; }
+  #provider-key-kept { margin: 14px 0 0; font-size: 12px; color: #83878f; }
 </style>
 </head>
 <body>
@@ -183,6 +243,9 @@
       <div id="thread-list"></div>
       <button id="new-thread" type="button"></button>
     </section>
+    <footer id="sidebar-footer">
+      <button id="provider-open" type="button" data-provider-status=""></button>
+    </footer>
   </aside>
   <section id="center">
   <header>
@@ -198,6 +261,30 @@
   </header>
   <div id="resume" hidden></div>
   <div id="error" hidden></div>
+  <section id="provider" hidden data-provider-state="empty" data-provider-page="false">
+    <h2 id="provider-headline"></h2>
+    <p id="provider-intro"></p>
+    <p id="provider-vault"></p>
+    <form id="provider-form">
+      <label id="provider-base-url-label" for="provider-base-url"></label>
+      <input id="provider-base-url" type="text" autocomplete="off" spellcheck="false">
+      <label id="provider-model-label" for="provider-model"></label>
+      <input id="provider-model" type="text" autocomplete="off" spellcheck="false">
+      <label id="provider-key-label" for="provider-key"></label>
+      <input id="provider-key" type="password" autocomplete="off" spellcheck="false">
+      <button id="provider-save" type="submit"></button>
+      <button id="provider-continue" type="button" hidden></button>
+    </form>
+    <p id="provider-replaces" hidden></p>
+    <p id="provider-request" data-endpoint=""></p>
+    <p id="provider-status"></p>
+    <p id="provider-answer" hidden></p>
+    <p id="provider-refusal" hidden></p>
+    <ul id="provider-capabilities" hidden></ul>
+    <p id="provider-key-kept"></p>
+    <button id="provider-replay" type="button"></button>
+    <p id="provider-replay-note"></p>
+  </section>
   <nav id="tabs">
     <button id="tab-conversation" class="tab" type="button" data-tab="conversation" data-active="true" aria-current="true">Conversation</button>
     <button id="tab-library" class="tab" type="button" data-tab="library" data-active="false" aria-current="false">Library</button>
