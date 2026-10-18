@@ -15,8 +15,7 @@
  * so a mismatch reads as `untested` and the page says so.
  */
 
-import { chmodSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import type {
   ProviderConfigInput,
   ProviderConnection,
@@ -31,7 +30,15 @@ import {
   type CapabilityTurn,
   runCapabilityTest,
 } from "@freebot/providers";
-import { describeVault, freebotHome, readVault, vaultPath, writeVault } from "./vault.ts";
+import {
+  describeVault,
+  freebotHome,
+  readPrivateFile,
+  readVault,
+  vaultPath,
+  writePrivateFile,
+  writeVault,
+} from "./vault.ts";
 
 /** The longest provider message the record keeps. A provider's body can be arbitrarily long. */
 const REFUSAL_MESSAGE_MAX = 400;
@@ -74,12 +81,8 @@ export interface ProviderSetupOptions {
 
 /** What the last test recorded, parsed at this boundary rather than trusted as a file shape. */
 export function readProviderRecord(paths: ProviderPaths): ProviderConnection | null {
-  let text: string;
-  try {
-    text = readFileSync(paths.record, "utf8");
-  } catch {
-    return null;
-  }
+  const text = readPrivateFile(paths.record);
+  if (text === null) return null;
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
@@ -91,9 +94,7 @@ export function readProviderRecord(paths: ProviderPaths): ProviderConnection | n
 }
 
 export function writeProviderRecord(connection: ProviderConnection, paths: ProviderPaths): void {
-  mkdirSync(dirname(paths.record), { recursive: true, mode: 0o700 });
-  writeFileSync(paths.record, `${JSON.stringify(connection, null, 2)}\n`, { mode: 0o600 });
-  chmodSync(paths.record, 0o600);
+  writePrivateFile(paths.record, `${JSON.stringify(connection, null, 2)}\n`);
 }
 
 /**
