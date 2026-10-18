@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-18T06:05Z, against `origin/main` `f5454cf`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-18T06:45Z, against `origin/main` `44c25ae`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -36,9 +36,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-52 units in the register: 37 done, 6 running, 8 pending, 1 parked.
+52 units in the register: 38 done, 5 running, 8 pending, 1 parked.
 
-The verification ledger holds 39 rows: 11 `live-ui-verified`, 24 `unit-test-verified`, 2 `type-check-only`, 2 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 40 rows: 12 `live-ui-verified`, 24 `unit-test-verified`, 2 `type-check-only`, 2 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -75,6 +75,7 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U6.1 | The design contract, measured from the exported prototype | [#28](https://github.com/yusufameri/free-bot/pull/28) |
 | U6.2 | First run: the three-pane wizard and the model test | [#29](https://github.com/yusufameri/free-bot/pull/29) |
 | U6.3 | The details pane, its notices, and the reconnect banner, with the measured geometry delta at zero | [#35](https://github.com/yusufameri/free-bot/pull/35) |
+| U6.4 | The command palette, the Bot picker, and the modal, 105 checks over 19 committed screens | [#40](https://github.com/yusufameri/free-bot/pull/40) |
 | U7.1 | `GLOSSARY.md` and its map | [#31](https://github.com/yusufameri/free-bot/pull/31) |
 | U7.2 | The documentation truth fix: three documents that still called the keyed path parked | [#37](https://github.com/yusufameri/free-bot/pull/37) |
 | U8.1 | The connector seam, proved against an emulator rather than an account | [#30](https://github.com/yusufameri/free-bot/pull/30) |
@@ -84,11 +85,10 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 
 ## Not built yet
 
-Running now, six units, each in its own worktree with its own brief.
+Running now, five units, each in its own worktree with its own brief. Liveness is read from a climbing turn count rather than from a status field, and file writes are the progress signal, a distinction order 41 records because a file-write read alone called three live workers idle.
 
 | Unit | What it is | State |
 | --- | --- | --- |
-| U6.4 | The overlay primitives, dispatched the moment U6.3 freed its paths | running, branch `u6.4-overlays` |
 | U6.6 | The landing route | running, branch `u6.6-landing` |
 | U6.7a | The pixel-gate harness, built now so the fidelity pass becomes calibration | running, branch `u6.7a-gate-harness` |
 | U8.3 | The MCP and raw HTTP adapters | running, branch `u8.3-adapters` |
