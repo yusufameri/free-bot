@@ -321,8 +321,8 @@ export const PROVIDER_BASE_URL_MAX = 2048;
 export const PROVIDER_MODEL_MAX = 200;
 export const PROVIDER_KEY_MAX = 4096;
 
-/** The base URL is the endpoint prefix, so it has to be one the client can post to. */
-export function isProviderBaseUrl(value: string): boolean {
+/** An endpoint has to be one an HTTP client can dial: a provider's base URL, a connector's MCP URL. */
+export function isHttpUrl(value: string): boolean {
   try {
     const url = new URL(value);
     return url.protocol === "http:" || url.protocol === "https:";
@@ -337,7 +337,7 @@ export const providerConfigInput = z.strictObject({
     .min(1)
     .max(PROVIDER_BASE_URL_MAX)
     .refine(isOneLine, "the base URL must be one line")
-    .refine(isProviderBaseUrl, "the base URL must be an http or https URL"),
+    .refine(isHttpUrl, "the base URL must be an http or https URL"),
   model: z.string().min(1).max(PROVIDER_MODEL_MAX).refine(isOneLine, "the model must be one line"),
   key: z.string().min(1).max(PROVIDER_KEY_MAX).refine(isOneLine, "the key must be one line"),
 });
@@ -430,10 +430,10 @@ export const connectProviderInput = providerConfigInput;
 export const connectProviderOutput = providerConnectionSchema;
 
 /**
- * The connectors this install holds. A row names the connector, where it is, which credential it
- * uses (as a reference), what it offers, and whether it answered the last probe. There is no header
- * field and no token field here, so a route cannot answer with a credential even by accident: the
- * file's headers stay in the object that holds them.
+ * The connectors this install holds. A row names the connector, what it is called, where it is,
+ * which credential it uses (as a reference), what it offers, and the state the last probe left it
+ * in. There is no header field and no token field here, so a route cannot answer with a credential
+ * even by accident: the vault holds the headers and this shape has nowhere to put one.
  */
 export const connectorToolSchema = z.object({
   name: z.string(),
@@ -443,12 +443,50 @@ export const connectorToolSchema = z.object({
 
 export type ConnectorToolRow = z.infer<typeof connectorToolSchema>;
 
+/**
+ * The three states one connector's connection can be in. They are the whole vocabulary a surface
+ * branches on, and the third is why this is an enum rather than a boolean: a record the vault holds
+ * no credential for has not been tried, and a missing credential must not read as a broken service.
+ *
+ * - `connected`: the probe reached the person's own service and it answered;
+ * - `unreachable`: the probe ran and did not get an answer this seam could use;
+ * - `untested`: no credential is in the vault for this record, so nothing was probed.
+ */
+export const CONNECTOR_STATES = ["connected", "unreachable", "untested"] as const;
+
+export const connectorStateSchema = z.enum(CONNECTOR_STATES);
+
+export type ConnectorState = z.infer<typeof connectorStateSchema>;
+
+/** The longest label a connector row shows. It is one line beside the connector's address. */
+export const CONNECTOR_LABEL_MAX = 60;
+
+/** The longest endpoint a connector can name. Matches the provider base URL's bound. */
+export const CONNECTOR_URL_MAX = 2048;
+
+/** The most a connector's credential can be, counted over the JSON the vault stores it as. */
+export const CONNECTOR_HEADERS_MAX = 8192;
+
+/**
+ * A connector's id. It namespaces every tool name the connector offers, so it is one slug and it is
+ * also the key a second connect rotates rather than duplicates.
+ */
+export const connectorIdSchema = idSchema;
+
 export const connectorRowSchema = z.object({
   id: z.string(),
+  label: z.string(),
+  /** The connector's endpoint: the MCP URL its own server answers at. */
   url: z.string(),
+  /** The credential's reference, which names it and cannot spend it. */
   ref: z.string(),
+  state: connectorStateSchema,
+  /** The last probe's own words: the service's line, or this app's reason there was no probe. */
+  detail: z.string(),
+  /** What the connector offered at the last probe, which is what a run would be offered. */
   tools: z.array(connectorToolSchema),
-  health: z.object({ ok: z.boolean(), detail: z.string() }),
+  /** When the last probe ran, or null when this connector has never been probed. */
+  testedAt: tsSchema.nullable(),
 });
 
 export type ConnectorRow = z.infer<typeof connectorRowSchema>;
@@ -458,17 +496,67 @@ export const listConnectorsInput = z.strictObject({});
 
 export const listConnectorsOutput = z.object({ connectors: z.array(connectorRowSchema) });
 
-/** Test one connector the way a person checks a connection: with its own credential, then report. */
-export const testConnectorInput = z.strictObject({ id: z.string().min(1) });
-
-export const testConnectorOutput = z.object({
-  id: z.string(),
-  ok: z.boolean(),
-  detail: z.string(),
-  tools: z.array(connectorToolSchema),
+/**
+ * Connect a connector, or replace the credential of one this install already holds. The id is the
+ * key, so connecting an id that exists rotates its credential in place rather than adding a second
+ * connector, and the answer is the state its own service left the probe in.
+ *
+ * `headers` is the credential: this input is the one place in the contract one appears, and no
+ * output carries one back. It is a header map rather than a token string because that is what a
+ * person's own server asks for, and the vault is one `NAME=value` per line, so every value must be
+ * one line.
+ */
+export const connectConnectorInput = z.strictObject({
+  id: connectorIdSchema,
+  label: z
+    .string()
+    .min(1)
+    .max(CONNECTOR_LABEL_MAX)
+    .refine(isOneLine, "the label must be one line")
+    .optional(),
+  url: z
+    .string()
+    .min(1)
+    .max(CONNECTOR_URL_MAX)
+    .refine(isOneLine, "the endpoint must be one line")
+    .refine(isHttpUrl, "the endpoint must be an http or https URL"),
+  headers: z
+    .record(
+      z.string().min(1).refine(isOneLine, "a header name must be one line"),
+      z.string().min(1).refine(isOneLine, "a header value must be one line"),
+    )
+    .refine(
+      (headers) => Object.keys(headers).length > 0,
+      "a connector needs at least one header, or its service cannot tell who is calling",
+    )
+    .refine(
+      (headers) => JSON.stringify(headers).length <= CONNECTOR_HEADERS_MAX,
+      `a credential is at most ${CONNECTOR_HEADERS_MAX} characters of JSON`,
+    ),
 });
 
-export type TestConnectorOutput = z.infer<typeof testConnectorOutput>;
+export type ConnectConnectorInput = z.infer<typeof connectConnectorInput>;
+
+export const connectConnectorOutput = connectorRowSchema;
+
+/**
+ * Test one connector the way a person checks a connection: with its own credential, then report. A
+ * refusal is a successful call whose answer says so, and its `state` is `unreachable` rather than an
+ * error, because a surface listing connectors has to show the broken one.
+ */
+export const testConnectorInput = z.strictObject({ id: connectorIdSchema });
+
+export const testConnectorOutput = connectorRowSchema;
+
+/**
+ * Remove a connector: its credential leaves the vault and its record leaves the store, so the next
+ * call for it finds nothing rather than a stale secret. Removing one this install does not hold is
+ * not an error: `removed` is false and the end state is the same, which is what makes a second
+ * removal safe to send.
+ */
+export const removeConnectorInput = z.strictObject({ id: connectorIdSchema });
+
+export const removeConnectorOutput = z.object({ id: z.string(), removed: z.boolean() });
 
 // ---------------------------------------------------------------------------
 // The operation registry
@@ -491,7 +579,9 @@ export const API_OPERATIONS = {
   get_provider: { input: getProviderInput, output: getProviderOutput },
   connect_provider: { input: connectProviderInput, output: connectProviderOutput },
   list_connectors: { input: listConnectorsInput, output: listConnectorsOutput },
+  connect_connector: { input: connectConnectorInput, output: connectConnectorOutput },
   test_connector: { input: testConnectorInput, output: testConnectorOutput },
+  remove_connector: { input: removeConnectorInput, output: removeConnectorOutput },
 } as const;
 
 export type ApiOperation = keyof typeof API_OPERATIONS;

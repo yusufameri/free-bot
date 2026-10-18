@@ -11,6 +11,10 @@ import {
   BOT_PURPOSE_MAX,
   BOT_ROLE_MAX,
   botIdSchema,
+  CONNECTOR_HEADERS_MAX,
+  CONNECTOR_STATES,
+  connectConnectorInput,
+  connectorRowSchema,
   connectProviderInput,
   type EventMessage,
   GET_EVENTS_MAX_LIMIT,
@@ -52,7 +56,13 @@ const validInputs: Record<(typeof API_OPERATION_NAMES)[number], unknown> = {
     key: "sk-not-a-real-key",
   },
   list_connectors: {},
+  connect_connector: {
+    id: "fixture-github",
+    url: "http://127.0.0.1:8080/mcp",
+    headers: { authorization: "Bearer fixture-credential" },
+  },
   test_connector: { id: "fixture-github" },
+  remove_connector: { id: "fixture-github" },
 };
 
 describe("operation registry", () => {
@@ -73,7 +83,9 @@ describe("operation registry", () => {
       "get_provider",
       "connect_provider",
       "list_connectors",
+      "connect_connector",
       "test_connector",
+      "remove_connector",
     ]);
   });
 
@@ -379,5 +391,100 @@ describe("the provider connection", () => {
         }),
       }).success,
     ).toBe(true);
+  });
+});
+
+describe("the connector surface", () => {
+  const row = {
+    id: "fixture-github",
+    label: "Fixture GitHub",
+    url: "http://127.0.0.1:8080/mcp",
+    ref: "connector:fixture-github",
+    state: "connected",
+    detail: "freebot-fixture-connector 1.0.0, protocol 2025-06-18, 2 tools",
+    tools: [
+      {
+        name: "create_issue",
+        description: "Open an issue.",
+        parameters: { type: "object", properties: {} },
+      },
+    ],
+    testedAt: TS,
+  };
+
+  test("a connector is in exactly one of three states, and no probe leaves it in none", () => {
+    expect(CONNECTOR_STATES).toEqual(["connected", "unreachable", "untested"]);
+    for (const state of CONNECTOR_STATES) {
+      expect(connectorRowSchema.safeParse({ ...row, state }).success).toBe(true);
+    }
+    expect(connectorRowSchema.safeParse({ ...row, state: "ok" }).success).toBe(false);
+  });
+
+  test("a row has no field a header or a token could travel in", () => {
+    const parsed = connectorRowSchema.parse(row);
+    expect(Object.keys(parsed).sort()).toEqual([
+      "detail",
+      "id",
+      "label",
+      "ref",
+      "state",
+      "testedAt",
+      "tools",
+      "url",
+    ]);
+    // A row that carries a credential anyway cannot travel through this shape: the schema strips it,
+    // so the router's own output validation is a second boundary a header cannot cross.
+    const stripped = connectorRowSchema.parse({
+      ...row,
+      headers: { authorization: "Bearer fixture-credential" },
+    });
+    expect("headers" in stripped).toBe(false);
+    expect(JSON.stringify(stripped).includes("fixture-credential")).toBe(false);
+  });
+
+  test("connecting takes an id, an endpoint and a credential, and refuses each of them raw", () => {
+    const valid = {
+      id: "fixture-github",
+      label: "Fixture GitHub",
+      url: "http://127.0.0.1:8080/mcp",
+      headers: { authorization: "Bearer fixture-credential" },
+    };
+    expect(connectConnectorInput.parse(valid)).toEqual(valid);
+    expect(
+      connectConnectorInput.parse({ id: "fixture-github", url: valid.url, headers: valid.headers }),
+    ).toEqual({ id: "fixture-github", url: valid.url, headers: valid.headers });
+
+    expect(connectConnectorInput.safeParse({ ...valid, id: "Fixture/GitHub" }).success).toBe(false);
+    expect(connectConnectorInput.safeParse({ ...valid, url: "ftp://127.0.0.1/mcp" }).success).toBe(
+      false,
+    );
+    expect(connectConnectorInput.safeParse({ ...valid, headers: {} }).success).toBe(false);
+  });
+
+  test("the credential has to be one line and inside the vault line's bound", () => {
+    const base = { id: "fixture-github", url: "http://127.0.0.1:8080/mcp" };
+    const multiline = connectConnectorInput.safeParse({
+      ...base,
+      headers: { authorization: "Bearer first\nFREEBOT_BYOK_KEY=sk-second" },
+    });
+    expect(multiline.success).toBe(false);
+    expect(multiline.success ? "" : multiline.error.issues[0]?.message).toBe(
+      "a header value must be one line",
+    );
+    expect(
+      connectConnectorInput.safeParse({
+        ...base,
+        headers: { authorization: `Bearer ${"x".repeat(CONNECTOR_HEADERS_MAX)}` },
+      }).success,
+    ).toBe(false);
+  });
+
+  test("removal answers whether the connector was there, so a second removal is not an error", () => {
+    expect(
+      API_OPERATIONS.remove_connector.output.parse({ id: "fixture-github", removed: false }),
+    ).toEqual({ id: "fixture-github", removed: false });
+    expect(API_OPERATIONS.remove_connector.output.safeParse({ id: "fixture-github" }).success).toBe(
+      false,
+    );
   });
 });
