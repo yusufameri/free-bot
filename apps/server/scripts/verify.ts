@@ -205,7 +205,13 @@ try {
    * a page uses. A run names both, so the raw matrix arms below send the ids in their own body.
    */
   const operatorHeaders: string[] = [`origin: ${origin}`, `authorization: Bearer ${token}`];
-  const botBody = curl(apiPort, "/rpc/create_bot", operatorHeaders, "POST", '{"json":{"name":"Verify Bot"}}');
+  const botBody = curl(
+    apiPort,
+    "/rpc/create_bot",
+    operatorHeaders,
+    "POST",
+    '{"json":{"name":"Verify Bot"}}',
+  );
   const verifyBotId = /"botId":"([a-z0-9-]+)"/.exec(botBody.body)?.[1];
   check(verifyBotId !== undefined, `create_bot over HTTP -> ${botBody.status} ${botBody.body}`);
   const threadBody = curl(

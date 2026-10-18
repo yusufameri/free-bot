@@ -24,7 +24,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -448,8 +448,14 @@ async function launch(
   const proc = Bun.spawn(["bun", "run", "up", ...extra], {
     cwd: root,
     // `bun run up` defaults to `auto` and follows the vault, so with a key it calls a real model and
-    // this driver's recorded-turn assertions fail. Pin the path they were written for.
-    env: { ...process.env, FREEBOT_PROVIDER: "replay", ...env },
+    // this driver's recorded-turn assertions fail. Pin the path they were written for. The bots root
+    // is this driver's own, so a launch here never adds a Bot to the operator's own set.
+    env: {
+      ...process.env,
+      FREEBOT_PROVIDER: "replay",
+      FREEBOT_WORKSPACE: launchBotsRoot(),
+      ...env,
+    },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -547,6 +553,37 @@ async function httpStatus(url: string): Promise<number> {
   } catch {
     return 0;
   }
+}
+
+/** One call to the route surface with the launch's own token, for the records a stream needs. */
+async function rpc(
+  launch: Launched,
+  procedure: string,
+  input: Record<string, unknown>,
+): Promise<unknown> {
+  const response = await fetch(`http://127.0.0.1:${launch.apiPort}/rpc/${procedure}`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${launch.token}`,
+      origin: `http://127.0.0.1:${launch.apiPort}`,
+    },
+    body: JSON.stringify({ json: input }),
+  });
+  return ((await response.json()) as { json: unknown }).json;
+}
+
+/**
+ * A Bot and a thread of this launch's own, made the way a page makes them: the page's stream names
+ * the thread it follows, and these checks run before any page has opened, so the records are made
+ * here rather than borrowed from a surface that has not started yet.
+ */
+async function streamTarget(launch: Launched): Promise<string> {
+  const bot = (await rpc(launch, "create_bot", { name: "Stream Check" })) as { botId: string };
+  const thread = (await rpc(launch, "create_thread", { botId: bot.botId })) as {
+    threadId: string;
+  };
+  return thread.threadId;
 }
 
 async function healthz(port: number): Promise<string> {
@@ -938,6 +975,19 @@ async function cleanup(): Promise<void> {
   await Promise.race([Promise.allSettled(live.map((launch) => launch.exited())), sleep(15_000)]);
   chromeProc?.kill();
   if (userDataDir !== null) rmSync(userDataDir, { recursive: true, force: true });
+  for (const path of botsRoots.splice(0)) rmSync(path, { recursive: true, force: true });
+}
+
+/**
+ * The bots root one launch runs over: one per launch, so a launch that starts a run starts run-1
+ * whatever its siblings are doing, and every root is this driver's own rather than the operator's.
+ */
+const botsRoots: string[] = [];
+
+function launchBotsRoot(): string {
+  const made = mkdtempSync(join(tmpdir(), "freebot-launch-bots-"));
+  botsRoots.push(made);
+  return made;
 }
 
 function statSafe(path: string): boolean {
@@ -1009,15 +1059,27 @@ async function main(): Promise<number> {
   );
   log.check("healthz answers on the URL's port", await healthz(first.apiPort), HEALTHZ);
   const events = `ws://127.0.0.1:${first.apiPort}/events`;
+  const threadId = await streamTarget(first);
+  log.note(`the thread the page's stream follows: ${threadId}`);
   log.check("a page stream with no token is refused", await handshake(events), "refused");
   log.check(
     "a page stream with a wrong token is refused",
-    await handshake(`${events}?token=0000`),
+    await handshake(`${events}?token=0000&thread_id=${threadId}`),
     "refused",
   );
   log.check(
-    "a page stream with the URL's own token is accepted",
+    "a page stream that names no thread is refused: the stream is a thread's, not the server's",
     await handshake(`${events}?token=${first.token}`),
+    "refused",
+  );
+  log.check(
+    "a page stream that names a thread this launch does not hold is refused",
+    await handshake(`${events}?token=${first.token}&thread_id=thread-9`),
+    "refused",
+  );
+  log.check(
+    "a page stream with the URL's own token and a real thread is accepted",
+    await handshake(`${events}?token=${first.token}&thread_id=${threadId}`),
     "open",
   );
   log.check(
