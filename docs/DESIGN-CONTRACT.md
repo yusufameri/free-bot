@@ -1,6 +1,6 @@
 # The design contract
 
-Order 32 makes the exported prototype the visual contract: it governs visuals, geometry, tokens,
+Order 32 makes the exported prototype the visual contract. It governs visuals, geometry, tokens,
 motion and the responsive matrix, and where it conflicts with `UX.md` on a visual question the export
 wins. This document records what the export says, which of its two files governs which surface, and
 every place the app still differs from it.
@@ -19,7 +19,7 @@ document should not make.
 ## The export's four files
 
 Committed byte-identical at `design/prototype-84c6b185/`, with the checksums in that directory's
-README. They are a frozen artifact: nothing reads them at runtime, and `biome.json` excludes the
+README. They are a frozen artifact. Nothing reads them at runtime, and `biome.json` excludes the
 directory so the formatter and the linter leave them alone.
 
 | File | Role |
@@ -61,8 +61,8 @@ the v1 file as instructed will find an older token set and must not implement it
 
 **The 980px breakpoint is not implemented.** The v1 file's single
 `@media (max-width:980px)` collapses both the sidebar and the aside at once. The fuller file replaces
-it with two thresholds, and at 861px to 980px the two files want opposite things: the fuller file
-keeps the sidebar and hides only the aside, the v1 file hides both. Implementing the 980px collapse
+it with two thresholds, and at 861px to 980px the two files want opposite things. The fuller file
+keeps the sidebar and hides only the aside, and the v1 file hides both. Implementing the 980px collapse
 would hide the Bot list across a 120px band where the governing file keeps it. Recorded rather than
 approximated, per plan §10.3.
 
@@ -107,8 +107,8 @@ export and line each value was read from.
 | `--ease` | `ease` | `freebot-prototype.html:120 the easing keyword every transition writes` |
 <!-- tokens:end -->
 
-The seven `derived` rows are the motion timings: the export declares no motion custom properties, so
-its durations are read off the rules that use them. `design-contract.ts` compares the `export` rows
+The seven `derived` rows are the motion timings, because the export declares no motion custom
+properties of its own. Its durations are read off the rules that use them. `design-contract.ts` compares the `export` rows
 against the export by name, and the motion by effect rather than by name, on a paired element's
 computed `transition-duration`.
 
@@ -129,7 +129,7 @@ The export's `.app` is
 The app's aside is a frame and nothing else. Its tabs, its body, and the resizer's drag behavior with
 a persisted width are U6.3's; this unit ships the 384px region, its `border-left`, and the 5px track,
 so that U6.3 has the geometry to fill. The empty state is visible at the three viewports where the
-export shows the aside, and it is recorded here rather than dressed up: nothing in this frame
+export shows the aside, and it is recorded here rather than dressed up. Nothing in this frame
 pretends to be the details panel.
 
 Three things the harness asserts rather than assumes, per viewport:
@@ -137,10 +137,10 @@ Three things the harness asserts rather than assumes, per viewport:
 - Every visible region's left edge is where the grid template puts it, in the order sidebar, thread
   column, resizer track, aside. A region that rendered somewhere else fails even if its width is
   right.
-- Every token name the export declares is read twice from both pages: from the `:root` rule, which
-  is what the page declares, and from `documentElement`, which is what the page uses. The declared
-  values are the contract; the used values are compared as well, because that is where an inline
-  override would show up. One name, `--aside-w`, is declared differently by the export and is listed
+- Every token name the export declares is read from both pages twice, once from the `:root` rule
+  and once from `documentElement`. The first read is what the page declares and the second is what it
+  uses. The declared values are the contract; the used values are compared as well, because that is
+  where an inline override would show up. One name, `--aside-w`, is declared differently by the export and is listed
   below.
 - No region's content is wider than the region. The document pair the matrix asks for is reported
   per viewport, and because this frame's `body` carries the export's `overflow: hidden`, that pair is
@@ -149,7 +149,7 @@ Three things the harness asserts rather than assumes, per viewport:
   `#thread`, `#library`, `#tabs`, `#operator`, `header` and `.meta`.
 
 The harness earned its keep on its first green-candidate run. It found the sidebar 45px wider than
-itself at every viewport above 860px: the footer's row carries a model id and a status
+itself at every viewport above 860px. The footer's row carries a model id and a status
 (`providerRowLabel`), and a realistic id such as `deepseek/deepseek-v4.1-flash` is longer than the
 246px the row has, so a `white-space: nowrap` label pushed the sidebar's scroll width to 308px. The
 fix is the export's own treatment for a long row label, the ellipsis on `.sb-row .name` at
@@ -166,7 +166,7 @@ sidebar; after it, the pair is equal at all nine.
 | 980px | `freebot-prototype-v1.html:248` | Superseded. Not implemented, per the reconciliation above. |
 
 Both governing media queries also carry drawer behavior for the hidden region (`.aside.open`,
-`.sidebar.open`, and a `.mob-only` trigger). This frame does not have the drawers: at 1120px and
+`.sidebar.open`, and a `.mob-only` trigger). This frame does not have the drawers. At 1120px and
 below the aside is unreachable, and at 860px and below the Bot list is unreachable, because there is
 no trigger for either. That is a real gap in the app rather than a difference in rendering, so it is
 named here and in the delta list below.
@@ -248,7 +248,7 @@ U6.3's; if U6.3 persists a width it will be that unit's number, not this one's.
 the host serves `/` and `/main.js` and nothing else (`apps/server/src/api-server.ts`), so a vendored
 woff2 would need a route in `apps/server`, which this unit must not write. The harness measures
 rather than asks, because `document.fonts.check('16px Geist')` answers `true` on a machine that has
-no Geist at all: it compares the advance width of a Geist-family string against an absent family's
+no Geist at all. It compares the advance width of a Geist-family string against an absent family's
 fallback and against `system-ui`. At this head all three numbers are in `assert.txt`; Geist measures
 the same as the absent family on both pages, so the family resolves through the stack's fallback and
 the rendered metrics are the system's, not Geist's. The type scale is unaffected, because font sizes
@@ -265,11 +265,11 @@ content differs render different pixels whatever their styling, so `design-contr
 differing-pixel share as information with that reason attached, and asserts geometry and computed
 styles instead. A number that cannot be attributed to a cause is not a pass, and this frame does not
 present one. The share runs from about 59% at 360x800 down to about 38% at 1366x768, which follows
-the same content story rather than a styling one: on the narrow viewports the export paints a
+the same content story rather than a styling one. On the narrow viewports the export paints a
 populated conversation across the whole width while the app paints one line of metadata, and the
 wider the viewport the larger the share of the frame that is chrome both pages agree on. The literal
 per-viewport numbers, and the export's own shot of each viewport under `reference/`, are in the
-artifact named below.
+evidence artifact above.
 
 **`color-scheme: dark` is an addition.** It is not in the export's token block. It is here so the
 page's own controls and scrollbars are dark; the export instead styles `::-webkit-scrollbar` and has

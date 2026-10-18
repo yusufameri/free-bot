@@ -12,8 +12,8 @@
  * Per viewport the driver reads the same field from both pages: the bounding box of each shell
  * region, the computed style of a paired element per role, and the computed value of every token
  * name in `packages/ui/src/tokens.ts`. Geometry and computed styles are the assertion. A differing
- * pixel count is reported as information, with its number and its reason, and never as a verdict:
- * the export renders prototype Bots and this app renders real records, so the two pages differ in
+ * pixel count is reported as information, with its number and its reason, and never as a verdict.
+ * The export renders prototype Bots and this app renders real records, so the two pages differ in
  * content whatever their styling.
  *
  * Every delta has to be either zero or declared in `DECLARED_DELTAS` with the reason it cannot close.
@@ -496,7 +496,7 @@ async function main(): Promise<number> {
     section("the deltas this frame declares");
     for (const entry of DECLARED_DELTAS) {
       note(
-        `geometry ${entry.field}: allowed deltas ${JSON.stringify(entry.allow)} — ${entry.reason}`,
+        `geometry ${entry.field}: allowed deltas ${JSON.stringify(entry.allow)}. ${entry.reason}`,
       );
     }
     for (const [name, reason] of Object.entries(TOKEN_OVERRIDES)) {
