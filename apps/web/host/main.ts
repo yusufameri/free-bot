@@ -20,6 +20,10 @@
  * the socket and opens the stream for the thread that is now on screen, replaying it from 0. The
  * last_seq it carries on a reconnect is that thread's, which is why the cursor belongs to the
  * socket and not to the page.
+ *
+ * A socket that is still opening is not a socket that can be sent on. Switching threads replaces
+ * the socket, so anything composed in that window (a prompt, an approval answer) waits in the
+ * outbox and goes out on open rather than throwing away the click that asked for it.
  */
 
 import { createORPCClient } from "@orpc/client";
@@ -60,6 +64,8 @@ let shownThread: string | null = null;
 let queued: string | null = null;
 /** Bumped per connection, so a socket that has been replaced cannot speak for the page. */
 let generation = 0;
+/** Control frames written before the socket finished opening, in the order they were asked for. */
+const outbox: string[] = [];
 
 /** The page's own reads, over the same routes a client uses, with its operator token. */
 const api: ApiClient | null =
@@ -71,6 +77,17 @@ const api: ApiClient | null =
           headers: { authorization: `Bearer ${token}` },
         }),
       );
+
+/** Send a control frame, or hold it until the socket that will carry it is open. */
+function post(payload: unknown): void {
+  const frame = JSON.stringify(payload);
+  const ws = socket;
+  if (ws === null || ws.readyState !== WebSocket.OPEN) {
+    outbox.push(frame);
+    return;
+  }
+  ws.send(frame);
+}
 
 /** The token the shell needs. A page without one renders no Bot list at all. */
 function client(): ApiClient {
@@ -106,7 +123,7 @@ showOperator(true);
 const handle = mountThread({
   autoAnswer,
   onAnswer: (decision, approvalId) => {
-    socket?.send(JSON.stringify({ type: "answer", decision, approvalId }));
+    post({ type: "answer", decision, approvalId });
   },
 });
 exposeFacts(handle);
@@ -121,7 +138,7 @@ declare global {
 
 /** The driver releases a `hold_before` park through this, exactly as it would answer a card. */
 window.__threadSend = (message: unknown): void => {
-  socket?.send(JSON.stringify(message));
+  post(message);
 };
 
 const shell = mountShell({
@@ -145,9 +162,7 @@ exposeShellFacts(shell);
 
 /** Start the run the composer asked for, in the Bot and the thread on screen. */
 function sendStart(prompt: string): void {
-  socket?.send(
-    JSON.stringify({ type: "start", prompt, botId: selection.botId, threadId: selection.threadId }),
-  );
+  post({ type: "start", prompt, botId: selection.botId, threadId: selection.threadId });
   if (startButton !== null) startButton.disabled = true;
 }
 
@@ -166,7 +181,7 @@ operator?.addEventListener("submit", (event) => {
   if (prompt.length === 0) return;
   if (token === null) {
     // The dev peer holds one committed thread and no Bot list, so it takes the bare message.
-    socket?.send(JSON.stringify({ type: "start", prompt }));
+    post({ type: "start", prompt });
     if (startButton !== null) startButton.disabled = true;
     return;
   }
@@ -190,6 +205,9 @@ function connect(): void {
   }
   if (token !== null && threadId === null) return;
 
+  // A fresh socket, and the page says so until it opens: the previous socket's state is not this
+  // one's, and a send that arrives before it opens belongs in the outbox.
+  handle.setConnection("connecting");
   const carry = new URLSearchParams();
   for (const key of ["drop_at", "echo_last", "auto", "hold_before"]) {
     const value = params.get(key);
@@ -199,12 +217,17 @@ function connect(): void {
   if (threadId !== null) carry.set("thread_id", threadId);
   carry.set("last_seen_seq", String(handle.state().lastSeq));
   const scheme = location.protocol === "https:" ? "wss" : "ws";
+  // The socket this one replaces is still open until it is closed here. It stops being the page's
+  // socket on the line below, and its handlers are the previous generation's, so it is inert from
+  // this point on; leaving it open would leak a subscription on the server for every thread switch.
+  socket?.close();
   const ws = new WebSocket(`${scheme}://${location.host}/events?${carry.toString()}`);
   socket = ws;
 
   ws.onopen = () => {
     if (mine !== generation) return;
     handle.setConnection("connected");
+    for (const frame of outbox.splice(0)) ws.send(frame);
   };
   ws.onmessage = (event) => {
     if (mine !== generation) return;
