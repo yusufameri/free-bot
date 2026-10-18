@@ -3,6 +3,7 @@
  * Phase 1 MVP runs Pi-in-sandbox on. See `docs/sandbox-provider.md`.
  */
 
+export * from "./conformance.ts";
 export * from "./docker.ts";
 export * from "./docker-cli.ts";
 export * from "./image.ts";
