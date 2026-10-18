@@ -238,7 +238,10 @@ describe("the event stream over a real socket", () => {
     expect(await handshake(socket)).toBe("open");
 
     const received: EventMessage[] = [];
-    const iterator = await streamed.subscribe_events({ threadId: target(server).threadId, lastSeq: 0 });
+    const iterator = await streamed.subscribe_events({
+      threadId: target(server).threadId,
+      lastSeq: 0,
+    });
     const pump = drain(iterator, received);
 
     await until(() => received.length === 3, "the replayed run opening");
@@ -271,7 +274,10 @@ describe("the event stream over a real socket", () => {
     expect(await handshake(socket)).toBe("open");
 
     const received: EventMessage[] = [];
-    const iterator = await streamed.subscribe_events({ threadId: target(server).threadId, lastSeq: 3 });
+    const iterator = await streamed.subscribe_events({
+      threadId: target(server).threadId,
+      lastSeq: 3,
+    });
     const pump = drain(iterator, received);
 
     await until(() => received.length === 3, "the resumed events");
@@ -289,7 +295,10 @@ describe("the event stream over a real socket", () => {
     const { socket, client } = websocket(server);
     expect(await handshake(socket)).toBe("open");
 
-    const iterator = await client.subscribe_events({ threadId: target(server).threadId, lastSeq: 0 });
+    const iterator = await client.subscribe_events({
+      threadId: target(server).threadId,
+      lastSeq: 0,
+    });
     const received: EventMessage[] = [];
     const pump = drain(iterator, received);
     await until(() => server.service.subscribers === 1, "the subscription to register");

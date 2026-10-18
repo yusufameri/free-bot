@@ -38,12 +38,7 @@ import {
   SeqLog,
   type ThreadRecord,
 } from "@freebot/core";
-import type {
-  BotRefusal,
-  EventMessage,
-  ListFilesOutput,
-  ReadFileOutput,
-} from "@freebot/protocol";
+import type { BotRefusal, EventMessage, ListFilesOutput, ReadFileOutput } from "@freebot/protocol";
 import { GrantStore } from "@freebot/review";
 import { DockerAdapter } from "@freebot/sandbox";
 import {
@@ -171,7 +166,11 @@ export interface RunService {
   cancel(runId: string): boolean;
   answer(approvalId: string, decision: "allow" | "deny"): boolean;
   /** One thread's messages after `lastSeq`, up to `limit`. */
-  events(threadId: string, lastSeq: number, limit?: number): { messages: EventMessage[]; lastSeq: number };
+  events(
+    threadId: string,
+    lastSeq: number,
+    limit?: number,
+  ): { messages: EventMessage[]; lastSeq: number };
   /** One thread's log audit, which is what its `stream.hello` reports. */
   audit(threadId: string): ReturnType<SeqLog<EventMessage>["audit"]>;
   /** One thread's messages after `lastSeq`, in seq order, then live until `signal` aborts. */
@@ -220,7 +219,9 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
   let runSerial = 0;
 
   /** The run's record and the two records it belongs to, or undefined for a run it never held. */
-  function runOf(runId: string): { record: RunRecord; botId: string; threadId: string } | undefined {
+  function runOf(
+    runId: string,
+  ): { record: RunRecord; botId: string; threadId: string } | undefined {
     const threadId = runThreads.get(runId);
     if (threadId === undefined) return undefined;
     const runtime = runtimes.get(threadId);

@@ -12,17 +12,9 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ProviderPort, SandboxPort } from "@freebot/core";
+import type { ProviderPort } from "@freebot/core";
 import type { SandboxSpec } from "@freebot/sandbox";
 import { createRunService, UnknownRecordError } from "./run-service.ts";
-
-const unusedSandbox: SandboxPort = {
-  async create() {},
-  async execute() {
-    throw new Error("this test starts no tool call");
-  },
-  async destroy() {},
-};
 
 /** One turn of text and no call, so a run finishes in the few frames it can. */
 const immediateProvider: ProviderPort = {
@@ -99,7 +91,10 @@ describe("a Bot, a thread, and a run inside them", () => {
     await service.idle();
 
     const deadline = Date.now() + 2_000;
-    while (Date.now() < deadline && !seen.every((list) => list.length === service.audit(thread.id).lastSeq)) {
+    while (
+      Date.now() < deadline &&
+      !seen.every((list) => list.length === service.audit(thread.id).lastSeq)
+    ) {
       await Bun.sleep(10);
     }
     controller.abort();
@@ -145,7 +140,10 @@ describe("a Bot, a thread, and a run inside them", () => {
     );
     expect(() => service.listThreads("bot-nowhere")).toThrow("no such Bot: bot-nowhere");
     expect(() => service.createThread("bot-nowhere")).toThrow("no such Bot: bot-nowhere");
-    expect(service.listBots().map(({ bot: record }) => record.name)).toEqual(["Local Bot", "Other"]);
+    expect(service.listBots().map(({ bot: record }) => record.name)).toEqual([
+      "Local Bot",
+      "Other",
+    ]);
   });
 });
 
@@ -189,18 +187,18 @@ describe("the Bot's workspace", () => {
     expect(service.workspaceFor(second.id)).toBe(realpathSync(join(root, second.id, "workspace")));
     expect((await service.readFile(first.id, "note.txt")).text).toBe("mine\n");
     expect((await service.listFiles(second.id, ".")).entries).toEqual([]);
-    expect(await service.readFile(second.id, "note.txt").catch((error: Error) => error.message)).toBe(
-      "path_not_found: note.txt",
-    );
+    expect(
+      await service.readFile(second.id, "note.txt").catch((error: Error) => error.message),
+    ).toBe("path_not_found: note.txt");
   });
 
   test("a workspace read for a Bot this server does not hold creates nothing and is refused", async () => {
     const root = botsRoot();
     const service = createRunService({ botsRoot: root, provider: () => immediateProvider });
 
-    expect(
-      await service.listFiles("bot-nowhere", ".").catch((error: Error) => error.message),
-    ).toBe("no such Bot: bot-nowhere");
+    expect(await service.listFiles("bot-nowhere", ".").catch((error: Error) => error.message)).toBe(
+      "no such Bot: bot-nowhere",
+    );
     expect(await Bun.file(join(root, "bot-nowhere")).exists()).toBe(false);
   });
 });
@@ -219,13 +217,15 @@ describe("a second process over the same bots root", () => {
 
     const reopened = createRunService({ botsRoot: root, provider: () => immediateProvider });
 
-    expect(reopened.listBots().map(({ bot: record, threadCount }) => [record.name, threadCount])).toEqual([
+    expect(
+      reopened.listBots().map(({ bot: record, threadCount }) => [record.name, threadCount]),
+    ).toEqual([
       ["Local Bot", 1],
       ["Second", 1],
     ]);
-    expect(reopened.listThreads(bot.id)[0]?.runs.map((record) => [record.id, record.prompt])).toEqual([
-      [runId, "remember me"],
-    ]);
+    expect(
+      reopened.listThreads(bot.id)[0]?.runs.map((record) => [record.id, record.prompt]),
+    ).toEqual([[runId, "remember me"]]);
     expect(reopened.registry.loadReport).toEqual({
       commands: 4,
       refused: [],
@@ -244,7 +244,9 @@ describe("a second process over the same bots root", () => {
     first.close();
 
     const reopened = createRunService({ botsRoot: root, provider: () => immediateProvider });
-    expect(reopened.start({ prompt: "two", botId: bot.id, threadId: thread.id }).runId).toBe("run-2");
+    expect(reopened.start({ prompt: "two", botId: bot.id, threadId: thread.id }).runId).toBe(
+      "run-2",
+    );
     await reopened.idle();
     expect(reopened.listThreads(bot.id)[0]?.runs.map((record) => record.id)).toEqual([
       "run-1",

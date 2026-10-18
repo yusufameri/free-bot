@@ -174,7 +174,11 @@ describe("a run started over start_run", () => {
     const ran: string[] = [];
     const h = await harness(ran);
 
-    const started = await h.client.start_run({ prompt: "echo one", botId: h.botId, threadId: h.threadId });
+    const started = await h.client.start_run({
+      prompt: "echo one",
+      botId: h.botId,
+      threadId: h.threadId,
+    });
     expect(started.runId).toBe("run-1");
 
     await h.until((frames) => frames.some((f) => f.type === "approval.requested"), "the park");
@@ -300,7 +304,11 @@ describe("a run started over start_run", () => {
       }),
     );
 
-    const started = await client.start_run({ prompt: "stop me", botId: bot.id, threadId: thread.id });
+    const started = await client.start_run({
+      prompt: "stop me",
+      botId: bot.id,
+      threadId: thread.id,
+    });
     expect(await client.cancel_run({ runId: started.runId })).toEqual({ runId: "run-1" });
     release();
     await service.idle();

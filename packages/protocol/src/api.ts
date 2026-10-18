@@ -160,7 +160,10 @@ const listBotsProcedure = oc.input(listBotsInput).output(listBotsOutput).errors(
 
 const createBotProcedure = oc.input(createBotInput).output(createBotOutput).errors(BOT_ERRORS);
 
-const listThreadsProcedure = oc.input(listThreadsInput).output(listThreadsOutput).errors(BOT_ERRORS);
+const listThreadsProcedure = oc
+  .input(listThreadsInput)
+  .output(listThreadsOutput)
+  .errors(BOT_ERRORS);
 
 const createThreadProcedure = oc
   .input(createThreadInput)
