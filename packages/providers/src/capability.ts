@@ -109,7 +109,6 @@ async function consume(
     })),
   };
 }
-
 interface OneRequest {
   readonly reply: TurnReply;
   /** False when this request was answered whole, so its message never arrived in pieces. */
@@ -121,9 +120,12 @@ interface OneRequest {
  * because the `streaming` flag is exactly "did increments arrive", which a non-streaming request
  * could not answer.
  *
- * An endpoint that will not stream is not a broken connection, so the request falls back to a whole
- * reply. The turn then says `streaming` is unknown rather than the `false` the connection never
- * earned. A credential or rate-limit refusal is not one of these failures and never falls back.
+ * An endpoint that will not stream is not a broken connection. Such an endpoint answers a streamed
+ * request with a whole body and no SSE records, which the client reads as an empty reply: that is
+ * caught here and the request is made again without streaming. The turn then says `streaming` is
+ * unknown rather than the `false` the connection never earned, and the reply's own text and calls
+ * are read from the second request instead of being lost. A credential or rate-limit refusal is not
+ * one of these failures and never falls back.
  */
 async function oneRequest(
   client: OpenAiCompatibleClient,
@@ -135,6 +137,7 @@ async function oneRequest(
   },
 ): Promise<OneRequest> {
   try {
+    const before = { text: options.deltas.text, toolCalls: options.deltas.toolCalls };
     const reply = await consume(
       client.streamChat({
         model: options.model,
@@ -145,6 +148,11 @@ async function oneRequest(
       }),
       options.deltas,
     );
+    const incremented =
+      options.deltas.text > before.text || options.deltas.toolCalls > before.toolCalls;
+    if (!incremented && reply.text === "" && reply.toolCalls.length === 0) {
+      throw new ProviderTransportError("the streamed reply carried no records");
+    }
     return { reply, streamed: true };
   } catch (error) {
     if (!(error instanceof ProviderTransportError || error instanceof ProviderHttpError))
@@ -242,6 +250,13 @@ export async function runCapabilityTest(options: CapabilityTestOptions): Promise
 
   const flags = deriveFlags(observation, null, structured);
   flags.notes.push(...notes);
+  // The derived notes are shared with the Pi-driven smoke. One of them describes this path's own
+  // limit rather than a Pi failure, so it is restated here as what it is.
+  flags.notes = flags.notes.map((note) =>
+    note.startsWith("context window unknown")
+      ? "context window unknown: this test reads one reply, which carries no model list"
+      : note,
+  );
   if (deltas.text + deltas.toolCalls === 0) {
     flags.streaming = null;
     flags.notes = flags.notes

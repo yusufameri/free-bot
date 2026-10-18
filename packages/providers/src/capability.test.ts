@@ -157,6 +157,35 @@ describe("the capability test", () => {
       "streaming unknown: the endpoint answered whole replies",
     );
     expect(turn.answer).toBe(CAPABILITY_TEXT);
+    expect(turn.requests).toBe(2);
+  });
+
+  test("an endpoint that answers a 200 with no SSE records is retried whole, so its reply is not lost", async () => {
+    const withCall = () =>
+      jsonResponse(
+        200,
+        completion("", [
+          {
+            id: "call_1",
+            type: "function",
+            function: { name: CAPABILITY_TOOL.name, arguments: `{"text":"${CAPABILITY_TEXT}"}` },
+          },
+        ]),
+      );
+    const client = clientFor([
+      withCall(),
+      withCall(),
+      jsonResponse(200, completion(CAPABILITY_TEXT)),
+      jsonResponse(200, completion(CAPABILITY_TEXT)),
+    ]);
+
+    const turn = await runCapabilityTest(optionsFor(client));
+
+    expect(turn.flags.toolCalling).toBe("strong");
+    expect(turn.flags.streaming).toBeNull();
+    expect(turn.toolNames).toEqual([CAPABILITY_TOOL.name]);
+    expect(turn.answer).toBe(CAPABILITY_TEXT);
+    expect(turn.requests).toBe(2);
   });
 
   test("a refused credential comes back as the client's typed auth error, with its status", async () => {

@@ -223,6 +223,12 @@ export function mountProvider(config: {
     if (testing) return;
     void save();
   });
+  for (const field of [baseUrlEl, modelEl]) {
+    // The request line follows the fields, because that is the request the button would make.
+    field.addEventListener("input", () => {
+      if (!testing) paint();
+    });
+  }
   continueEl.addEventListener("click", () => config.onContinue?.());
   replayEl.addEventListener("click", () => config.onReplay?.());
 
