@@ -73,6 +73,24 @@ diffs against. This is deliberate, and it is the part of order 36a that keeps th
 cross-platform and cross-browser-version rasterization drift is what makes stored-golden gates go
 stale, and a same-run pair cancels it.
 
+## The tests
+
+`bun test packages/pixel-gate/src` drives 62 tests over the three modules whose arithmetic a
+verdict depends on. The diff tests call `diffRegion` and `digestImage` directly, and those two
+functions are injected into the browser with `Function.prototype.toString`, so the tests drive the
+same bytes the diff page runs rather than a re-implementation of them. The region tests drive the
+snapping, the absence rule and the delta's sign over boxes written by hand. The report tests drive
+the summing, the two-run proof and the JSON emitter, including the one shape that got a baseline
+artifact a lint error: an array short enough to fit on its own but too long for the line its key
+puts it on.
+
+The artifact's JSON is written by `canonicalJson` in `report.ts` rather than by
+`JSON.stringify(value, null, 2)`, because `packages/verify/artifacts/**` is committed and
+`bun run lint` runs Biome over the whole tree. Biome keeps a short array on one line and otherwise
+expands it one element per line, and it measures the whole line, so a key's length is part of the
+budget. The emitter's output for both real artifacts was diffed against `biome check` with no
+difference.
+
 ## The region map
 
 `packages/pixel-gate/src/regions.ts` is the one place a region is defined. Each entry is one
@@ -160,7 +178,7 @@ pixel-identical:
 | 1440x900 | 0/1296000 | 0/1296000 |
 | 1920x1080 | 0/2073600 | 0/2073600 |
 
-Zero differing pixels over 7,739,640 pixels per side, with max channel 0 on every pair. A run whose
+Zero differing pixels over 7,766,640 pixels per side, with max channel 0 on every pair. A run whose
 second capture differs from its first throws rather than reporting, so `--repeat` cannot pass while
 the page is moving.
 
@@ -172,8 +190,8 @@ same pixels. The committed pair is under the baseline's `stability/`.
 
 ## The baseline
 
-The committed baseline is `packages/verify/artifacts/pixel-gate/fec983a/`, produced by
-`bun packages/pixel-gate/src/cli.ts` at commit `fec983a`, against the app as it stands. The app state
+The committed baseline is `packages/verify/artifacts/pixel-gate/e247a9d/`, produced by
+`bun packages/pixel-gate/src/cli.ts` at commit `e247a9d`, against the app as it stands. The app state
 is stated in `assert.txt`: booted as `bun run up --no-open --replay` over a fresh temporary
 `FREEBOT_HOME` and bots root, one Bot and one thread created over `/rpc` before the page opens, the
 vault this run's own three-line placeholder at mode 600 in that temporary directory. No key is read,
@@ -203,13 +221,13 @@ boxes differ at every desktop width and three at every mobile one:
   transcript immediately under it and the composer pinned to the bottom edge of the column. The app's
   header is 137.61px at 360 wide and 118.23px at 1920, with its own tab strip and a 48px composer row
   under it and the transcript filling what is left. At 1920 that is the transcript starting 97.43px
-  lower and ending 48.63px higher than the export's, and the composer sitting 689.71px higher. The
+  lower and running 48.63px taller than the export's, and the composer sitting 689.71px higher. The
   transcript also loses the export's `flex-end` pinning, so its band ends where the app's flex layout
   puts it.
 - **The app's composer is above the transcript; the export's is below it.** This is the same finding
-  from the other side and the largest single number in the block: -376.52px at 360 wide, +689.71px at
-  1920.
-- **The sidebar list starts 3.73px lower and ends 81.73px higher** than the export's, which follows
+  from the other side and the largest single number in the block: -376.52px at 360 wide and -689.71px
+  at 1920, both negative because the app's composer sits above the export's either way.
+- **The sidebar list starts 3.73px higher and runs 81.73px taller** than the export's, which follows
   from the two heads being different heights rather than from a padding difference.
 - **The header's height delta** at 1920 is 62.43px, the app's `h1` plus subtitle plus Bot title plus
   meta row against the export's single 53px control row.

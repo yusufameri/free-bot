@@ -1,0 +1,307 @@
+# pixel gate
+
+feature: pixel-gate
+command: bun packages/pixel-gate/src/cli.ts --repeat
+commit: e247a9dd83012ca3d5d844ed7b5aa9a9d21f313b (e247a9d) on u6.7a-pixel-gate
+started: 2026-10-18T07:09:20.303Z
+runtime: bun 1.2.5 on darwin arm64
+chrome: chrome Chrome/155.0.8059.85
+chrome tolerance: 0 differing pixel(s) per chrome region
+
+app: http://127.0.0.1:60492/#token=<redacted>
+  home /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-P6rlC7
+  bot bot-local, thread thread-1, provider mode replay, vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-P6rlC7/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-P6rlC7)
+export: design/prototype-84c6b185/freebot-prototype.html, served at http://127.0.0.1:60494/, its initial screen replaced 1 time(s)
+
+fonts: the app resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; the export resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif
+  the two stacks are the same; a 'Geist' string measures 215.98px against an absent family's 215.98px on the app and 215.98px against 215.98px on the export, so Geist has no face on this machine and both pages render the stack's fallback
+
+same instance, same run: one Chrome process, one CDP connection, three targets in it (the app, the export, and the page that diffs them). The export is never screenshotted in a second process and no stored image is ever read.
+
+## the matrix
+01-mobile-compact-360x800: 360x800, 0 chrome region(s), 2 content region(s)
+02-mobile-standard-390x844: 390x844, 0 chrome region(s), 2 content region(s)
+03-mobile-large-430x932: 430x932, 0 chrome region(s), 3 content region(s)
+04-foldable-small-tablet-600x960: 600x960, 0 chrome region(s), 3 content region(s)
+05-tablet-portrait-820x1180: 820x1180, 0 chrome region(s), 3 content region(s)
+06-tablet-landscape-1024x768: 1024x768, 1 chrome region(s), 4 content region(s)
+07-laptop-1366x768: 1366x768, 4 chrome region(s), 5 content region(s)
+08-desktop-1440x900: 1440x900, 4 chrome region(s), 5 content region(s)
+09-wide-1920x1080: 1920x1080, 4 chrome region(s), 5 content region(s)
+
+## per viewport
+
+### 01-mobile-compact-360x800
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 45224/137160 pixels differ (32.9717%), mean|delta| 6.527, max channel 255, over-threshold 44288
+whole frame: 143862/288000 pixels differ (49.9521%), mean|delta| 12.303
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+digests: app 1798cf84fde1aa7e, export 3aa736b7af47acc7
+absent    chrome  chrome.resizer               the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    chrome  chrome.sidebar-edge          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h -1,0,1,0 against export -1,0,1,0
+absent    chrome  chrome.aside-edge            the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,1,0 against export 0,0,1,0
+absent    chrome  chrome.aside-strip-rule      the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,-1,0,1 against export 0,-1,0,1
+absent    content content.sidebar-list         the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+DIFF      content content.center-header        measured 360x56 at 0,0: 3524/20160 pixels differ (17.4802%), mean|delta| 10.372, max channel 255, over-threshold 3197; box delta: left 0, top 0, width 0, height 81.81 (BOXES DIFFER); app x,y,w,h 0,0,360,137.61 against export 0,0,360,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 360x325 at 0,316: 41700/117000 pixels differ (35.6410%), mean|delta| 5.865, max channel 255, over-threshold 41091; box delta: left 0, top -4.45, width 0, height 164.33 (BOXES DIFFER); app x,y,w,h 0,311.61,360,488.39 against export 0,316.06,360,324.06
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 360x160 at 0,640 (clipped to the viewport): 33112/57600 pixels differ (57.4861%), mean|delta| 9.117, max channel 255, over-threshold 32842; box delta: left 0, top -376.52, width 0, height -111.88 (BOXES DIFFER); app x,y,w,h 0,263.61,360,48 against export 0,640.13,360,159.88
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+absent    content content.aside-strip          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    content content.aside-body           the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+overflow app: documentElement.scrollWidth 360 <= window.innerWidth 360 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/288000 app pixel(s) (max channel 0) and 0/288000 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 01-mobile-compact-360x800.app.png, 01-mobile-compact-360x800.export.png
+
+### 02-mobile-standard-390x844
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 59240/189540 pixels differ (31.2546%), mean|delta| 12.095, max channel 255, over-threshold 57723
+whole frame: 142740/329160 pixels differ (43.3649%), mean|delta| 12.496
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+digests: app 7270fb296c9c36ff, export 345328a625f3eb9c
+absent    chrome  chrome.resizer               the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    chrome  chrome.sidebar-edge          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h -1,0,1,0 against export -1,0,1,0
+absent    chrome  chrome.aside-edge            the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,1,0 against export 0,0,1,0
+absent    chrome  chrome.aside-strip-rule      the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,-1,0,1 against export 0,-1,0,1
+absent    content content.sidebar-list         the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+DIFF      content content.center-header        measured 390x56 at 0,0: 3664/21840 pixels differ (16.7766%), mean|delta| 10.086, max channel 255, over-threshold 3320; box delta: left 0, top 0, width 0, height 81.81 (BOXES DIFFER); app x,y,w,h 0,0,390,137.61 against export 0,0,390,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 390x430 at 0,255: 55576/167700 pixels differ (33.1401%), mean|delta| 12.357, max channel 255, over-threshold 54403; box delta: left 0, top 55.97, width 0, height 103.91 (BOXES DIFFER); app x,y,w,h 0,311.61,390,532.39 against export 0,255.64,390,428.48
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 390x160 at 0,684 (clipped to the viewport): 35976/62400 pixels differ (57.6538%), mean|delta| 8.777, max channel 255, over-threshold 35698; box delta: left 0, top -420.52, width 0, height -111.88 (BOXES DIFFER); app x,y,w,h 0,263.61,390,48 against export 0,684.13,390,159.88
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+absent    content content.aside-strip          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    content content.aside-body           the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+overflow app: documentElement.scrollWidth 390 <= window.innerWidth 390 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/329160 app pixel(s) (max channel 0) and 0/329160 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 02-mobile-standard-390x844.app.png, 02-mobile-standard-390x844.export.png
+
+### 03-mobile-large-430x932
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 142294/324220 pixels differ (43.8881%), mean|delta| 12.744, max channel 255, over-threshold 140328
+whole frame: 185590/400760 pixels differ (46.3095%), mean|delta| 12.768
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+digests: app a4689a246f00defa, export 44139b363ae1a73a
+absent    chrome  chrome.resizer               the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    chrome  chrome.sidebar-edge          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h -1,0,1,0 against export -1,0,1,0
+absent    chrome  chrome.aside-edge            the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,1,0 against export 0,0,1,0
+absent    chrome  chrome.aside-strip-rule      the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,-1,0,1 against export 0,-1,0,1
+absent    content content.sidebar-list         the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+DIFF      content content.center-header        measured 430x56 at 0,0: 4051/24080 pixels differ (16.8231%), mean|delta| 9.838, max channel 255, over-threshold 3666; box delta: left 0, top 0, width 0, height 81.81 (BOXES DIFFER); app x,y,w,h 0,0,430,137.61 against export 0,0,430,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 430x555 at 0,235: 98062/238650 pixels differ (41.0903%), mean|delta| 13.879, max channel 255, over-threshold 96771; box delta: left 0, top 76.11, width 0, height 65.95 (BOXES DIFFER); app x,y,w,h 0,311.61,430,620.39 against export 0,235.5,430,554.44
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 430x143 at 0,789: 40181/61490 pixels differ (65.3456%), mean|delta| 9.480, max channel 255, over-threshold 39891; box delta: left 0, top -526.33, width 0, height -94.06 (BOXES DIFFER); app x,y,w,h 0,263.61,430,48 against export 0,789.94,430,142.06
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+absent    content content.aside-strip          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    content content.aside-body           the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+overflow app: documentElement.scrollWidth 430 <= window.innerWidth 430 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/400760 app pixel(s) (max channel 0) and 0/400760 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 03-mobile-large-430x932.app.png, 03-mobile-large-430x932.export.png
+
+### 04-foldable-small-tablet-600x960
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 274351/493800 pixels differ (55.5591%), mean|delta| 12.112, max channel 255, over-threshold 272235
+whole frame: 326030/576000 pixels differ (56.6024%), mean|delta| 12.199
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+digests: app 31cff8e7ec329e71, export ebdac6f6ac9ca948
+absent    chrome  chrome.resizer               the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    chrome  chrome.sidebar-edge          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h -1,0,1,0 against export -1,0,1,0
+absent    chrome  chrome.aside-edge            the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,1,0 against export 0,0,1,0
+absent    chrome  chrome.aside-strip-rule      the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,-1,0,1 against export 0,-1,0,1
+absent    content content.sidebar-list         the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+DIFF      content content.center-header        measured 600x56 at 0,0: 5049/33600 pixels differ (15.0268%), mean|delta| 8.190, max channel 255, over-threshold 4532; box delta: left 0, top 0, width 0, height 81.81 (BOXES DIFFER); app x,y,w,h 0,0,600,137.61 against export 0,0,600,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 600x624 at 0,194: 212801/374400 pixels differ (56.8379%), mean|delta| 13.299, max channel 255, over-threshold 211492; box delta: left 0, top 116.81, width 0, height 25.25 (BOXES DIFFER); app x,y,w,h 0,311.61,600,648.39 against export 0,194.8,600,623.14
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 600x143 at 0,817: 56501/85800 pixels differ (65.8520%), mean|delta| 8.469, max channel 255, over-threshold 56211; box delta: left 0, top -554.33, width 0, height -94.06 (BOXES DIFFER); app x,y,w,h 0,263.61,600,48 against export 0,817.94,600,142.06
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+absent    content content.aside-strip          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    content content.aside-body           the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+overflow app: documentElement.scrollWidth 600 <= window.innerWidth 600 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/576000 app pixel(s) (max channel 0) and 0/576000 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 04-foldable-small-tablet-600x960.app.png, 04-foldable-small-tablet-600x960.export.png
+
+### 05-tablet-portrait-820x1180
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 367111/855260 pixels differ (42.9239%), mean|delta| 9.410, max channel 255, over-threshold 364318
+whole frame: 424169/967600 pixels differ (43.8372%), mean|delta| 9.460
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+digests: app 13c9b330463ad208, export fa55aa213b604255
+absent    chrome  chrome.resizer               the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    chrome  chrome.sidebar-edge          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h -1,0,1,0 against export -1,0,1,0
+absent    chrome  chrome.aside-edge            the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,1,0 against export 0,0,1,0
+absent    chrome  chrome.aside-strip-rule      the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,-1,0,1 against export 0,-1,0,1
+absent    content content.sidebar-list         the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+DIFF      content content.center-header        measured 820x56 at 0,0: 5535/45920 pixels differ (12.0536%), mean|delta| 6.351, max channel 255, over-threshold 4978; box delta: left 0, top 0, width 0, height 62.43 (BOXES DIFFER); app x,y,w,h 0,0,820,118.23 against export 0,0,820,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 820x844 at 0,194: 287787/692080 pixels differ (41.5829%), mean|delta| 9.984, max channel 255, over-threshold 285841; box delta: left 0, top 97.43, width 0, height 44.63 (BOXES DIFFER); app x,y,w,h 0,292.23,820,887.77 against export 0,194.8,820,843.14
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 820x143 at 0,1037: 73789/117260 pixels differ (62.9277%), mean|delta| 7.221, max channel 255, over-threshold 73499; box delta: left 0, top -793.71, width 0, height -94.06 (BOXES DIFFER); app x,y,w,h 0,244.23,820,48 against export 0,1037.94,820,142.06
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+absent    content content.aside-strip          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    content content.aside-body           the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+overflow app: documentElement.scrollWidth 820 <= window.innerWidth 820 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/967600 app pixel(s) (max channel 0) and 0/967600 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 05-tablet-portrait-820x1180.app.png, 05-tablet-portrait-820x1180.export.png
+
+### 06-tablet-landscape-1024x768
+chrome: 0/768 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 240828/634467 pixels differ (37.9575%), mean|delta| 8.546, max channel 255, over-threshold 238179
+whole frame: 300241/786432 pixels differ (38.1776%), mean|delta| 8.636
+digests: app 2a5cb1298d43d27f, export ddf701cd321d1f33
+absent    chrome  chrome.resizer               the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+same      chrome  chrome.sidebar-edge          measured 1x768 at 263,0: 0/768 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 263,0,1,768 against export 263,0,1,768
+absent    chrome  chrome.aside-edge            the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,1,0 against export 0,0,1,0
+absent    chrome  chrome.aside-strip-rule      the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,-1,0,1 against export 0,-1,0,1
+DIFF      content content.sidebar-list         measured 263x589 at 0,54: 39390/154907 pixels differ (25.4282%), mean|delta| 8.845, max channel 255, over-threshold 38749; box delta: left 0, top -3.73, width 0, height 81.73 (BOXES DIFFER); app x,y,w,h 0,50.27,263,670.73 against export 0,54,263,589
+             named variance: the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.
+DIFF      content content.center-header        measured 760x56 at 264,0: 5475/42560 pixels differ (12.8642%), mean|delta| 6.815, max channel 255, over-threshold 4918; box delta: left 0, top 0, width 0, height 62.43 (BOXES DIFFER); app x,y,w,h 264,0,760,118.23 against export 264,0,760,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 760x428 at 264,194: 126354/325280 pixels differ (38.8447%), mean|delta| 9.065, max channel 255, over-threshold 125193; box delta: left 0, top 97.43, width 0, height 48.63 (BOXES DIFFER); app x,y,w,h 264,292.23,760,475.77 against export 264,194.8,760,427.14
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 760x147 at 264,621: 69609/111720 pixels differ (62.3067%), mean|delta| 7.283, max channel 255, over-threshold 69319; box delta: left 0, top -377.71, width 0, height -98.06 (BOXES DIFFER); app x,y,w,h 264,244.23,760,48 against export 264,621.94,760,146.06
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+absent    content content.aside-strip          the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+absent    content content.aside-body           the region is not on this viewport, so it has no pixel statistic; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 0,0,0,0 against export 0,0,0,0
+overflow app: documentElement.scrollWidth 1024 <= window.innerWidth 1024 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/786432 app pixel(s) (max channel 0) and 0/786432 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 06-tablet-landscape-1024x768.chrome.sidebar-edge.png, 06-tablet-landscape-1024x768.app.png, 06-tablet-landscape-1024x768.export.png
+
+### 07-laptop-1366x768
+chrome: 0/6118 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 234178/629077 pixels differ (37.2256%), mean|delta| 8.548, max channel 255, over-threshold 231398
+whole frame: 362764/1049088 pixels differ (34.5790%), mean|delta| 8.171
+digests: app 649f923950407c9f, export edd08638b4124cf0
+same      chrome  chrome.resizer               measured 5x768 at 989,0: 0/3840 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 989,0,5,768 against export 989,0,5,768
+same      chrome  chrome.sidebar-edge          measured 1x768 at 263,0: 0/768 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 263,0,1,768 against export 263,0,1,768
+same      chrome  chrome.aside-edge            measured 1x768 at 994,0: 0/768 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 994,0,1,768 against export 994,0,1,768
+same      chrome  chrome.aside-strip-rule      measured 371x2 at 995,43: 0/742 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 995,43.38,371,1 against export 995,43.38,371,1
+DIFF      content content.sidebar-list         measured 263x589 at 0,54: 39390/154907 pixels differ (25.4282%), mean|delta| 8.845, max channel 255, over-threshold 38749; box delta: left 0, top -3.73, width 0, height 81.73 (BOXES DIFFER); app x,y,w,h 0,50.27,263,670.73 against export 0,54,263,589
+             named variance: the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.
+DIFF      content content.center-header        measured 725x56 at 264,0: 5225/40600 pixels differ (12.8695%), mean|delta| 6.527, max channel 255, over-threshold 4672; box delta: left 0, top 0, width 0, height 62.43 (BOXES DIFFER); app x,y,w,h 264,0,725,118.23 against export 264,0,725,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 725x428 at 264,194: 122189/310300 pixels differ (39.3777%), mean|delta| 9.387, max channel 255, over-threshold 121028; box delta: left 0, top 97.43, width 0, height 48.63 (BOXES DIFFER); app x,y,w,h 264,292.23,725,475.77 against export 264,194.8,725,427.14
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 725x147 at 264,621: 66284/106575 pixels differ (62.1947%), mean|delta| 7.388, max channel 255, over-threshold 65994; box delta: left 0, top -377.71, width 0, height -98.06 (BOXES DIFFER); app x,y,w,h 264,244.23,725,48 against export 264,621.94,725,146.06
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+DIFF      content content.aside-strip          measured 371x45 at 995,0: 1090/16695 pixels differ (6.5289%), mean|delta| 2.520, max channel 115, over-threshold 955; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 995,0,371,44.38 against export 995,0,371,44.38
+             named variance: the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.
+DIFF      content content.aside-body           measured 371x724 at 995,44 (clipped to the viewport): 71413/268604 pixels differ (26.5867%), mean|delta| 6.868, max channel 255, over-threshold 68080; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 995,44.38,371,723.63 against export 995,44.38,371,723.63
+             named variance: the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.
+overflow app: documentElement.scrollWidth 1366 <= window.innerWidth 1366 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/1049088 app pixel(s) (max channel 0) and 0/1049088 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 07-laptop-1366x768.chrome.resizer.png, 07-laptop-1366x768.chrome.sidebar-edge.png, 07-laptop-1366x768.chrome.aside-edge.png, 07-laptop-1366x768.chrome.aside-strip-rule.png, 07-laptop-1366x768.app.png, 07-laptop-1366x768.export.png
+
+### 08-desktop-1440x900
+chrome: 0/7042 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 253956/815955 pixels differ (31.1238%), mean|delta| 7.638, max channel 255, over-threshold 250577
+whole frame: 388614/1296000 pixels differ (29.9856%), mean|delta| 7.346
+digests: app 5115e269c28272c7, export 6bcafd53c55ace87
+same      chrome  chrome.resizer               measured 5x900 at 1063,0: 0/4500 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1063,0,5,900 against export 1063,0,5,900
+same      chrome  chrome.sidebar-edge          measured 1x900 at 263,0: 0/900 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 263,0,1,900 against export 263,0,1,900
+same      chrome  chrome.aside-edge            measured 1x900 at 1068,0: 0/900 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1068,0,1,900 against export 1068,0,1,900
+same      chrome  chrome.aside-strip-rule      measured 371x2 at 1069,43: 0/742 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1069,43.38,371,1 against export 1069,43.38,371,1
+DIFF      content content.sidebar-list         measured 263x721 at 0,54: 40693/189623 pixels differ (21.4599%), mean|delta| 7.880, max channel 255, over-threshold 39974; box delta: left 0, top -3.73, width 0, height 81.73 (BOXES DIFFER); app x,y,w,h 0,50.27,263,802.73 against export 0,54,263,721
+             named variance: the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.
+DIFF      content content.center-header        measured 799x56 at 264,0: 5299/44744 pixels differ (11.8429%), mean|delta| 5.967, max channel 255, over-threshold 4747; box delta: left 0, top 0, width 0, height 62.43 (BOXES DIFFER); app x,y,w,h 264,0,799,118.23 against export 264,0,799,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 799x560 at 264,194: 133542/447440 pixels differ (29.8458%), mean|delta| 8.012, max channel 255, over-threshold 131860; box delta: left 0, top 97.43, width 0, height 48.63 (BOXES DIFFER); app x,y,w,h 264,292.23,799,607.77 against export 264,194.8,799,559.14
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 799x147 at 264,753: 73332/117453 pixels differ (62.4352%), mean|delta| 7.188, max channel 255, over-threshold 73041; box delta: left 0, top -509.71, width 0, height -98.06 (BOXES DIFFER); app x,y,w,h 264,244.23,799,48 against export 264,753.94,799,146.06
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+DIFF      content content.aside-strip          measured 371x45 at 1069,0: 1090/16695 pixels differ (6.5289%), mean|delta| 2.520, max channel 115, over-threshold 955; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1069,0,371,44.38 against export 1069,0,371,44.38
+             named variance: the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.
+DIFF      content content.aside-body           measured 371x856 at 1069,44 (clipped to the viewport): 72767/317576 pixels differ (22.9133%), mean|delta| 5.982, max channel 255, over-threshold 69227; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1069,44.38,371,855.63 against export 1069,44.38,371,855.63
+             named variance: the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.
+overflow app: documentElement.scrollWidth 1440 <= window.innerWidth 1440 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/1296000 app pixel(s) (max channel 0) and 0/1296000 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 08-desktop-1440x900.chrome.resizer.png, 08-desktop-1440x900.chrome.sidebar-edge.png, 08-desktop-1440x900.chrome.aside-edge.png, 08-desktop-1440x900.chrome.aside-strip-rule.png, 08-desktop-1440x900.app.png, 08-desktop-1440x900.export.png
+
+### 09-wide-1920x1080
+chrome: 0/8302 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 374524/1459755 pixels differ (25.6566%), mean|delta| 5.760, max channel 255, over-threshold 371066
+whole frame: 539204/2073600 pixels differ (26.0033%), mean|delta| 5.762
+digests: app 26fe7c335ec37591, export 8e8bc7ebbc7806b5
+same      chrome  chrome.resizer               measured 5x1080 at 1543,0: 0/5400 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1543,0,5,1080 against export 1543,0,5,1080
+same      chrome  chrome.sidebar-edge          measured 1x1080 at 263,0: 0/1080 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 263,0,1,1080 against export 263,0,1,1080
+same      chrome  chrome.aside-edge            measured 1x1080 at 1548,0: 0/1080 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1548,0,1,1080 against export 1548,0,1,1080
+same      chrome  chrome.aside-strip-rule      measured 371x2 at 1549,43: 0/742 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1549,43.38,371,1 against export 1549,43.38,371,1
+DIFF      content content.sidebar-list         measured 263x901 at 0,54: 40693/236963 pixels differ (17.1727%), mean|delta| 6.305, max channel 255, over-threshold 39971; box delta: left 0, top -3.73, width 0, height 81.73 (BOXES DIFFER); app x,y,w,h 0,50.27,263,982.73 against export 0,54,263,901
+             named variance: the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.
+DIFF      content content.center-header        measured 1279x56 at 264,0: 5779/71624 pixels differ (8.0685%), mean|delta| 3.909, max channel 255, over-threshold 5226; box delta: left 0, top 0, width 0, height 62.43 (BOXES DIFFER); app x,y,w,h 264,0,1279,118.23 against export 264,0,1279,55.8
+             named variance: the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.
+DIFF      content content.center-transcript    measured 1279x740 at 264,194: 252460/946460 pixels differ (26.6741%), mean|delta| 6.064, max channel 255, over-threshold 250666; box delta: left 0, top 97.43, width 0, height 48.63 (BOXES DIFFER); app x,y,w,h 264,292.23,1279,787.77 against export 264,194.8,1279,739.14
+             named variance: the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.
+DIFF      content content.center-composer      measured 1279x147 at 264,933: 74502/188013 pixels differ (39.6260%), mean|delta| 4.534, max channel 255, over-threshold 74248; box delta: left 0, top -689.71, width 0, height -98.06 (BOXES DIFFER); app x,y,w,h 264,244.23,1279,48 against export 264,933.94,1279,146.06
+             named variance: the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.
+DIFF      content content.aside-strip          measured 371x45 at 1549,0: 1090/16695 pixels differ (6.5289%), mean|delta| 2.520, max channel 115, over-threshold 955; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1549,0,371,44.38 against export 1549,0,371,44.38
+             named variance: the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.
+DIFF      content content.aside-body           measured 371x1036 at 1549,44 (clipped to the viewport): 72767/384356 pixels differ (18.9322%), mean|delta| 4.942, max channel 255, over-threshold 69227; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1549,44.38,371,1035.63 against export 1549,44.38,371,1035.63
+             named variance: the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.
+overflow app: documentElement.scrollWidth 1920 <= window.innerWidth 1920 ok; regions with content wider than their box: none
+repeat: a second capture of the same viewport differs from the first by 0/2073600 app pixel(s) (max channel 0) and 0/2073600 export pixel(s) (max channel 0), so both captures are pixel-identical across two shots
+files: 09-wide-1920x1080.chrome.resizer.png, 09-wide-1920x1080.chrome.sidebar-edge.png, 09-wide-1920x1080.chrome.aside-edge.png, 09-wide-1920x1080.chrome.aside-strip-rule.png, 09-wide-1920x1080.app.png, 09-wide-1920x1080.export.png
+
+## the box deltas
+One line per region, the source rectangle against the same rectangle on the other page. This is where a structural difference between the two pages becomes a number.
+01-mobile-compact-360x800: 10 region(s) comparable, 3 with differing boxes (content.center-header, content.center-transcript, content.center-composer)
+  content content.center-header        left 0, top 0, width 0, height 81.81
+  content content.center-transcript    left 0, top -4.45, width 0, height 164.33
+  content content.center-composer      left 0, top -376.52, width 0, height -111.88
+02-mobile-standard-390x844: 10 region(s) comparable, 3 with differing boxes (content.center-header, content.center-transcript, content.center-composer)
+  content content.center-header        left 0, top 0, width 0, height 81.81
+  content content.center-transcript    left 0, top 55.97, width 0, height 103.91
+  content content.center-composer      left 0, top -420.52, width 0, height -111.88
+03-mobile-large-430x932: 10 region(s) comparable, 3 with differing boxes (content.center-header, content.center-transcript, content.center-composer)
+  content content.center-header        left 0, top 0, width 0, height 81.81
+  content content.center-transcript    left 0, top 76.11, width 0, height 65.95
+  content content.center-composer      left 0, top -526.33, width 0, height -94.06
+04-foldable-small-tablet-600x960: 10 region(s) comparable, 3 with differing boxes (content.center-header, content.center-transcript, content.center-composer)
+  content content.center-header        left 0, top 0, width 0, height 81.81
+  content content.center-transcript    left 0, top 116.81, width 0, height 25.25
+  content content.center-composer      left 0, top -554.33, width 0, height -94.06
+05-tablet-portrait-820x1180: 10 region(s) comparable, 3 with differing boxes (content.center-header, content.center-transcript, content.center-composer)
+  content content.center-header        left 0, top 0, width 0, height 62.43
+  content content.center-transcript    left 0, top 97.43, width 0, height 44.63
+  content content.center-composer      left 0, top -793.71, width 0, height -94.06
+06-tablet-landscape-1024x768: 10 region(s) comparable, 4 with differing boxes (content.sidebar-list, content.center-header, content.center-transcript, content.center-composer)
+  content content.sidebar-list         left 0, top -3.73, width 0, height 81.73
+  content content.center-header        left 0, top 0, width 0, height 62.43
+  content content.center-transcript    left 0, top 97.43, width 0, height 48.63
+  content content.center-composer      left 0, top -377.71, width 0, height -98.06
+07-laptop-1366x768: 10 region(s) comparable, 4 with differing boxes (content.sidebar-list, content.center-header, content.center-transcript, content.center-composer)
+  content content.sidebar-list         left 0, top -3.73, width 0, height 81.73
+  content content.center-header        left 0, top 0, width 0, height 62.43
+  content content.center-transcript    left 0, top 97.43, width 0, height 48.63
+  content content.center-composer      left 0, top -377.71, width 0, height -98.06
+08-desktop-1440x900: 10 region(s) comparable, 4 with differing boxes (content.sidebar-list, content.center-header, content.center-transcript, content.center-composer)
+  content content.sidebar-list         left 0, top -3.73, width 0, height 81.73
+  content content.center-header        left 0, top 0, width 0, height 62.43
+  content content.center-transcript    left 0, top 97.43, width 0, height 48.63
+  content content.center-composer      left 0, top -509.71, width 0, height -98.06
+09-wide-1920x1080: 10 region(s) comparable, 4 with differing boxes (content.sidebar-list, content.center-header, content.center-transcript, content.center-composer)
+  content content.sidebar-list         left 0, top -3.73, width 0, height 81.73
+  content content.center-header        left 0, top 0, width 0, height 62.43
+  content content.center-transcript    left 0, top 97.43, width 0, height 48.63
+  content content.center-composer      left 0, top -689.71, width 0, height -98.06
+
+## the summary table
+| # | viewport | chrome regions | chrome differing | chrome share | content regions | content share | whole share | boxes differing |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | mobile-compact 360x800 | 0 | 0/0 | 0.0000% | 2 | 32.9717% | 49.9521% | 3 |
+| 2 | mobile-standard 390x844 | 0 | 0/0 | 0.0000% | 2 | 31.2546% | 43.3649% | 3 |
+| 3 | mobile-large 430x932 | 0 | 0/0 | 0.0000% | 3 | 43.8881% | 46.3095% | 3 |
+| 4 | foldable-small-tablet 600x960 | 0 | 0/0 | 0.0000% | 3 | 55.5591% | 56.6024% | 3 |
+| 5 | tablet-portrait 820x1180 | 0 | 0/0 | 0.0000% | 3 | 42.9239% | 43.8372% | 3 |
+| 6 | tablet-landscape 1024x768 | 1 | 0/768 | 0.0000% | 4 | 37.9575% | 38.1776% | 4 |
+| 7 | laptop 1366x768 | 4 | 0/6118 | 0.0000% | 5 | 37.2256% | 34.5790% | 4 |
+| 8 | desktop 1440x900 | 4 | 0/7042 | 0.0000% | 5 | 31.1238% | 29.9856% | 4 |
+| 9 | wide 1920x1080 | 4 | 0/8302 | 0.0000% | 5 | 25.6566% | 26.0033% | 4 |
+
+## verdict
+every chrome region this run carried is within tolerance: 13 region measurement(s) across 9 viewport(s), summed 0/22230 differing pixel(s) against a per-region tolerance of 0
+
+RESULT: PASS
+

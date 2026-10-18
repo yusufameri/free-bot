@@ -1,0 +1,3881 @@
+{
+  "feature": "pixel-gate",
+  "command": "bun packages/pixel-gate/src/cli.ts --artifact /tmp/pg-second",
+  "commit": "e247a9dd83012ca3d5d844ed7b5aa9a9d21f313b",
+  "shortSha": "e247a9d",
+  "branch": "u6.7a-pixel-gate",
+  "dirty": false,
+  "startedAt": "2026-10-18T07:09:42.299Z",
+  "runtime": "bun 1.2.5 on darwin arm64",
+  "chrome": "chrome Chrome/155.0.8059.85",
+  "fonts": {
+    "appStack": "Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+    "exportStack": "Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+    "same": true,
+    "appGeistWidth": 215.98,
+    "appAbsentWidth": 215.98,
+    "exportGeistWidth": 215.98,
+    "exportAbsentWidth": 215.98,
+    "geistResolves": false
+  },
+  "app": {
+    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-ZaWJW7",
+    "url": "http://127.0.0.1:60569/#token=<redacted>",
+    "botId": "bot-local",
+    "threadId": "thread-1",
+    "provider": "replay",
+    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-ZaWJW7/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-ZaWJW7)"
+  },
+  "exportSource": {
+    "file": "design/prototype-84c6b185/freebot-prototype.html",
+    "initialScreenReplacements": 1,
+    "servedAt": "http://127.0.0.1:60571/"
+  },
+  "viewports": [
+    {
+      "index": 1,
+      "name": "mobile-compact",
+      "width": 360,
+      "height": 800,
+      "label": "01-mobile-compact-360x800",
+      "chrome": {
+        "differing": 0,
+        "total": 0,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 45224,
+        "total": 137160,
+        "share": 0.3297171186934966,
+        "meanAbsolute": 6.527214566929134,
+        "maxChannel": 255,
+        "visible": 44288
+      },
+      "chromeRegions": 0,
+      "contentRegions": 2,
+      "whole": {
+        "differing": 143862,
+        "total": 288000,
+        "share": 0.49952083333333336,
+        "meanAbsolute": 12.302903645833334,
+        "maxChannel": 255,
+        "visible": 141476
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h -1,0,1,0 against export -1,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,1,0 against export 0,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,-1,0,1 against export 0,-1,0,1"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 360,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 81.81,
+            "detail": "app x,y,w,h 0,0,360,137.61 against export 0,0,360,55.8"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 360,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 360,
+            "height": 137.61
+          },
+          "stat": {
+            "differing": 3524,
+            "total": 20160,
+            "share": 0.1748015873015873,
+            "meanAbsolute": 10.37202380952381,
+            "maxChannel": 255,
+            "visible": 3197
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 316,
+            "width": 360,
+            "height": 325
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -4.45,
+            "width": 0,
+            "height": 164.33,
+            "detail": "app x,y,w,h 0,311.61,360,488.39 against export 0,316.06,360,324.06"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 316.06,
+            "width": 360,
+            "height": 324.06
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 311.61,
+            "width": 360,
+            "height": 488.39
+          },
+          "stat": {
+            "differing": 41700,
+            "total": 117000,
+            "share": 0.3564102564102564,
+            "meanAbsolute": 5.864724358974359,
+            "maxChannel": 255,
+            "visible": 41091
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "clipped",
+          "rect": {
+            "x": 0,
+            "y": 640,
+            "width": 360,
+            "height": 160
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -376.52,
+            "width": 0,
+            "height": -111.88,
+            "detail": "app x,y,w,h 0,263.61,360,48 against export 0,640.13,360,159.88"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 640.13,
+            "width": 360,
+            "height": 159.88
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 263.61,
+            "width": 360,
+            "height": 48
+          },
+          "stat": {
+            "differing": 33112,
+            "total": 57600,
+            "share": 0.5748611111111112,
+            "meanAbsolute": 9.116796875,
+            "maxChannel": 255,
+            "visible": 32842
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [360, 360],
+        "regions": {
+          "#center": [360, 360],
+          "#sidebar": [0, 0],
+          "#aside": [0, 0],
+          "#resizer": [0, 0],
+          "#thread": [360, 360],
+          "#library": [0, 0],
+          "#tabs": [360, 360],
+          "#operator": [360, 360],
+          "header": [360, 360],
+          ".meta": [332, 332]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "1798cf84fde1aa7e",
+        "export": "3aa736b7af47acc7"
+      },
+      "repeat": null,
+      "files": ["01-mobile-compact-360x800.app.png", "01-mobile-compact-360x800.export.png"]
+    },
+    {
+      "index": 2,
+      "name": "mobile-standard",
+      "width": 390,
+      "height": 844,
+      "label": "02-mobile-standard-390x844",
+      "chrome": {
+        "differing": 0,
+        "total": 0,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 59240,
+        "total": 189540,
+        "share": 0.31254616439801625,
+        "meanAbsolute": 12.09514086736309,
+        "maxChannel": 255,
+        "visible": 57723
+      },
+      "chromeRegions": 0,
+      "contentRegions": 2,
+      "whole": {
+        "differing": 142740,
+        "total": 329160,
+        "share": 0.43364928909952605,
+        "meanAbsolute": 12.495914600802042,
+        "maxChannel": 255,
+        "visible": 139967
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h -1,0,1,0 against export -1,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,1,0 against export 0,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,-1,0,1 against export 0,-1,0,1"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 390,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 81.81,
+            "detail": "app x,y,w,h 0,0,390,137.61 against export 0,0,390,55.8"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 390,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 390,
+            "height": 137.61
+          },
+          "stat": {
+            "differing": 3664,
+            "total": 21840,
+            "share": 0.16776556776556775,
+            "meanAbsolute": 10.086023351648352,
+            "maxChannel": 255,
+            "visible": 3320
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 255,
+            "width": 390,
+            "height": 430
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 55.97,
+            "width": 0,
+            "height": 103.91,
+            "detail": "app x,y,w,h 0,311.61,390,532.39 against export 0,255.64,390,428.48"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 255.64,
+            "width": 390,
+            "height": 428.48
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 311.61,
+            "width": 390,
+            "height": 532.39
+          },
+          "stat": {
+            "differing": 55576,
+            "total": 167700,
+            "share": 0.3314013118664281,
+            "meanAbsolute": 12.356793381037567,
+            "maxChannel": 255,
+            "visible": 54403
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "clipped",
+          "rect": {
+            "x": 0,
+            "y": 684,
+            "width": 390,
+            "height": 160
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -420.52,
+            "width": 0,
+            "height": -111.88,
+            "detail": "app x,y,w,h 0,263.61,390,48 against export 0,684.13,390,159.88"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 684.13,
+            "width": 390,
+            "height": 159.88
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 263.61,
+            "width": 390,
+            "height": 48
+          },
+          "stat": {
+            "differing": 35976,
+            "total": 62400,
+            "share": 0.5765384615384616,
+            "meanAbsolute": 8.776742788461538,
+            "maxChannel": 255,
+            "visible": 35698
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [390, 390],
+        "regions": {
+          "#center": [390, 390],
+          "#sidebar": [0, 0],
+          "#aside": [0, 0],
+          "#resizer": [0, 0],
+          "#thread": [390, 390],
+          "#library": [0, 0],
+          "#tabs": [390, 390],
+          "#operator": [390, 390],
+          "header": [390, 390],
+          ".meta": [362, 362]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "7270fb296c9c36ff",
+        "export": "345328a625f3eb9c"
+      },
+      "repeat": null,
+      "files": ["02-mobile-standard-390x844.app.png", "02-mobile-standard-390x844.export.png"]
+    },
+    {
+      "index": 3,
+      "name": "mobile-large",
+      "width": 430,
+      "height": 932,
+      "label": "03-mobile-large-430x932",
+      "chrome": {
+        "differing": 0,
+        "total": 0,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 142294,
+        "total": 324220,
+        "share": 0.4388810067238295,
+        "meanAbsolute": 12.744469033372402,
+        "maxChannel": 255,
+        "visible": 140328
+      },
+      "chromeRegions": 0,
+      "contentRegions": 3,
+      "whole": {
+        "differing": 185590,
+        "total": 400760,
+        "share": 0.4630951192733806,
+        "meanAbsolute": 12.768040722627008,
+        "maxChannel": 255,
+        "visible": 182774
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h -1,0,1,0 against export -1,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,1,0 against export 0,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,-1,0,1 against export 0,-1,0,1"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 430,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 81.81,
+            "detail": "app x,y,w,h 0,0,430,137.61 against export 0,0,430,55.8"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 430,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 430,
+            "height": 137.61
+          },
+          "stat": {
+            "differing": 4051,
+            "total": 24080,
+            "share": 0.16823089700996677,
+            "meanAbsolute": 9.838174833887043,
+            "maxChannel": 255,
+            "visible": 3666
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 235,
+            "width": 430,
+            "height": 555
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 76.11,
+            "width": 0,
+            "height": 65.95,
+            "detail": "app x,y,w,h 0,311.61,430,620.39 against export 0,235.5,430,554.44"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 235.5,
+            "width": 430,
+            "height": 554.44
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 311.61,
+            "width": 430,
+            "height": 620.39
+          },
+          "stat": {
+            "differing": 98062,
+            "total": 238650,
+            "share": 0.4109029960192751,
+            "meanAbsolute": 13.878720930232559,
+            "maxChannel": 255,
+            "visible": 96771
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 789,
+            "width": 430,
+            "height": 143
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -526.33,
+            "width": 0,
+            "height": -94.06,
+            "detail": "app x,y,w,h 0,263.61,430,48 against export 0,789.94,430,142.06"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 789.94,
+            "width": 430,
+            "height": 142.06
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 263.61,
+            "width": 430,
+            "height": 48
+          },
+          "stat": {
+            "differing": 40181,
+            "total": 61490,
+            "share": 0.6534558464791023,
+            "meanAbsolute": 9.480431777524801,
+            "maxChannel": 255,
+            "visible": 39891
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [430, 430],
+        "regions": {
+          "#center": [430, 430],
+          "#sidebar": [0, 0],
+          "#aside": [0, 0],
+          "#resizer": [0, 0],
+          "#thread": [430, 430],
+          "#library": [0, 0],
+          "#tabs": [430, 430],
+          "#operator": [430, 430],
+          "header": [430, 430],
+          ".meta": [402, 402]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "a4689a246f00defa",
+        "export": "44139b363ae1a73a"
+      },
+      "repeat": null,
+      "files": ["03-mobile-large-430x932.app.png", "03-mobile-large-430x932.export.png"]
+    },
+    {
+      "index": 4,
+      "name": "foldable-small-tablet",
+      "width": 600,
+      "height": 960,
+      "label": "04-foldable-small-tablet-600x960",
+      "chrome": {
+        "differing": 0,
+        "total": 0,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 274351,
+        "total": 493800,
+        "share": 0.5555913325232887,
+        "meanAbsolute": 12.11184538274605,
+        "maxChannel": 255,
+        "visible": 272235
+      },
+      "chromeRegions": 0,
+      "contentRegions": 3,
+      "whole": {
+        "differing": 326030,
+        "total": 576000,
+        "share": 0.5660243055555556,
+        "meanAbsolute": 12.198602864583334,
+        "maxChannel": 255,
+        "visible": 323362
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h -1,0,1,0 against export -1,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,1,0 against export 0,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,-1,0,1 against export 0,-1,0,1"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 600,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 81.81,
+            "detail": "app x,y,w,h 0,0,600,137.61 against export 0,0,600,55.8"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 600,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 600,
+            "height": 137.61
+          },
+          "stat": {
+            "differing": 5049,
+            "total": 33600,
+            "share": 0.15026785714285715,
+            "meanAbsolute": 8.190267857142857,
+            "maxChannel": 255,
+            "visible": 4532
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 194,
+            "width": 600,
+            "height": 624
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 116.81,
+            "width": 0,
+            "height": 25.25,
+            "detail": "app x,y,w,h 0,311.61,600,648.39 against export 0,194.8,600,623.14"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 194.8,
+            "width": 600,
+            "height": 623.14
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 311.61,
+            "width": 600,
+            "height": 648.39
+          },
+          "stat": {
+            "differing": 212801,
+            "total": 374400,
+            "share": 0.5683787393162393,
+            "meanAbsolute": 13.298695913461538,
+            "maxChannel": 255,
+            "visible": 211492
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 817,
+            "width": 600,
+            "height": 143
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -554.33,
+            "width": 0,
+            "height": -94.06,
+            "detail": "app x,y,w,h 0,263.61,600,48 against export 0,817.94,600,142.06"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 817.94,
+            "width": 600,
+            "height": 142.06
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 263.61,
+            "width": 600,
+            "height": 48
+          },
+          "stat": {
+            "differing": 56501,
+            "total": 85800,
+            "share": 0.6585198135198135,
+            "meanAbsolute": 8.468583916083917,
+            "maxChannel": 255,
+            "visible": 56211
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [600, 600],
+        "regions": {
+          "#center": [600, 600],
+          "#sidebar": [0, 0],
+          "#aside": [0, 0],
+          "#resizer": [0, 0],
+          "#thread": [600, 600],
+          "#library": [0, 0],
+          "#tabs": [600, 600],
+          "#operator": [600, 600],
+          "header": [600, 600],
+          ".meta": [572, 572]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "31cff8e7ec329e71",
+        "export": "ebdac6f6ac9ca948"
+      },
+      "repeat": null,
+      "files": [
+        "04-foldable-small-tablet-600x960.app.png",
+        "04-foldable-small-tablet-600x960.export.png"
+      ]
+    },
+    {
+      "index": 5,
+      "name": "tablet-portrait",
+      "width": 820,
+      "height": 1180,
+      "label": "05-tablet-portrait-820x1180",
+      "chrome": {
+        "differing": 0,
+        "total": 0,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 367111,
+        "total": 855260,
+        "share": 0.42923906180576665,
+        "meanAbsolute": 9.410489207960152,
+        "maxChannel": 255,
+        "visible": 364318
+      },
+      "chromeRegions": 0,
+      "contentRegions": 3,
+      "whole": {
+        "differing": 424169,
+        "total": 967600,
+        "share": 0.4383722612649855,
+        "meanAbsolute": 9.459875723439438,
+        "maxChannel": 255,
+        "visible": 420620
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h -1,0,1,0 against export -1,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,1,0 against export 0,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,-1,0,1 against export 0,-1,0,1"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 0,
+            "width": 820,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 62.43,
+            "detail": "app x,y,w,h 0,0,820,118.23 against export 0,0,820,55.8"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 820,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 820,
+            "height": 118.23
+          },
+          "stat": {
+            "differing": 5535,
+            "total": 45920,
+            "share": 0.12053571428571429,
+            "meanAbsolute": 6.351382839721254,
+            "maxChannel": 255,
+            "visible": 4978
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 194,
+            "width": 820,
+            "height": 844
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 97.43,
+            "width": 0,
+            "height": 44.63,
+            "detail": "app x,y,w,h 0,292.23,820,887.77 against export 0,194.8,820,843.14"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 194.8,
+            "width": 820,
+            "height": 843.14
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 292.23,
+            "width": 820,
+            "height": 887.77
+          },
+          "stat": {
+            "differing": 287787,
+            "total": 692080,
+            "share": 0.41582909490232345,
+            "meanAbsolute": 9.984383669517975,
+            "maxChannel": 255,
+            "visible": 285841
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 1037,
+            "width": 820,
+            "height": 143
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -793.71,
+            "width": 0,
+            "height": -94.06,
+            "detail": "app x,y,w,h 0,244.23,820,48 against export 0,1037.94,820,142.06"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 1037.94,
+            "width": 820,
+            "height": 142.06
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 244.23,
+            "width": 820,
+            "height": 48
+          },
+          "stat": {
+            "differing": 73789,
+            "total": 117260,
+            "share": 0.6292768207402354,
+            "meanAbsolute": 7.2212796349991475,
+            "maxChannel": 255,
+            "visible": 73499
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [820, 820],
+        "regions": {
+          "#center": [820, 820],
+          "#sidebar": [0, 0],
+          "#aside": [0, 0],
+          "#resizer": [0, 0],
+          "#thread": [820, 820],
+          "#library": [0, 0],
+          "#tabs": [820, 820],
+          "#operator": [820, 820],
+          "header": [820, 820],
+          ".meta": [792, 792]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "13c9b330463ad208",
+        "export": "fa55aa213b604255"
+      },
+      "repeat": null,
+      "files": ["05-tablet-portrait-820x1180.app.png", "05-tablet-portrait-820x1180.export.png"]
+    },
+    {
+      "index": 6,
+      "name": "tablet-landscape",
+      "width": 1024,
+      "height": 768,
+      "label": "06-tablet-landscape-1024x768",
+      "chrome": {
+        "differing": 0,
+        "total": 768,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 240828,
+        "total": 634467,
+        "share": 0.3795752970603672,
+        "meanAbsolute": 8.54642361226037,
+        "maxChannel": 255,
+        "visible": 238179
+      },
+      "chromeRegions": 1,
+      "contentRegions": 4,
+      "whole": {
+        "differing": 300241,
+        "total": 786432,
+        "share": 0.3817761739095052,
+        "meanAbsolute": 8.635616938273111,
+        "maxChannel": 255,
+        "visible": 296462
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 263,
+            "y": 0,
+            "width": 1,
+            "height": 768
+          },
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 263,0,1,768 against export 263,0,1,768"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 264,
+            "height": 768
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 264,
+            "height": 768
+          },
+          "stat": {
+            "differing": 0,
+            "total": 768,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "06-tablet-landscape-1024x768.chrome.sidebar-edge.png"
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,1,0 against export 0,0,1,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "absent",
+          "rect": null,
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,-1,0,1 against export 0,-1,0,1"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 54,
+            "width": 263,
+            "height": 589
+          },
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -3.73,
+            "width": 0,
+            "height": 81.73,
+            "detail": "app x,y,w,h 0,50.27,263,670.73 against export 0,54,263,589"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 54,
+            "width": 263,
+            "height": 589
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 50.27,
+            "width": 263,
+            "height": 670.73
+          },
+          "stat": {
+            "differing": 39390,
+            "total": 154907,
+            "share": 0.2542816012187958,
+            "meanAbsolute": 8.845002162587875,
+            "maxChannel": 255,
+            "visible": 38749
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 0,
+            "width": 760,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 62.43,
+            "detail": "app x,y,w,h 264,0,760,118.23 against export 264,0,760,55.8"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 0,
+            "width": 760,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 0,
+            "width": 760,
+            "height": 118.23
+          },
+          "stat": {
+            "differing": 5475,
+            "total": 42560,
+            "share": 0.12864191729323307,
+            "meanAbsolute": 6.8146734022556394,
+            "maxChannel": 255,
+            "visible": 4918
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 194,
+            "width": 760,
+            "height": 428
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 97.43,
+            "width": 0,
+            "height": 48.63,
+            "detail": "app x,y,w,h 264,292.23,760,475.77 against export 264,194.8,760,427.14"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 194.8,
+            "width": 760,
+            "height": 427.14
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 292.23,
+            "width": 760,
+            "height": 475.77
+          },
+          "stat": {
+            "differing": 126354,
+            "total": 325280,
+            "share": 0.3884468765371372,
+            "meanAbsolute": 9.06461279513035,
+            "maxChannel": 255,
+            "visible": 125193
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 621,
+            "width": 760,
+            "height": 147
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -377.71,
+            "width": 0,
+            "height": -98.06,
+            "detail": "app x,y,w,h 264,244.23,760,48 against export 264,621.94,760,146.06"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 621.94,
+            "width": 760,
+            "height": 146.06
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 244.23,
+            "width": 760,
+            "height": 48
+          },
+          "stat": {
+            "differing": 69609,
+            "total": 111720,
+            "share": 0.6230665950590762,
+            "meanAbsolute": 7.283398227712137,
+            "maxChannel": 255,
+            "visible": 69319
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "absent",
+          "rect": null,
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 0,0,0,0 against export 0,0,0,0"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0
+          },
+          "stat": null,
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [1024, 1024],
+        "regions": {
+          "#center": [760, 760],
+          "#sidebar": [263, 263],
+          "#aside": [0, 0],
+          "#resizer": [0, 0],
+          "#thread": [760, 760],
+          "#library": [0, 0],
+          "#tabs": [760, 760],
+          "#operator": [760, 760],
+          "header": [760, 760],
+          ".meta": [732, 732]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "2a5cb1298d43d27f",
+        "export": "ddf701cd321d1f33"
+      },
+      "repeat": null,
+      "files": [
+        "06-tablet-landscape-1024x768.chrome.sidebar-edge.png",
+        "06-tablet-landscape-1024x768.app.png",
+        "06-tablet-landscape-1024x768.export.png"
+      ]
+    },
+    {
+      "index": 7,
+      "name": "laptop",
+      "width": 1366,
+      "height": 768,
+      "label": "07-laptop-1366x768",
+      "chrome": {
+        "differing": 0,
+        "total": 6118,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 234178,
+        "total": 629077,
+        "share": 0.3722564964225365,
+        "meanAbsolute": 8.548027109558925,
+        "maxChannel": 255,
+        "visible": 231398
+      },
+      "chromeRegions": 4,
+      "contentRegions": 5,
+      "whole": {
+        "differing": 362764,
+        "total": 1049088,
+        "share": 0.3457898670082967,
+        "meanAbsolute": 8.171216094360053,
+        "maxChannel": 255,
+        "visible": 355521
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 989,
+            "y": 0,
+            "width": 5,
+            "height": 768
+          },
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 989,0,5,768 against export 989,0,5,768"
+          },
+          "sourceBox": {
+            "left": 989,
+            "top": 0,
+            "width": 5,
+            "height": 768
+          },
+          "counterpartBox": {
+            "left": 989,
+            "top": 0,
+            "width": 5,
+            "height": 768
+          },
+          "stat": {
+            "differing": 0,
+            "total": 3840,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "07-laptop-1366x768.chrome.resizer.png"
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 263,
+            "y": 0,
+            "width": 1,
+            "height": 768
+          },
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 263,0,1,768 against export 263,0,1,768"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 264,
+            "height": 768
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 264,
+            "height": 768
+          },
+          "stat": {
+            "differing": 0,
+            "total": 768,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "07-laptop-1366x768.chrome.sidebar-edge.png"
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 994,
+            "y": 0,
+            "width": 1,
+            "height": 768
+          },
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 994,0,1,768 against export 994,0,1,768"
+          },
+          "sourceBox": {
+            "left": 994,
+            "top": 0,
+            "width": 372,
+            "height": 768
+          },
+          "counterpartBox": {
+            "left": 994,
+            "top": 0,
+            "width": 372,
+            "height": 768
+          },
+          "stat": {
+            "differing": 0,
+            "total": 768,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "07-laptop-1366x768.chrome.aside-edge.png"
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 995,
+            "y": 43,
+            "width": 371,
+            "height": 2
+          },
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 995,43.38,371,1 against export 995,43.38,371,1"
+          },
+          "sourceBox": {
+            "left": 995,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "counterpartBox": {
+            "left": 995,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "stat": {
+            "differing": 0,
+            "total": 742,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "07-laptop-1366x768.chrome.aside-strip-rule.png"
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 54,
+            "width": 263,
+            "height": 589
+          },
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -3.73,
+            "width": 0,
+            "height": 81.73,
+            "detail": "app x,y,w,h 0,50.27,263,670.73 against export 0,54,263,589"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 54,
+            "width": 263,
+            "height": 589
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 50.27,
+            "width": 263,
+            "height": 670.73
+          },
+          "stat": {
+            "differing": 39390,
+            "total": 154907,
+            "share": 0.2542816012187958,
+            "meanAbsolute": 8.845024756789558,
+            "maxChannel": 255,
+            "visible": 38749
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 0,
+            "width": 725,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 62.43,
+            "detail": "app x,y,w,h 264,0,725,118.23 against export 264,0,725,55.8"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 0,
+            "width": 725,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 0,
+            "width": 725,
+            "height": 118.23
+          },
+          "stat": {
+            "differing": 5225,
+            "total": 40600,
+            "share": 0.12869458128078817,
+            "meanAbsolute": 6.526717980295566,
+            "maxChannel": 255,
+            "visible": 4672
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 194,
+            "width": 725,
+            "height": 428
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 97.43,
+            "width": 0,
+            "height": 48.63,
+            "detail": "app x,y,w,h 264,292.23,725,475.77 against export 264,194.8,725,427.14"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 194.8,
+            "width": 725,
+            "height": 427.14
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 292.23,
+            "width": 725,
+            "height": 475.77
+          },
+          "stat": {
+            "differing": 122189,
+            "total": 310300,
+            "share": 0.39377699000966804,
+            "meanAbsolute": 9.386877215597808,
+            "maxChannel": 255,
+            "visible": 121028
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 621,
+            "width": 725,
+            "height": 147
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -377.71,
+            "width": 0,
+            "height": -98.06,
+            "detail": "app x,y,w,h 264,244.23,725,48 against export 264,621.94,725,146.06"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 621.94,
+            "width": 725,
+            "height": 146.06
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 244.23,
+            "width": 725,
+            "height": 48
+          },
+          "stat": {
+            "differing": 66284,
+            "total": 106575,
+            "share": 0.6219469856908281,
+            "meanAbsolute": 7.388212526389866,
+            "maxChannel": 255,
+            "visible": 65994
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 995,
+            "y": 0,
+            "width": 371,
+            "height": 45
+          },
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 995,0,371,44.38 against export 995,0,371,44.38"
+          },
+          "sourceBox": {
+            "left": 995,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "counterpartBox": {
+            "left": 995,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "stat": {
+            "differing": 1090,
+            "total": 16695,
+            "share": 0.0652890086852351,
+            "meanAbsolute": 2.520485175202156,
+            "maxChannel": 115,
+            "visible": 955
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "clipped",
+          "rect": {
+            "x": 995,
+            "y": 44,
+            "width": 371,
+            "height": 724
+          },
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 995,44.38,371,723.63 against export 995,44.38,371,723.63"
+          },
+          "sourceBox": {
+            "left": 995,
+            "top": 44.38,
+            "width": 371,
+            "height": 723.63
+          },
+          "counterpartBox": {
+            "left": 995,
+            "top": 44.38,
+            "width": 371,
+            "height": 723.63
+          },
+          "stat": {
+            "differing": 71413,
+            "total": 268604,
+            "share": 0.2658672246131852,
+            "meanAbsolute": 6.868068792720883,
+            "maxChannel": 255,
+            "visible": 68080
+          },
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [1366, 1366],
+        "regions": {
+          "#center": [725, 725],
+          "#sidebar": [263, 263],
+          "#aside": [371, 371],
+          "#resizer": [5, 5],
+          "#thread": [725, 725],
+          "#library": [0, 0],
+          "#tabs": [725, 725],
+          "#operator": [725, 725],
+          "header": [725, 725],
+          ".meta": [697, 697]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "649f923950407c9f",
+        "export": "edd08638b4124cf0"
+      },
+      "repeat": null,
+      "files": [
+        "07-laptop-1366x768.chrome.resizer.png",
+        "07-laptop-1366x768.chrome.sidebar-edge.png",
+        "07-laptop-1366x768.chrome.aside-edge.png",
+        "07-laptop-1366x768.chrome.aside-strip-rule.png",
+        "07-laptop-1366x768.app.png",
+        "07-laptop-1366x768.export.png"
+      ]
+    },
+    {
+      "index": 8,
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "label": "08-desktop-1440x900",
+      "chrome": {
+        "differing": 0,
+        "total": 7042,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 253956,
+        "total": 815955,
+        "share": 0.3112377520819163,
+        "meanAbsolute": 7.637862075727216,
+        "maxChannel": 255,
+        "visible": 250577
+      },
+      "chromeRegions": 4,
+      "contentRegions": 5,
+      "whole": {
+        "differing": 388614,
+        "total": 1296000,
+        "share": 0.2998564814814815,
+        "meanAbsolute": 7.345954861111111,
+        "maxChannel": 255,
+        "visible": 380566
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 1063,
+            "y": 0,
+            "width": 5,
+            "height": 900
+          },
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1063,0,5,900 against export 1063,0,5,900"
+          },
+          "sourceBox": {
+            "left": 1063,
+            "top": 0,
+            "width": 5,
+            "height": 900
+          },
+          "counterpartBox": {
+            "left": 1063,
+            "top": 0,
+            "width": 5,
+            "height": 900
+          },
+          "stat": {
+            "differing": 0,
+            "total": 4500,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "08-desktop-1440x900.chrome.resizer.png"
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 263,
+            "y": 0,
+            "width": 1,
+            "height": 900
+          },
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 263,0,1,900 against export 263,0,1,900"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 264,
+            "height": 900
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 264,
+            "height": 900
+          },
+          "stat": {
+            "differing": 0,
+            "total": 900,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "08-desktop-1440x900.chrome.sidebar-edge.png"
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 1068,
+            "y": 0,
+            "width": 1,
+            "height": 900
+          },
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1068,0,1,900 against export 1068,0,1,900"
+          },
+          "sourceBox": {
+            "left": 1068,
+            "top": 0,
+            "width": 372,
+            "height": 900
+          },
+          "counterpartBox": {
+            "left": 1068,
+            "top": 0,
+            "width": 372,
+            "height": 900
+          },
+          "stat": {
+            "differing": 0,
+            "total": 900,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "08-desktop-1440x900.chrome.aside-edge.png"
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 1069,
+            "y": 43,
+            "width": 371,
+            "height": 2
+          },
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1069,43.38,371,1 against export 1069,43.38,371,1"
+          },
+          "sourceBox": {
+            "left": 1069,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "counterpartBox": {
+            "left": 1069,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "stat": {
+            "differing": 0,
+            "total": 742,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "08-desktop-1440x900.chrome.aside-strip-rule.png"
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 54,
+            "width": 263,
+            "height": 721
+          },
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -3.73,
+            "width": 0,
+            "height": 81.73,
+            "detail": "app x,y,w,h 0,50.27,263,802.73 against export 0,54,263,721"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 54,
+            "width": 263,
+            "height": 721
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 50.27,
+            "width": 263,
+            "height": 802.73
+          },
+          "stat": {
+            "differing": 40693,
+            "total": 189623,
+            "share": 0.21459949478702478,
+            "meanAbsolute": 7.8798299784308865,
+            "maxChannel": 255,
+            "visible": 39974
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 0,
+            "width": 799,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 62.43,
+            "detail": "app x,y,w,h 264,0,799,118.23 against export 264,0,799,55.8"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 0,
+            "width": 799,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 0,
+            "width": 799,
+            "height": 118.23
+          },
+          "stat": {
+            "differing": 5299,
+            "total": 44744,
+            "share": 0.11842928660826033,
+            "meanAbsolute": 5.966928526729841,
+            "maxChannel": 255,
+            "visible": 4747
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 194,
+            "width": 799,
+            "height": 560
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 97.43,
+            "width": 0,
+            "height": 48.63,
+            "detail": "app x,y,w,h 264,292.23,799,607.77 against export 264,194.8,799,559.14"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 194.8,
+            "width": 799,
+            "height": 559.14
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 292.23,
+            "width": 799,
+            "height": 607.77
+          },
+          "stat": {
+            "differing": 133542,
+            "total": 447440,
+            "share": 0.2984578937958162,
+            "meanAbsolute": 8.01151495172537,
+            "maxChannel": 255,
+            "visible": 131860
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 753,
+            "width": 799,
+            "height": 147
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -509.71,
+            "width": 0,
+            "height": -98.06,
+            "detail": "app x,y,w,h 264,244.23,799,48 against export 264,753.94,799,146.06"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 753.94,
+            "width": 799,
+            "height": 146.06
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 244.23,
+            "width": 799,
+            "height": 48
+          },
+          "stat": {
+            "differing": 73332,
+            "total": 117453,
+            "share": 0.6243518684069372,
+            "meanAbsolute": 7.187715511736609,
+            "maxChannel": 255,
+            "visible": 73041
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 1069,
+            "y": 0,
+            "width": 371,
+            "height": 45
+          },
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1069,0,371,44.38 against export 1069,0,371,44.38"
+          },
+          "sourceBox": {
+            "left": 1069,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "counterpartBox": {
+            "left": 1069,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "stat": {
+            "differing": 1090,
+            "total": 16695,
+            "share": 0.0652890086852351,
+            "meanAbsolute": 2.520485175202156,
+            "maxChannel": 115,
+            "visible": 955
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "clipped",
+          "rect": {
+            "x": 1069,
+            "y": 44,
+            "width": 371,
+            "height": 856
+          },
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1069,44.38,371,855.63 against export 1069,44.38,371,855.63"
+          },
+          "sourceBox": {
+            "left": 1069,
+            "top": 44.38,
+            "width": 371,
+            "height": 855.63
+          },
+          "counterpartBox": {
+            "left": 1069,
+            "top": 44.38,
+            "width": 371,
+            "height": 855.63
+          },
+          "stat": {
+            "differing": 72767,
+            "total": 317576,
+            "share": 0.22913255409728694,
+            "meanAbsolute": 5.981820099755649,
+            "maxChannel": 255,
+            "visible": 69227
+          },
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [1440, 1440],
+        "regions": {
+          "#center": [799, 799],
+          "#sidebar": [263, 263],
+          "#aside": [371, 371],
+          "#resizer": [5, 5],
+          "#thread": [799, 799],
+          "#library": [0, 0],
+          "#tabs": [799, 799],
+          "#operator": [799, 799],
+          "header": [799, 799],
+          ".meta": [771, 771]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "5115e269c28272c7",
+        "export": "6bcafd53c55ace87"
+      },
+      "repeat": null,
+      "files": [
+        "08-desktop-1440x900.chrome.resizer.png",
+        "08-desktop-1440x900.chrome.sidebar-edge.png",
+        "08-desktop-1440x900.chrome.aside-edge.png",
+        "08-desktop-1440x900.chrome.aside-strip-rule.png",
+        "08-desktop-1440x900.app.png",
+        "08-desktop-1440x900.export.png"
+      ]
+    },
+    {
+      "index": 9,
+      "name": "wide",
+      "width": 1920,
+      "height": 1080,
+      "label": "09-wide-1920x1080",
+      "chrome": {
+        "differing": 0,
+        "total": 8302,
+        "share": 0,
+        "meanAbsolute": 0,
+        "maxChannel": 0,
+        "visible": 0
+      },
+      "content": {
+        "differing": 374524,
+        "total": 1459755,
+        "share": 0.25656634161211983,
+        "meanAbsolute": 5.760095529729304,
+        "maxChannel": 255,
+        "visible": 371066
+      },
+      "chromeRegions": 4,
+      "contentRegions": 5,
+      "whole": {
+        "differing": 539204,
+        "total": 2073600,
+        "share": 0.26003279320987654,
+        "meanAbsolute": 5.762477816358024,
+        "maxChannel": 255,
+        "visible": 531076
+      },
+      "regions": [
+        {
+          "id": "chrome.resizer",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 1543,
+            "y": 0,
+            "width": 5,
+            "height": 1080
+          },
+          "variance": "",
+          "note": "The 5px track between the thread column and the pane. Rectangle from the export's own DOM (freebot-prototype.html:673) at :387, measured against the app's `#resizer` (apps/web/host/index.html:822) at :85. Both paint it transparent at rest (the export's `.resizer::after` at :388 and the app's at :86 both start at opacity 0), so the rectangle shows only the page background and the contract requires zero differing pixels. A nonzero count is one side's track having moved or being painted. Absent at 1024px and below, where both stylesheets drop it (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1543,0,5,1080 against export 1543,0,5,1080"
+          },
+          "sourceBox": {
+            "left": 1543,
+            "top": 0,
+            "width": 5,
+            "height": 1080
+          },
+          "counterpartBox": {
+            "left": 1543,
+            "top": 0,
+            "width": 5,
+            "height": 1080
+          },
+          "stat": {
+            "differing": 0,
+            "total": 5400,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "09-wide-1920x1080.chrome.resizer.png"
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 263,
+            "y": 0,
+            "width": 1,
+            "height": 1080
+          },
+          "variance": "",
+          "note": "The sidebar's `border-right`, a 1px band at the right edge of the sidebar column. Rectangle from the export's `.sidebar` box (:671) at :212 `border-right: 1px solid var(--border)`, against the app's `#sidebar` (:672) at :81 with the same declaration. Both draw the same token, so zero differing pixels is required. This band also pins the column's right edge, so a sidebar that widened or shifted fails here even though its width is measured elsewhere. Absent at 820px and below, where both stylesheets drop the column (`freebot-prototype.html:551`, `index.html:113`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 263,0,1,1080 against export 263,0,1,1080"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 0,
+            "width": 264,
+            "height": 1080
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 0,
+            "width": 264,
+            "height": 1080
+          },
+          "stat": {
+            "differing": 0,
+            "total": 1080,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "09-wide-1920x1080.chrome.sidebar-edge.png"
+        },
+        {
+          "id": "chrome.aside-edge",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 1548,
+            "y": 0,
+            "width": 1,
+            "height": 1080
+          },
+          "variance": "",
+          "note": "The pane's `border-left`, a 1px band at the left edge of the aside column. Rectangle from the export's `.aside` box (:674) at :390 `border-left: 1px solid var(--border)`, against the app's `#aside` (:823) at :93 with the same declaration. Zero differing pixels required. This band pins the pane's left edge, which is also where a resizer drag lands, so a drag default that moved shows up here. Absent at 1024px and below, where both stylesheets drop the pane (`freebot-prototype.html:542`, `index.html:108`).",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1548,0,1,1080 against export 1548,0,1,1080"
+          },
+          "sourceBox": {
+            "left": 1548,
+            "top": 0,
+            "width": 372,
+            "height": 1080
+          },
+          "counterpartBox": {
+            "left": 1548,
+            "top": 0,
+            "width": 372,
+            "height": 1080
+          },
+          "stat": {
+            "differing": 0,
+            "total": 1080,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "09-wide-1920x1080.chrome.aside-edge.png"
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "kind": "chrome",
+          "status": "measured",
+          "rect": {
+            "x": 1549,
+            "y": 43,
+            "width": 371,
+            "height": 2
+          },
+          "variance": "",
+          "note": "The 1px rule under the pane's tab strip, taken as the bottom band of the export's `.aside-tabs` box (:1186) at :391 `border-bottom: 1px solid var(--border)`, against the app's own strip (#aside .aside-tabs, packages/ui/browser/aside.ts:120). The strip's contents differ by product, seven tabs against four, and those pixels are the content region below. This band is the strip's own height made visible: a strip that grew or shrank by a pixel moves this rule and fails here, while the tabs inside it are named variance rather than drift. Absent at 1024px and below with the pane.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1549,43.38,371,1 against export 1549,43.38,371,1"
+          },
+          "sourceBox": {
+            "left": 1549,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "counterpartBox": {
+            "left": 1549,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "stat": {
+            "differing": 0,
+            "total": 742,
+            "share": 0,
+            "meanAbsolute": 0,
+            "maxChannel": 0,
+            "visible": 0
+          },
+          "crop": "09-wide-1920x1080.chrome.aside-strip-rule.png"
+        },
+        {
+          "id": "content.sidebar-list",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 0,
+            "y": 54,
+            "width": 263,
+            "height": 901
+          },
+          "variance": "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
+          "note": "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -3.73,
+            "width": 0,
+            "height": 81.73,
+            "detail": "app x,y,w,h 0,50.27,263,982.73 against export 0,54,263,901"
+          },
+          "sourceBox": {
+            "left": 0,
+            "top": 54,
+            "width": 263,
+            "height": 901
+          },
+          "counterpartBox": {
+            "left": 0,
+            "top": 50.27,
+            "width": 263,
+            "height": 982.73
+          },
+          "stat": {
+            "differing": 40693,
+            "total": 236963,
+            "share": 0.17172723167751927,
+            "meanAbsolute": 6.305485455535252,
+            "maxChannel": 255,
+            "visible": 39971
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-header",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 0,
+            "width": 1279,
+            "height": 56
+          },
+          "variance": "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
+          "note": "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 62.43,
+            "detail": "app x,y,w,h 264,0,1279,118.23 against export 264,0,1279,55.8"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 0,
+            "width": 1279,
+            "height": 55.8
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 0,
+            "width": 1279,
+            "height": 118.23
+          },
+          "stat": {
+            "differing": 5779,
+            "total": 71624,
+            "share": 0.08068524516921702,
+            "meanAbsolute": 3.9085048307829777,
+            "maxChannel": 255,
+            "visible": 5226
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-transcript",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 194,
+            "width": 1279,
+            "height": 740
+          },
+          "variance": "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+          "note": "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": 97.43,
+            "width": 0,
+            "height": 48.63,
+            "detail": "app x,y,w,h 264,292.23,1279,787.77 against export 264,194.8,1279,739.14"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 194.8,
+            "width": 1279,
+            "height": 739.14
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 292.23,
+            "width": 1279,
+            "height": 787.77
+          },
+          "stat": {
+            "differing": 252460,
+            "total": 946460,
+            "share": 0.2667413308539188,
+            "meanAbsolute": 6.064284016228895,
+            "maxChannel": 255,
+            "visible": 250666
+          },
+          "crop": null
+        },
+        {
+          "id": "content.center-composer",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 264,
+            "y": 933,
+            "width": 1279,
+            "height": 147
+          },
+          "variance": "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
+          "note": "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+          "boxDelta": {
+            "agree": false,
+            "left": 0,
+            "top": -689.71,
+            "width": 0,
+            "height": -98.06,
+            "detail": "app x,y,w,h 264,244.23,1279,48 against export 264,933.94,1279,146.06"
+          },
+          "sourceBox": {
+            "left": 264,
+            "top": 933.94,
+            "width": 1279,
+            "height": 146.06
+          },
+          "counterpartBox": {
+            "left": 264,
+            "top": 244.23,
+            "width": 1279,
+            "height": 48
+          },
+          "stat": {
+            "differing": 74502,
+            "total": 188013,
+            "share": 0.3962598330966476,
+            "meanAbsolute": 4.534457723668044,
+            "maxChannel": 255,
+            "visible": 74248
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-strip",
+          "kind": "content",
+          "status": "measured",
+          "rect": {
+            "x": 1549,
+            "y": 0,
+            "width": 371,
+            "height": 45
+          },
+          "variance": "the export's strip carries seven tabs (computer, details, memory, routines, tasks, library, media); this app carries the four with a real source (computer, details, tasks, library). Tab count, labels and the strip's own height differ by product, and docs/DESIGN-CONTRACT.md records both deltas. The 1px rule under the strip is the chrome region above, so this region is the tabs' own pixels.",
+          "note": "The pane's tab strip. Rectangle from the export's `.aside-tabs` (:1186), against the app's own strip mounted at packages/ui/browser/aside.ts:120.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1549,0,371,44.38 against export 1549,0,371,44.38"
+          },
+          "sourceBox": {
+            "left": 1549,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "counterpartBox": {
+            "left": 1549,
+            "top": 0,
+            "width": 371,
+            "height": 44.38
+          },
+          "stat": {
+            "differing": 1090,
+            "total": 16695,
+            "share": 0.0652890086852351,
+            "meanAbsolute": 2.520485175202156,
+            "maxChannel": 115,
+            "visible": 955
+          },
+          "crop": null
+        },
+        {
+          "id": "content.aside-body",
+          "kind": "content",
+          "status": "clipped",
+          "rect": {
+            "x": 1549,
+            "y": 44,
+            "width": 371,
+            "height": 1036
+          },
+          "variance": "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
+          "note": "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+          "boxDelta": {
+            "agree": true,
+            "left": 0,
+            "top": 0,
+            "width": 0,
+            "height": 0,
+            "detail": "app x,y,w,h 1549,44.38,371,1035.63 against export 1549,44.38,371,1035.63"
+          },
+          "sourceBox": {
+            "left": 1549,
+            "top": 44.38,
+            "width": 371,
+            "height": 1035.63
+          },
+          "counterpartBox": {
+            "left": 1549,
+            "top": 44.38,
+            "width": 371,
+            "height": 1035.63
+          },
+          "stat": {
+            "differing": 72767,
+            "total": 384356,
+            "share": 0.1893218786749784,
+            "meanAbsolute": 4.942429674572532,
+            "maxChannel": 255,
+            "visible": 69227
+          },
+          "crop": null
+        }
+      ],
+      "overflow": {
+        "document": [1920, 1920],
+        "regions": {
+          "#center": [1279, 1279],
+          "#sidebar": [263, 263],
+          "#aside": [371, 371],
+          "#resizer": [5, 5],
+          "#thread": [1279, 1279],
+          "#library": [0, 0],
+          "#tabs": [1279, 1279],
+          "#operator": [1279, 1279],
+          "header": [1279, 1279],
+          ".meta": [1251, 1251]
+        },
+        "overflowing": []
+      },
+      "digests": {
+        "app": "26fe7c335ec37591",
+        "export": "8e8bc7ebbc7806b5"
+      },
+      "repeat": null,
+      "files": [
+        "09-wide-1920x1080.chrome.resizer.png",
+        "09-wide-1920x1080.chrome.sidebar-edge.png",
+        "09-wide-1920x1080.chrome.aside-edge.png",
+        "09-wide-1920x1080.chrome.aside-strip-rule.png",
+        "09-wide-1920x1080.app.png",
+        "09-wide-1920x1080.export.png"
+      ]
+    }
+  ],
+  "chromeTolerance": 0,
+  "repeatRequested": false,
+  "verdict": "PASS",
+  "failures": []
+}
