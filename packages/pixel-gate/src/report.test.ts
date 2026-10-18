@@ -239,6 +239,25 @@ describe("renderText", () => {
     expect(text).not.toMatch(/chrome\.aside-edge\s+measured/);
   });
 
+  test("a viewport with no chrome region says the set is empty rather than printing a perfect 0/0", () => {
+    const text = renderText(
+      run([
+        viewport("01-mobile-compact-360x800", [
+          region("content.center-header", "content", diff(10, 100)),
+        ]),
+      ]),
+    );
+    expect(text).toContain("this viewport carries no chrome region");
+    expect(text).toContain("A 0/0 here is an empty set, not a pass");
+  });
+
+  test("a viewport that does carry chrome regions makes no such claim", () => {
+    const text = renderText(
+      run([viewport("07-laptop-1366x768", [region("chrome.resizer", "chrome", diff(0, 5400))])]),
+    );
+    expect(text).not.toContain("this viewport carries no chrome region");
+  });
+
   test("a failure is printed as a failure and the verdict is FAIL", () => {
     const text = renderText(run([viewport("01", [])], ["01 chrome.resizer: 3 differing pixel(s)"]));
     expect(text).toContain("FAIL 01 chrome.resizer: 3 differing pixel(s)");

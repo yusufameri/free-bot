@@ -254,6 +254,14 @@ export function renderText(report: RunReport): string {
     lines.push(
       `whole frame: ${viewport.whole.differing}/${viewport.whole.total} pixels differ (${percent(viewport.whole.share)}), mean|delta| ${viewport.whole.meanAbsolute.toFixed(3)}`,
     );
+    if (viewport.chromeRegions === 0) {
+      // A zero over zero reads as a perfect score. It is not one: at this width both stylesheets
+      // stand every chrome column down, so there is no shell furniture on either page to compare and
+      // the shell's own verdict is carried by the content regions and the box deltas instead.
+      lines.push(
+        "chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.",
+      );
+    }
     lines.push(`digests: app ${viewport.digests.app}, export ${viewport.digests.export}`);
     for (const region of viewport.regions) lines.push(regionLine(region));
     lines.push(overflowLine(viewport.overflow, "app"));
