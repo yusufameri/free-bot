@@ -92,31 +92,20 @@ const REGIONS = [
 
 /**
  * Deltas the contract declares. Any delta not here fails the run, so a new one is a decision rather
- * than a drift. Both of this frame's known deltas are named in `docs/DESIGN-CONTRACT.md`.
+ * than a drift. The list is empty since U6.3: the one entry it carried was the aside's 12px, and the
+ * pane now renders the export's own 372px against the export's own 372px, so every field this
+ * harness compares is equal on both pages at every viewport.
  */
 const DECLARED_DELTAS: readonly {
   readonly field: string;
   readonly allow: readonly number[];
   readonly reason: string;
-}[] = [
-  {
-    field: "aside",
-    allow: [0, 12],
-    reason:
-      "the export's token is 384px and its own script overwrites it with its persisted 372px default (freebot-prototype.html:37, 2248, 829); this frame ships the token",
-  },
-  {
-    field: "thread",
-    allow: [0, -12],
-    reason:
-      "the thread column is the grid's 1fr, so it is 12px narrower wherever the aside is 384 against the export's 372; this delta is the aside delta's shadow and disappears with it",
-  },
-];
+}[] = [];
 
 /** Tokens the export declares one way and uses another, with the reason this page uses the token. */
 const TOKEN_OVERRIDES: Readonly<Record<string, string>> = {
   "--aside-w":
-    "the export's script overwrites its own declared 384px with its persisted 372px default (freebot-prototype.html:37, 2248, 829), so the export's used value is the prototype's draggable default and the declared token is the contract",
+    "the export's script overwrites its own declared 384px with its persisted 372px default (freebot-prototype.html:37, 2248, 829) as `S.asideW || 372`; this frame declares the same 384px token and writes the same used 372px at boot (packages/ui/browser/aside.ts), which is why the aside and the thread columns measure equal. A difference here means one side's boot write or drag default moved.",
 };
 
 interface ManifestViewport {
@@ -273,6 +262,7 @@ interface AppFacts {
   readonly threads: number;
   readonly asideChildren: number;
   readonly resizerChildren: number;
+  readonly asideTabs: number;
   readonly operatorVisible: boolean;
 }
 
@@ -286,6 +276,7 @@ async function shellFacts(cdp: Cdp, sessionId: string): Promise<AppFacts> {
       threads: window.__shellFacts().threads.length,
       asideChildren: document.querySelector('#aside').children.length,
       resizerChildren: document.querySelector('#resizer').children.length,
+      asideTabs: document.querySelectorAll('#aside .aside-tab').length,
       operatorVisible: !document.querySelector('#operator').hidden,
     })`,
   );
@@ -502,9 +493,9 @@ async function main(): Promise<number> {
     const opening = await shellFacts(chrome.cdp, appSession);
     note(`shell ${JSON.stringify(opening)}`);
     check(
-      "the aside and the resizer are this frame's empty regions, with no contents",
-      opening.asideChildren === 0 && opening.resizerChildren === 0,
-      [opening.asideChildren, opening.resizerChildren],
+      "the pane is the export's aside and not an empty region: a strip holding the four tabs and the close button, one body, and an empty resizer track (U6.3)",
+      opening.asideChildren === 2 && opening.asideTabs === 4 && opening.resizerChildren === 0,
+      [opening.asideChildren, opening.asideTabs, opening.resizerChildren],
     );
     const appProbes = await measure(chrome.cdp, appSession, "mine");
     note(
@@ -519,6 +510,11 @@ async function main(): Promise<number> {
     );
 
     section("the deltas this frame declares");
+    if (DECLARED_DELTAS.length === 0) {
+      note(
+        "none: every measured geometry and style field is equal on both pages at every viewport (U6.3 closed the aside's 12px, see docs/DESIGN-CONTRACT.md)",
+      );
+    }
     for (const entry of DECLARED_DELTAS) {
       note(
         `geometry ${entry.field}: allowed deltas ${JSON.stringify(entry.allow)}. ${entry.reason}`,

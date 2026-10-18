@@ -71,6 +71,11 @@
   .shell[data-operator="true"] {
     grid-template-columns: var(--sb-w) minmax(0, 1fr) 5px var(--aside-w);
   }
+  /* The pane's collapsed state is the export's `body.collapsed` (freebot-prototype.html:209): the
+     column goes to zero and the pane and its resizer stand down. Declared here, right after the grid
+     it overrides, so reading top to bottom is reading the override. */
+  body.collapsed .shell[data-operator="true"] { grid-template-columns: var(--sb-w) minmax(0, 1fr) 0 0; }
+  body.collapsed #aside, body.collapsed #resizer { display: none; }
   #sidebar {
     display: flex; flex-direction: column; min-height: 0; overflow: hidden;
     border-right: 1px solid var(--border); background: var(--bg);
@@ -96,10 +101,12 @@
   /* The export's two thresholds. `freebot-prototype.html:540` drops the aside below 1120px;
      `freebot-prototype.html:549` drops the sidebar and the whole grid below 860px. At each one the
      export also offers a drawer (`.aside.open`, `.sidebar.open`, `.mob-only`), which this frame
-     does not have; docs/DESIGN-CONTRACT.md names the unit that adds it. */
+     does not have; docs/DESIGN-CONTRACT.md names the unit that adds it. The header's control goes
+     with the pane it controls: a width that cannot show the pane shows no way to open one. */
   @media (max-width: 1120px) {
     .shell[data-operator="true"] { grid-template-columns: var(--sb-w) minmax(0, 1fr); }
     #aside, #resizer { display: none; }
+    #aside-toggle { display: none; }
   }
   @media (max-width: 860px) {
     .shell[data-operator="true"] { grid-template-columns: minmax(0, 1fr); }
@@ -277,6 +284,138 @@
     display: block; margin-top: 14px; font-size: 13px; font-weight: 500; color: var(--fg);
     overflow-wrap: anywhere;
   }
+
+  /* ── the export's primitives ─────────────────────────────────────────────
+     The export's own small vocabulary (freebot-prototype.html:76-142), which the pane's cards, the
+     notices and the header control are built from: three one-line utilities, the monochrome state
+     dots, the pill tag, the key/value row, the hint, and the buttons. Sizes are the export's. */
+  .grow { flex: 1; min-width: 0; }
+  .mono { font-family: var(--font-mono); }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; display: inline-block; background: var(--border); }
+  .dot.on { background: var(--fg); }
+  .pulse {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--fg); flex: none;
+    animation: pulse var(--dur-pulse) ease-in-out infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.3; transform: scale(0.65); } }
+  .tag {
+    display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; flex: none;
+    border: 1px solid var(--border); border-radius: 999px;
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--muted); white-space: nowrap;
+  }
+  .kv { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 6px 0; font-size: 14px; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-family: var(--font-mono); font-size: 12.5px; text-align: right; overflow-wrap: anywhere; }
+  .hint { color: var(--muted); font-size: var(--fs-meta); line-height: 1.5; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none;
+    height: 38px; padding: 0 16px; border: 1px solid transparent; border-radius: var(--radius);
+    font-size: 14px; font-weight: 500; white-space: nowrap;
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-sm { height: 30px; padding: 0 11px; font-size: 13px; gap: 6px; }
+  .btn-xs { height: 26px; padding: 0 9px; font-size: 12px; gap: 5px; }
+  .btn-secondary { border-color: var(--border); color: var(--fg); }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--fg); background: var(--hover); }
+  .btn-ghost { color: var(--muted); }
+  .btn-ghost:hover:not(:disabled) { color: var(--fg); background: var(--hover); }
+  .iconbtn {
+    width: 30px; height: 30px; flex: none; display: grid; place-items: center;
+    border-radius: var(--radius); color: var(--muted);
+    transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .iconbtn:hover { color: var(--fg); background: var(--hover); }
+  .ic { width: 16px; height: 16px; flex: none; }
+  .ic-sm { width: 13px; height: 13px; flex: none; }
+
+  /* ── the stream's two lines ──────────────────────────────────────────────
+     The export's banner (freebot-prototype.html:1044) and its notice stack (:1046-1051), above the
+     transcript and below the header. Both are empty elements the notices module fills, so a page
+     with nothing to say renders nothing at all. */
+  .banner {
+    display: flex; align-items: center; gap: 10px; padding: 9px 14px; flex: none;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .banner .pulse { width: 6px; height: 6px; }
+  #banner[hidden] { display: none; }
+  .notice-stack { flex: none; border-bottom: 1px solid var(--border); }
+  #notices[hidden] { display: none; }
+  .notice {
+    display: flex; align-items: center; gap: 10px; padding: 9px 14px; flex-wrap: wrap;
+    font-size: 13px; border-bottom: 1px solid var(--border); background: var(--surface);
+  }
+  .notice:last-child { border-bottom: 0; }
+  .notice .act { display: flex; align-items: center; gap: 6px; margin-left: auto; flex: none; }
+  .notice-all { justify-content: flex-end; padding: 7px 14px; }
+
+  /* ── the header's control ────────────────────────────────────────────────
+     The export's header carries the pane's own control (freebot-prototype.html:1040-1041): one row,
+     the conversation's own words on the left and the control on the right. Its label is the export's
+     `Details` and its state is `aria-pressed`, which is this app's one control for both directions. */
+  .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .head-titles { min-width: 0; }
+  #aside-toggle { flex: none; }
+
+  /* ── the details pane ────────────────────────────────────────────────────
+     The export's right pane (freebot-prototype.html:391-401): a tab strip carrying the pane's own
+     close button, and one scrolling body. The strip scrolls horizontally instead of wrapping, which
+     is the export's own `overflow-x: auto` with its scrollbar hidden. */
+  .aside-tabs {
+    display: flex; align-items: center; gap: 1px; padding: 8px 8px 0; flex: none;
+    border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none;
+  }
+  .aside-tabs::-webkit-scrollbar { height: 0; }
+  .aside-tab {
+    padding: 7px 7px 9px; font-size: 12.5px; color: var(--muted); white-space: nowrap;
+    border-bottom: 1px solid transparent; margin-bottom: -1px;
+    transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  .aside-tab:hover { color: var(--fg); }
+  .aside-tab.is-active { color: var(--fg); border-bottom-color: var(--fg); }
+  .aside-close { margin-left: auto; }
+  .aside-body { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding: 16px; }
+  /* The export spaces its sections with an inline margin on every cap but the first
+     (`freebot-prototype.html:1224`); this is the same rhythm as one rule. */
+  .aside-body > .cap { margin: 20px 0 10px; }
+  .aside-body > .cap:first-child { margin-top: 0; }
+  .aside-body .cmd {
+    display: block; max-width: 100%; overflow-x: auto; white-space: pre; margin: 0;
+    font-family: var(--font-mono); font-size: var(--fs-meta); line-height: 1.6; color: var(--fg);
+    background: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px;
+  }
+  .aside-body .output {
+    margin: 8px 0 0; max-width: 100%; overflow-x: auto; padding: 9px 11px;
+    background: var(--accent); border-radius: 6px; color: var(--fg);
+    font-family: var(--font-mono); font-size: var(--fs-meta); line-height: 1.6;
+    white-space: pre-wrap; overflow-wrap: anywhere;
+  }
+  .aside-path {
+    display: flex; align-items: center; gap: 8px; padding: 7px 0; margin-bottom: 6px;
+    border-bottom: 1px solid var(--border); color: var(--muted);
+  }
+  .aside-path .tag { margin-left: auto; }
+  .aside-file {
+    display: flex; align-items: baseline; gap: 8px; width: 100%; min-width: 0;
+    padding: 8px 0; border-bottom: 1px solid var(--border); color: var(--fg);
+    transition: background var(--dur-fast) var(--ease);
+  }
+  .aside-file:hover { background: var(--hover); }
+  .aside-file-name { font-size: 13.5px; }
+  .aside-file-path { font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+  .aside-file-size { margin-left: auto; font-family: var(--font-mono); font-size: 10.5px; color: var(--muted); }
+  .tcard {
+    display: block; min-width: 0; margin: 0 0 12px; border: 1px solid var(--border);
+    border-radius: var(--radius); background: var(--surface);
+  }
+  .tcard-head {
+    display: flex; align-items: center; gap: 10px; padding: 10px 13px;
+    border-bottom: 1px solid var(--border);
+  }
+  .tcard .ttl { font-size: 13.5px; font-weight: 500; }
+  .tcard-body { padding: 13px; }
 
   /* ── the Library tab ─────────────────────────────────────────────────────
      U4.1's surface, moved onto the tokens. The item treatment is U6.5's. */
@@ -508,6 +647,8 @@
   body[data-page="connect"] #library,
   body[data-page="connect"] #resume,
   body[data-page="connect"] #error,
+  body[data-page="connect"] #banner,
+  body[data-page="connect"] #notices,
   body[data-page="connect"] .meta,
   body[data-page="connect"] #bot-title,
   body[data-page="first-run"] #tabs,
@@ -516,11 +657,17 @@
   body[data-page="first-run"] #library,
   body[data-page="first-run"] #resume,
   body[data-page="first-run"] #error,
+  body[data-page="first-run"] #banner,
+  body[data-page="first-run"] #notices,
   body[data-page="first-run"] .meta,
   body[data-page="first-run"] #bot-title { display: none; }
 </style>
 </head>
 <body>
+<!-- The export's icon sprite (freebot-prototype.html:677-698). Only the symbols this frame draws. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+</defs></svg>
 <div class="shell" data-operator="false">
   <aside id="sidebar" hidden>
     <div class="sb-head">
@@ -543,8 +690,13 @@
   </aside>
   <section id="center">
   <header>
-    <h1>freebot</h1>
-    <p>One thread. Local run. A real model when the vault holds a key, the committed replay when it does not.</p>
+    <div class="head-row">
+      <div class="head-titles">
+        <h1>freebot</h1>
+        <p>One thread. Local run. A real model when the vault holds a key, the committed replay when it does not.</p>
+      </div>
+      <button id="aside-toggle" class="btn btn-secondary btn-sm" type="button" aria-pressed="true" aria-label="Collapse the pane">Details</button>
+    </div>
     <p id="bot-title"></p>
     <div class="meta">
       <span id="conn" data-connection="connecting">connecting</span>
@@ -555,6 +707,11 @@
   </header>
   <div id="resume" hidden></div>
   <div id="error" hidden></div>
+  <!-- The two lines the stream itself raises, above the transcript: the export's banner
+       (freebot-prototype.html:1044) and its notice stack (:1046). Both are filled by
+       `packages/ui/browser/notices.ts`; empty here means nothing raised one. -->
+  <div id="banner" class="banner" hidden></div>
+  <div id="notices" class="notice-stack" hidden></div>
   <!-- Page 2, the first-run screen. The export's own markup and copy
        (freebot-prototype.html:615-667), with its `#frProv` provisioning block replaced by the
        provider pane a person may really test. -->

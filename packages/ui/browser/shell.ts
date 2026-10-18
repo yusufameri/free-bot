@@ -55,6 +55,8 @@ export interface ShellHandle {
   /** Re-read the Bots and the selected Bot's threads, without moving the selection. */
   refresh(): Promise<void>;
   selection(): ShellSelection;
+  /** The records the selection points at, for a second surface that renders them. */
+  records(): { readonly bot: Bot | null; readonly thread: Thread | null };
   facts(): ShellFacts;
 }
 
@@ -236,6 +238,8 @@ export function mountShell(config: {
     },
 
     selection: () => ({ botId: selectedBotId, threadId: selectedThreadId }),
+
+    records: () => ({ bot: selectedBot() ?? null, thread: selectedThread() ?? null }),
 
     facts() {
       return {
