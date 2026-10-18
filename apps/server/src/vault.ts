@@ -1,5 +1,6 @@
 /**
- * The BYOK vault: the one reader of `~/.freebot/provider.env` in the run path.
+ * The BYOK vault: the run path's only reader of `~/.freebot/provider.env`, and the provider page's
+ * only writer of it.
  *
  * Order 8 keeps keys in the vault path and nowhere else, so this reads the file itself and never
  * the process environment. A key in the environment is visible to every child process the run
@@ -10,9 +11,9 @@
  * An absent or unreadable vault is not an error. It is the keyless machine, and the run replays.
  */
 
-import { readFileSync, statSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 
 /** The vault's own defaults, matching the landed Pi smoke test's. */
 const DEFAULT_BASE_URL = "https://api.openai.com/v1";
@@ -87,4 +88,27 @@ export function describeVault(path: string = vaultPath()): VaultDescription {
     mode = null;
   }
   return { path, present: readVault(path) !== null, mode };
+}
+
+/**
+ * The vault's writer: the provider page's save, and the only thing in the app that writes this file.
+ *
+ * The order is write-then-chmod rather than `writeFileSync`'s own `mode`, because that mode applies
+ * to a create only: a second save over an existing file would keep whatever mode it already had.
+ * Both calls ask for 600, so the file is unreadable to anyone but its owner on every path.
+ *
+ * The key is the first value here and it goes no further. Nothing in this module logs, returns
+ * through a reader, or copies a value into the process environment.
+ */
+export function writeVault(entry: VaultEntry, path: string = vaultPath()): void {
+  const text = [
+    "# freebot's BYOK vault. Written by the app's provider page and read by the run path alone.",
+    `FREEBOT_BYOK_KEY=${entry.key}`,
+    `FREEBOT_BYOK_BASE_URL=${entry.baseUrl}`,
+    `FREEBOT_BYOK_MODEL=${entry.model}`,
+    "",
+  ].join("\n");
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  writeFileSync(path, text, { mode: 0o600 });
+  chmodSync(path, 0o600);
 }

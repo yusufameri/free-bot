@@ -1,9 +1,13 @@
 /**
- * The contract's implementation: ten handlers over one `RunService`.
+ * The contract's implementation: ten handlers over one `RunService`, plus page 1's two arms.
  *
  * The router is built from `apiContract`, so a handler that returns the wrong shape is a compile
  * error and oRPC still validates the input and output on the wire at runtime. `$context` types the
  * per-call context the socket layer injects (the abort signal), and nothing else reads it.
+ *
+ * `get_provider` and `connect_provider` are the two arms that do not reach the run path. The second
+ * one writes the vault and answers with what its test found, so its input is the only place in the
+ * contract a key appears: nothing here returns it, and the record it saves has no field for it.
  *
  * Every handler reaches the same authority the loop runs behind, so a run started here executes
  * rather than printing a record of itself. `get_run` projects `packages/core`'s seven run statuses
@@ -21,6 +25,10 @@ import { type RunStatus as CoreRunStatus, isTerminal } from "@freebot/core";
 import type { ApiContext } from "@freebot/protocol";
 import { apiContract, BOT_ERRORS, WORKSPACE_READ_ERRORS } from "@freebot/protocol";
 import { implement, ORPCError } from "@orpc/server";
+import {
+  createProviderSetup,
+  type ProviderSetup,
+} from "./provider-setup.ts";
 import { type RunService, UnknownRecordError } from "./run-service.ts";
 import { WorkspaceReadError } from "./workspace-files.ts";
 
@@ -62,7 +70,7 @@ const PROTOCOL_STATUS: Record<CoreRunStatus, "running" | "finished" | "failed"> 
   cancelled: "failed",
 };
 
-export function createApiRouter(service: RunService) {
+export function createApiRouter(service: RunService, providers: ProviderSetup = createProviderSetup()) {
   return {
     start_run: api.start_run.handler(({ input }) => {
       try {
@@ -163,5 +171,9 @@ export function createApiRouter(service: RunService) {
         refuse(error);
       }
     }),
+
+    get_provider: api.get_provider.handler(() => providers.describe()),
+
+    connect_provider: api.connect_provider.handler(async ({ input }) => await providers.connect(input)),
   };
 }
