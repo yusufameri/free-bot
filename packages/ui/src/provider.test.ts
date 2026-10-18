@@ -11,6 +11,10 @@ import {
   CAPABLE_HEADLINE,
   capabilityLines,
   endpointLine,
+  FIRST_RUN_KEY_NOTE,
+  FIRST_RUN_PROVIDER_EYEBROW,
+  firstRunProviderHeadline,
+  firstRunProviderIntro,
   LIMITED_HEADLINE,
   pageStateOf,
   providerHeadline,
@@ -61,6 +65,19 @@ describe("the page's state", () => {
     expect(resultLine({ ...CONNECTION, status: "untested", flags: null })).toContain(
       "fails with the provider's own words",
     );
+  });
+
+  test("the first-run pane's empty state asks for the test in the export's words", () => {
+    expect(firstRunProviderHeadline("empty")).toBe("Test a real tool call before we save it.");
+    expect(firstRunProviderHeadline("capable")).toBe(CAPABLE_HEADLINE);
+    expect(firstRunProviderHeadline("limited")).toBe(LIMITED_HEADLINE);
+    expect(firstRunProviderHeadline("untested")).toBe(UNTESTED_HEADLINE);
+    expect(firstRunProviderIntro(null)).toBe(
+      "The smoke test sends one request with a tool definition. What comes back sets this connection's capability flags.",
+    );
+    expect(firstRunProviderIntro(CONNECTION)).toBe(resultLine(CONNECTION));
+    expect(FIRST_RUN_KEY_NOTE).toBe("Key goes to the vault, never the process env.");
+    expect(FIRST_RUN_PROVIDER_EYEBROW).toBe("Connect a provider");
   });
 });
 

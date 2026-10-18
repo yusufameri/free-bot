@@ -10,11 +10,15 @@
  * in the URL fragment, because a browser never sends a fragment to a server; only the WebSocket's
  * query string carries it, which is the one place the gate reads a token from a query.
  *
- * Operator mode is "the page was opened with a token". That is what reveals the sidebar and the
- * prompt box, because both need the Bot list; the fixture page renders exactly the page it rendered
- * before this unit. Operator mode also creates the first Bot, named `Local Bot`, on a server that
- * holds none: a person who runs `bun run up` gets a conversation to type into, and the record the
- * page makes is the same record a Bot made from the sidebar would be.
+ * Three screens. A store with no Bot is a fresh install, and the first-run screen takes the page: it
+ * asks for a name, a purpose and a starting job, and it may test the model connection on the way
+ * through. Page 1 (U4.3's welcome, then connect a provider) is what a keyless machine with a Bot
+ * boots into, and the sidebar footer's provider row opens it afterwards. The shell is the third: the
+ * Bot list, the selected thread, and the stream over it.
+ *
+ * A Bot exists because a person named one. The first-run screen makes it on the name pane's
+ * Continue, through the same `create_bot` and `create_thread` arms the sidebar's own control uses,
+ * so `Local Bot` survives only as the Skip path's answer on a store that still holds nothing.
  *
  * One thread at a time. The page follows the selected thread's own log, so switching threads closes
  * the socket and opens the stream for the thread that is now on screen, replaying it from 0. The
@@ -34,6 +38,11 @@ import type {
   Message,
   ProviderConnection,
 } from "../../../packages/protocol/src/index.ts";
+import {
+  exposeFirstRunFacts,
+  type FirstRunOutcome,
+  mountFirstRun,
+} from "../../../packages/ui/browser/first-run.ts";
 import { exposeLibraryFacts, mountLibrary } from "../../../packages/ui/browser/library.ts";
 import { exposeProviderFacts, mountProvider } from "../../../packages/ui/browser/provider.ts";
 import { type Connection, exposeFacts, mountThread } from "../../../packages/ui/browser/render.ts";
@@ -46,8 +55,8 @@ import { providerRowLabel } from "../../../packages/ui/src/provider.ts";
 
 type ApiClient = ContractRouterClient<typeof apiContract>;
 
-/** The name the page gives the first Bot on a server that holds none. */
-const FIRST_BOT_NAME = "Local Bot";
+/** The name the Skip path gives the first Bot on a server that still holds none, as it always did. */
+const SKIP_BOT_NAME = "Local Bot";
 
 const params = new URLSearchParams(location.search);
 const fragment = new URLSearchParams(location.hash.replace(/^#/, ""));
@@ -284,17 +293,70 @@ function paintProviderButton(connection: ProviderConnection | null): void {
 /** The conversation: the Bot list, the selected thread, and the stream over it. */
 async function enterApp(): Promise<void> {
   providerPage.hide();
+  firstRun.hide();
   if (sidebar !== null) sidebar.hidden = false;
   if (shellEl !== null) shellEl.dataset.operator = "true";
   await shell.load();
   if (shell.facts().bots.length === 0) {
-    // The first time a server with a connection runs there is no Bot, and a conversation needs one.
-    await shell.createBot(FIRST_BOT_NAME);
-  } else {
-    selection = shell.selection();
-    connect();
+    // Reachable only through Skip: a person who left the first-run screen without naming a Bot still
+    // needs a conversation to type into, and `Local Bot` is the answer this page always gave.
+    await shell.createBot(SKIP_BOT_NAME);
+    return;
+  }
+  selection = shell.selection();
+  connect();
+}
+
+/** The Bot the first-run screen made or found, so its later panes can describe it. */
+function nameTheBot(name: string): Promise<string> {
+  return shell.createBot(name).then(() => {
+    const botId = shell.selection().botId;
+    if (botId === null) throw new Error("the Bot was not made");
+    return botId;
+  });
+}
+
+/**
+ * The first-run screen is through: the shell takes the page, and a chosen job lands in the composer
+ * as its prompt. The export writes the chosen task into the box rather than starting the run
+ * (`freebot-prototype.html:2240`), and the person presses the page's own Start when they are ready.
+ * The focus lands after the shell has the page, because a box inside a standing-down screen cannot
+ * take it.
+ */
+async function finishFirstRun(outcome: FirstRunOutcome): Promise<void> {
+  if (outcome.task !== null && promptInput !== null) promptInput.value = outcome.task;
+  await enterApp();
+  // The wizard's own field still holds focus when its screen goes away, and the browser takes that
+  // focus back at the next style update rather than at this call, so the composer's focus lands
+  // after it.
+  if (outcome.task !== null && promptInput !== null) {
+    setTimeout(() => promptInput?.focus(), 0);
   }
 }
+
+const firstRun = mountFirstRun({
+  calls: {
+    createBot: nameTheBot,
+    updateBot: async (botId, role, purpose) => {
+      await client().update_bot({ botId, role, purpose });
+    },
+    readProvider: async () => {
+      if (api === null) throw new Error("the first run needs the operator token");
+      return await api.get_provider({});
+    },
+    connect: async (input) => {
+      if (api === null) throw new Error("the first run needs the operator token");
+      return await api.connect_provider(input);
+    },
+  },
+  onSaved: (connection) => paintProviderButton(connection),
+  onFinish: (outcome) =>
+    void finishFirstRun(outcome).catch((error: unknown) =>
+      handle.showError(error instanceof Error ? error.message : String(error)),
+    ),
+  onError: (message) => handle.showError(message),
+});
+exposeFirstRunFacts(firstRun);
 
 const providerPage = mountProvider({
   calls: {
@@ -325,9 +387,16 @@ if (token !== null && sidebar !== null && shellEl !== null) {
     try {
       const state = await providerPage.load();
       paintProviderButton(state.connection);
+      const bots = (await client().list_bots({})).bots;
+      if (bots.length === 0) {
+        // A store with no Bot is a fresh install, and the first-run screen is what it opens: it asks
+        // for the name rather than naming a Bot itself. Page 1 stays behind the provider row, and it
+        // is what a keyless machine with a Bot boots into.
+        await firstRun.load();
+        firstRun.show();
+        return;
+      }
       if (state.connection === null) {
-        // Page 1 is the first page a new person sees: the vault holds nothing to run on, so the
-        // welcome page takes the center and the Bot list stays out of the way.
         providerPage.show();
         return;
       }

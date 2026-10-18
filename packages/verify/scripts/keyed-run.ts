@@ -1061,6 +1061,10 @@ async function main(): Promise<number> {
     second.apiPort !== first.apiPort,
     true,
   );
+  // A Bot and a thread of this launch's own, over the route a page uses: its bots root is fresh, and
+  // a store with no Bot opens the first-run screen rather than the app (U6.2).
+  const secondThread = await streamTarget(second);
+  log.note(`the second launch's own thread: ${secondThread}`);
   const secondPage = await openArmed(cdp, log, second, "second launch");
   await parkRun(cdp, log, secondPage, "second launch", SECOND_PROMPT);
   await answerUntilSettled(cdp, log, secondPage, "second launch", "deny");

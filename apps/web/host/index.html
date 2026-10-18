@@ -320,6 +320,129 @@
     color: var(--fg); font-size: 13px; font-weight: 500; overflow-wrap: anywhere;
   }
 
+  /* ── the first-run screen ────────────────────────────────────────────────
+     The export's onboarding screen (freebot-prototype.html:178-205) and its page 2 (:615-667): a
+     centred 520px column on a 100vh grid, a brandmark, a step caption beside three progress bars,
+     one pane at a time, and a footer holding the primary and Skip. Sizes that the export writes
+     literally inside a rule are written literally here too, the same way this sheet already carries
+     the shell's geometry. */
+  #firstrun[hidden] { display: none; }
+  .onboard { height: 100vh; display: grid; place-items: center; padding: 28px; overflow: auto; }
+  .onboard .inner { width: 100%; max-width: 520px; }
+  .brandmark { display: flex; align-items: center; gap: 9px; margin-bottom: 34px; }
+  .brandmark .glyph {
+    width: 26px; height: 26px; border: 1px solid var(--fg); border-radius: 7px;
+    display: grid; place-items: center;
+  }
+  .brandmark .glyph i { width: 9px; height: 9px; background: var(--fg); border-radius: 2px; display: block; }
+  .brandmark .word { font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: -0.01em; }
+  #frHead {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-bottom: 22px;
+  }
+  #firstrun .cap {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); display: block; margin: 0;
+  }
+  #firstrun .prog { display: flex; gap: 6px; }
+  #firstrun .prog i { width: 22px; height: 2px; background: var(--border); border-radius: 2px; display: block; }
+  #firstrun .prog i.on { background: var(--fg); }
+  #firstrun h2 {
+    font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.15;
+    font-weight: 600; letter-spacing: -0.02em;
+  }
+  #firstrun .hint { color: var(--muted); font-size: var(--fs-meta); line-height: 1.5; }
+  #frPane1 h2, #frPane2 h2, #frPane3 h2 { margin: 0; }
+  #frPane1 > .hint, #frPane2 > .hint, #frPane3 > .hint { margin: 8px 0 18px; }
+  #firstrun .field { display: flex; flex-direction: column; gap: 6px; }
+  #firstrun .field + .field { margin-top: 12px; }
+  #firstrun .field > label { font-size: var(--fs-meta); color: var(--muted); }
+  .wizard-input {
+    width: 100%; min-width: 0; height: 38px; padding: 0 11px; border: 1px solid var(--border);
+    border-radius: var(--radius); background: var(--bg); color: var(--fg); font-size: 14px;
+    outline: none; transition: border-color var(--dur) var(--ease);
+  }
+  .wizard-input::placeholder { color: var(--muted); }
+  .wizard-input:hover { border-color: var(--muted-2); }
+  .wizard-input:focus { border-color: var(--fg); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    padding: 7px 12px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px;
+    color: var(--muted);
+    transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .chip:hover { border-color: var(--fg); color: var(--fg); }
+  .chips .chip.on { border-color: var(--fg); color: var(--fg); }
+  #frFoot { display: flex; align-items: center; margin-top: 26px; gap: 8px; }
+  .wizard-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 38px; padding: 0 16px; border: 1px solid transparent; border-radius: var(--radius);
+    font-size: 14px; font-weight: 500; white-space: nowrap;
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .wizard-btn:hover:not(:disabled) { background: var(--hover); }
+  .wizard-btn-primary { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+  .wizard-btn-primary:hover:not(:disabled) { background: color-mix(in oklch, var(--fg) 84%, var(--bg)); }
+  .wizard-btn-ghost { color: var(--muted); }
+  .wizard-btn-ghost:hover:not(:disabled) { color: var(--fg); }
+
+  /* ── the first-run screen's provider pane ────────────────────────────────
+     The export's provider block (freebot-prototype.html:587-611) inside pane three, where the
+     export puts its provisioning block (:649). It is page 1's own arm mounted a second time, so it
+     carries page 1's rules under the `fr-` prefix rather than a second set of its own. */
+  #fr-provider { margin-top: 24px; }
+  #fr-provider-eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  #fr-provider-headline { margin: 10px 0 8px; }
+  #fr-provider-intro { max-width: 47ch; }
+  #fr-provider-vault, #fr-provider-request, #fr-provider-key-kept {
+    margin: 0 0 18px; font-family: var(--font-mono); font-size: var(--fs-meta); color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+  #fr-provider-request { margin: 14px 0 0; }
+  #fr-provider-key-kept { margin: 14px 0 0; }
+  #fr-provider-vault { margin: 6px 0 14px; }
+  #fr-provider-form { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  #fr-provider-form label {
+    font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  #fr-provider-form input {
+    width: 100%; min-width: 0; height: 38px; padding: 0 11px; margin-bottom: 8px;
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg); color: var(--fg);
+    font-size: 14px; outline: none; transition: border-color var(--dur) var(--ease);
+  }
+  #fr-provider-form input:focus { border-color: var(--fg); }
+  #fr-provider-save {
+    align-self: flex-start; height: 38px; padding: 0 16px; border: 1px solid var(--fg);
+    border-radius: var(--radius); background: var(--fg); color: var(--bg); font-size: 14px; font-weight: 500;
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+  }
+  #fr-provider-replaces {
+    margin: 12px 0 0; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--fg-soft); color: var(--fg); font-size: var(--fs-meta);
+  }
+  #fr-provider-replaces[hidden] { display: none; }
+  #fr-provider-status { margin: 6px 0 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+  #fr-provider-answer {
+    margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--fg-soft); color: var(--fg); font-size: 13px; white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  #fr-provider-answer[hidden] { display: none; }
+  #fr-provider-refusal {
+    margin: 10px 0 0; padding: 10px 12px; border: 1px solid var(--fg); border-radius: var(--radius);
+    color: var(--fg); font-size: 13px; font-weight: 600; overflow-wrap: anywhere;
+  }
+  #fr-provider-refusal[hidden] { display: none; }
+  #fr-provider-capabilities {
+    margin: 12px 0 0; padding-left: 18px; font-family: var(--font-mono); font-size: var(--fs-meta);
+    line-height: 1.7; color: var(--muted); overflow-wrap: anywhere;
+  }
+  #fr-provider-capabilities[hidden] { display: none; }
+
   /* ── page 1, the provider surface (U4.3) ─────────────────────────────────
      Its copy, its states and its behavior are untouched; only the values move onto the tokens. */
   #provider { flex: 1; overflow-y: auto; overflow-x: hidden; max-width: 640px; min-width: 0; min-height: 0; padding: 12px 14px 40px; }
@@ -377,7 +500,8 @@
   #provider-replay-note { margin: 8px 0 0; font-size: var(--fs-meta); color: var(--muted); }
 
   /* Page 1 is the whole page when it is on: the shell's conversation chrome stands down. Declared
-     last because it is the strongest rule in the sheet, on purpose. */
+     last because it is the strongest rule in the sheet, on purpose. The first-run screen is the same
+     arrangement, for the same reason. */
   body[data-page="connect"] #tabs,
   body[data-page="connect"] #operator,
   body[data-page="connect"] #thread,
@@ -385,7 +509,15 @@
   body[data-page="connect"] #resume,
   body[data-page="connect"] #error,
   body[data-page="connect"] .meta,
-  body[data-page="connect"] #bot-title { display: none; }
+  body[data-page="connect"] #bot-title,
+  body[data-page="first-run"] #tabs,
+  body[data-page="first-run"] #operator,
+  body[data-page="first-run"] #thread,
+  body[data-page="first-run"] #library,
+  body[data-page="first-run"] #resume,
+  body[data-page="first-run"] #error,
+  body[data-page="first-run"] .meta,
+  body[data-page="first-run"] #bot-title { display: none; }
 </style>
 </head>
 <body>
@@ -423,6 +555,69 @@
   </header>
   <div id="resume" hidden></div>
   <div id="error" hidden></div>
+  <!-- Page 2, the first-run screen. The export's own markup and copy
+       (freebot-prototype.html:615-667), with its `#frProv` provisioning block replaced by the
+       provider pane a person may really test. -->
+  <section id="firstrun" hidden data-first-run-page="false" data-od-id="first-run" class="onboard">
+    <div class="inner">
+      <div class="brandmark"><span class="glyph"><i></i></span><span class="word">FreeBot</span></div>
+      <div id="frHead">
+        <span class="cap" id="frStep"></span>
+        <span class="prog"><i></i><i></i><i></i></span>
+      </div>
+      <div id="frPane1">
+        <h2>Who is this Bot?</h2>
+        <p class="hint">A name is the whole requirement. It becomes the sidebar row and the label on its computer.</p>
+        <div class="field">
+          <label for="frName">Bot name</label>
+          <input class="wizard-input" id="frName" type="text" placeholder="Atlas" autocomplete="off">
+        </div>
+      </div>
+      <div id="frPane2" hidden>
+        <h2>What is it for?</h2>
+        <p class="hint">One line. This seeds the soul — the system prompt this Bot runs on — and you can rewrite it later.</p>
+        <div class="field">
+          <label for="frRole">Label</label>
+          <input class="wizard-input" id="frRole" type="text" placeholder="Chief of staff" autocomplete="off">
+        </div>
+        <div class="field">
+          <label for="frPurpose">What should it handle?</label>
+          <input class="wizard-input" id="frPurpose" type="text" placeholder="Release pipeline, changelog, dependency sweeps" autocomplete="off">
+        </div>
+      </div>
+      <div id="frPane3" hidden>
+        <h2>Start with a job.</h2>
+        <p class="hint">Pick one to prefill the composer, or skip and type your own.</p>
+        <div class="chips" id="frChips"></div>
+        <section id="fr-provider" data-provider-state="empty" data-provider-page="false">
+          <p class="eyebrow" id="fr-provider-eyebrow"></p>
+          <h2 id="fr-provider-headline">Test a real tool call before we save it.</h2>
+          <p class="hint" id="fr-provider-intro"></p>
+          <p id="fr-provider-vault"></p>
+          <form id="fr-provider-form">
+            <label id="fr-provider-base-url-label" for="fr-provider-base-url">Base URL</label>
+            <input id="fr-provider-base-url" type="text" autocomplete="off" spellcheck="false">
+            <label id="fr-provider-model-label" for="fr-provider-model">Model</label>
+            <input id="fr-provider-model" type="text" autocomplete="off" spellcheck="false">
+            <label id="fr-provider-key-label" for="fr-provider-key">API key</label>
+            <input id="fr-provider-key" type="password" autocomplete="off" spellcheck="false">
+            <button id="fr-provider-save" type="submit"></button>
+          </form>
+          <p id="fr-provider-replaces" hidden></p>
+          <p id="fr-provider-request" data-endpoint=""></p>
+          <p id="fr-provider-status"></p>
+          <p id="fr-provider-answer" hidden></p>
+          <p id="fr-provider-refusal" hidden></p>
+          <ul id="fr-provider-capabilities" hidden></ul>
+          <p id="fr-provider-key-kept"></p>
+        </section>
+      </div>
+      <div id="frFoot">
+        <button class="wizard-btn wizard-btn-primary" id="frNext" type="button"></button>
+        <button class="wizard-btn wizard-btn-ghost" id="frSkip" type="button"></button>
+      </div>
+    </div>
+  </section>
   <section id="provider" hidden data-provider-state="empty" data-provider-page="false">
     <h2 id="provider-headline">Connect a provider</h2>
     <p id="provider-intro"></p>

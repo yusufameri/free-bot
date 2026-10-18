@@ -8,6 +8,8 @@ import {
   API_OPERATION_NAMES,
   API_OPERATIONS,
   BOT_NAME_MAX,
+  BOT_PURPOSE_MAX,
+  BOT_ROLE_MAX,
   botIdSchema,
   connectProviderInput,
   type EventMessage,
@@ -35,6 +37,7 @@ const validInputs: Record<(typeof API_OPERATION_NAMES)[number], unknown> = {
   cancel_run: { runId: "run-1" },
   list_bots: {},
   create_bot: { name: "Local Bot" },
+  update_bot: { botId: "bot-local", role: "Chief of staff", purpose: "Release pipeline" },
   list_threads: { botId: "bot-local" },
   create_thread: { botId: "bot-local" },
   get_events: { lastSeq: 0 },
@@ -57,6 +60,7 @@ describe("operation registry", () => {
       "cancel_run",
       "list_bots",
       "create_bot",
+      "update_bot",
       "list_threads",
       "create_thread",
       "get_events",
@@ -143,9 +147,41 @@ describe("bots and threads", () => {
     ).toBe(false);
     expect(
       API_OPERATIONS.list_bots.output.parse({
-        bots: [{ botId: "bot-local", name: "Local Bot", createdAt: TS, threadCount: 2 }],
+        bots: [
+          {
+            botId: "bot-local",
+            name: "Local Bot",
+            role: "Chief of staff",
+            purpose: "Release pipeline",
+            createdAt: TS,
+            threadCount: 2,
+          },
+        ],
       }).bots[0]?.threadCount,
     ).toBe(2);
+  });
+
+  test("a Bot's role and purpose are one answer, both allowed to be empty", () => {
+    expect(
+      API_OPERATIONS.update_bot.input.parse({ botId: "bot-local", role: "", purpose: "" }),
+    ).toEqual({ botId: "bot-local", role: "", purpose: "" });
+    expect(
+      API_OPERATIONS.update_bot.input.safeParse({ botId: "bot-local", role: "x" }).success,
+    ).toBe(false);
+    expect(
+      API_OPERATIONS.update_bot.input.safeParse({
+        botId: "bot-local",
+        role: "x".repeat(BOT_ROLE_MAX + 1),
+        purpose: "",
+      }).success,
+    ).toBe(false);
+    expect(
+      API_OPERATIONS.update_bot.input.safeParse({
+        botId: "bot-local",
+        role: "",
+        purpose: "x".repeat(BOT_PURPOSE_MAX + 1),
+      }).success,
+    ).toBe(false);
   });
 
   test("a thread is a conversation: its runs, oldest first, each with its status", () => {

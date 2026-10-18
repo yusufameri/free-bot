@@ -110,6 +110,9 @@
     "packages/verify": {
       "name": "@freebot/verify",
       "version": "0.0.0",
+      "dependencies": {
+        "@freebot/core": "workspace:*",
+      },
     },
   },
   "packages": {

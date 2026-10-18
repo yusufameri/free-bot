@@ -46,6 +46,9 @@ const root = fileURLToPath(new URL("../../..", import.meta.url));
 const UNIT_LABEL = "freebot.unit=u1.7";
 
 /** The line the model is asked to write. The nonce is what no committed fixture can hold. */
+/** The name this driver gives the first Bot it makes, which is the name the page used to pick. */
+const FIRST_BOT_NAME = "Local Bot";
+
 const LINE = `freebot-u4.1 ${randomBytes(6).toString("hex")}`;
 
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -366,6 +369,22 @@ async function capture(cdp: Cdp, sessionId: string, name: string, log: Log): Pro
 // ---------------------------------------------------------------------------
 // The launched command
 // ---------------------------------------------------------------------------
+
+/**
+ * A Bot and a thread of this driver's own, made the way a page makes them: the first-run screen is
+ * what a store with no Bot opens now, and this driver's subject is the shell, so the two records are
+ * made here before any page opens.
+ */
+async function makeFirstBot(
+  launch: Launched,
+  name: string,
+): Promise<{ botId: string; threadId: string }> {
+  const botAnswer = await post(launch, "create_bot", { name });
+  const botId = (JSON.parse(botAnswer.body) as { json: { botId: string } }).json.botId;
+  const threadAnswer = await post(launch, "create_thread", { botId });
+  const threadId = (JSON.parse(threadAnswer.body) as { json: { threadId: string } }).json.threadId;
+  return { botId, threadId };
+}
 
 interface Launched {
   readonly url: string;
@@ -764,6 +783,12 @@ async function main(): Promise<number> {
   const captured: LibraryFacts[] = [];
 
   log.section("the Library on an empty workspace");
+  // The Bot and the thread this driver makes before any page opens: a store with no Bot opens the
+  // first-run screen, and this driver's subject is the Library, so the records are made here. Every
+  // workspace read names the Bot, because a workspace belongs to one and the server refuses a read
+  // that names none.
+  const madeFirst = await makeFirstBot(first, FIRST_BOT_NAME);
+  log.note(`the Bot this driver made over the route a page uses: ${JSON.stringify(madeFirst)}`);
   const page = await openPage(cdp, first.url);
   await waitTrue(
     cdp,
@@ -771,8 +796,6 @@ async function main(): Promise<number> {
     "the page to connect",
     `document.querySelector('#conn').textContent === 'connected'`,
   );
-  // The Bot the page made on its first load. Every workspace read names it, because a workspace
-  // belongs to a Bot and the server refuses a read that names none.
   const bots = await post(first, "list_bots", {});
   log.note(`the request: ${bots.request}`);
   log.note(`the answer: ${bots.status} ${bots.body}`);
@@ -783,9 +806,9 @@ async function main(): Promise<number> {
     (JSON.parse(bots.body) as { json: { bots: Array<{ botId: string; name: string }> } }).json
       .bots[0]?.name ?? "";
   log.check(
-    "the page created one Bot on a server that held none, through the same arm a person's click uses",
+    "one Bot exists on a server that held none, made through the same arm a person's click uses",
     [bots.status, botId, botName],
-    [200, "bot-local", "Local Bot"],
+    [200, "bot-local", FIRST_BOT_NAME],
   );
   const botWorkspace = botWorkspacePath(botsRoot, botId);
   const escapePath = join(botWorkspace, "escape.txt");

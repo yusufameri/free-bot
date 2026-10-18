@@ -1,0 +1,103 @@
+feature: one-run-path
+command: bun apps/web/scripts/one-run-path.ts
+timestamp: 2026-10-18T02:39:16.568Z
+git sha: 8d892faff1aa28f65bfdcd522df8c685bb35981b
+git sha short: 8d892fa
+branch: u6.2-first-run
+runtime: bun 1.2.5 on darwin arm64
+pinned image: freebot-sandbox:u0.6
+transcript: packages/pi-bridge/fixtures/rpc-handshake.jsonl
+
+# one-run-path live-ui frames — 2026-10-18T02:39:14.750Z
+worktree /Users/yusufameri/projects/free-bot-u6.2/  head 8d892fa  branch u6.2-first-run
+DRIVER DISCLOSURE: the model's turns are replayed from packages/pi-bridge/fixtures/rpc-handshake.jsonl (gate G1 parks the keyed provider) and the sandbox is the pinned image. The loop, the gate, the grant ledger, the run store, the log, the container, the server, the stream and the DOM are real.
+server: apps/server/src/index.ts, control plane on 127.0.0.1:61636
+
+## the page's stream, both directions of the token
+the thread the page's stream follows: thread-1
+ok - a page stream with no token is refused: "refused"
+ok - a page stream with a wrong token is refused: "refused"
+ok - a page stream that names no thread is refused: the stream is a thread's: "refused"
+ok - a page stream with the printed token is accepted and helloed: "{\"v\":1,\"type\":\"stream.hello\",\"payload\":{\"firstSeq\":null,\"lastSeq\":0}}"
+cdp: Chrome/155.0.8059.84, headless, remote debugging on the DevToolsActivePort file (dynamic)
+
+## path: allow once, from the page
+ok - idle: operator mode is on, so the prompt box is the way in: false
+ok - idle: the connection is live: "connected"
+ok - frame 01-idle: the page held still across the capture: "{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null}"
+ok - frame 01-idle: the element the caption is about is inside the captured pixels (#operator): [true,0]
+ok - frame 01-idle: the driver's DOM read agrees with the page's facts hook: [0,0,[],[]]
+ok - frame 01-idle: claim - no message is rendered: true
+ok - frame 01-idle: claim - the run has not finished: true
+ok - frame 01-idle: claim - no approval is pending: true
+frame 01-idle: frames/01-idle-1792291155362.png (45269 bytes, sha256 7733d94b80941cad0ea748790621e0fde78b8f0d6e30feaa5521decb108447a0) — last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text ""
+ok - approval: the run is the one the page started: "run run-1"
+ok - approval: the prompt the page sent is the run's prompt: "run one gated command"
+ok - approval: the card shows the exact command the model asked for: "bash {\"command\":\"echo native-should-not-run\"}"
+ok - approval: the buttons are the two real answers: ["Allow once","Deny"]
+ok - approval: the run's own status frame is rendered, so a parked run does not look frozen: 1
+ok - frame 02-approval-pending: the page held still across the capture: "{\"lastSeq\":6,\"done\":false,\"frameCount\":6,\"turns\":1,\"cards\":[[\"call_stub_11\",\"awaiting approval\"]],\"outputShown\":[false],\"approvals\":[null],\"deltas\":[],\"resume\":null,\"streamEnd\":null}"
+ok - frame 02-approval-pending: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
+ok - frame 02-approval-pending: the driver's DOM read agrees with the page's facts hook: [6,6,["awaiting approval"],[false]]
+ok - frame 02-approval-pending: claim - one approval card is waiting: true
+ok - frame 02-approval-pending: claim - the governed card waits for the answer: true
+ok - frame 02-approval-pending: claim - the run has not finished: true
+ok - frame 02-approval-pending: claim - one rendered message per seq: true
+frame 02-approval-pending: frames/02-approval-pending-1792291155730.png (64905 bytes, sha256 9d698b81d68eb591714cce56073b06d904e24fee6aee7ed51267d1167e43a18a) — last seq 6 · done false · turns 1 · cards [call_stub_11:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text ""
+ok - post-approval: the card renders the decided state: "allowed once"
+ok - post-approval: the decision marker names the allow: "decision call_stub_11: allow"
+ok - post-approval: the output is the container's, not a replayed string: "native-should-not-run\n"
+ok - post-approval: the run's terminal status frame is rendered: 1
+ok - post-approval: the run finished with no stream error: true
+ok - frame 03-allowed-done: the page held still across the capture: "{\"lastSeq\":16,\"done\":true,\"frameCount\":16,\"turns\":2,\"cards\":[[\"call_stub_11\",\"done\"]],\"outputShown\":[true],\"approvals\":[\"allow\"],\"deltas\":[\"stub-model saw tool result: Tool bash not found\"],\"resume\":null,\"streamEnd\":\"stream complete\"}"
+ok - frame 03-allowed-done: the element the caption is about is inside the captured pixels (#thread .run-finished): [true,0]
+ok - frame 03-allowed-done: the driver's DOM read agrees with the page's facts hook: [16,16,["done"],[true]]
+ok - frame 03-allowed-done: claim - the approval card shows the allow decision: true
+ok - frame 03-allowed-done: claim - the governed card is done with its output open: true
+ok - frame 03-allowed-done: claim - the run reported done: true
+ok - frame 03-allowed-done: claim - the terminal marker is rendered: true
+ok - frame 03-allowed-done: claim - one rendered message per seq: true
+frame 03-allowed-done: frames/03-allowed-done-1792291155899.png (83683 bytes, sha256 d352d4eaf2bb3f3938067292f3d26fd7f8bb6c2110df02a001fca3ca16c659e2) — last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found"
+server: apps/server/src/index.ts, control plane on 127.0.0.1:61669
+
+## path: deny, from the page
+ok - deny: the card renders the decided state: "denied"
+ok - deny: the refusal is named user_denied, which is the code this unit exists for: "decision call_stub_11: deny (user_denied)"
+ok - deny: the governed call produced no output: ""
+ok - deny: the denied run still reached the terminal frame: "stream complete"
+ok - deny: the run's terminal status frame is rendered: 1
+ok - frame 04-denied-done: the page held still across the capture: "{\"lastSeq\":16,\"done\":true,\"frameCount\":16,\"turns\":2,\"cards\":[[\"call_stub_11\",\"denied\"]],\"outputShown\":[false],\"approvals\":[\"deny\"],\"deltas\":[\"stub-model saw tool result: Tool bash not found\"],\"resume\":null,\"streamEnd\":\"stream complete\"}"
+ok - frame 04-denied-done: the element the caption is about is inside the captured pixels (#thread .run-finished): [true,0]
+ok - frame 04-denied-done: the driver's DOM read agrees with the page's facts hook: [16,16,["denied"],[false]]
+ok - frame 04-denied-done: claim - the approval card shows the deny decision: true
+ok - frame 04-denied-done: claim - a tool card shows denied with no output: true
+ok - frame 04-denied-done: claim - the run reported done: true
+ok - frame 04-denied-done: claim - the terminal marker is rendered: true
+ok - frame 04-denied-done: claim - one rendered message per seq: true
+frame 04-denied-done: frames/04-denied-done-1792291156528.png (81028 bytes, sha256 a653fb8f1570b54d5f268f8d89ea67dc84553a436fbb2cffbbf4e83c9fb76f14) — last seq 16 · done true · turns 2 · cards [call_stub_11:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found"
+ok - the token appears in the server's output exactly once: [1,1]
+ok - the runs added no container: the label's container set is exactly what it was before them: [[],[]]
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+pairs compared: 6 (4 frames)
+
+## frame index
+name → sha256 → asserted DOM facts → caption
+01-idle → 7733d94b80941cad0ea748790621e0fde78b8f0d6e30feaa5521decb108447a0 → last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text "" → The page is connected to the real server, the run has not started, and the operator's prompt box is the way in.
+  unmet claims: []
+02-approval-pending → 9d698b81d68eb591714cce56073b06d904e24fee6aee7ed51267d1167e43a18a → last seq 6 · done false · turns 1 · cards [call_stub_11:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text "" → A run started from the page is parked at the gate: the approval card names the exact command the model asked for, and the tool card waits for the answer.
+  unmet claims: []
+03-allowed-done → d352d4eaf2bb3f3938067292f3d26fd7f8bb6c2110df02a001fca3ca16c659e2 → last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → Allowed once and finished: the card shows the decision, the governed call ran in the container so its output block holds the container's own stdout, and the run reached its terminal frame.
+  unmet claims: []
+04-denied-done → a653fb8f1570b54d5f268f8d89ea67dc84553a436fbb2cffbbf4e83c9fb76f14 → last seq 16 · done true · turns 2 · cards [call_stub_11:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → Denied and still finished: a denial is the call's refusal rather than the run's ending, so the card is denied with no output, the decision marker names user_denied, and the run reaches its terminal frame.
+  unmet claims: []
+ok - frames: one committed PNG per key state: 4
+frame artifact: frames/01-idle-1792291155362.png (45269 bytes)
+frame artifact: frames/02-approval-pending-1792291155730.png (64905 bytes)
+frame artifact: frames/03-allowed-done-1792291155899.png (83683 bytes)
+frame artifact: frames/04-denied-done-1792291156528.png (81028 bytes)
+
+chrome Google Chrome over CDP; really launched apps/server/src/index.ts; replayed model; pinned sandbox image
+RESULT: PASS (54/54)
+
