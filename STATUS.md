@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-18T05:08Z, against `origin/main` `132475d`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-18T05:15Z, against `origin/main` `fa029fb`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -36,9 +36,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-45 units in the register: 33 done, 3 running, 8 pending, 1 parked.
+45 units in the register: 35 done, 3 running, 6 pending, 1 parked.
 
-The verification ledger holds 35 rows: 10 `live-ui-verified`, 22 `unit-test-verified`, 2 `type-check-only`, 1 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 37 rows: 11 `live-ui-verified`, 23 `unit-test-verified`, 2 `type-check-only`, 1 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -74,8 +74,10 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U4.3 | The provider page: connect, test, pick, and the four outcomes | [#27](https://github.com/yusufameri/free-bot/pull/27) |
 | U6.1 | The design contract, measured from the exported prototype | [#28](https://github.com/yusufameri/free-bot/pull/28) |
 | U6.2 | First run: the three-pane wizard and the model test | [#29](https://github.com/yusufameri/free-bot/pull/29) |
+| U6.3 | The details pane, its notices, and the reconnect banner, with the measured geometry delta at zero | [#35](https://github.com/yusufameri/free-bot/pull/35) |
 | U7.1 | `GLOSSARY.md` and its map | [#31](https://github.com/yusufameri/free-bot/pull/31) |
 | U8.1 | The connector seam, proved against an emulator rather than an account | [#30](https://github.com/yusufameri/free-bot/pull/30) |
+| U8.2 | Connector credentials in the person's own vault, with the routes that write and probe them | [#33](https://github.com/yusufameri/free-bot/pull/33) |
 | U9.1 | The sandbox conformance suite, the one gate every backend passes | [#32](https://github.com/yusufameri/free-bot/pull/32) |
 
 ## Not built yet
@@ -84,25 +86,23 @@ Running now, three units, each in its own worktree with its own brief.
 
 | Unit | What it is | State |
 | --- | --- | --- |
-| U6.3 | The aside: the right pane and its resizer, against the export | running, branch `u6.3-aside` |
-| U8.2 | Connector sign-in and the account seam | running, branch `u8.2-connector-signin` |
+| U6.4 | The overlay primitives, dispatched the moment U6.3 freed its paths | running, branch `u6.4-overlays` |
+| U7.2 | The documentation truth fix for the keyed path, which three documents still call parked | running, branch `u7.2-truth-fix` |
 | U9.2 | The microsandbox backend, the no-account local microVM | running, branch `u9.2-microsandbox` |
 
 Queued, with no brief written yet, which is deliberate so a queued slice cannot go stale.
 
 | Unit | What it is |
 | --- | --- |
-| U6.4 | The overlay primitives |
 | U6.5 | The item components and Bot status |
 | U6.6 | The landing route |
 | U6.7 | The fidelity pass: every screen diffed against the export across nine viewports, under order 36's pixel gate, with every delta fixed or written down |
-| U7.2 | Three documents still say the keyed path is parked, which stopped being true when the vault landed |
-| U8.3 | The MCP and raw HTTP adapters |
+| U8.3 | The MCP and raw HTTP adapters. Held while U7.2 edits `docs/connectors.md`, since one writer owns a file |
 | U8.4 | The Composio adapter behind the vendor-neutral seam |
 | U9.3 | The E2B Embed backend for Linux hosts and CI |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
 
-Two gaps have no unit at all, and both are named so they are not lost. A transcript does not survive a server restart, since the log is in memory. And `cancel_run` has no control in the page, so a run cannot be stopped from the UI.
+Four gaps have no unit at all, and they are named here so they are not lost. A transcript does not survive a server restart, since the log is in memory. A run cannot be stopped from the page: `cancel_run` has a route and no control. The details pane's mobile drawers are unowned, so a narrow screen has no way into the pane. And the `Media` tab has no capture source, since this app never records a screen.
 
 ## Where things live
 
