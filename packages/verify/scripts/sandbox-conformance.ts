@@ -227,7 +227,7 @@ async function runSuite(
       : sabotageOperation(
           clean,
           sabotage,
-          specs.map((spec) => spec.name),
+          specs.map((spec) => ({ name: spec.name, why: spec.why })),
         );
   return await runSandboxConformance(subject, {
     scratch,

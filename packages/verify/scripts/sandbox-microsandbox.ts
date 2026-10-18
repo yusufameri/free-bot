@@ -38,7 +38,6 @@ import {
   CONFORMANCE_OPERATIONS,
   type ConformanceDecoy,
   type ConformanceResult,
-  type ConformanceSubject,
   DEFAULT_UNIT,
   MicrosandboxAdapter,
   type MicrosandboxDecoySpec,
@@ -177,51 +176,22 @@ function decoySpecs(token: string): readonly MicrosandboxDecoySpec[] {
   ];
 }
 
-/**
- * The negative control `sabotageOperation`'s `sweep` arm means to run, done through this backend's
- * own engine. U9.1's arm removes its decoys with `dockerCli`, which removes no microsandbox and
- * reports no failure when the container is absent (`docker rm -f <missing>` exits 0 on Docker
- * 28.3.2), so against a non-Docker backend it is a silent no-op. This wrapper seeds the same defect
- * at the same place through `msb rm`, so the suite's own census assertion can be shown to fail here.
- */
-function sabotageSweepThroughEngine(
-  subject: ConformanceSubject,
-  decoys: readonly ConformanceDecoy[],
-): ConformanceSubject {
-  return {
-    ...subject,
-    ownership: {
-      ...subject.ownership,
-      sweep: async () => {
-        const removed = await subject.ownership.sweep();
-        for (const decoy of decoys) await msbCli(["rm", "-f", decoy.name]);
-        return removed;
-      },
-    },
-  };
-}
-
 /** One run of the suite over its own token, decoys and label, with a sabotage when asked for one. */
 async function runSuite(
   token: string,
   scratch: string,
-  sabotage: "upload" | "sweep" | "engine-sweep" | null,
+  sabotage: "upload" | "sweep" | null,
 ): Promise<ConformanceResult> {
   const specs = decoySpecs(token);
   const clean = microsandboxConformanceSubject({ token, decoys: specs });
   const subject =
     sabotage === null
       ? clean
-      : sabotage === "engine-sweep"
-        ? sabotageSweepThroughEngine(
-            clean,
-            specs.map((spec) => ({ name: spec.name, why: spec.why })),
-          )
-        : sabotageOperation(
-            clean,
-            sabotage,
-            specs.map((spec) => spec.name),
-          );
+      : sabotageOperation(
+          clean,
+          sabotage,
+          specs.map((spec) => ({ name: spec.name, why: spec.why })),
+        );
   return await runSandboxConformance(subject, {
     scratch,
     report: (line) => record(line),
@@ -525,7 +495,7 @@ try {
     "the driver's own cleanup removed every decoy it created",
   );
 
-  section("the negative control: an operation sabotaged, and the sweep drill's own gap");
+  section("the negative control: two operations sabotaged, each where it must fail");
   const uploadToken = `${TOKEN}b`;
   const uploadResult = await runSuite(uploadToken, scratch, "upload");
   record(
@@ -539,39 +509,24 @@ try {
   record(`sabotaged upload, literal: ${uploadFailed?.error ?? "(no error)"}`);
   await cleanUp(uploadToken, uploadResult.decoys);
 
-  // The finding: U9.1's `sweep` arm removes its decoys with `dockerCli`. Against a non-Docker
-  // backend that removes nothing, and Docker 28.3.2 exits 0 for a missing container, so the arm
-  // fails silently and the sabotaged sweep passes.
+  // U9.5's fix: the sweep arm removes its decoys through the subject's own ownership port, so the
+  // same defect Docker's drill seeds is seeded here and the census catches it.
   const sweepToken = `${TOKEN}s`;
   const sweepResult = await runSuite(sweepToken, scratch, "sweep");
   record(
-    `sabotageOperation("sweep") against this backend: ${sweepResult.operations.map((it) => `${it.operation}:${it.ok}`).join(" ")}`,
+    `sabotaged sweep: ${sweepResult.operations.map((it) => `${it.operation}:${it.ok}`).join(" ")}`,
   );
-  record(
-    `sabotageOperation("sweep") result: ${sweepResult.ok ? "the sabotaged sweep PASSED, so the arm broke nothing" : "the sabotaged sweep failed"}`,
+  const sweepFailed = sweepResult.operations.at(-1);
+  expect(
+    sweepResult.ok === false && sweepFailed?.operation === "sweep",
+    `the suite reports the sabotaged sweep: ${sweepFailed?.operation ?? "(none)"} failed`,
   );
   expect(
-    sweepResult.ok === true,
-    "FINDING: sabotageOperation's sweep arm is a no-op against microsandbox, because it removes its decoys with dockerCli and `docker rm -f <missing>` exits 0 on Docker 28.3.2",
+    sweepResult.operations.slice(0, -1).every((it) => it.ok),
+    `every operation before the sabotaged sweep passed: ${sweepResult.operations.length - 1} of ${CONFORMANCE_OPERATIONS.length - 1}`,
   );
+  record(`sabotaged sweep, literal: ${sweepFailed?.error ?? "(no error)"}`);
   await cleanUp(sweepToken, sweepResult.decoys);
-
-  const engineToken = `${TOKEN}e`;
-  const engineResult = await runSuite(engineToken, scratch, "engine-sweep");
-  record(
-    `the same defect seeded through the engine: ${engineResult.operations.map((it) => `${it.operation}:${it.ok}`).join(" ")}`,
-  );
-  const engineFailed = engineResult.operations.at(-1);
-  expect(
-    engineResult.ok === false && engineFailed?.operation === "sweep",
-    `the suite reports the sweep as failed when its decoy census really breaks: ${engineFailed?.operation ?? "(none)"} failed`,
-  );
-  expect(
-    engineResult.operations.slice(0, -1).every((it) => it.ok),
-    `every operation before the sabotaged sweep passed: ${engineResult.operations.length - 1} of ${CONFORMANCE_OPERATIONS.length - 1}`,
-  );
-  record(`engine-seeded sweep sabotage, literal: ${engineFailed?.error ?? "(no error)"}`);
-  await cleanUp(engineToken, engineResult.decoys);
 } catch (error) {
   expect(false, `the driver threw: ${error instanceof Error ? error.message : String(error)}`);
 } finally {

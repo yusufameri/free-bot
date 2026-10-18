@@ -591,13 +591,15 @@ function wrapProvider(inner: SandboxProvider, override: Partial<SandboxProvider>
  * told from a suite that cannot fail. Only the operations a wrapper can falsify from outside the
  * provider are supported, and each one is a defect this suite is supposed to catch rather than a
  * random lie: `exec` under-reports a success, `upload` moves the right number of wrong bytes, and
- * `sweep` removes the decoys it does not own. `decoyNames` is the list the caller gave its own
+ * `sweep` removes the decoys it does not own. The sweep arm goes through the subject's own
+ * ownership port, so the defect is seeded on whatever engine the subject runs on and a sabotaged
+ * sweep fails there rather than passing silently; `decoys` is the list the caller gave its own
  * subject, so the sabotaged sweep still cannot reach a sandbox another unit made.
  */
 export function sabotageOperation(
   subject: ConformanceSubject,
   operation: "exec" | "upload" | "sweep",
-  decoyNames: readonly string[] = [],
+  decoys: readonly ConformanceDecoy[] = [],
 ): ConformanceSubject {
   const provider = subject.provider;
   if (operation === "exec") {
@@ -637,7 +639,7 @@ export function sabotageOperation(
       ...subject.ownership,
       sweep: async () => {
         const removed = await subject.ownership.sweep();
-        for (const name of decoyNames) await dockerCli(["rm", "-f", name]);
+        await subject.ownership.removeDecoys(decoys);
         return removed;
       },
     },
