@@ -11,8 +11,7 @@
 
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { type AddressInfo, createServer, type Server, type Socket } from "node:net";
-import { Duplex, PassThrough, type Readable, type Writable } from "node:stream";
-import { type SupervisorToAgent, splitLines } from "@freebot/sandbox-agent";
+import { type Duplex, PassThrough } from "node:stream";
 import {
   collectDockerOutcome,
   dockerCli,
@@ -37,10 +36,12 @@ import {
   type VncStream,
   validateSandboxSpec,
 } from "./interface.ts";
+import { BRIDGE_SCRIPT, duplexFromPair, firstLine, isAttached } from "./link-bridge.ts";
+import { PROVIDER_LABEL, SANDBOX_LABEL, UNIT_LABEL } from "./ownership.ts";
 
-export const SANDBOX_LABEL = "freebot.sandbox";
-export const UNIT_LABEL = "freebot.unit";
-export const PROVIDER_LABEL = "freebot.provider";
+/** The order-22 ownership labels, defined once in `ownership.ts` and re-exported for callers here. */
+export { PROVIDER_LABEL, SANDBOX_LABEL, UNIT_LABEL } from "./ownership.ts";
+
 export const CONTAINER_PREFIX = "freebot-sbx-";
 export const DEFAULT_STATE_DIR = "/var/freebot";
 /** The unit that owns containers this adapter creates; the scheduler follow-up makes this per-Bot. */
@@ -60,13 +61,6 @@ export function containerName(id: string): string {
 export function freebotLabels(id: string, unit: string): Record<string, string> {
   return { [SANDBOX_LABEL]: id, [UNIT_LABEL]: unit, [PROVIDER_LABEL]: "docker" };
 }
-
-/**
- * Byte-transparent stdio <-> TCP bridge, run inside the sandbox by the image's own node. The
- * tunnel and the port forward are both this pipe; nothing above it interprets bytes.
- */
-const BRIDGE_SCRIPT =
-  'const net = require("node:net"); const socket = net.connect(Number(process.argv[1]), "127.0.0.1"); socket.on("error", (error) => { console.error(String(error)); process.exit(1); }); process.stdin.pipe(socket); socket.pipe(process.stdout); socket.on("close", () => process.exit(0));';
 
 export interface DockerAdapterOptions {
   /** Ownership label for order-22 cleanup. Defaults to `u1.2`. */
@@ -112,51 +106,6 @@ function collect(child: ChildProcessWithoutNullStreams): Promise<ExecResult> {
 
 function timestampTag(): string {
   return new Date().toISOString().replaceAll(/[:.]/g, "-");
-}
-
-function isAttached(value: unknown): value is Extract<SupervisorToAgent, { kind: "attached" }> {
-  if (typeof value !== "object" || value === null) return false;
-  const record = value as { kind?: unknown; acked?: unknown; lastSeq?: unknown };
-  return (
-    record.kind === "attached" &&
-    typeof record.acked === "number" &&
-    typeof record.lastSeq === "number"
-  );
-}
-
-/**
- * `Duplex.from`'s documented object form: reads come from `readable`, writes go to `writable`.
- * @types/node lists only the web stream pair, so the cast covers the type gap; the object form is
- * Node's documented shape and is exercised by this package's Docker integration suite.
- */
-function duplexFromPair(readable: Readable, writable: Writable): Duplex {
-  return Duplex.from({ readable, writable } as unknown as Parameters<typeof Duplex.from>[0]);
-}
-
-/** Resolve on the first complete JSONL line, keeping the remainder for the caller. */
-function firstLine(stream: Readable, timeoutMs: number): Promise<{ line: string; rest: string }> {
-  return new Promise((resolve, reject) => {
-    let buffer = "";
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const cleanup = () => {
-      if (timer !== undefined) clearTimeout(timer);
-      stream.off("data", onData);
-    };
-    const onData = (chunk: Buffer) => {
-      const split = splitLines(buffer, chunk.toString("utf8"));
-      buffer = split.rest;
-      const line = split.lines[0];
-      if (line === undefined) return;
-      const rest = [...split.lines.slice(1).map((kept) => `${kept}\n`), split.rest].join("");
-      cleanup();
-      resolve({ line, rest });
-    };
-    timer = setTimeout(() => {
-      cleanup();
-      reject(new Error(`no line within ${timeoutMs}ms`));
-    }, timeoutMs);
-    stream.on("data", onData);
-  });
 }
 
 export class DockerAdapter implements SandboxProvider {

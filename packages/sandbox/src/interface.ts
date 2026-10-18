@@ -10,8 +10,8 @@
 
 import type { Duplex, Readable } from "node:stream";
 
-/** Provider ids with an adapter or a committed adapter plan (plan 2.5). */
-export type ProviderId = "docker" | "e2b" | "boat" | "firecracker";
+/** Provider ids with an adapter or a committed adapter plan (plan 2.5, plan Part 12). */
+export type ProviderId = "docker" | "e2b" | "boat" | "firecracker" | "microsandbox";
 
 /** One sandbox on one provider. Produced by `create`/`fork`, passed back to every other method. */
 export interface SandboxHandle {
@@ -149,6 +149,7 @@ export type SandboxErrorCode =
   | "invalid_command"
   | "unsupported_capability"
   | "docker_cli"
+  | "msb_cli"
   | "link_error";
 
 export class SandboxError extends Error {
