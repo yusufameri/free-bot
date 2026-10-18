@@ -892,8 +892,8 @@ async function main(): Promise<number> {
   log.note(`the model's closing text: ${JSON.stringify(settled.text)}`);
 
   log.section("the run ended, its container is gone, and the file is on this computer");
-  const removed = [...first.stderr().matchAll(/removed sandbox container (\S+)/g)].flatMap(
-    (match) => (match[1] === undefined ? [] : [match[1]]),
+  const removed = [...first.stderr().matchAll(/removed sandbox (\S+) \(/g)].flatMap((match) =>
+    match[1] === undefined ? [] : [match[1]],
   );
   log.note(`containers the launch removed: ${removed.join(", ") || "(none)"}`);
   log.check(

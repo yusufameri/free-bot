@@ -42,6 +42,15 @@ export interface SandboxBackend {
   readonly provider: SandboxProvider;
   /** Whether this backend's engine still holds a sandbox by that name, running or stopped. */
   holds(name: string): Promise<boolean>;
+  /**
+   * What this backend's engine calls the sandbox a run's spec named.
+   *
+   * The spec name is the portable one the service hands the adapter; the engine's own name is what a
+   * person types into `docker ps` or `msb ls` to find it. Docker prefixes the spec name with
+   * `freebot-sbx-`, microsandbox uses the spec name itself, so a boot line that printed the spec name
+   * would name a container no engine holds.
+   */
+  engineName(name: string): string;
 }
 
 export interface SandboxBackendChoice {
@@ -105,6 +114,7 @@ const BACKENDS: Readonly<Record<SandboxBackendId, BackendEntry>> = {
     open: (unit) => ({
       id: "docker",
       provider: new DockerAdapter({ unit }),
+      engineName: containerName,
       holds: async (name) => {
         const outcome = await dockerOutcome([
           "ps",
@@ -131,6 +141,8 @@ const BACKENDS: Readonly<Record<SandboxBackendId, BackendEntry>> = {
     open: (unit) => ({
       id: "microsandbox",
       provider: new MicrosandboxAdapter({ unit }),
+      // microsandbox names a sandbox by the spec name itself, so there is nothing to rewrite.
+      engineName: (name) => name,
       holds: async (name) =>
         (await msbOutcome(["inspect", name, "--format", "json"])).exitCode === 0,
     }),

@@ -1087,8 +1087,8 @@ async function main(): Promise<number> {
     launch.interrupt();
     const code = await launch.exited();
     log.check(`${label}: exits zero on SIGINT`, code, 0);
-    const named = [...launch.stderr().matchAll(/removed sandbox container (\S+)/g)].flatMap(
-      (match) => (match[1] === undefined ? [] : [match[1]]),
+    const named = [...launch.stderr().matchAll(/removed sandbox (\S+) \(/g)].flatMap((match) =>
+      match[1] === undefined ? [] : [match[1]],
     );
     log.note(`${label}: removed ${named.length} container(s): ${named.join(", ") || "(none)"}`);
     log.check(

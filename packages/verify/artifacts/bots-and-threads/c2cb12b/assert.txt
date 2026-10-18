@@ -1,0 +1,272 @@
+feature: bots-and-threads
+command: bun packages/verify/scripts/bots-and-threads.ts
+timestamp: 2026-10-18T07:08:25.569Z
+git sha: c2cb12b0347b5b01356f7f05c97fa0de9f7e7e3f
+git sha short: c2cb12b
+branch: u9.5-sandbox-selector
+runtime: bun 1.2.5 on darwin arm64
+the line the model was asked to write: freebot-u4.2 87cf44346daf
+the bots root this driver made: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-38jYeX
+
+# bots-and-threads live-ui frames
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open` with FREEBOT_WORKSPACE pointing at a fresh directory, so the server starts with no Bots at all and no Bot a person has run is touched. The provider mode is `auto`, so the model is whatever the vault selects; every prompt is typed into the page's own box and every approval card is answered on the page. The restart is a real SIGINT of the first launch and a second launch over the same directory.
+containers before the run (label freebot.unit=u1.7): 0
+
+## the first launch, and the bots root it holds
+the printed URL, redacted: http://127.0.0.1:60252/#token=<redacted>
+the launcher's line: freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-38jYeX; each Bot's workspace is mounted at /workspace and kept across runs
+ok - the launcher is holding the bots root this driver made, with one workspace per Bot: "freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-38jYeX; each Bot's workspace is mounted at /workspace and kept across runs"
+the launcher's line: freebot up: model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)
+ok - the launcher selected the keyed path from the vault, so the file the run writes is a real model's: [true,true]
+ok - and named the vault's endpoint and model, never the key's name or value: [true,true,false]
+cdp: Chrome/155.0.8059.85, headless, DevToolsActivePort file (dynamic)
+
+## the first Bot, made the way a page makes one, on a server that holds none
+the Bot this driver made over the route a page uses: {"botId":"bot-local","threadId":"thread-1"}
+ok - the page is the URL the launcher printed, token in the fragment and never sent to a server: {"fragmentKey":"#token=","search":""}
+ok - the server held no Bot, and this driver made one through the same arm a person's click uses: [1,"Local Bot",1]
+ok - the Bot's id is the one the single-Bot app used, so a machine that already ran it keeps its files: "bot-local"
+ok - frame 01-sidebar-first-bot: the page held still across the capture: "{\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Local Bot\",\"threadCount\":1,\"selected\":true}],\"selectedBotId\":\"bot-local\",\"threads\":[{\"threadId\":\"thread-1\",\"title\":\"New conversation\",\"runs\":0,\"selected\":true}],\"selectedThreadId\":\"thread-1\",\"title\":\"Local Bot · New conversation\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null},\"library\":{\"tab\":\"conversation\",\"state\":\"idle\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[],\"entries\":[],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"\"},\"error\":null,\"runEnds\":0,\"prompts\":0}"
+ok - frame 01-sidebar-first-bot: the element the caption is about is inside the captured pixels (#bot-list): [true,0]
+ok - frame 01-sidebar-first-bot: claim - one Bot is listed: true
+ok - frame 01-sidebar-first-bot: claim - the Bot is the one this driver made: true
+ok - frame 01-sidebar-first-bot: claim - its thread is selected and holds no runs: true
+ok - frame 01-sidebar-first-bot: claim - the transcript is empty: true
+ok - frame 01-sidebar-first-bot: claim - the header names the Bot: true
+frame 01-sidebar-first-bot: 01-sidebar-first-bot.png (77924 bytes, sha256 c103794d6b6a7fe6569fdf6ab120e1da6ab331e78b60261e93f0e1b04a03a049) - bots=[Local Bot*:1] threads=[thread-1*:0] selected=thread-1 frames=0 prompts=0 library=idle
+
+## a second Bot, created from the sidebar's own control
+ok - frame 02-bot-created: the page held still across the capture: "{\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Local Bot\",\"threadCount\":1,\"selected\":false},{\"botId\":\"bot-2\",\"name\":\"Research\",\"threadCount\":1,\"selected\":true}],\"selectedBotId\":\"bot-2\",\"threads\":[{\"threadId\":\"thread-2\",\"title\":\"New conversation\",\"runs\":0,\"selected\":true}],\"selectedThreadId\":\"thread-2\",\"title\":\"Research · New conversation\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null},\"library\":{\"tab\":\"conversation\",\"state\":\"empty\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[],\"entries\":[],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"Nothing here yet. Files a run writes to /workspace land in this list.\"},\"error\":null,\"runEnds\":0,\"prompts\":0}"
+ok - frame 02-bot-created: the element the caption is about is inside the captured pixels (#bot-list): [true,0]
+ok - frame 02-bot-created: claim - two Bots are listed: true
+ok - frame 02-bot-created: claim - the new Bot is the selected one: true
+ok - frame 02-bot-created: claim - its thread list is its own and holds one empty thread: true
+ok - frame 02-bot-created: claim - the transcript is empty for the new Bot: true
+frame 02-bot-created: 02-bot-created.png (79849 bytes, sha256 04870fc358b4a5450f825ea7dbb9472085a912f963e3c31dfa92f4128e54bbeb) - bots=[Local Bot:1 Research*:1] threads=[thread-2*:0] selected=thread-2 frames=0 prompts=0 library=empty
+the two Bot ids: bot-local, bot-2
+ok - two ids, two workspace directories, neither of them the other's: [false,false]
+
+## a run in the first Bot's thread, asked to write a file with this run's nonce
+answered run-1:call_00_si5t53852vrr9dip2ko5vyj0 with allow
+ok - frame 03-thread-run: the page held still across the capture: "{\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Local Bot\",\"threadCount\":1,\"selected\":true},{\"botId\":\"bot-2\",\"name\":\"Research\",\"threadCount\":1,\"selected\":false}],\"selectedBotId\":\"bot-local\",\"threads\":[{\"threadId\":\"thread-1\",\"title\":\"New conversation\",\"runs\":1,\"selected\":true}],\"selectedThreadId\":\"thread-1\",\"title\":\"Local Bot · New conversation\"},\"thread\":{\"lastSeq\":16,\"done\":true,\"frameCount\":16,\"turns\":2,\"cards\":[[\"call_00_si5t53852vrr9dip2ko5vyj0\",\"done\"]],\"outputShown\":[false],\"approvals\":[\"allow\"],\"deltas\":[\"Wrote `freebot-u4.2 87cf44346daf` plus a newline to /workspace/note.txt using printf, and created no other file.\"],\"resume\":null,\"streamEnd\":\"stream complete\"},\"library\":{\"tab\":\"conversation\",\"state\":\"empty\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[],\"entries\":[],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"Nothing here yet. Files a run writes to /workspace land in this list.\"},\"error\":null,\"runEnds\":1,\"prompts\":1}"
+ok - frame 03-thread-run: the element the caption is about is inside the captured pixels (#thread .tool-card): [true,0]
+ok - frame 03-thread-run: claim - the thread is the one that ran: true
+ok - frame 03-thread-run: claim - the run reached its end: true
+ok - frame 03-thread-run: claim - the governed call is done, on the card that parked it: true
+ok - frame 03-thread-run: claim - the approval was answered: true
+ok - frame 03-thread-run: claim - the model's own closing sentence is on the page: true
+ok - frame 03-thread-run: claim - no refusal is on the page: true
+frame 03-thread-run: 03-thread-run.png (153962 bytes, sha256 485d50eb10818ac36a9a3cf121fdf5684550e5a484e1060759120cfdf434b987) - bots=[Local Bot*:1 Research:1] threads=[thread-1*:1] selected=thread-1 frames=16 prompts=1 library=empty
+
+## a second run in the same thread
+ok - frame 04-second-run: the page held still across the capture: "{\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Local Bot\",\"threadCount\":1,\"selected\":true},{\"botId\":\"bot-2\",\"name\":\"Research\",\"threadCount\":1,\"selected\":false}],\"selectedBotId\":\"bot-local\",\"threads\":[{\"threadId\":\"thread-1\",\"title\":\"New conversation\",\"runs\":2,\"selected\":true}],\"selectedThreadId\":\"thread-1\",\"title\":\"Local Bot · New conversation\"},\"thread\":{\"lastSeq\":23,\"done\":true,\"frameCount\":23,\"turns\":3,\"cards\":[[\"call_00_si5t53852vrr9dip2ko5vyj0\",\"done\"]],\"outputShown\":[false],\"approvals\":[\"allow\"],\"deltas\":[\"Wrote `freebot-u4.2 87cf44346daf` plus a newline to /workspace/note.txt using printf, and created no other file.\",\"second\"],\"resume\":null,\"streamEnd\":\"stream complete\"},\"library\":{\"tab\":\"conversation\",\"state\":\"empty\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[],\"entries\":[],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"Nothing here yet. Files a run writes to /workspace land in this list.\"},\"error\":null,\"runEnds\":2,\"prompts\":2}"
+ok - frame 04-second-run: the element the caption is about is inside the captured pixels (#thread .message.user): [true,0]
+ok - frame 04-second-run: claim - the thread holds two runs: true
+ok - frame 04-second-run: claim - the transcript shows both prompts: true
+ok - frame 04-second-run: claim - both runs left their terminal marker: true
+ok - frame 04-second-run: claim - the second run's text is on the page: true
+frame 04-second-run: 04-second-run.png (161602 bytes, sha256 7bc0b3638f39debdd8163f39502b5ddda6af4d942336061b44d8ad10b4ca40c5) - bots=[Local Bot*:1 Research:1] threads=[thread-1*:2] selected=thread-1 frames=23 prompts=2 library=empty
+
+## the file, on the host, in this Bot's workspace and nowhere else
+the first Bot's workspace, read by the driver from the host: "freebot-u4.2 87cf44346daf\n"
+ok - the file the container wrote carries the nonce this run minted: true
+the request: POST /rpc/list_files content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60252 body={"json":{"botId":"bot-local","path":"."}}
+the answer: 200 {"json":{"path":".","entries":[{"name":"note.txt","path":"note.txt","kind":"file","size":26,"mtimeMs":1792307308893}]}}
+ok - the listing of the Bot that ran holds the file, with the bytes it wrote: [{"name":"note.txt","path":"note.txt","kind":"file","size":26}]
+the request: POST /rpc/list_files content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60252 body={"json":{"botId":"bot-2","path":"."}}
+the answer: 200 {"json":{"path":".","entries":[]}}
+ok - the listing of the other Bot is empty, so the file one Bot wrote is absent from the other: []
+the request: POST /rpc/read_file content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60252 body={"json":{"botId":"bot-local","path":"note.txt"}}
+the answer: 200 "{\"json\":{\"path\":\"note.txt\",\"text\":\"freebot-u4.2 87cf44346daf\\n\",\"size\":26,\"truncated\":false}}"
+ok - the bytes the route surface returns for the first Bot carry the nonce: true
+the request: POST /rpc/read_file content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60252 body={"json":{"botId":"bot-2","path":"note.txt"}}
+the answer: 404 {"json":{"defined":true,"code":"path_not_found","status":404,"message":"path_not_found: note.txt"}}
+ok - the same path in the other Bot's workspace is refused as not there: [404,"path_not_found"]
+ok - a Bot the server does not hold is refused by name: [404,"bot_not_found"]
+the request: POST /rpc/start_run content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60252 body={"json":{"prompt":"into a thread that is not there","botId":"bot-local","threadId":"thread-9"}}
+the answer: 404 {"json":{"defined":true,"code":"thread_not_found","status":404,"message":"no such thread: thread-9"}}
+ok - a run in a thread the server does not hold is refused by name rather than silently landing elsewhere: [404,"thread_not_found"]
+
+## a second thread in the same Bot, and the transcript follows the selection
+ok - frame 05-other-thread: the page held still across the capture: "{\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Local Bot\",\"threadCount\":1,\"selected\":true},{\"botId\":\"bot-2\",\"name\":\"Research\",\"threadCount\":1,\"selected\":false}],\"selectedBotId\":\"bot-local\",\"threads\":[{\"threadId\":\"thread-1\",\"title\":\"New conversation\",\"runs\":2,\"selected\":false},{\"threadId\":\"thread-3\",\"title\":\"New conversation\",\"runs\":0,\"selected\":true}],\"selectedThreadId\":\"thread-3\",\"title\":\"Local Bot · New conversation\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null},\"library\":{\"tab\":\"conversation\",\"state\":\"loaded\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[\"Today\"],\"entries\":[{\"path\":\"note.txt\",\"kind\":\"file\",\"name\":\"note.txt\",\"size\":26,\"group\":\"Today\"}],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"\"},\"error\":null,\"runEnds\":0,\"prompts\":0}"
+ok - frame 05-other-thread: the element the caption is about is inside the captured pixels (#thread-list): [true,0]
+ok - frame 05-other-thread: claim - the Bot holds two threads: true
+ok - frame 05-other-thread: claim - the empty one is selected and the ran one is not: true
+ok - frame 05-other-thread: claim - the transcript is empty for it: true
+ok - frame 05-other-thread: claim - the header names the Bot and its thread: true
+frame 05-other-thread: 05-other-thread.png (84835 bytes, sha256 3add9d64ee2ef2e725ee175a9173192ffd04221cb3d7194a5ce8f64dda73a4ef) - bots=[Local Bot*:1 Research:1] threads=[thread-1:2 thread-3*:0] selected=thread-3 frames=0 prompts=0 library=loaded
+ok - selecting the thread that ran brings its frames back from that thread's own log: "thread-1"
+
+## the other Bot's Library, while the first Bot's workspace holds the file
+ok - frame 06-other-bot-library: the page held still across the capture: "{\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Local Bot\",\"threadCount\":2,\"selected\":false},{\"botId\":\"bot-2\",\"name\":\"Research\",\"threadCount\":1,\"selected\":true}],\"selectedBotId\":\"bot-2\",\"threads\":[{\"threadId\":\"thread-2\",\"title\":\"New conversation\",\"runs\":0,\"selected\":true}],\"selectedThreadId\":\"thread-2\",\"title\":\"Research · New conversation\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null},\"library\":{\"tab\":\"library\",\"state\":\"empty\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[],\"entries\":[],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"Nothing here yet. Files a run writes to /workspace land in this list.\"},\"error\":null,\"runEnds\":0,\"prompts\":0}"
+ok - frame 06-other-bot-library: the element the caption is about is inside the captured pixels (#library-list): [true,0]
+ok - frame 06-other-bot-library: claim - the Library tab is open: true
+ok - frame 06-other-bot-library: claim - the other Bot is the selected one: true
+ok - frame 06-other-bot-library: claim - its workspace is empty: true
+ok - frame 06-other-bot-library: claim - no entry is listed and nothing was refused: true
+frame 06-other-bot-library: 06-other-bot-library.png (91128 bytes, sha256 594ba05d58b2ac5529666defffdeb92d41d3a84bab255cd88c21349348d7e30b) - bots=[Local Bot:2 Research*:1] threads=[thread-2*:0] selected=thread-2 frames=0 prompts=0 library=empty
+
+## the two workspaces on the host, one file in one of them
+the first Bot's directory: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-38jYeX/bot-local/workspace
+the second Bot's directory: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-38jYeX/bot-2/workspace
+ok - the file the run wrote is in the first Bot's directory, and nowhere near the second's: [["note.txt"],false,false]
+
+## the records before the restart
+the request: POST /rpc/list_bots content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60252 body={"json":{}}
+the answer: 200 {"json":{"bots":[{"botId":"bot-local","name":"Local Bot","role":"","purpose":"","createdAt":1792307306011,"threadCount":2},{"botId":"bot-2","name":"Research","role":"","purpose":"","createdAt":1792307306287,"threadCount":1}]}}
+the before list:
+  {
+    "bots": [
+      {
+        "botId": "bot-local",
+        "name": "Local Bot",
+        "threadCount": 2
+      },
+      {
+        "botId": "bot-2",
+        "name": "Research",
+        "threadCount": 1
+      }
+    ],
+    "threads": [
+      {
+        "threadId": "thread-1",
+        "botId": "bot-local",
+        "title": "New conversation",
+        "runs": [
+          {
+            "runId": "run-1",
+            "prompt": "Use the bash tool to write exactly this, and nothing else, into the file /workspace/note.txt: 'freebot-u4.2 87cf44346daf' followed by a newline. Create no other file and read nothing. Then reply with one short sentence.",
+            "status": "done"
+          },
+          {
+            "runId": "run-2",
+            "prompt": "Reply with the single word: second.",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "threadId": "thread-3",
+        "botId": "bot-local",
+        "title": "New conversation",
+        "runs": []
+      },
+      {
+        "threadId": "thread-2",
+        "botId": "bot-2",
+        "title": "New conversation",
+        "runs": []
+      }
+    ]
+  }
+
+## the restart
+containers while the first launch is up: 0 ()
+ok - the first launch exits zero on SIGINT: 0
+ok - nothing listens on the first launch's page port: []
+ok - and the containers it created are gone, by name: true
+the second printed URL, redacted: http://127.0.0.1:60302/#token=<redacted>
+ok - the second launch holds the same bots root: "freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-38jYeX; each Bot's workspace is mounted at /workspace and kept across runs"
+the request: POST /rpc/list_bots content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60302 body={"json":{}}
+the answer: 200 {"json":{"bots":[{"botId":"bot-local","name":"Local Bot","role":"","purpose":"","createdAt":1792307306011,"threadCount":2},{"botId":"bot-2","name":"Research","role":"","purpose":"","createdAt":1792307306287,"threadCount":1}]}}
+the after list:
+  {
+    "bots": [
+      {
+        "botId": "bot-local",
+        "name": "Local Bot",
+        "threadCount": 2
+      },
+      {
+        "botId": "bot-2",
+        "name": "Research",
+        "threadCount": 1
+      }
+    ],
+    "threads": [
+      {
+        "threadId": "thread-1",
+        "botId": "bot-local",
+        "title": "New conversation",
+        "runs": [
+          {
+            "runId": "run-1",
+            "prompt": "Use the bash tool to write exactly this, and nothing else, into the file /workspace/note.txt: 'freebot-u4.2 87cf44346daf' followed by a newline. Create no other file and read nothing. Then reply with one short sentence.",
+            "status": "done"
+          },
+          {
+            "runId": "run-2",
+            "prompt": "Reply with the single word: second.",
+            "status": "done"
+          }
+        ]
+      },
+      {
+        "threadId": "thread-3",
+        "botId": "bot-local",
+        "title": "New conversation",
+        "runs": []
+      },
+      {
+        "threadId": "thread-2",
+        "botId": "bot-2",
+        "title": "New conversation",
+        "runs": []
+      }
+    ]
+  }
+ok - the after list is the before list, character for character: "{\n  \"bots\": [\n    {\n      \"botId\": \"bot-local\",\n      \"name\": \"Local Bot\",\n      \"threadCount\": 2\n    },\n    {\n      \"botId\": \"bot-2\",\n      \"name\": \"Research\",\n      \"threadCount\": 1\n    }\n  ],\n  \"threads\": [\n    {\n      \"threadId\": \"thread-1\",\n      \"botId\": \"bot-local\",\n      \"title\": \"New conversation\",\n      \"runs\": [\n        {\n          \"runId\": \"run-1\",\n          \"prompt\": \"Use the bash tool to write exactly this, and nothing else, into the file /workspace/note.txt: 'freebot-u4.2 87cf44346daf' followed by a newline. Create no other file and read nothing. Then reply with one short sentence.\",\n          \"status\": \"done\"\n        },\n        {\n          \"runId\": \"run-2\",\n          \"prompt\": \"Reply with the single word: second.\",\n          \"status\": \"done\"\n        }\n      ]\n    },\n    {\n      \"threadId\": \"thread-3\",\n      \"botId\": \"bot-local\",\n      \"title\": \"New conversation\",\n      \"runs\": []\n    },\n    {\n      \"threadId\": \"thread-2\",\n      \"botId\": \"bot-2\",\n      \"title\": \"New conversation\",\n      \"runs\": []\n    }\n  ]\n}"
+ok - both Bots and both threads came back with their conversations: {"bots":[{"botId":"bot-local","name":"Local Bot","threadCount":2},{"botId":"bot-2","name":"Research","threadCount":1}],"threads":[{"threadId":"thread-1","botId":"bot-local","title":"New conversation","runs":[{"runId":"run-1","prompt":"Use the bash tool to write exactly this, and nothing else, into the file /workspace/note.txt: 'freebot-u4.2 87cf44346daf' followed by a newline. Create no other file and read nothing. Then reply with one short sentence.","status":"done"},{"runId":"run-2","prompt":"Reply with the single word: second.","status":"done"}]},{"threadId":"thread-3","botId":"bot-local","title":"New conversation","runs":[]},{"threadId":"thread-2","botId":"bot-2","title":"New conversation","runs":[]}]}
+
+## the page after the restart
+ok - the restarted page lists the Bot that ran first, with its two threads: [["Local Bot",2],["Research",1]]
+ok - its transcript is empty, because the frames are the live log and the runs are the record: 0
+ok - frame 07-after-restart: the page held still across the capture: "{\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Local Bot\",\"threadCount\":2,\"selected\":true},{\"botId\":\"bot-2\",\"name\":\"Research\",\"threadCount\":1,\"selected\":false}],\"selectedBotId\":\"bot-local\",\"threads\":[{\"threadId\":\"thread-1\",\"title\":\"New conversation\",\"runs\":2,\"selected\":true},{\"threadId\":\"thread-3\",\"title\":\"New conversation\",\"runs\":0,\"selected\":false}],\"selectedThreadId\":\"thread-1\",\"title\":\"Local Bot · New conversation\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"resume\":null,\"streamEnd\":null},\"library\":{\"tab\":\"conversation\",\"state\":\"idle\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[],\"entries\":[],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"\"},\"error\":null,\"runEnds\":0,\"prompts\":0}"
+ok - frame 07-after-restart: the element the caption is about is inside the captured pixels (#thread-list): [true,0]
+ok - frame 07-after-restart: claim - both Bots came back: true
+ok - frame 07-after-restart: claim - the second Bot is still there: true
+ok - frame 07-after-restart: claim - the selected Bot's threads came back with their runs: true
+ok - frame 07-after-restart: claim - the header still names the Bot that is open: true
+frame 07-after-restart: 07-after-restart.png (87620 bytes, sha256 6f0fcd4c14fd561e71201e6ff5f2203a446f01c51d74045920859e551b93947d) - bots=[Local Bot*:2 Research:1] threads=[thread-1*:2 thread-3:0] selected=thread-1 frames=0 prompts=0 library=idle
+
+## shutdown, and the containers this driver created
+ok - the second launch exits zero on SIGINT: 0
+ok - nothing listens on the second launch's page port: []
+ok - the label's container set is back where it started: true
+ok - and every container the launches said they removed is gone from Docker: []
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+
+## frame index
+name -> asserted facts -> caption
+01-sidebar-first-bot -> bots=[Local Bot*:1] threads=[thread-1*:0] selected=thread-1 frames=0 prompts=0 library=idle -> The sidebar on a server that held no Bots: this driver made `Local Bot` and its first thread over the route a page uses, and the conversation is empty behind it.
+  unmet claims: []
+02-bot-created -> bots=[Local Bot:1 Research*:1] threads=[thread-2*:0] selected=thread-2 frames=0 prompts=0 library=empty -> A Bot created from the sidebar's own control: the list holds two Bots, the new one is selected, and it already has a thread to talk in.
+  unmet claims: []
+03-thread-run -> bots=[Local Bot*:1 Research:1] threads=[thread-1*:1] selected=thread-1 frames=16 prompts=1 library=empty -> A run in the first Bot's thread: the model's write call was answered, the card closed as done, and the file it wrote is in this Bot's workspace.
+  unmet claims: []
+04-second-run -> bots=[Local Bot*:1 Research:1] threads=[thread-1*:2] selected=thread-1 frames=23 prompts=2 library=empty -> A second run in the same thread: the conversation appends to the one that was there, and the thread's own count is two.
+  unmet claims: []
+05-other-thread -> bots=[Local Bot*:1 Research:1] threads=[thread-1:2 thread-3*:0] selected=thread-3 frames=0 prompts=0 library=loaded -> A second thread in the same Bot: the list holds both, the new one is selected, and its transcript is empty rather than the other thread's.
+  unmet claims: []
+06-other-bot-library -> bots=[Local Bot:2 Research*:1] threads=[thread-2*:0] selected=thread-2 frames=0 prompts=0 library=empty -> The second Bot's Library, with the first Bot's workspace holding the file the model wrote: this Bot's workspace is its own and holds nothing.
+  unmet claims: []
+07-after-restart -> bots=[Local Bot*:2 Research:1] threads=[thread-1*:2 thread-3:0] selected=thread-1 frames=0 prompts=0 library=idle -> A second launch over the same bots root: both Bots are still listed with their threads, and the thread that ran still holds its two runs.
+  unmet claims: []
+
+## the committed artifact carries no token and no key
+ok - frames: one committed PNG per key state: 7
+artifact: 01-sidebar-first-bot.png (77924 bytes)
+artifact: 02-bot-created.png (79849 bytes)
+artifact: 03-thread-run.png (153962 bytes)
+artifact: 04-second-run.png (161602 bytes)
+artifact: 05-other-thread.png (84835 bytes)
+artifact: 06-other-bot-library.png (91128 bytes)
+artifact: 07-after-restart.png (87620 bytes)
+ok - no committed line carries the launch's operator token: false
+ok - no committed line carries a key-shaped literal: false
+
+chrome Google Chrome over CDP; two really launched `bun run up --no-open` processes over one bots root, the first SIGINTed before the second; the model is the vault's keyed provider
+RESULT: PASS (77/77)

@@ -96,9 +96,11 @@ export class LaunchSandboxes {
             // Whether it is really gone is the check below, not the CLI's exit code.
           }
         }
-        if (await stillThere(this.#backend, name)) surviving.push(name);
+        // The engine's own name for it, which is what a person types into `docker ps` or `msb ls`
+        // and what an evidence driver looks the sandbox up by, never the spec's portable name.
+        if (await stillThere(this.#backend, name)) surviving.push(this.#backend.engineName(name));
         else {
-          removed.push(name);
+          removed.push(this.#backend.engineName(name));
           port.forget(name);
         }
       }
