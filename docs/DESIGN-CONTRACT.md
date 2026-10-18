@@ -223,7 +223,7 @@ outside its artifact directory is that temporary directory, which it deletes on 
 | --- | --- |
 | The strip's `Memory`, `Routines` and `Media` tabs and their bodies | no unit yet. `Memory` and `Routines` are Phase 3 (`UX.md:198`, `:200-214`) and no record in this app carries either; `Media`'s subject is a screen capture and this app captures no screen. U6.3 ships the other four. |
 | The mobile drawers (`.aside.open` at 1120px, `.sidebar.open` and `.mob-only` at 860px) | no unit yet. U6.3 declares the delta; below 1120px this app has no way to reach the pane at all. |
-| The command palette, the modal and the popover (`.palette`, `.picker`, `.menu`) | U6.4 |
+| The right-click menus (`.menu` at `:452-470`) and the composer's own popover (`.pop` at `:466`) | no unit yet. U6.4 ships the palette, the picker and the modal; these two are the export's other overlays, and both hang off surfaces that belong to other units (the Bot row's menu off U6.5's rows, the composer's off the composer U6.5 and U6.6 touch). |
 | The approval card, the tool call, the turn marker, the Bot status dot and Bot groups | U6.5 |
 | The landing page | U6.6 |
 | The item-level states inside every one of the above | U6.7 owns the pass that audits them |
@@ -360,3 +360,56 @@ the export uses for a notice (`.gate-head`, `--fg-soft`) and `#error` uses the s
 system (`--fg`), because a monochrome system distinguishes by line weight and wash rather than by
 hue. U6.5 owns the item-level treatment; this maps the values onto tokens without inventing a colour
 the export does not have.
+
+## The overlays (U6.4)
+
+The command palette, the Bot picker and the modal, built once each. `docs/overlays.md` carries what
+they search, how they behave and where their entry points are; this section carries the visual
+sources, the measured geometry, and every place they differ from the export.
+
+**The sources.** `.scrim` and `.modal` are the export's (`freebot-prototype.html:441-450`),
+`.modal.wide` is its own variant (`:448`), `.picker` and `.palette` are `:478-493` including the
+`.pop-item` row (`:472-477`), the `mark` a matched term wears (`:493`), and the sidebar head's search
+control with its `.kbd` hint (`:213-220`, `:381-384`). Class names are the export's own. Two of its
+names are not carried: `hidden` (a panel is attached and detached instead of toggled, and the driver
+asserts no node wears that class) and `lbl` (the group header ships as `pal-group` with the export's
+declarations).
+
+**The measured geometry.** `packages/verify/artifacts/overlays/<short-sha>/assert.txt` carries one
+line per overlay per viewport, and every one of the nine is `ok`: no document overflow, no region
+overflow, and the panel's own box inside the viewport at every width. The palette and the picker are
+`min(600px, 100vw - 28px)` wide, which measures 332px at 360, 402px at 430, 572px at 600 and 600px
+from 820 up. The modal is `min(720px, 100vw - 32px)`, which measures 328px at 360 and 720px from 752
+up. Both sit at the export's `top: 12vh`, offset by 14px from each edge at 360 and centred above 628.
+
+**`.modal-file` caps the bytes at `50vh` and scrolls them.** The export's modal is `overflow: auto`
+with `max-height: calc(100vh - 64px)`, so a long file pushes its own panel and the panel's scrollbar
+appears. This app keeps the panel inside the viewport and scrolls the file box instead, which is the
+same bytes and one fewer scrollbar. Measured: a 22,800-byte file makes `.modal-file` scroll at
+1440x900 and leaves the panel at its own height.
+
+**Two deltas this unit cannot close.**
+
+**The Library surface's rows keep their inline view; the pane's row opens the modal.** The export's
+`tabLibrary` rows are `data-act="file:open"` (`:1364`) and open the wide modal, and this unit ships
+that for the pane. The Library surface's own rows still open `#library-view` in the page, because
+previews are Phase 2 (`UX.md:254`), that view is landed evidence its own driver asserts, and moving it
+would be a preview unit's change rather than an overlay's. One file therefore has two doors with two
+views, which is recorded here as a difference rather than left to be discovered.
+
+**The modal has no Download and no Copy path.** The export's file modal ends with those two buttons
+(`:1833`). This app has a read route and no download route, which U6.3 recorded for the pane's Library
+tab as well; the modal carries the name, the path, the size and the bytes and nothing that pretends
+to move them.
+
+**The palette's own copy.** The export's field placeholder names `settings`, `actions`, `routines`
+and a quoted message search. This app's palette has no settings, routine or message group, so the
+field says `Bots, threads and actions` and the no-results line says message search is not in this
+build. The picker's placeholder is this app's own for the same reason: `Find a Bot, or name a new
+one`, which is what that field does. The driver asserts both of the export's placeholder strings
+absent from every overlay's rendered text, from the document and from the served bundle.
+
+**Items.** The active row wears the export's hover wash; the export's own rows have no selection
+state, so a keyboard that moves a selection needs one. The row's `.sub` carries what the row is
+(`bot`, `thread`, `page`, `action`), which is the export's own vocabulary, and the picker's Bot rows
+carry no avatar because this app's Bot record holds no initials.

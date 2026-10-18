@@ -57,6 +57,8 @@ export interface ShellHandle {
   selection(): ShellSelection;
   /** The records the selection points at, for a second surface that renders them. */
   records(): { readonly bot: Bot | null; readonly thread: Thread | null };
+  /** The whole Bot list, and the selected Bot's threads, for a surface that lists them: the palette. */
+  lists(): { readonly bots: readonly Bot[]; readonly threads: readonly Thread[] };
   facts(): ShellFacts;
 }
 
@@ -240,6 +242,8 @@ export function mountShell(config: {
     selection: () => ({ botId: selectedBotId, threadId: selectedThreadId }),
 
     records: () => ({ bot: selectedBot() ?? null, thread: selectedThread() ?? null }),
+
+    lists: () => ({ bots, threads }),
 
     facts() {
       return {
