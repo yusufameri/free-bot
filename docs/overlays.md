@@ -139,7 +139,7 @@ Its sections, in order:
 The Library surface's own rows still open the file in its own inline view, while the pane's row opens
 the modal. That is a real difference between two doors to one file, and it stands for two reasons: the
 export opens the modal from the pane's tab (`:1364` is inside `tabLibrary`), previews are Phase 2
-(`UX.md:254`, "MVP for the file list, 2 for previews"), and the surface's inline view is landed
+(`UX.md:256`, "MVP for the file list, 2 for previews"), and the surface's inline view is landed
 evidence that its own driver asserts. Moving the Library surface's row onto the modal belongs to the
 unit that owns previews.
 

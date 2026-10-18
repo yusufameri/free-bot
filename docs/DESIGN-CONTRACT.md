@@ -393,7 +393,7 @@ same bytes and one fewer scrollbar. Measured: a 22,800-byte file makes `.modal-f
 **The Library surface's rows keep their inline view; the pane's row opens the modal.** The export's
 `tabLibrary` rows are `data-act="file:open"` (`:1364`) and open the wide modal, and this unit ships
 that for the pane. The Library surface's own rows still open `#library-view` in the page, because
-previews are Phase 2 (`UX.md:254`), that view is landed evidence its own driver asserts, and moving it
+previews are Phase 2 (`UX.md:256`), that view is landed evidence its own driver asserts, and moving it
 would be a preview unit's change rather than an overlay's. One file therefore has two doors with two
 views, which is recorded here as a difference rather than left to be discovered.
 
