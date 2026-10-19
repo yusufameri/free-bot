@@ -190,8 +190,8 @@ same pixels. The committed pair is under the baseline's `stability/`.
 
 ## The baseline
 
-The committed baseline is `packages/verify/artifacts/pixel-gate/e247a9d/`, produced by
-`bun packages/pixel-gate/src/cli.ts` at commit `e247a9d`, against the app as it stands. The app state
+The committed baseline is `packages/verify/artifacts/pixel-gate/da448a0/`, produced by
+`bun packages/pixel-gate/src/cli.ts --repeat` at commit `da448a0`, against the app as it stands. The app state
 is stated in `assert.txt`: booted as `bun run up --no-open --replay` over a fresh temporary
 `FREEBOT_HOME` and bots root, one Bot and one thread created over `/rpc` before the page opens, the
 vault this run's own three-line placeholder at mode 600 in that temporary directory. No key is read,
@@ -204,10 +204,10 @@ no request leaves the machine, and the real vault at `~/.freebot/provider.env` i
 | 3 | 430x932 | 0 | 0/0 | 43.8881% | 46.3095% | 3 |
 | 4 | 600x960 | 0 | 0/0 | 55.5591% | 56.6024% | 3 |
 | 5 | 820x1180 | 0 | 0/0 | 42.9239% | 43.8372% | 3 |
-| 6 | 1024x768 | 1 | 0/768 | 37.9575% | 38.1776% | 4 |
-| 7 | 1366x768 | 4 | 0/6118 | 37.2256% | 34.5790% | 4 |
-| 8 | 1440x900 | 4 | 0/7042 | 31.1238% | 29.9856% | 4 |
-| 9 | 1920x1080 | 4 | 0/8302 | 25.6566% | 26.0033% | 4 |
+| 6 | 1024x768 | 1 | 0/768 | 37.4262% | 37.6520% | 4 |
+| 7 | 1366x768 | 4 | 0/6118 | 36.6898% | 34.1849% | 4 |
+| 8 | 1440x900 | 4 | 0/7042 | 30.7106% | 29.6667% | 4 |
+| 9 | 1920x1080 | 4 | 0/8302 | 25.4257% | 25.8039% | 4 |
 
 **Chrome is zero everywhere it exists.** 0 differing pixels over 22,230 chrome pixels, summed across
 every viewport that carries a chrome region. With a tolerance of zero and every non-zero pixel a
@@ -227,7 +227,7 @@ boxes differ at every desktop width and three at every mobile one:
 - **The app's composer is above the transcript; the export's is below it.** This is the same finding
   from the other side and the largest single number in the block: -376.52px at 360 wide and -689.71px
   at 1920, both negative because the app's composer sits above the export's either way.
-- **The sidebar list starts 3.73px higher and runs 81.73px taller** than the export's, which follows
+- **The sidebar list starts 2px higher and runs 80px taller** than the export's, which follows
   from the two heads being different heights rather than from a padding difference.
 - **The header's height delta** at 1920 is 62.43px, the app's `h1` plus subtitle plus Bot title plus
   meta row against the export's single 53px control row.

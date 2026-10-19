@@ -1,7 +1,7 @@
 {
   "command": "bun packages/pixel-gate/src/cli.ts --repeat",
-  "commit": "e247a9dd83012ca3d5d844ed7b5aa9a9d21f313b",
-  "shortSha": "e247a9d",
+  "commit": "da448a02ae4107f7130e138dcc6a9a7b5a57227c",
+  "shortSha": "da448a0",
   "chrome": "chrome Chrome/155.0.8059.85",
   "chromeTolerance": 0,
   "verdict": "PASS",
@@ -235,10 +235,10 @@
       "chromeDiffering": 0,
       "chromeTotal": 768,
       "chromeShare": 0,
-      "contentDiffering": 240828,
+      "contentDiffering": 237457,
       "contentTotal": 634467,
-      "contentShare": 0.3795752970603672,
-      "wholeShare": 0.3817761739095052,
+      "contentShare": 0.37426217596817485,
+      "wholeShare": 0.37651952107747394,
       "boxesDiffering": 4,
       "chromeRegions": [
         {
@@ -279,10 +279,10 @@
       "chromeDiffering": 0,
       "chromeTotal": 6118,
       "chromeShare": 0,
-      "contentDiffering": 234178,
+      "contentDiffering": 230807,
       "contentTotal": 629077,
-      "contentShare": 0.3722564964225365,
-      "wholeShare": 0.3457898670082967,
+      "contentShare": 0.36689785193227537,
+      "wholeShare": 0.341849301488531,
       "boxesDiffering": 4,
       "chromeRegions": [
         {
@@ -323,10 +323,10 @@
       "chromeDiffering": 0,
       "chromeTotal": 7042,
       "chromeShare": 0,
-      "contentDiffering": 253956,
+      "contentDiffering": 250585,
       "contentTotal": 815955,
-      "contentShare": 0.3112377520819163,
-      "wholeShare": 0.2998564814814815,
+      "contentShare": 0.30710639679884305,
+      "wholeShare": 0.2966666666666667,
       "boxesDiffering": 4,
       "chromeRegions": [
         {
@@ -367,10 +367,10 @@
       "chromeDiffering": 0,
       "chromeTotal": 8302,
       "chromeShare": 0,
-      "contentDiffering": 374524,
+      "contentDiffering": 371153,
       "contentTotal": 1459755,
-      "contentShare": 0.25656634161211983,
-      "wholeShare": 0.26003279320987654,
+      "contentShare": 0.2542570499844152,
+      "wholeShare": 0.2580391589506173,
       "boxesDiffering": 4,
       "chromeRegions": [
         {
