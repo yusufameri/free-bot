@@ -125,18 +125,29 @@
     text-transform: uppercase; color: var(--muted);
   }
   #bot-list, #thread-list { display: flex; flex-direction: column; gap: 2px; }
-  .bot-row, .thread-row {
-    display: flex; flex-direction: column; gap: 1px; width: 100%; min-width: 0;
-    min-height: 34px; padding: 5px 8px; border-radius: var(--radius);
+  .sb-row, .thread-row {
+    display: flex; align-items: center; gap: 9px; width: 100%; min-width: 0;
+    height: 34px; padding: 0 8px; border-radius: var(--radius);
     background: none; color: var(--fg); transition: background var(--dur-fast) var(--ease);
+    position: relative;
   }
-  .bot-row:hover, .thread-row:hover { background: var(--hover); }
-  .bot-row[data-selected="true"], .thread-row[data-selected="true"] { background: var(--accent-2); }
-  .bot-name, .thread-title {
+  .thread-row { align-items: flex-start; flex-direction: column; gap: 1px; height: auto; min-height: 34px; padding: 5px 8px; }
+  .sb-row:hover, .thread-row:hover { background: var(--hover); }
+  .sb-row[data-selected="true"], .thread-row[data-selected="true"] { background: var(--accent-2); }
+  .sb-row .name {
+    flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sb-row .sub {
+    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap;
+  }
+  .sb-row[data-state="failed"] .name { color: var(--muted); }
+  .thread-title {
     min-width: 0; font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .bot-threads, .thread-runs {
+  .thread-runs {
     font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.04em; text-transform: uppercase;
     color: var(--muted);
   }
@@ -144,7 +155,7 @@
     font-size: var(--fs-meta); color: var(--muted); overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap;
   }
-  .thread-row[data-selected="true"] .bot-threads,
+  .thread-row[data-selected="true"] .thread-runs,
   .thread-row[data-selected="true"] .thread-detail { color: var(--muted); }
   #threads { margin-top: 4px; }
   #threads-bot { padding: 0 4px 6px; font-size: var(--fs-meta); color: var(--muted); }
@@ -237,56 +248,62 @@
   }
   .message.user .prompt { white-space: pre-wrap; overflow-wrap: anywhere; }
   .turn { margin-top: 16px; min-width: 0; }
-  .turn-title {
-    margin: 0 0 6px; padding: 0; font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
-    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
-  }
   .assistant { min-width: 0; }
   .delta { white-space: pre-wrap; overflow-wrap: anywhere; }
-  .tool-card {
-    display: block; min-width: 0; margin: 10px 0; padding: 12px 13px;
-    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+
+  /* ── the transcript's items ──────────────────────────────────────────────
+     The export's own vocabulary for the conversation (`freebot-prototype.html:310-362`): the turn
+     marker `.tm`, the card `.tcard` with its head and body, the code block, the disclosure, and the
+     approval gate. The card is the only place its fact appears; no marker line follows it. */
+  .tm { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--muted); padding: 2px 0; }
+  .tm .txt { color: var(--muted); }
+  .tcard {
+    display: block; min-width: 0; margin: 10px 0; border: 1px solid var(--border);
+    border-radius: var(--radius); background: var(--surface); overflow: hidden;
   }
-  .tool-card .cmd, .approval-card .cmd {
-    display: block; max-width: 100%; overflow-x: auto; white-space: pre;
-    font-family: var(--font-mono); font-size: var(--fs-meta); line-height: 1.6; color: var(--fg);
-    background: var(--accent); border: 1px solid var(--border); border-radius: 6px; padding: 9px 11px;
+  .tcard-head {
+    display: flex; align-items: center; gap: 10px; padding: 10px 13px;
+    border-bottom: 1px solid var(--border);
   }
-  .tool-card .status {
-    display: inline-block; margin-top: 8px; font-family: var(--font-mono); font-size: 10.5px;
-    letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted);
+  .tcard .ttl { font-size: 13.5px; font-weight: 500; }
+  .tcard-body { padding: 13px; }
+  .stack { display: flex; flex-direction: column; }
+  .stack > * + * { margin-top: 12px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .muted { color: var(--muted); }
+  .fs-meta { font-size: var(--fs-meta); }
+  .codeblock {
+    position: relative; font-family: var(--font-mono); font-size: 12.5px; line-height: 1.7;
+    background: var(--accent); border-radius: var(--radius); padding: 11px 13px; overflow-x: auto;
+    color: var(--muted); white-space: pre;
   }
-  .tool-card.finished .status { color: var(--fg); }
-  .tool-card[data-finished="denied"] .status { color: var(--muted); text-decoration: line-through; }
-  .output-details { margin-top: 8px; }
-  .output-details summary { font-size: var(--fs-meta); color: var(--muted); cursor: pointer; }
+  .codeblock .cb-copy { position: absolute; top: 6px; right: 6px; }
+  .output-details { margin: 0; }
+  .output-details summary {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px;
+    color: var(--muted); cursor: pointer;
+  }
   .output-details summary:hover { color: var(--fg); }
-  .output-details .output {
-    margin: 6px 0 0; max-width: 100%; overflow-x: auto;
-    padding: 9px 11px; background: var(--accent); border-radius: 6px; color: var(--fg);
-    font-family: var(--font-mono); font-size: var(--fs-meta); line-height: 1.6; white-space: pre-wrap;
-    overflow-wrap: anywhere;
+  .terminal {
+    margin: 6px 0 0; max-width: 100%; overflow-x: auto; padding: 11px 13px;
+    background: var(--accent); border-radius: var(--radius); color: var(--muted);
+    font-family: var(--font-mono); font-size: 12.5px; line-height: 1.75;
+    white-space: pre-wrap; overflow-wrap: anywhere;
   }
-  .approval-card {
-    display: block; min-width: 0; margin: 12px 0; padding: 14px;
-    border: 1px solid var(--muted); border-radius: var(--radius); background: var(--bg);
-  }
-  .approval-card.resolved { border-color: var(--border); }
-  .approval-card .approval-body { margin-bottom: 8px; font-size: 14px; font-weight: 500; }
-  .approval-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-  .approval-actions button {
-    height: 30px; padding: 0 11px; border: 1px solid var(--border); border-radius: var(--radius);
-    background: none; color: var(--fg); font-size: 13px; font-weight: 500; white-space: nowrap;
-    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
-  }
-  .approval-actions button:hover:not(:disabled) { border-color: var(--fg); background: var(--hover); }
-  .approval-actions .allow-once { background: var(--fg); border-color: var(--fg); color: var(--bg); }
-  .approval-actions .allow-once:hover:not(:disabled) { background: var(--fg); border-color: var(--fg); }
+  .disc { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--muted); }
+  .disc:hover { color: var(--fg); }
+  .disc .chev { transition: transform var(--dur-slow) var(--ease); }
+  .disc[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  .gate { border-color: var(--fg); transition: transform var(--dur-enter) var(--ease); }
+  .gate.lift { transform: translateY(-2px); }
+  .gate-head { background: var(--fg-soft); }
+  .gate-bar { height: 2px; background: var(--fg); transition: width 1s linear; }
+  .gate-bar.done { background: var(--muted); }
+  .gate-body { padding: 14px 13px; }
+  .proposal { font-size: 14.5px; }
+  .approval-actions { display: flex; flex-wrap: wrap; gap: 8px; }
   .approval-result { font-weight: 500; color: var(--fg); }
-  .tool-result, .tool-decision, .approval-resolved, .grant-lifecycle, .turn-end, .run-status {
-    display: block; padding-left: 2px; font-family: var(--font-mono); font-size: 10.5px;
-    letter-spacing: 0.04em; color: var(--muted); overflow-wrap: anywhere;
-  }
   .run-finished, .run-failed {
     display: block; margin-top: 14px; font-size: 13px; font-weight: 500; color: var(--fg);
     overflow-wrap: anywhere;
@@ -301,6 +318,7 @@
   .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; display: inline-block; background: var(--border); }
   .dot.on { background: var(--fg); }
+  .dot.ring { background: transparent; border: 1px solid var(--muted); }
   .pulse {
     width: 7px; height: 7px; border-radius: 50%; background: var(--fg); flex: none;
     animation: pulse var(--dur-pulse) ease-in-out infinite;
@@ -327,6 +345,8 @@
   .btn-xs { height: 26px; padding: 0 9px; font-size: 12px; gap: 5px; }
   .btn-secondary { border-color: var(--border); color: var(--fg); }
   .btn-secondary:hover:not(:disabled) { border-color: var(--fg); background: var(--hover); }
+  .btn-primary { background: var(--fg); border-color: var(--fg); color: var(--bg); }
+  .btn-primary:hover:not(:disabled) { background: color-mix(in oklch, var(--fg) 84%, var(--bg)); border-color: var(--fg); }
   .btn-ghost { color: var(--muted); }
   .btn-ghost:hover:not(:disabled) { color: var(--fg); background: var(--hover); }
   .iconbtn {

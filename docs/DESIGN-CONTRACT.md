@@ -413,3 +413,46 @@ absent from every overlay's rendered text, from the document and from the served
 state, so a keyboard that moves a selection needs one. The row's `.sub` carries what the row is
 (`bot`, `thread`, `page`, `action`), which is the export's own vocabulary, and the picker's Bot rows
 carry no avatar because this app's Bot record holds no initials.
+
+## The items and the Bot rows (U6.5)
+
+The conversation's items now use the export's own structure: the approval card is
+`.tcard.gate` with `.tcard-head.gate-head`, a 2px `.gate-bar`, the body, the plain-word proposal,
+`View the full request`, the scope and expiry row, and `Allow once` / `Deny` (`:1116-1135`); the tool
+card is `.tcard` with a status dot or pulse, `Tool call`, a done/pending tag, the command in a
+`.codeblock` with a copy control, and an output disclosure (`:1106-1114`); and the turn marker is one
+`.tm` with the pulse and FreeBot's three lines (`:1104-1105`, `UX.md:115`, `:132`). The duplicate
+marker lines are gone: `.turn-title`, `.turn-end`, `.tool-decision`, `.tool-result`,
+`.approval-resolved`, `.run-status` and `.grant-lifecycle` no longer render, because the card is the
+only place its fact appears. `docs/items.md` carries the state vocabulary. The cards keep the app's
+stable harness aliases (`tool-card`, `approval-card`, `cmd`, `status`, `output-details`,
+`approval-result`, `allow-once`, `deny`) beside the export's classes, because the drivers that click
+and read them are other units' files and this unit does not edit them.
+
+The Bot row is the export's `.sb-row` with a state dot, a name and a sub line
+(`:955-970`). Its status is derived from the Bot's runs, not written as a label: `working` is a run
+in flight, `attention` is a parked approval (the row says `needs you`), `failed` is the newest run
+failed, and `idle` is everything else. The shell reads `list_threads` once per Bot so every row's dot
+is a real per-Bot read; the selected Bot's stream outranks the store until the run's record is
+re-read. `docs/items.md` carries the table and `packages/ui/src/bots.ts` is the derivation.
+
+### The delta: groups, hidden Bots and unread have no record
+
+The export's rows carry fields this app's Bot record does not hold. The export's `stateDot` reads
+`b.state` (`working`, `attention`, `unread`, `hidden`) and `b.container` (`failed`), and `botRow`
+reads `b.group`, `b.initials` and `b.role` for the sub line (`freebot-prototype.html:955-970`).
+`renderSidebar` groups the rows by `pinned`, `section` and `primary`, and renders a `Hidden Bots`
+label with a count and a disclosure around the rows whose `state === 'hidden'`
+(`:972-999`). The conversation's group bar reads `b.group`, `b.members`, `b.paused` and `b.holder`
+(`:1054-1065`).
+
+`packages/protocol/src/dto.ts`'s `botSchema` holds `botId`, `name`, `role`, `purpose`, `createdAt`
+and `threadCount`. It has no `group`, `members`, `paused`, `holder`, `pinned`, `primary`, `section`,
+`initials`, `state` or `container`, and no record or action anywhere produces `hidden` or `unread`.
+This unit therefore renders no group row and no hidden group, and seeds no prototype Bot to make
+either visible. Group chats are Phase 4 (`UX.md` 5b, where the group thread, the member rows and the
+shared `/shared` path live); a hidden Bot needs a hide action and a record field; `unread` needs a
+read marker. Those three are the delta, named here rather than approximated. The in-flight and failed
+parts of the export's dot are carried by the run-derived status above; the export's `container`
+failure is a per-Bot container, which this app does not keep (its sandbox is per run).
+

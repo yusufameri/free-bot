@@ -3,22 +3,64 @@
 // denial frame had quietly become a second copy of the terminal one.
 
 import { describe, expect, test } from "bun:test";
+import type { ShellFacts } from "./bots.ts";
 import {
+  approvalItemState,
+  approvalStateAfterRunEnd,
+  BOT_ITEM_SPECS,
   type Capture,
   collapsedPairs,
   describeFacts,
   FRAME_SPECS,
   type FrameFacts,
+  ITEM_SPECS,
   specFor,
+  TOOL_ITEM_STATES,
+  toolItemState,
   unmetClaims,
 } from "./frames.ts";
 
 /**
  * The intended shape of each key state, as facts the page would report. The live capture is what
  * the CDP harness asserts; this table exists so the spec logic and the distinctness guard are
- * testable without a browser.
+ * testable without a browser. The item-level fields default to empty; the item specs carry their
+ * own states below.
  */
-const INTENDED: Array<[string, FrameFacts]> = [
+type FrameFactsCore = Omit<
+  FrameFacts,
+  | "approvalStates"
+  | "toolStates"
+  | "turnPhases"
+  | "turnTexts"
+  | "renderedSeqs"
+  | "duplicateSeqs"
+  | "removedMarkers"
+>;
+
+const NO_MARKERS: FrameFacts["removedMarkers"] = {
+  turnTitle: 0,
+  turnEnd: 0,
+  toolDecision: 0,
+  toolResult: 0,
+  approvalResolved: 0,
+  runStatus: 0,
+  grantLifecycle: 0,
+};
+
+function full(core: FrameFactsCore): FrameFacts {
+  return {
+    ...core,
+    approvalStates: [],
+    toolStates: [],
+    turnPhases: [],
+    turnTexts: [],
+    renderedSeqs: [],
+    duplicateSeqs: [],
+    removedMarkers: { ...NO_MARKERS },
+  };
+}
+
+const INTENDED_RAW: Array<[string, FrameFactsCore]> = [
   [
     "01-idle",
     {
@@ -154,6 +196,11 @@ const INTENDED: Array<[string, FrameFacts]> = [
   ],
 ];
 
+const INTENDED: Array<[string, FrameFacts]> = INTENDED_RAW.map(([name, core]) => [
+  name,
+  full(core),
+]);
+
 function frame(name: string, facts: FrameFacts, bytes: number): Capture {
   return { name, file: `${name}-0.png`, bytes, sha256: "0".repeat(64), facts };
 }
@@ -238,3 +285,173 @@ describe("the frame inventory", () => {
     ).toEqual(FRAME_SPECS.map((spec) => [spec.name, true, true]));
   });
 });
+
+function itemFacts(patch: Partial<FrameFacts>): FrameFacts {
+  return {
+    ...full(
+      INTENDED_RAW[0]?.[1] ?? {
+        lastSeq: 0,
+        done: false,
+        frameCount: 0,
+        turns: 0,
+        cards: [],
+        outputShown: [],
+        approvals: [],
+        deltas: [],
+        resume: null,
+        streamEnd: null,
+      },
+    ),
+    ...patch,
+  };
+}
+
+describe("the item states", () => {
+  test("the inventory is four approval states, four tool states and three turn phases", () => {
+    expect(ITEM_SPECS.map((spec) => spec.name)).toEqual([
+      "approval-pending",
+      "approval-allowed",
+      "approval-denied",
+      "approval-expired",
+      "tool-running",
+      "tool-done",
+      "tool-denied",
+      "tool-failed",
+      "turn-thinking",
+      "turn-working",
+      "turn-waiting",
+    ]);
+  });
+
+  test("each item spec's claims hold on facts that show that state", () => {
+    const byName: Record<string, FrameFacts> = {
+      "approval-pending": itemFacts({
+        approvalStates: ["pending"],
+        cards: [["call-1", "awaiting approval"]],
+        outputShown: [false],
+      }),
+      "approval-allowed": itemFacts({ approvalStates: ["allowed"] }),
+      "approval-denied": itemFacts({ approvalStates: ["denied"] }),
+      "approval-expired": itemFacts({ approvalStates: ["expired"] }),
+      "tool-running": itemFacts({ toolStates: ["running"], outputShown: [false] }),
+      "tool-done": itemFacts({ toolStates: ["done"], outputShown: [true] }),
+      "tool-denied": itemFacts({ toolStates: ["denied"], outputShown: [false] }),
+      "tool-failed": itemFacts({ toolStates: ["failed"], outputShown: [true] }),
+      "turn-thinking": itemFacts({
+        turns: 1,
+        turnTexts: ["Thinking it through"],
+        turnPhases: ["thinking"],
+      }),
+      "turn-working": itemFacts({
+        turns: 1,
+        turnTexts: ["Working on your computer"],
+        turnPhases: ["working"],
+      }),
+      "turn-waiting": itemFacts({
+        turns: 1,
+        turnTexts: ["Waiting on results"],
+        turnPhases: ["waiting"],
+      }),
+    };
+    for (const spec of ITEM_SPECS) {
+      expect([spec.name, unmetClaims(spec, byName[spec.name] ?? itemFacts({}))]).toEqual([
+        spec.name,
+        [],
+      ]);
+    }
+  });
+
+  test("a duplicate marker line fails the state that removed it", () => {
+    const withTitle = itemFacts({
+      turns: 1,
+      turnTexts: ["Thinking it through"],
+      removedMarkers: { ...NO_MARKERS, turnTitle: 1 },
+    });
+    expect(unmetClaims(specForItem("turn-thinking"), withTitle)).toEqual([
+      "no turn-title marker duplicates it",
+    ]);
+  });
+
+  test("a tool result maps to done, denied or failed, never to running", () => {
+    expect(TOOL_ITEM_STATES).toEqual(["running", "done", "denied", "failed"]);
+    expect([
+      toolItemState({ denied: false, ok: true }),
+      toolItemState({ denied: true, ok: false }),
+      toolItemState({ denied: false, ok: false }),
+    ]).toEqual(["done", "denied", "failed"]);
+  });
+
+  test("an approval maps pending to allowed, denied or expired", () => {
+    expect([
+      approvalItemState({ decision: null }),
+      approvalItemState({ decision: "allow" }),
+      approvalItemState({ decision: "deny" }),
+      approvalItemState({ decision: "expired" }),
+    ]).toEqual(["pending", "allowed", "denied", "expired"]);
+    expect(approvalStateAfterRunEnd({ decision: null })).toBe("expired");
+    expect(approvalStateAfterRunEnd({ decision: "allow" })).toBe("allowed");
+  });
+
+  test("each Bot item state has the export's dot, sub line and derived status", () => {
+    const base = INTENDED_RAW[0]?.[1];
+    if (base === undefined) throw new Error("missing intended facts");
+    const facts: ShellFacts = {
+      operator: true,
+      bots: [
+        {
+          botId: "bot-a",
+          name: "Atlas",
+          threadCount: 1,
+          selected: true,
+          status: "working",
+          sub: "working",
+          dot: "pulse",
+        },
+        {
+          botId: "bot-b",
+          name: "Patch",
+          threadCount: 1,
+          selected: false,
+          status: "attention",
+          sub: "needs you",
+          dot: "dot on",
+        },
+        {
+          botId: "bot-c",
+          name: "Quill",
+          threadCount: 1,
+          selected: false,
+          status: "failed",
+          sub: "failed",
+          dot: "dot ring",
+        },
+        {
+          botId: "bot-d",
+          name: "Ledger",
+          threadCount: 1,
+          selected: false,
+          status: "idle",
+          sub: "Finance",
+          dot: "dot",
+        },
+      ],
+      selectedBotId: "bot-a",
+      threads: [],
+      selectedThreadId: null,
+      title: "Atlas",
+    };
+    expect(
+      BOT_ITEM_SPECS.map((spec) => [
+        spec.name,
+        spec.holds(facts, facts.bots[BOT_ITEM_SPECS.indexOf(spec)]?.botId ?? ""),
+      ]),
+    ).toEqual(BOT_ITEM_SPECS.map((spec) => [spec.name, true]));
+    expect(base.lastSeq).toBe(0);
+  });
+});
+
+function specForItem(name: string): (typeof ITEM_SPECS)[number] {
+  const spec = ITEM_SPECS.find((entry) => entry.name === name);
+  if (spec === undefined) throw new Error(`no item spec named ${name}`);
+  return spec;
+}

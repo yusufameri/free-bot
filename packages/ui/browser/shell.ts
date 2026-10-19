@@ -16,8 +16,11 @@ import type { Bot, Thread } from "@freebot/protocol";
 import {
   BOTS_EMPTY,
   type BotRow,
+  type BotStatus,
+  botDotClass,
   botRows,
   conversationTitle,
+  deriveBotStatus,
   NEW_BOT_LABEL,
   NEW_BOT_PLACEHOLDER,
   NEW_THREAD_LABEL,
@@ -26,7 +29,6 @@ import {
   type ShellFacts,
   THREADS_EMPTY,
   type ThreadRow,
-  threadCountLabel,
   threadRows,
 } from "../src/bots.ts";
 
@@ -54,6 +56,12 @@ export interface ShellHandle {
   createThread(): Promise<void>;
   /** Re-read the Bots and the selected Bot's threads, without moving the selection. */
   refresh(): Promise<void>;
+  /**
+   * The live status of the Bot whose stream is on screen. It outranks the record between frames,
+   * because the run store is written when a run changes and the page sees the change first. Null
+   * clears the override, and the rows fall back to what their threads' runs say.
+   */
+  setLiveStatus(botId: string, status: BotStatus | null): void;
   selection(): ShellSelection;
   /** The records the selection points at, for a second surface that renders them. */
   records(): { readonly bot: Bot | null; readonly thread: Thread | null };
@@ -102,6 +110,14 @@ export function mountShell(config: {
 
   let bots: readonly Bot[] = [];
   let threads: readonly Thread[] = [];
+  /**
+   * Every Bot's threads, read once per paint pass. The sidebar needs the runs behind every row, and
+   * the page holds one thread's stream at a time, so this is the real per-Bot read the status dot is
+   * derived from rather than a label the page invents.
+   */
+  let threadsByBot = new Map<string, readonly Thread[]>();
+  /** The selected Bot's live status while its stream is on screen. */
+  const liveStatuses = new Map<string, BotStatus>();
   let selectedBotId: string | null = null;
   let selectedThreadId: string | null = null;
   /** Set while a create is in flight, so a second click cannot mint a second record. */
@@ -115,8 +131,23 @@ export function mountShell(config: {
     return threads.find((thread) => thread.threadId === selectedThreadId);
   }
 
+  /** The status each row shows: the live stream's word, or the runs the Bot's threads carry. */
+  function statuses(): Map<string, BotStatus> {
+    const found = new Map<string, BotStatus>();
+    for (const bot of bots) {
+      const live = liveStatuses.get(bot.botId);
+      if (live !== undefined) {
+        found.set(bot.botId, live);
+        continue;
+      }
+      const runs = (threadsByBot.get(bot.botId) ?? []).flatMap((thread) => thread.runs);
+      found.set(bot.botId, deriveBotStatus(runs));
+    }
+    return found;
+  }
+
   function paint(): void {
-    const rows = botRows(bots, selectedBotId);
+    const rows = botRows(bots, selectedBotId, statuses());
     listEl.replaceChildren(...rows.map(botRowNode));
     if (rows.length === 0) listEl.append(div("shell-empty", BOTS_EMPTY));
 
@@ -134,14 +165,26 @@ export function mountShell(config: {
     sidebarEl.dataset.shellState = bots.length === 0 ? "empty" : "loaded";
   }
 
+  /**
+   * The export's `.sb-row` (`freebot-prototype.html:962-970`): a state dot, the name, and the one
+   * sub line. The row's status is a real run fact, so the dot is a pulse while a run moves, a filled
+   * dot while a person is needed, a ring after a failure, and an empty dot otherwise.
+   */
   function botRowNode(row: BotRow): HTMLElement {
     const node = document.createElement("button");
-    node.className = "bot-row";
+    node.type = "button";
+    node.className = "sb-row bot-row";
     node.dataset.bot = row.botId;
     node.dataset.selected = String(row.selected);
+    node.dataset.state = row.status;
+    node.dataset.threads = String(row.threadCount);
+    node.title = row.name;
     node.setAttribute("aria-current", String(row.selected));
-    node.append(div("bot-name", row.name));
-    node.append(div("bot-threads", threadCountLabel(row.threadCount)));
+    const dot = div(botDotClass(row.status));
+    dot.setAttribute("aria-hidden", "true");
+    node.append(dot);
+    node.append(div("name", row.name));
+    node.append(div("sub", row.sub));
     node.addEventListener("click", () => void handle.selectBot(row.botId));
     return node;
   }
@@ -160,8 +203,12 @@ export function mountShell(config: {
     return node;
   }
 
-  async function readThreads(botId: string): Promise<void> {
-    threads = await config.calls.listThreads(botId);
+  async function readAllThreads(): Promise<void> {
+    const entries = await Promise.all(
+      bots.map(async (bot) => [bot.botId, await config.calls.listThreads(bot.botId)] as const),
+    );
+    threadsByBot = new Map(entries);
+    threads = selectedBotId === null ? [] : (threadsByBot.get(selectedBotId) ?? []);
     if (!threads.some((thread) => thread.threadId === selectedThreadId)) {
       selectedThreadId = threads[0]?.threadId ?? null;
     }
@@ -173,21 +220,25 @@ export function mountShell(config: {
       if (!bots.some((bot) => bot.botId === selectedBotId)) {
         selectedBotId = bots[0]?.botId ?? null;
       }
-      threads = selectedBotId === null ? [] : await config.calls.listThreads(selectedBotId);
+      await readAllThreads();
       selectedThreadId = threads[0]?.threadId ?? null;
       paint();
     },
 
     async refresh() {
       bots = await config.calls.listBots();
-      if (selectedBotId !== null) await readThreads(selectedBotId);
+      if (!bots.some((bot) => bot.botId === selectedBotId)) {
+        selectedBotId = bots[0]?.botId ?? null;
+      }
+      await readAllThreads();
       paint();
     },
 
     async selectBot(botId) {
       selectedBotId = botId;
       selectedThreadId = null;
-      await readThreads(botId);
+      liveStatuses.delete(botId);
+      await readAllThreads();
       paint();
       config.onChange?.(handle.selection());
     },
@@ -204,15 +255,17 @@ export function mountShell(config: {
       paint();
       try {
         const bot = await config.calls.createBot(name.trim() === "" ? NEW_BOT_LABEL : name.trim());
-        await config.calls.createThread(bot.botId, NEW_THREAD_TITLE);
+        const thread = await config.calls.createThread(bot.botId, NEW_THREAD_TITLE);
         // The record the server made is the row the sidebar shows, so the list gains it here rather
         // than being read back a second time. Its count is one because the thread just above is the
-        // thread it always starts with.
+        // thread it always starts with. Its threads are the one read that gives it a status.
         bots = [...bots, { ...bot, threadCount: 1 }];
+        threadsByBot = new Map(threadsByBot).set(bot.botId, [thread]);
         selectedBotId = bot.botId;
         selectedThreadId = null;
         newBotNameEl.value = "";
-        await readThreads(bot.botId);
+        await readAllThreads();
+        selectedThreadId = thread.threadId;
         paint();
         config.onChange?.(handle.selection());
       } finally {
@@ -228,8 +281,9 @@ export function mountShell(config: {
       try {
         const thread = await config.calls.createThread(selectedBotId, NEW_THREAD_TITLE);
         threads = [...threads, thread];
+        threadsByBot = new Map(threadsByBot).set(selectedBotId, threads);
         selectedThreadId = thread.threadId;
-        await readThreads(selectedBotId);
+        await readAllThreads();
         selectedThreadId = thread.threadId;
         paint();
         config.onChange?.(handle.selection());
@@ -239,6 +293,14 @@ export function mountShell(config: {
       }
     },
 
+    setLiveStatus(botId, status) {
+      const before = liveStatuses.get(botId) ?? null;
+      if (status === null) liveStatuses.delete(botId);
+      else liveStatuses.set(botId, status);
+      const after = liveStatuses.get(botId) ?? null;
+      if (before !== after) paint();
+    },
+
     selection: () => ({ botId: selectedBotId, threadId: selectedThreadId }),
 
     records: () => ({ bot: selectedBot() ?? null, thread: selectedThread() ?? null }),
@@ -246,14 +308,27 @@ export function mountShell(config: {
     lists: () => ({ bots, threads }),
 
     facts() {
+      const domRows = new Map(
+        [...listEl.querySelectorAll<HTMLElement>(".sb-row")].map((node) => [
+          node.dataset.bot ?? "",
+          node,
+        ]),
+      );
       return {
         operator: !sidebarEl.hidden,
-        bots: botRows(bots, selectedBotId).map((row) => ({
-          botId: row.botId,
-          name: row.name,
-          threadCount: row.threadCount,
-          selected: row.selected,
-        })),
+        bots: botRows(bots, selectedBotId, statuses()).map((row) => {
+          const node = domRows.get(row.botId);
+          const dot = node?.querySelector<HTMLElement>(".dot, .pulse");
+          return {
+            botId: row.botId,
+            name: row.name,
+            threadCount: row.threadCount,
+            selected: row.selected,
+            status: row.status,
+            sub: node?.querySelector<HTMLElement>(".sub")?.textContent ?? row.sub,
+            dot: dot?.className ?? botDotClass(row.status),
+          };
+        }),
         selectedBotId,
         threads: threadRows(threads, selectedThreadId).map((row) => ({
           threadId: row.threadId,
