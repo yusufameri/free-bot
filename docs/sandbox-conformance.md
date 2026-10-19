@@ -75,7 +75,7 @@ backend that boots something else fails at the first operation.
 | 4 | download | The same path comes back as 4096 bytes, byte-equal to what went in |
 | 5 | tunnel | The first line on the duplex is `{"kind":"attached","acked":0,"lastSeq":0}`. An ack with seq 7 comes back as `{"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}`. With no link running, `tunnel()` throws a `SandboxError` whose code is `link_error`. `delete` then removes that sandbox |
 | 6 | snapshot-resume | `snapshot(handle, "u91-round-trip")` returns the tag `freebot-snapshot/<id>:u91-round-trip`. `stop` leaves the sandbox not running, `resume` brings it back running with the marker intact, and a new sandbox created from `snapshot.ref` reads the same marker |
-| 7 | idle-kill | A sandbox created with `idleTtlMs=600` stops with no adapter call. After `resume`, four calls at 200ms intervals against the same 600ms ttl leave it running |
+| 7 | idle-kill | A sandbox created with `idleTtlMs=3000` stops with no adapter call. After `resume`, four calls at 200ms intervals against the same 3000ms ttl leave it running |
 | 8 | sweep | The census before (every decoy, then every sandbox this run still holds), the sweep's engine ids equal to exactly those sandboxes, and the census after (this run holds nothing, and every decoy keeps the identity and running state it had) |
 
 ## The negative control

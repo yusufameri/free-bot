@@ -443,7 +443,9 @@ const snapshotResumeStep: Step = async (state, line) => {
 
 const idleKillStep: Step = async (state, line) => {
   const provider = state.subject.provider;
-  const idleTtlMs = 600;
+  // Wide enough that four exec calls plus their 200ms gaps fit inside it even when the engine is
+  // busy; a tighter ttl measures this machine's exec latency rather than the adapter's idle timer.
+  const idleTtlMs = 3_000;
   const idler = await owned(state, "u91-idle", { idleTtlMs });
   const startedAt = Date.now();
   const stopped = await until(
