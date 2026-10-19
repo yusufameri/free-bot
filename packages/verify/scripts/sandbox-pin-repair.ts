@@ -32,7 +32,7 @@ const root = fileURLToPath(new URL("../../..", import.meta.url));
 const FEATURE = "sandbox-pin-repair";
 const TOKEN = `${process.pid.toString(36)}-${randomBytes(3).toString("hex")}`;
 const RUN_UNIT = `u10.8-run-${TOKEN}`;
-const SANDWICH = `u108-run-${TOKEN}`;
+const SANDBOX_NAME = `u108-run-${TOKEN}`;
 const PROBE_REF = `freebot-u10.8-off-pin:${TOKEN}`;
 const DOCKER = process.env.FREEBOT_DOCKER_BIN ?? "docker";
 
@@ -192,7 +192,7 @@ try {
   if (repaired === null) throw new Error("the tag never stayed off-pin long enough to repair");
 
   handle = await adapter.create({
-    name: SANDWICH,
+    name: SANDBOX_NAME,
     image: repaired.ref,
     stateDir: DEFAULT_STATE_DIR,
   });
