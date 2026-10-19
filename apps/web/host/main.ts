@@ -50,6 +50,7 @@ import {
 } from "../../../packages/ui/browser/first-run.ts";
 import { exposeLibraryFacts, mountLibrary } from "../../../packages/ui/browser/library.ts";
 import { exposeNoticeFacts, mountNotices } from "../../../packages/ui/browser/notices.ts";
+import { exposeOverlayFacts, mountOverlays } from "../../../packages/ui/browser/overlays.ts";
 import { exposeProviderFacts, mountProvider } from "../../../packages/ui/browser/provider.ts";
 import { type Connection, exposeFacts, mountThread } from "../../../packages/ui/browser/render.ts";
 import {
@@ -58,6 +59,7 @@ import {
   type ShellSelection,
 } from "../../../packages/ui/browser/shell.ts";
 import { latestCommand, latestRun, liveRunStatus } from "../../../packages/ui/src/aside.ts";
+import type { OverlayCommand } from "../../../packages/ui/src/overlays.ts";
 import { providerRowLabel } from "../../../packages/ui/src/provider.ts";
 
 type ApiClient = ContractRouterClient<typeof apiContract>;
@@ -235,17 +237,60 @@ const aside = mountAside({
     if (tab === "library") await library.refresh();
   },
   onOpenFile: (path) => {
-    // A row opens where the Library shows a file: the same read, its own view.
-    void library
-      .show("library")
-      .then(() => library.open(path))
-      .catch(() => undefined);
+    // A row opens the export's own wide modal (`freebot-prototype.html:1831`), read through the same
+    // call the Library surface reads with, so the two views of one file cannot disagree.
+    void overlays.openFile(path).catch(() => undefined);
   },
 });
 
 const notices = mountNotices({ onOpenProvider: () => providerPage.show() });
 exposeAsideFacts(aside);
 exposeNoticeFacts(notices);
+
+/**
+ * The three overlays. Every command they carry runs the same call its own button makes, so a row in
+ * the palette and the control it names land on one path: `select-bot` is a sidebar row, `new-thread`
+ * is `#new-thread`, `show-library` is the Library tab, `open-provider` is the footer's row. The
+ * modal's bytes are read through the Library's own call, so the pane and the Library surface render
+ * one read rather than two that can disagree.
+ */
+async function runOverlayCommand(command: OverlayCommand): Promise<void> {
+  switch (command.run) {
+    case "select-bot":
+      await shell.selectBot(command.botId);
+      return;
+    case "create-bot":
+      await shell.createBot(command.name);
+      return;
+    case "select-thread":
+      await shell.selectThread(command.threadId);
+      return;
+    case "show-conversation":
+      await library.show("conversation");
+      return;
+    case "show-library":
+      await library.show("library");
+      return;
+    case "open-provider":
+      providerPage.show();
+      return;
+    case "new-thread":
+      await shell.createThread();
+      return;
+  }
+}
+
+const overlays = mountOverlays({
+  records: () => ({ operator: shell.facts().operator, ...shell.lists() }),
+  readFile: async (path) => {
+    if (api === null || selection.botId === null) {
+      throw new Error("the file view needs the operator token");
+    }
+    return await api.read_file({ botId: selection.botId, path });
+  },
+  run: runOverlayCommand,
+});
+exposeOverlayFacts(overlays);
 
 /** Start the run the composer asked for, in the Bot and the thread on screen. */
 function sendStart(prompt: string): void {

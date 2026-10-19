@@ -4,7 +4,9 @@
  * 1. No vendor above an adapter. Every import in this package is relative today, which is the
  *    strongest form of the rule: nothing in the package has a dependency to leak. The rule survives
  *    U8.3 as an allowlist of vendor-facing modules, and a bare specifier anywhere outside it fails
- *    here, so a Composio type cannot climb above the adapter unnoticed.
+ *    here, so a Composio type cannot climb above the adapter unnoticed. The vendor's own name is
+ *    held to the same rule: the allowlist is the only place in this package's shipped source it may
+ *    appear, and the interface module is the one that may name no vendor at all.
  * 2. A second adapter satisfies the interface. The proof is a stub that shares no code with the MCP
  *    adapter and is driven through the same consumer, which is what "U8.3 can add Composio without
  *    touching the seam" has to mean in a test.
@@ -27,7 +29,10 @@ const packageRoot = new URL("../", import.meta.url);
 const sourceDir = new URL("./", import.meta.url);
 
 /** The modules that may name a vendor. U8.3 puts `composio.ts` here. */
-const VENDOR_FACING: readonly string[] = [];
+const VENDOR_FACING: readonly string[] = ["composio.ts"];
+
+/** The vendor's own name, which the shipped source may carry only inside an allowlisted module. */
+const VENDOR_TOKEN = "@composio";
 
 /** The shipped surface. A test is not part of it: a test names `bun:test` and names the vendor. */
 function sourceFiles(): Array<{ name: string; text: string }> {
@@ -66,17 +71,30 @@ describe("the vendor boundary", () => {
     expect(importsOf(interfaceModule?.text ?? "")).toEqual([]);
   });
 
-  test("the package declares no dependency, and no Composio type is in it before U8.3", () => {
+  test("the package declares no dependency, so the vendor cannot leak through an import graph", () => {
     const manifest = JSON.parse(readFileSync(new URL("package.json", packageRoot), "utf8")) as {
       dependencies?: Record<string, string>;
       devDependencies?: Record<string, string>;
     };
     expect(manifest.dependencies ?? {}).toEqual({});
     expect(manifest.devDependencies ?? {}).toEqual({});
+  });
+
+  test("the vendor's name is held to the allowlist, and the interface module names no vendor", () => {
     const named = sourceFiles()
-      .filter((file) => file.text.includes("@composio"))
+      .filter((file) => file.text.includes(VENDOR_TOKEN))
       .map((file) => file.name);
-    expect(named).toEqual([]);
+    // Every file that names the vendor is one the allowlist admits, so the name stops at the adapter.
+    expect(named.filter((name) => !VENDOR_FACING.includes(name))).toEqual([]);
+    // And the one module every caller above the seam imports carries the name nowhere.
+    const interfaceModule = sourceFiles().find((file) => file.name === "connector.ts");
+    expect(interfaceModule?.text.includes(VENDOR_TOKEN)).toBe(false);
+    // A rename that would widen the boundary is caught by the two assertions above rather than by this
+    // list: the renamed file names the vendor and is not admitted. So an allowlisted name is *not*
+    // required to resolve, and that is deliberate. Gate 8's delete test removes this adapter and runs
+    // the suite, and a check that a deleted module still exists would fail the one state the contract
+    // test exists to prove. The list names what the boundary admits, not what is on disk.
+    expect(VENDOR_FACING).toEqual(["composio.ts"]);
   });
 
   test("a model-facing name carries its connector's id, so two connectors cannot collide", () => {

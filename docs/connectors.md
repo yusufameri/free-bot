@@ -23,12 +23,14 @@ connect, test, list and remove, and no answer carries a value.
 
 The boundary is a failing test rather than a convention. `boundary.test.ts` reads this package's own
 non-test source, collects every module specifier, and fails on any bare specifier outside a
-`VENDOR_FACING` allowlist — empty today, which is the strongest form of the rule: nothing in the
-shipped package has a dependency to leak. U8.3 adds `composio.ts` to that list and a Composio type
-cannot climb above it unnoticed. The same file proves acceptance 4: a stub adapter that shares no
-code with the MCP adapter satisfies `Connector` and is driven through the same consumer
-(`offeredTools`), which is what "U8.3 can add Composio without touching the seam" has to mean in a
-test.
+`VENDOR_FACING` allowlist. The list holds one entry, `composio.ts`, and the strongest form of the rule
+still holds underneath it: nothing in the shipped package has a dependency to leak, so the allowance
+is about the vendor's *name* rather than about an import. The same file holds the name to the same
+rule, failing if any file outside the list carries it and if `connector.ts`, the one module every
+caller above the seam imports, carries it anywhere. A Composio type therefore cannot climb above the
+adapter unnoticed. The same file proves acceptance 4: a stub adapter that shares no code with the MCP
+adapter satisfies `Connector` and is driven through the same consumer (`offeredTools`), which is what
+"U8.3 can add Composio without touching the seam" has to mean in a test.
 
 ## The wire
 
@@ -48,6 +50,58 @@ joined and non-text blocks named by type, `authenticate` is a handshake that ans
 by the evidence harness to build the fixture connector on top of — with an optional request gate
 that refuses with 401, which is how "the credential is required rather than merely sent" is
 provable.
+
+## The second vendor, and the MCP endpoint path
+
+`composio.ts` is the second adapter, and it is the only module in the package allowed to name the
+vendor. It does not speak a second wire: it mints a Composio session and then hands the endpoint the
+session answered with to `McpConnector`, so everything above the seam and the whole transport below it
+are the ones that were already there.
+
+The endpoint path is the vendor's own, taken from its reference rather than invented here:
+
+| what | value |
+| --- | --- |
+| API base | `https://backend.composio.dev` (`COMPOSIO_API_BASE`; a person's own deployment passes theirs) |
+| session route | `POST /api/v3.1/tool_router/session` (`COMPOSIO_SESSION_PATH`) |
+| the key's header | `x-api-key` (`COMPOSIO_KEY_HEADER`) |
+| request body | `{ user_id }`, plus `toolkits` when the connector was built with any |
+| answer | `mcp: { type: "http", url }`, and `mcp.headers` when the session names any |
+
+`describe`, `call`, `authenticate` and `health` are the same four the seam declares. One connector
+object mints one session, so a describe, a call and a probe share an endpoint rather than spending a
+key request each, and a refused session is not cached, because a service that was down for one probe
+is not a connector that is dead for the launch.
+
+Three rules this adapter enforces on answers it did not choose. A session that answers no `mcp`
+object, a `type` other than `http`, no `url`, a `url` that is not one, or a protocol this seam cannot
+carry is refused by name rather than guessed at, and every one of those refusals is a `ConnectorError`
+naming the connector. So is a session the vendor refuses, whose message carries the status and the
+service's own words and never the key.
+
+**The key reaches the session route and nothing else.** That is the custody rule of Part 11 applied to
+a vendor that hands back an endpoint: the project key mints sessions, it is not the endpoint's
+credential, the endpoint may sit on the vendor's own host rather than on the API base, and a
+session-minting key sent to a host the person never configured would be a leak with a redirect in
+front of it. So the endpoint's requests carry `mcp.headers` when the session named any and nothing at
+all when it did not. The driver asserts both halves: with a session that names headers, every request
+the endpoint's gate sees carries the session token and none carries the project key; with a session
+that names none, the endpoint's gate refuses the call 401, which is what the public schema's shape
+(defaulting to no headers) actually implies.
+
+Two things are declared rather than proven, because this project owns no Composio account (order 33):
+
+- the public schema for the session answer lists `mcp.type` and `mcp.url` and no headers object, while
+  the vendor's SDK exposes `session.mcp.headers`. A session without headers is therefore treated as
+  ordinary rather than malformed, which is the shape the schema documents.
+- no real session endpoint is ever reached. What the fixture asserts is the custody claim and the
+  path, not the vendor's live behaviour. A person running this against their own account is the
+  manual best-effort check Part 11.1 describes.
+
+Gate 8's delete test is what keeps the adapter from becoming load-bearing, and it runs rather than
+being described: the driver moves `composio.ts` and its own test aside, runs `bun run typecheck` and
+`bun test`, asserts both exit 0 with a real pass count and no `composio.test.ts` in the run, and puts
+the file back byte for byte. Its literal output is in the artifact.
 
 ## The credential's path
 
@@ -170,18 +224,38 @@ write carrying *any* bearer value is accepted, so the run-path driver claims cre
 rather than credential *verification*. The exact-match half is proven at the fixture MCP server's own
 bearer gate (`packages/verify/src/github-mcp.ts`), which compares its per-run token exactly.
 
+The same driver also carries U8.3's second-vendor evidence and gate 8's contract test, and both are
+inside the run count above. The emulated vendor is two services in the driver's own process, because
+the vendor's API is two: a session route that refuses a request without its project key and answers
+`mcp: { type: "http", url }` for one that carries it, and an MCP endpoint built from
+`packages/connectors`' own server whose tools act on the account's store over HTTP. The adapter drives
+it in the same process, over real sockets, through the module's own four operations, and the state
+before, the call, the account's own report, the reset, and the call from empty again are asserted
+against the vendor's own REST surface. The delete test then moves `composio.ts` and its test aside and
+runs `bun run typecheck` and `bun test`, asserting exit 0, a real pass count, and no `composio.test.ts`
+in the run, before restoring the file and checking its sha256 is the one it had.
+
 ## What remains
 
 - **The OAuth browser flow is a later unit.** This unit's sign-in is the credential a person already
   has: the app takes it, saves it to the vault and probes with it. Everything a browser flow needs on
   top of that is a redirect, a callback and a token exchange that ends in the same `connect_connector`
   call.
-- **U8.3 owns the second vendor.** `composio.ts` joins `packages/connectors`' `VENDOR_FACING` list
-  and nothing above the seam changes; gate 8's delete test is what keeps that true.
+- **U8.3 landed the second vendor.** `composio.ts` is on `packages/connectors`' `VENDOR_FACING` list,
+  nothing above the seam changed, and gate 8's delete test is what keeps that true. What it does *not*
+  yet have is a route: the app's registry still builds every connector it holds as an `McpConnector`
+  from the record's `url`, so a Composio connector is reachable through the adapter by a caller that
+  builds one and not yet through `connect_connector`. The record has no field naming an adapter kind,
+  and adding one is a protocol change no unit owns yet, so it is named here rather than half-built. A
+  person can point a connector at their own Composio MCP endpoint today, which is the shape the
+  registry already holds.
 - **U8.4 owns the "Connect apps" screen.** It renders the four arms and the three states above. It
   must never show a header value, and it does not have one to show: no route answers with one.
 - **Not in this unit:** streaming tool results, per-connector permission policy beyond the run's own
   gate, connector discovery outside a run's start (the route probe is the on-demand one), and any
   write path from a route to the sandbox.
 - The emulated service is a fixture and is named as one everywhere it appears in the artifacts; no
-  real third-party service, account, or key is involved anywhere in the evidence path.
+  real third-party service, account, or key is involved anywhere in the evidence path. That holds for
+  the second vendor too, and it is stricter there: nothing in this repo has ever reached
+  `backend.composio.dev`, so the vendor's live shape is documented from its reference and asserted
+  against the fixture rather than observed.
