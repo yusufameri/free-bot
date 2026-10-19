@@ -2,16 +2,16 @@
 
 feature: pixel-gate
 command: bun packages/pixel-gate/src/cli.ts --repeat
-commit: da448a02ae4107f7130e138dcc6a9a7b5a57227c (da448a0) on u6.7a-pixel-gate, working tree dirty
-started: 2026-10-19T05:59:38.542Z
+commit: de64c3d38bfa7eb15ded3c2b6575211866cbb503 (de64c3d) on u6.7a-coderabbit-followup
+started: 2026-10-19T06:34:57.806Z
 runtime: bun 1.2.5 on darwin arm64
 chrome: chrome Chrome/155.0.8059.85
 chrome tolerance: 0 differing pixel(s) per chrome region
 
-app: http://127.0.0.1:52578/#token=<redacted>
-  home /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-bnhY7G
-  bot bot-local, thread thread-1, provider mode replay, vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-bnhY7G/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-bnhY7G)
-export: design/prototype-84c6b185/freebot-prototype.html, served at http://127.0.0.1:52580/, its initial screen replaced 1 time(s)
+app: http://127.0.0.1:57819/#token=<redacted>
+  home /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv
+  bot bot-local, thread thread-1, provider mode replay, vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv)
+export: design/prototype-84c6b185/freebot-prototype.html, served at http://127.0.0.1:57821/, its initial screen replaced 1 time(s)
 
 fonts: the app resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; the export resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif
   the two stacks are the same; a 'Geist' string measures 215.98px against an absent family's 215.98px on the app and 215.98px against 215.98px on the export, so Geist has no face on this machine and both pages render the stack's fallback
@@ -19,21 +19,21 @@ fonts: the app resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe
 same instance, same run: one Chrome process, one CDP connection, three targets in it (the app, the export, and the page that diffs them). The export is never screenshotted in a second process and no stored image is ever read.
 
 ## the matrix
-01-mobile-compact-360x800: 360x800, 0 chrome region(s), 2 content region(s)
-02-mobile-standard-390x844: 390x844, 0 chrome region(s), 2 content region(s)
+01-mobile-compact-360x800: 360x800, 0 chrome region(s), 3 content region(s)
+02-mobile-standard-390x844: 390x844, 0 chrome region(s), 3 content region(s)
 03-mobile-large-430x932: 430x932, 0 chrome region(s), 3 content region(s)
 04-foldable-small-tablet-600x960: 600x960, 0 chrome region(s), 3 content region(s)
 05-tablet-portrait-820x1180: 820x1180, 0 chrome region(s), 3 content region(s)
 06-tablet-landscape-1024x768: 1024x768, 1 chrome region(s), 4 content region(s)
-07-laptop-1366x768: 1366x768, 4 chrome region(s), 5 content region(s)
-08-desktop-1440x900: 1440x900, 4 chrome region(s), 5 content region(s)
-09-wide-1920x1080: 1920x1080, 4 chrome region(s), 5 content region(s)
+07-laptop-1366x768: 1366x768, 4 chrome region(s), 6 content region(s)
+08-desktop-1440x900: 1440x900, 4 chrome region(s), 6 content region(s)
+09-wide-1920x1080: 1920x1080, 4 chrome region(s), 6 content region(s)
 
 ## per viewport
 
 ### 01-mobile-compact-360x800
 chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
-content: 45224/137160 pixels differ (32.9717%), mean|delta| 6.527, max channel 255, over-threshold 44288
+content: 78336/194760 pixels differ (40.2218%), mean|delta| 7.293, max channel 255, over-threshold 77130
 whole frame: 143862/288000 pixels differ (49.9521%), mean|delta| 12.303
 chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
 digests: app 1798cf84fde1aa7e, export 3aa736b7af47acc7
@@ -56,7 +56,7 @@ files: 01-mobile-compact-360x800.app.png, 01-mobile-compact-360x800.export.png
 
 ### 02-mobile-standard-390x844
 chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
-content: 59240/189540 pixels differ (31.2546%), mean|delta| 12.095, max channel 255, over-threshold 57723
+content: 95216/251940 pixels differ (37.7931%), mean|delta| 11.273, max channel 255, over-threshold 93421
 whole frame: 142740/329160 pixels differ (43.3649%), mean|delta| 12.496
 chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
 digests: app 7270fb296c9c36ff, export 345328a625f3eb9c
@@ -171,7 +171,7 @@ files: 06-tablet-landscape-1024x768.chrome.sidebar-edge.png, 06-tablet-landscape
 
 ### 07-laptop-1366x768
 chrome: 0/6118 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
-content: 230807/629077 pixels differ (36.6898%), mean|delta| 8.455, max channel 255, over-threshold 227963
+content: 302220/897681 pixels differ (33.6667%), mean|delta| 7.980, max channel 255, over-threshold 296043
 whole frame: 358630/1049088 pixels differ (34.1849%), mean|delta| 8.102
 digests: app d2bf6a582c85530a, export edd08638b4124cf0
 same      chrome  chrome.resizer               measured 5x768 at 989,0: 0/3840 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 989,0,5,768 against export 989,0,5,768
@@ -196,7 +196,7 @@ files: 07-laptop-1366x768.chrome.resizer.png, 07-laptop-1366x768.chrome.sidebar-
 
 ### 08-desktop-1440x900
 chrome: 0/7042 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
-content: 250585/815955 pixels differ (30.7106%), mean|delta| 7.566, max channel 255, over-threshold 247142
+content: 323352/1133531 pixels differ (28.5261%), mean|delta| 7.122, max channel 255, over-threshold 316369
 whole frame: 384480/1296000 pixels differ (29.6667%), mean|delta| 7.290
 digests: app 20ebe308f6d0aef2, export 6bcafd53c55ace87
 same      chrome  chrome.resizer               measured 5x900 at 1063,0: 0/4500 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1063,0,5,900 against export 1063,0,5,900
@@ -221,7 +221,7 @@ files: 08-desktop-1440x900.chrome.resizer.png, 08-desktop-1440x900.chrome.sideba
 
 ### 09-wide-1920x1080
 chrome: 0/8302 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
-content: 371153/1459755 pixels differ (25.4257%), mean|delta| 5.720, max channel 255, over-threshold 367630
+content: 443920/1844111 pixels differ (24.0723%), mean|delta| 5.558, max channel 255, over-threshold 436857
 whole frame: 535070/2073600 pixels differ (25.8039%), mean|delta| 5.728
 digests: app 925407c41b90e466, export 8e8bc7ebbc7806b5
 same      chrome  chrome.resizer               measured 5x1080 at 1543,0: 0/5400 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0; box delta: left 0, top 0, width 0, height 0 (boxes agree); app x,y,w,h 1543,0,5,1080 against export 1543,0,5,1080
@@ -290,15 +290,15 @@ One line per region, the source rectangle against the same rectangle on the othe
 ## the summary table
 | # | viewport | chrome regions | chrome differing | chrome share | content regions | content share | whole share | boxes differing |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | mobile-compact 360x800 | 0 | 0/0 | 0.0000% | 2 | 32.9717% | 49.9521% | 3 |
-| 2 | mobile-standard 390x844 | 0 | 0/0 | 0.0000% | 2 | 31.2546% | 43.3649% | 3 |
+| 1 | mobile-compact 360x800 | 0 | 0/0 | 0.0000% | 3 | 40.2218% | 49.9521% | 3 |
+| 2 | mobile-standard 390x844 | 0 | 0/0 | 0.0000% | 3 | 37.7931% | 43.3649% | 3 |
 | 3 | mobile-large 430x932 | 0 | 0/0 | 0.0000% | 3 | 43.8881% | 46.3095% | 3 |
 | 4 | foldable-small-tablet 600x960 | 0 | 0/0 | 0.0000% | 3 | 55.5591% | 56.6024% | 3 |
 | 5 | tablet-portrait 820x1180 | 0 | 0/0 | 0.0000% | 3 | 42.9239% | 43.8372% | 3 |
 | 6 | tablet-landscape 1024x768 | 1 | 0/768 | 0.0000% | 4 | 37.4262% | 37.6520% | 4 |
-| 7 | laptop 1366x768 | 4 | 0/6118 | 0.0000% | 5 | 36.6898% | 34.1849% | 4 |
-| 8 | desktop 1440x900 | 4 | 0/7042 | 0.0000% | 5 | 30.7106% | 29.6667% | 4 |
-| 9 | wide 1920x1080 | 4 | 0/8302 | 0.0000% | 5 | 25.4257% | 25.8039% | 4 |
+| 7 | laptop 1366x768 | 4 | 0/6118 | 0.0000% | 6 | 33.6667% | 34.1849% | 4 |
+| 8 | desktop 1440x900 | 4 | 0/7042 | 0.0000% | 6 | 28.5261% | 29.6667% | 4 |
+| 9 | wide 1920x1080 | 4 | 0/8302 | 0.0000% | 6 | 24.0723% | 25.8039% | 4 |
 
 ## verdict
 every chrome region this run carried is within tolerance: 13 region measurement(s) across 9 viewport(s), summed 0/22230 differing pixel(s) against a per-region tolerance of 0

@@ -1,4 +1,4 @@
-stability: packages/verify/artifacts/pixel-gate/da448a0/stability/run-a.json against packages/verify/artifacts/pixel-gate/da448a0/stability/run-b.json, epsilon 0 differing pixel(s)
+stability: packages/verify/artifacts/pixel-gate/de64c3d/stability/run-a.json against packages/verify/artifacts/pixel-gate/de64c3d/stability/run-b.json, epsilon 0 differing pixel(s)
 ok   01-mobile-compact-360x800 chrome.resizer: absent then absent
 ok   01-mobile-compact-360x800 chrome.sidebar-edge: absent then absent
 ok   01-mobile-compact-360x800 chrome.aside-edge: absent then absent
