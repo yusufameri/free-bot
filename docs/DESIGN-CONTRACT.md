@@ -207,6 +207,13 @@ app with `bun run up --no-open --replay` over a temporary home and bots root of 
 touches no Bot, no run and no provider, and it needs no Docker and no key. The one thing it writes
 outside its artifact directory is that temporary directory, which it deletes on the way out.
 
+The pixel gate's own artifact is beside it at `packages/verify/artifacts/pixel-gate/<short-sha>/`:
+`assert.txt`, `run.json`, `summary.json`, one PNG per app and export shot under `shots/`, a crop per
+chrome region and a `stability/` pair for the two-run proof. Its `assert.txt` carries the literal
+per-viewport chrome statistic, the box delta beside every region, the font measurement, the nine
+overflow pairs and the verdict. `docs/pixel-gate.md` is the tool's contract; this document is the
+delta list.
+
 ## Follow-ups this unit leaves
 
 - Six drivers still carry their own copy of the CDP client this unit extracted into

@@ -238,7 +238,7 @@ same pixels. The committed pair is under the baseline's `stability/`.
 
 ## The baseline
 
-The committed baseline is `packages/verify/artifacts/pixel-gate/df87bca/`, produced by
+The U6.7a baseline is `packages/verify/artifacts/pixel-gate/df87bca/`, produced by
 `bun packages/pixel-gate/src/cli.ts --repeat` at commit `df87bca`, against the app as it stands. The app state
 is stated in `assert.txt`: booted as `bun run up --no-open --replay` over a fresh temporary
 `FREEBOT_HOME` and bots root, one Bot and one thread created over `/rpc` before the page opens, the
@@ -294,6 +294,48 @@ reads. It runs from 25.80% at 1920x1080 to 56.60% at 600x960. The export paints 
 a run in progress; the app paints one real Bot and an idle thread. Two pages whose content differs
 render different pixels whatever their styling, which is why the content regions carry a named reason
 each and the exit code reads only the chrome regions.
+
+## The U6.7 pass, at the head it armed
+
+The armed artifact is `packages/verify/artifacts/pixel-gate/8d23e06/`, produced by
+`bun packages/pixel-gate/src/cli.ts --repeat` at commit `8d23e06`. The chrome statistic is unchanged
+from the U6.7a baseline, and that is the point: the shell already landed on the same device pixels.
+What moved is the middle column's structure and the font, and the box deltas below are the literal
+record of it.
+
+| # | Viewport | Chrome regions | Chrome differing | Content regions | Content share | Whole share | Boxes differing |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 360x800 | 0 | 0/0 (none on screen) | 3 | 51.8724% | 52.0021% | 2 |
+| 2 | 390x844 | 0 | 0/0 | 3 | 48.2724% | 48.3868% | 2 |
+| 3 | 430x932 | 0 | 0/0 | 3 | 48.3096% | 48.4133% | 2 |
+| 4 | 600x960 | 0 | 0/0 | 3 | 46.4645% | 46.5613% | 2 |
+| 5 | 820x1180 | 0 | 0/0 | 3 | 37.8127% | 37.8768% | 2 |
+| 6 | 1024x768 | 1 | 0/768 | 5 | 33.9611% | 31.8707% | 4 |
+| 7 | 1366x768 | 4 | 0/6118 | 7 | 31.6888% | 30.0735% | 4 |
+| 8 | 1440x900 | 4 | 0/7042 | 7 | 31.2501% | 29.8829% | 4 |
+| 9 | 1920x1080 | 4 | 0/8302 | 7 | 24.0461% | 23.3717% | 4 |
+
+**Chrome is still zero everywhere it exists: 0 differing pixels over 22,230 chrome pixels**, summed
+across every viewport that carries a chrome region, with the tolerance at 0. Every viewport's two
+captures are pixel-identical (`--repeat`), and two runs at this commit are `RESULT: STABLE` across 36
+chrome region comparisons and nine totals. The whole-frame share fell from 25.8039% to 23.3717% at
+1920x1080 and from 49.9521% to 52.0021% at 360x800; it is information, not the verdict.
+
+The five box deltas U6.7a named, before and after:
+
+| Region and axis | U6.7a baseline (df87bca) | U6.7 head (8d23e06) | How it closed or why it stands |
+| --- | --- | --- | --- |
+| `content.center-header` height, 1920 | +62.43 | +0.2 | Closed. The header is one 56px row on the export's `min-height: 53px` and 10px padding; the 0.2px is the export's 55.8px and is inside the half-pixel box tolerance. |
+| `content.center-transcript` top, 1920 | +97.43 | +0.2 | Closed. Both notices are dismissed before the probe and both transcripts start on the header's bottom edge. |
+| `content.center-transcript` height, 1920 | +48.63 | +56.49 | Declared. The transcript is the composer's `flex: 1` sibling, so it is taller by the amount the app's shorter composer gives back. |
+| `content.center-composer` top, 1920 | -689.71 | +56.69 | Closed as a structural defect: the composer is the column's last child and pinned to the bottom. The remaining top is the height difference below. |
+| `content.center-composer` height, 1920 | -98.06 | -56.68 | Declared. One input, a Start and a Stop control and the live meta line against the export's growing textarea, five tool controls and hint. |
+| `content.sidebar-list` top, 1920 | -2 | 0 | Closed. The head is the export's 10px padding and the list its 2px inset. |
+| `content.sidebar-list` height, 1920 | +80 | +78 | Declared. The export's foot carries Connect apps, the model row and the account row (125px); this app's foot is the one provider row (47px). |
+
+At 360x800 the same rows read: header +0.2, transcript top +0.2 and height +70.3, composer top
++70.5 and height -70.5. The four declarations, with every viewport's literal pixels, are in
+`docs/DESIGN-CONTRACT.md`'s pixel-gate block and in `packages/pixel-gate/src/deltas.ts`.
 
 ## What U6.7 changed
 

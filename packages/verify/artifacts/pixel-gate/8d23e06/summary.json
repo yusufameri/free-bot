@@ -1,0 +1,407 @@
+{
+  "command": "bun packages/pixel-gate/src/cli.ts --repeat",
+  "commit": "8d23e067073032a1df2ceedeca869ff5f6a670dd",
+  "shortSha": "8d23e06",
+  "chrome": "chrome Chrome/155.0.8059.85",
+  "chromeTolerance": 0,
+  "verdict": "PASS",
+  "failures": [],
+  "viewports": [
+    {
+      "label": "01-mobile-compact-360x800",
+      "name": "mobile-compact",
+      "width": 360,
+      "height": 800,
+      "chromeDiffering": 0,
+      "chromeTotal": 0,
+      "chromeShare": 0,
+      "contentDiffering": 149766,
+      "contentTotal": 288720,
+      "contentShare": 0.5187240232751454,
+      "wholeShare": 0.5200208333333334,
+      "boxesDiffering": 2,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        }
+      ]
+    },
+    {
+      "label": "02-mobile-standard-390x844",
+      "name": "mobile-standard",
+      "width": 390,
+      "height": 844,
+      "chromeDiffering": 0,
+      "chromeTotal": 0,
+      "chromeShare": 0,
+      "contentDiffering": 159270,
+      "contentTotal": 329940,
+      "contentShare": 0.48272413166030187,
+      "wholeShare": 0.48386802770689025,
+      "boxesDiffering": 2,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        }
+      ]
+    },
+    {
+      "label": "03-mobile-large-430x932",
+      "name": "mobile-large",
+      "width": 430,
+      "height": 932,
+      "chromeDiffering": 0,
+      "chromeTotal": 0,
+      "chromeShare": 0,
+      "contentDiffering": 194021,
+      "contentTotal": 401620,
+      "contentShare": 0.4830959613565062,
+      "wholeShare": 0.4841326479688592,
+      "boxesDiffering": 2,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        }
+      ]
+    },
+    {
+      "label": "04-foldable-small-tablet-600x960",
+      "name": "foldable-small-tablet",
+      "width": 600,
+      "height": 960,
+      "chromeDiffering": 0,
+      "chromeTotal": 0,
+      "chromeShare": 0,
+      "contentDiffering": 268193,
+      "contentTotal": 577200,
+      "contentShare": 0.4646448371448371,
+      "wholeShare": 0.46561284722222224,
+      "boxesDiffering": 2,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        }
+      ]
+    },
+    {
+      "label": "05-tablet-portrait-820x1180",
+      "name": "tablet-portrait",
+      "width": 820,
+      "height": 1180,
+      "chromeDiffering": 0,
+      "chromeTotal": 0,
+      "chromeShare": 0,
+      "contentDiffering": 366496,
+      "contentTotal": 969240,
+      "contentShare": 0.3781271924394371,
+      "wholeShare": 0.3787680859859446,
+      "boxesDiffering": 2,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        }
+      ]
+    },
+    {
+      "label": "06-tablet-landscape-1024x768",
+      "name": "tablet-landscape",
+      "width": 1024,
+      "height": 768,
+      "chromeDiffering": 0,
+      "chromeTotal": 768,
+      "chromeShare": 0,
+      "contentDiffering": 254237,
+      "contentTotal": 748612,
+      "contentShare": 0.3396111737455451,
+      "wholeShare": 0.3187065124511719,
+      "boxesDiffering": 4,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "measured",
+          "differing": 0,
+          "total": 768,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "absent",
+          "differing": null,
+          "total": null,
+          "maxChannel": null
+        }
+      ]
+    },
+    {
+      "label": "07-laptop-1366x768",
+      "name": "laptop",
+      "width": 1366,
+      "height": 768,
+      "chromeDiffering": 0,
+      "chromeTotal": 6118,
+      "chromeShare": 0,
+      "contentDiffering": 319094,
+      "contentTotal": 1006961,
+      "contentShare": 0.31688814164600215,
+      "wholeShare": 0.3007354959736457,
+      "boxesDiffering": 4,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "measured",
+          "differing": 0,
+          "total": 3840,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "measured",
+          "differing": 0,
+          "total": 768,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "measured",
+          "differing": 0,
+          "total": 768,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "measured",
+          "differing": 0,
+          "total": 742,
+          "maxChannel": 0
+        }
+      ]
+    },
+    {
+      "label": "08-desktop-1440x900",
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "chromeDiffering": 0,
+      "chromeTotal": 7042,
+      "chromeShare": 0,
+      "contentDiffering": 391594,
+      "contentTotal": 1253097,
+      "contentShare": 0.3125009476520972,
+      "wholeShare": 0.2988287037037037,
+      "boxesDiffering": 4,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "measured",
+          "differing": 0,
+          "total": 4500,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "measured",
+          "differing": 0,
+          "total": 900,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "measured",
+          "differing": 0,
+          "total": 900,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "measured",
+          "differing": 0,
+          "total": 742,
+          "maxChannel": 0
+        }
+      ]
+    },
+    {
+      "label": "09-wide-1920x1080",
+      "name": "wide",
+      "width": 1920,
+      "height": 1080,
+      "chromeDiffering": 0,
+      "chromeTotal": 8302,
+      "chromeShare": 0,
+      "contentDiffering": 488232,
+      "contentTotal": 2030397,
+      "contentShare": 0.24046134819939155,
+      "wholeShare": 0.23371720679012345,
+      "boxesDiffering": 4,
+      "chromeRegions": [
+        {
+          "id": "chrome.resizer",
+          "status": "measured",
+          "differing": 0,
+          "total": 5400,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.sidebar-edge",
+          "status": "measured",
+          "differing": 0,
+          "total": 1080,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.aside-edge",
+          "status": "measured",
+          "differing": 0,
+          "total": 1080,
+          "maxChannel": 0
+        },
+        {
+          "id": "chrome.aside-strip-rule",
+          "status": "measured",
+          "differing": 0,
+          "total": 742,
+          "maxChannel": 0
+        }
+      ]
+    }
+  ]
+}
