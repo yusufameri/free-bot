@@ -143,9 +143,9 @@ export const PROBES = {
   },
   start: {
     fact: "start",
-    subject: "the Start run control",
+    subject: "the composer's send control",
     selector: "#start",
-    read: "node.textContent.trim()",
+    read: "node.getAttribute('aria-label') ?? node.textContent.trim()",
   },
   runId: {
     fact: "runId",
@@ -331,6 +331,45 @@ async function click(run: Evaluator, control: Control): Promise<void> {
   await run(`document.querySelector(${JSON.stringify(control.selector)}).click()`);
 }
 
+type ComposerPrototype = "HTMLInputElement" | "HTMLTextAreaElement";
+
+/** The prototype whose `value` setter owns the composer the page rendered. */
+function composerPrototype(tagName: string, selector: string): ComposerPrototype {
+  if (tagName === "TEXTAREA") return "HTMLTextAreaElement";
+  if (tagName === "INPUT") return "HTMLInputElement";
+  throw new Error(
+    `the composer ${JSON.stringify(selector)} must be an <input> or a <textarea>, not <${tagName.toLowerCase()}>`,
+  );
+}
+
+/**
+ * Type the prompt into the composer the page actually rendered. A composer that is neither shape
+ * fails by selector and tag instead of attempting the wrong prototype's setter.
+ */
+export async function writeComposer(
+  run: Evaluator,
+  prompt: string,
+  selector = "#prompt",
+): Promise<void> {
+  const tagName = (await run(
+    `(() => { const node = document.querySelector(${JSON.stringify(selector)}); return node === null ? null : node.tagName; })()`,
+  )) as string | null;
+  if (tagName === null) {
+    throw new Error(`missing selector ${JSON.stringify(selector)} (the composer input)`);
+  }
+  const proto = composerPrototype(tagName, selector);
+  const missing = JSON.stringify(
+    `missing selector ${JSON.stringify(selector)} (the composer input)`,
+  );
+  await run(`(() => {
+    const node = document.querySelector(${JSON.stringify(selector)});
+    if (node === null) throw new Error(${missing});
+    Object.getOwnPropertyDescriptor(${proto}.prototype, 'value').set.call(node, ${JSON.stringify(prompt)});
+    node.dispatchEvent(new Event('input', { bubbles: true }));
+    node.focus();
+  })()`);
+}
+
 /** A state's label, file, facts and assertions. */
 interface CaptureState {
   readonly label: string;
@@ -376,7 +415,7 @@ const PREDICATE_STATES: readonly CaptureState[] = [
       compare(failures, "the URL turned operator mode on", facts.operatorMode, "true");
       compareThat(failures, "a Bot row is rendered", facts.botRow.length > 0, facts.botRow);
       compare(failures, "the composer input is the page's own", facts.prompt, "prompt");
-      compare(failures, "the Start run control's label", facts.start, "Start run");
+      compare(failures, "the composer's send control", facts.start, "Send");
       compare(failures, "no run has started", facts.runId, null);
       compare(failures, "the sequence counter is at zero", facts.lastSeq, 0);
       compare(failures, "the thread is empty", facts.turns.length, 0);
@@ -768,14 +807,7 @@ async function capturePredicate(
   const earlier: Facts[] = [];
   earlier.push(await captureState(chrome, session, out, shell, report, earlier));
 
-  await run(`(() => {
-    const input = document.querySelector('#prompt');
-    if (input === null) throw new Error('missing selector "#prompt" (the composer input)');
-    const proto = HTMLInputElement.prototype;
-    Object.getOwnPropertyDescriptor(proto, 'value').set.call(input, ${JSON.stringify(PROMPT)});
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.focus();
-  })()`);
+  await writeComposer(run, PROMPT);
   await click(run, { subject: PROBES.start.subject, selector: PROBES.start.selector });
 
   await waitFor(

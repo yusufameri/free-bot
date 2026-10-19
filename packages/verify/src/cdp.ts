@@ -247,14 +247,32 @@ export async function openPage(cdp: Cdp, url: string): Promise<string> {
   return sessionId;
 }
 
+/** What CDP reports when the page itself threw: a summary, and the exception it carries. */
+export interface PageExceptionDetails {
+  readonly text?: string;
+  readonly exception?: { readonly description?: string; readonly value?: unknown };
+}
+
+/** The page's own error, never the CDP summary and never the expression that raised it. */
+export function pageErrorMessage(details: PageExceptionDetails): string {
+  const description = details.exception?.description;
+  if (typeof description === "string" && description !== "") {
+    return description.split("\n")[0] ?? description;
+  }
+  if (typeof details.exception?.value === "string" && details.exception.value !== "") {
+    return details.exception.value;
+  }
+  return details.text ?? "the page threw without a message";
+}
+
 /** Evaluate one expression in a page and return its value, failing on a page exception. */
 export async function evaluate<T>(cdp: Cdp, sessionId: string, expression: string): Promise<T> {
   const result = await cdp.send<{
     result?: { value?: unknown };
-    exceptionDetails?: { text?: string };
+    exceptionDetails?: PageExceptionDetails;
   }>("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }, sessionId);
   if (result.exceptionDetails !== undefined) {
-    throw new Error(`evaluate failed: ${result.exceptionDetails.text} :: ${expression}`);
+    throw new Error(`evaluate failed: ${pageErrorMessage(result.exceptionDetails)}`);
   }
   return result.result?.value as T;
 }
