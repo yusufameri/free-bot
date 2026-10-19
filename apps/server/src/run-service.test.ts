@@ -358,6 +358,46 @@ describe("a second process over the same bots root", () => {
     ]);
     reopened.close();
   });
+
+  test("a second run whose setup throws settles instead of staying queued", async () => {
+    const root = botsRoot();
+    const first = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
+    const bot = first.createBot("Local Bot");
+    const thread = first.createThread(bot.id);
+    first.start({ prompt: "one", botId: bot.id, threadId: thread.id });
+    await first.idle();
+    first.close();
+
+    const reopened = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => {
+        throw new Error("the model could not be built");
+      },
+    });
+    const started = reopened.start({ prompt: "two", botId: bot.id, threadId: thread.id });
+    expect(started.runId).toBe("run-2");
+    expect(reopened.run(started.runId)?.record.status).toBe("queued");
+
+    await reopened.idle();
+
+    expect(reopened.run(started.runId)?.record).toMatchObject({
+      status: "failed",
+      error: { code: "internal_invariant", detail: "the model could not be built" },
+    });
+    const frames = reopened
+      .events(thread.id, 0)
+      .messages.filter((frame) => frame.runId === started.runId);
+    expect(frames.map((frame) => [frame.type, frame.payload])).toEqual([
+      ["run.failed", { reason: "the model could not be built" }],
+      ["run.status", { runId: "run-2", status: "failed" }],
+    ]);
+    reopened.close();
+  });
 });
 
 /**
