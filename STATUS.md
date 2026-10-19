@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-19T22:36Z, against `origin/main` `74dce5e`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-19T23:30Z, against `origin/main` `60599ac`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-64 units in the register: 56 done, 1 running, 5 pending, 2 parked.
+64 units in the register: 57 done, 1 running, 4 pending, 2 parked.
 
-The verification ledger holds 68 rows: 24 `live-ui-verified`, 31 `unit-test-verified`, 2 `type-check-only`, 11 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 70 rows: 24 `live-ui-verified`, 32 `unit-test-verified`, 2 `type-check-only`, 12 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -101,22 +101,21 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U10.5 | The main-line sweep: nineteen drivers enumerated from the manifest, one log per driver, a proposed unit per red | [#69](https://github.com/yusufameri/free-bot/pull/69) |
 | U8.4 | The Connect apps surface inside the U6.8 shell: the install's connector records, detail pages, and the real routes | [#70](https://github.com/yusufameri/free-bot/pull/70) |
 | U10.14 | The landing's later-phases sentence drops Settings and in-page connectors, asserted from `#landing-later-phases` | [#71](https://github.com/yusufameri/free-bot/pull/71) |
+| U10.13 | The eight red drivers triaged: six stale claims fixed and re-run, two product defects filed, and a lost-tail socket write fixed | [#73](https://github.com/yusufameri/free-bot/pull/73) |
 
 ## Not built yet
 
-U10.13, the driver triage, is running on `u10.13-driver-triage`. It owns the eight red drivers the first
-sweep found and has already filed two product defects it confirmed: U10.16 (a run created after a restart
-stays `queued` and its container never runs) and U10.17 (the group-chat form opens with the prototype's
-sample room name).
+U10.16, the restart run-queue fix, is running on `u10.16-restart-run-queue`. U10.13 finished the
+triage of the eight red drivers: six were stale claims, fixed and re-run green, and two are real defects,
+filed as U10.16 and U10.17. The sweep now enumerates 23 drivers.
 
-Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.16, U10.17.
+Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.17.
 
 | Unit | What it is |
 | --- | --- |
 | U9.3 | The E2B Embed backend for Linux hosts and CI |
 | U10.1 | The verification record as data plus a check that reads it. The checker half landed as U10.6; this carries what remains, including the unreferenced-artifact rule order 49 gives it |
 | U10.2 | Artifact hygiene: a real prune script, an ignore rule for the Chrome profiles, and one shared screenshot helper instead of ten |
-| U10.16 | A run created after a restart stays queued and its container never runs (the `connectors` driver, 68/76 at `d2334f4`) |
 | U10.17 | The group-chat form opens with the prototype's sample room name as a live default |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
 | U10.12 | Parked and folded into U10.13: its brief is superseded, and the composer fix is that unit's item 7 |
@@ -124,7 +123,8 @@ Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.16, U10.1
 Three notes on honesty that the surface carries. The sandbox pin repairs itself rather than refusing a
 run (U10.8). The verification index is per-unit history rather than coverage of main: the checker's tally
 is 46 checked rows and 50 artifacts, `RESULT: PASS (158/158)`; four rows are count-unverified by design.
-And the live suite is red: the first sweep ran nineteen drivers against `8d12b50` and eight failed, so
+And the live suite was red in eight at `8d12b50`; the triage made six of them green again and the two
+remaining reds are the two product units below, so the suite should read green once those land. The first sweep ran drivers against
 the drivers are history until U10.13 separates stale claims from defects and the filed units land. The
 landing page's claims about app behavior now carry DOM ids and assertions in the landing driver (order
 52), so the three drifts of this week cannot recur silently. Two gaps still have no unit: the details
