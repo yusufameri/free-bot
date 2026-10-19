@@ -1,0 +1,192 @@
+driver: first-run
+subject: the first-run wizard, the run it starts, and the container census
+command: bun packages/verify/scripts/first-run.ts
+commit: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086 (8d12b50)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout
+exit: 1
+verdict: RESULT: FAIL (112/113)
+seconds: 8
+
+--- the driver's own artifact: packages/verify/artifacts/first-run/8d12b50/assert.txt ---
+
+
+## the launch
+the launcher's own line: freebot up: model mode auto, keyless, replaying /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open` with FREEBOT_HOME and FREEBOT_WORKSPACE pointing at fresh directories this driver made, so the store starts with no Bot at all. The vault starts empty, so no key is read anywhere and the machine runs keyless. The three connections this driver saves are local stubs it starts itself; the vault those stubs wrote is removed before the last step, so the run at the end replays the committed transcript. No key material exists in this run, and nothing a person made is touched.
+ok   the launcher says it is keyless, so every run here replays
+       actual   true
+       expected true
+ok   the store this driver made starts with no Bot in it
+       actual   {"bots":[]}
+       expected {"bots":[]}
+the run path's containers before any run: []
+
+## the empty root: the first-run screen, not the shell
+ok   the empty root opens the first-run screen on its first pane
+       actual   [true,1,"01 / 03 — NAME","Who is this Bot?"]
+       expected [true,1,"01 / 03 — NAME","Who is this Bot?"]
+ok   and the shell is not the screen: no Bot list, no operator frame, no conversation
+       actual   {"bots":0,"operator":"false","sidebar":true,"provider":true,"thread":0}
+       expected {"bots":0,"operator":"false","sidebar":true,"provider":true,"thread":0}
+ok   the pane's standing copy is the export's, read off the DOM
+       actual   {"hint":"A name is the whole requirement. It becomes the sidebar row and the label on its computer.","label":"Bot name","placeholder":"Atlas"}
+       expected {"hint":"A name is the whole requirement. It becomes the sidebar row and the label on its computer.","label":"Bot name","placeholder":"Atlas"}
+ok   the primary is held down until the pane's question is answered, and Skip is the way out
+       actual   ["Continue",true,"Skip"]
+       expected ["Continue",true,"Skip"]
+artifact 01-empty-root.png (24344 bytes)
+
+## pane one: a name makes a real Bot, and nothing is made before it
+ok   typing a name arms the primary
+       actual   [false,"Atlas"]
+       expected [false,"Atlas"]
+artifact 02-pane-name.png (24500 bytes)
+ok   no Bot exists before the person asks for one
+       actual   0
+       expected 0
+ok   Continue on pane one made exactly one Bot, with the name the person typed
+       actual   [1,"bot-local","Atlas"]
+       expected [1,"bot-local","Atlas"]
+ok   it carries a first thread to run in, and no purpose yet
+       actual   [1,"New conversation"]
+       expected [1,"New conversation"]
+
+## pane two: the purpose is kept
+ok   pane two asks the export's two questions, with the primary held down
+       actual   {"title":"What is it for?","hint":"One line. This seeds the soul — the system prompt this Bot runs on — and you can rewrite it later.","roleLabel":"Label","purposeLabel":"What should it handle?","rolePlaceholder":"Chief of staff","purposePlaceholder":"Release pipeline, changelog, dependency sweeps","primaryDisabled":"true"}
+       expected {"title":"What is it for?","hint":"One line. This seeds the soul — the system prompt this Bot runs on — and you can rewrite it later.","roleLabel":"Label","purposeLabel":"What should it handle?","rolePlaceholder":"Chief of staff","purposePlaceholder":"Release pipeline, changelog, dependency sweeps","primaryDisabled":"true"}
+artifact 03-pane-purpose.png (32085 bytes)
+ok   the record now carries both fields, over the wire the page wrote them with
+       actual   [1,"Chief of staff","Release pipeline, changelog, dependency sweeps"]
+       expected [1,"Chief of staff","Release pipeline, changelog, dependency sweeps"]
+the journal as the server wrote it: [{"op":"bot.create","id":"bot-local","name":"Atlas","at":1792443569775},{"op":"thread.create","id":"thread-1","botId":"bot-local","title":"New con
+[...]
+4x768 — title box (box)
+       actual   "520 x 252"
+       expected "520 x 252"
+ok   tablet-landscape 1024x768 — the frame has no horizontal overflow
+       actual   [1024,1024]
+       expected [1024,1024]
+ok   tablet-landscape 1024x768 — the export shows the same pair
+       actual   [1024,1024]
+       expected [1024,1024]
+RESULT: PASS — viewport tablet-landscape 1024x768
+ok   laptop 1366x768 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   laptop 1366x768 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   laptop 1366x768 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   laptop 1366x768 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   laptop 1366x768 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   laptop 1366x768 — inner box (box)
+       actual   "520 x 423"
+       expected "520 x 423"
+ok   laptop 1366x768 — title box (box)
+       actual   "520 x 423"
+       expected "520 x 423"
+ok   laptop 1366x768 — the frame has no horizontal overflow
+       actual   [1366,1366]
+       expected [1366,1366]
+ok   laptop 1366x768 — the export shows the same pair
+       actual   [1366,1366]
+       expected [1366,1366]
+RESULT: PASS — viewport laptop 1366x768
+ok   desktop 1440x900 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   desktop 1440x900 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   desktop 1440x900 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   desktop 1440x900 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   desktop 1440x900 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   desktop 1440x900 — inner box (box)
+       actual   "520 x 460"
+       expected "520 x 460"
+ok   desktop 1440x900 — title box (box)
+       actual   "520 x 460"
+       expected "520 x 460"
+ok   desktop 1440x900 — the frame has no horizontal overflow
+       actual   [1440,1440]
+       expected [1440,1440]
+ok   desktop 1440x900 — the export shows the same pair
+       actual   [1440,1440]
+       expected [1440,1440]
+RESULT: PASS — viewport desktop 1440x900
+ok   wide 1920x1080 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   wide 1920x1080 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   wide 1920x1080 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   wide 1920x1080 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   wide 1920x1080 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   wide 1920x1080 — inner box (box)
+       actual   "520 x 700"
+       expected "520 x 700"
+ok   wide 1920x1080 — title box (box)
+       actual   "520 x 700"
+       expected "520 x 700"
+ok   wide 1920x1080 — the frame has no horizontal overflow
+       actual   [1920,1920]
+       expected [1920,1920]
+ok   wide 1920x1080 — the export shows the same pair
+       actual   [1920,1920]
+       expected [1920,1920]
+RESULT: PASS — viewport wide 1920x1080
+
+## the panes themselves, at both ends of the matrix
+ok   pane 1 (#frPane1) fits the viewport at 360x800 and 1440x900
+       actual   [[360,360],[1440,1440]]
+       expected [[360,360],[1440,1440]]
+ok   pane 2 (#frPane2) fits the viewport at 360x800 and 1440x900
+       actual   [[360,360],[1440,1440]]
+       expected [[360,360],[1440,1440]]
+ok   pane 3 (#frPane3) fits the viewport at 360x800 and 1440x900
+       actual   [[360,360],[1440,1440]]
+       expected [[360,360],[1440,1440]]
+RESULT: PASS — the three panes
+
+chrome Chrome/155.0.8059.85; a really launched `bun run up --no-open` over a fresh FREEBOT_HOME and bots root, the machine's own vault never read; the capable, limited and untested connections are local stubs this driver started and then removed; the export is the committed copy with its initial screen changed to its first-run screen
+RESULT: FAIL (112/113)
+
+
+--- captured output (stdout and stderr) ---
+
+FAIL the wizard is gone, the sidebar shows the Bot a person named, and the job is the first prompt
+       actual   {"bots":[["bot-local","Atlas",true]],"threads":1,"title":"Atlas · New conversation","prompt":"Draft this week's changelog from merged PRs.","promptDisabled":false,"promptHeight":46,"providerHidden":true,"bodyPage":"app","wizardHidden":true}
+       expected {"bots":[["bot-local","Atlas",true]],"threads":1,"title":"Atlas · New conversation","prompt":"Draft this week's changelog from merged PRs.","promptDisabled":false,"promptHeight":36,"providerHidden":true,"bodyPage":"app","wizardHidden":true}
+RESULT: PASS — viewport mobile-compact 360x800
+RESULT: PASS — viewport mobile-standard 390x844
+RESULT: PASS — viewport mobile-large 430x932
+RESULT: PASS — viewport foldable-small-tablet 600x960
+RESULT: PASS — viewport tablet-portrait 820x1180
+RESULT: PASS — viewport tablet-landscape 1024x768
+RESULT: PASS — viewport laptop 1366x768
+RESULT: PASS — viewport desktop 1440x900
+RESULT: PASS — viewport wide 1920x1080
+RESULT: PASS — the three panes
+RESULT: FAIL (112/113)
+artifact: packages/verify/artifacts/first-run/8d12b50/assert.txt
+app up http://127.0.0.1:60680/#token=<redacted>

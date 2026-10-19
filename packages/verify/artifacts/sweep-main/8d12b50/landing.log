@@ -1,0 +1,138 @@
+driver: landing
+subject: the landing route against the export, at the nine viewports
+command: bun packages/verify/scripts/landing.ts
+commit: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086 (8d12b50)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout
+exit: 0
+verdict: RESULT: PASS (51/51)
+seconds: 3
+
+--- the driver's own artifact: packages/verify/artifacts/landing/8d12b50/assert.txt ---
+
+landing route driver
+command: bun packages/verify/scripts/landing.ts
+timestamp: 2026-10-19T20:59:25.516Z
+git sha: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086
+git sha short: 8d12b50
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+app: http://127.0.0.1:60657/#token=<redacted> (bun run up --no-open --replay, keyless, no run started)
+route: http://127.0.0.1:60657/landing
+
+## the export's landing region
+design/prototype-84c6b185/freebot-prototype.html:566-613, read at run time
+  <!-- ═══ page 1 · welcome, then connect a provider ═══════════════════════ -->
+  <section class="onboard" id="onboard" data-od-id="welcome-provider">
+    <div class="inner">
+      <div class="brandmark" data-od-id="brand">
+        <span class="glyph"><i></i></span>
+        <span class="word">FreeBot</span>
+      </div>
+  
+      <div id="onbIntro">
+        <p class="eyebrow">Local agent workspace</p>
+        <h1 class="h1" style="margin:12px 0 14px">Bots that do the work, on a computer that stays yours.</h1>
+        <p class="hint" style="font-size:15px;color:var(--muted);max-width:46ch">
+          FreeBot ships no subscription. You bring a model — OpenAI-compatible, local, or hosted — and it
+          gets its own sandbox, a durable workspace, and an approval gate before anything runs.
+        </p>
+        <div class="stack" style="margin-top:28px;gap:8px">
+          <button class="btn btn-primary" id="btnConnect" data-act="provider:start" style="width:100%" data-od-id="cta-connect-provider">Connect a provider</button>
+          <button class="btn btn-ghost" data-act="provider:replay" style="width:100%" data-od-id="cta-replay">Run in replay mode — see it work without a key</button>
+        </div>
+      </div>
+  
+      <div id="onbForm" class="hidden">
+        <p class="eyebrow">Connect a provider</p>
+        <h2 class="h2" style="margin:10px 0 8px">Test a real tool call before we save it.</h2>
+        <p class="hint" style="max-width:47ch">The smoke test sends one request with a tool definition. What comes back sets this connection's capability flags.</p>
+        <div class="stack" style="margin-top:20px">
+          <div class="field"><label for="pUrl">Base URL</label>
+            <input class="input mono" id="pUrl" value="https://api.groq.com/openai/v1" data-model="provider.url" autocomplete="off" spellcheck="false"></div>
+          <div class="field"><label for="pModel">Model</label>
+            <input class="input mono" id="pModel" value="llama-3.3-70b-versatile" data-model="provider.model" autocomplete="off" spellcheck="false"></div>
+          <div class="field"><label for="pKey">API key</label>
+            <input class="input mono" id="pKey" type="password" placeholder="gsk_…" data-model="provider.key" autocomplete="off" spellcheck="false"></div>
+        </div>
+        <div class="card flatcard" id="testOutWrap" style="margin-top:16px;border:1px solid var(--border);padding:0;overflow:hidden">
+          <div class="row-between" style="padding:11px 13px;border-bottom:1px solid var(--border)">
+            <span class="cap" style="margin:0">Smoke test</span>
+            <span class="mono fs-meta muted" id="testHint">not run</span>
+          </div>
+          <div id="testOut" style="padding:4px 13px 11px" class="hidden"></div>
+        </div>
+        <div class="row" style="margin-top:16px;gap:8px">
+          <button class="btn btn-primary" id="btnTest" data-act="provider:test">Save and test</button>
+          <button class="btn btn-ghost" data-act="provider:back">Back</button>
+          <span class="hint" style="margin-left:auto">Key goes to the vault, never the process env.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+ok   the export's region carries the hero this unit names: true
+chrome Chrome/155.0.8059.85 over CDP
+
+## the route
+facts {"hero":"Bots that do the work, on a computer that stays yours.","eyebrow":"Local agent workspace","sections":["hero","brand","controls","runs-today"],"controls":[{"id":"landing-connect","href":"/","text":"Connec
+[...]
+tablet-600x960: documentElement.scrollWidth <= window.innerWidth: [600,600]
+ok   viewport 04-foldable-small-tablet-600x960: every measured region's scrollWidth <= its clientWidth
+artifact 04-foldable-small-tablet-600x960.png (97488 bytes)
+RESULT: PASS — viewport 04-foldable-small-tablet-600x960
+ok   viewport 05-tablet-portrait-820x1180: documentElement.scrollWidth <= window.innerWidth: [820,820]
+ok   viewport 05-tablet-portrait-820x1180: every measured region's scrollWidth <= its clientWidth
+artifact 05-tablet-portrait-820x1180.png (133357 bytes)
+RESULT: PASS — viewport 05-tablet-portrait-820x1180
+ok   viewport 06-tablet-landscape-1024x768: documentElement.scrollWidth <= window.innerWidth: [1024,1024]
+ok   viewport 06-tablet-landscape-1024x768: every measured region's scrollWidth <= its clientWidth
+artifact 06-tablet-landscape-1024x768.png (83484 bytes)
+RESULT: PASS — viewport 06-tablet-landscape-1024x768
+ok   viewport 07-laptop-1366x768: documentElement.scrollWidth <= window.innerWidth: [1366,1366]
+ok   viewport 07-laptop-1366x768: every measured region's scrollWidth <= its clientWidth
+artifact 07-laptop-1366x768.png (88158 bytes)
+RESULT: PASS — viewport 07-laptop-1366x768
+ok   viewport 08-desktop-1440x900: documentElement.scrollWidth <= window.innerWidth: [1440,1440]
+ok   viewport 08-desktop-1440x900: every measured region's scrollWidth <= its clientWidth
+artifact 08-desktop-1440x900.png (108671 bytes)
+RESULT: PASS — viewport 08-desktop-1440x900
+ok   viewport 09-wide-1920x1080: documentElement.scrollWidth <= window.innerWidth: [1920,1920]
+ok   viewport 09-wide-1920x1080: every measured region's scrollWidth <= its clientWidth
+artifact 09-wide-1920x1080.png (134567 bytes)
+RESULT: PASS — viewport 09-wide-1920x1080
+
+## the nine overflow pairs
+01-mobile-compact-360x800: documentElement.scrollWidth 360 <= window.innerWidth 360 ok; regions all within their box
+02-mobile-standard-390x844: documentElement.scrollWidth 390 <= window.innerWidth 390 ok; regions all within their box
+03-mobile-large-430x932: documentElement.scrollWidth 430 <= window.innerWidth 430 ok; regions all within their box
+04-foldable-small-tablet-600x960: documentElement.scrollWidth 600 <= window.innerWidth 600 ok; regions all within their box
+05-tablet-portrait-820x1180: documentElement.scrollWidth 820 <= window.innerWidth 820 ok; regions all within their box
+06-tablet-landscape-1024x768: documentElement.scrollWidth 1024 <= window.innerWidth 1024 ok; regions all within their box
+07-laptop-1366x768: documentElement.scrollWidth 1366 <= window.innerWidth 1366 ok; regions all within their box
+08-desktop-1440x900: documentElement.scrollWidth 1440 <= window.innerWidth 1440 ok; regions all within their box
+09-wide-1920x1080: documentElement.scrollWidth 1920 <= window.innerWidth 1920 ok; regions all within their box
+
+## the app's own route, unchanged by this unit
+ok   `/` serves the app's own first-run screen and not the landing: "Computer\nDetails\nconnecting last seq 0 duplicates ignored: 0\nFreeBot\n01 / 03 — NAME\nWho is this Bot?\n\nA name is the whole requirement. It becomes the sidebar row and the label on its computer.\n\nBot na"
+ok   `/` carries no landing copy: true
+artifact root-1440x900.png (24344 bytes)
+the app's root renders 24344 bytes of PNG at 1440x900; it is captured here so a landing that moved what / serves is visible in this artifact
+ok   the landing and the app are different documents, so the route is really its own: {"landingChars":1855,"rootChars":216}
+
+chrome Chrome/155.0.8059.85; keyless replay launch, no run started, no container created
+artifacts: hero-1440x900.png, hero-430x932.png, what-runs-today-1440x900.png, what-runs-today-430x932.png, 01-mobile-compact-360x800.png, 02-mobile-standard-390x844.png, 03-mobile-large-430x932.png, 04-foldable-small-tablet-600x960.png, 05-tablet-portrait-820x1180.png, 06-tablet-landscape-1024x768.png, 07-laptop-1366x768.png, 08-desktop-1440x900.png, 09-wide-1920x1080.png, root-1440x900.png
+RESULT: PASS (51/51)
+
+
+--- captured output (stdout and stderr) ---
+
+RESULT: PASS — viewport 01-mobile-compact-360x800
+RESULT: PASS — viewport 02-mobile-standard-390x844
+RESULT: PASS — viewport 03-mobile-large-430x932
+RESULT: PASS — viewport 04-foldable-small-tablet-600x960
+RESULT: PASS — viewport 05-tablet-portrait-820x1180
+RESULT: PASS — viewport 06-tablet-landscape-1024x768
+RESULT: PASS — viewport 07-laptop-1366x768
+RESULT: PASS — viewport 08-desktop-1440x900
+RESULT: PASS — viewport 09-wide-1920x1080
+RESULT: PASS (51/51)
+artifact: packages/verify/artifacts/landing/8d12b50/assert.txt

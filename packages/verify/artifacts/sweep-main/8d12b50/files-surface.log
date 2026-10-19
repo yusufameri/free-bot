@@ -1,0 +1,104 @@
+driver: files-surface
+subject: the Library over the workspace a keyed run wrote
+command: bun packages/verify/scripts/files-surface.ts
+commit: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086 (8d12b50)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout
+exit: 1
+verdict: RESULT: FAIL (52/54)
+seconds: 6
+
+--- the driver's own artifact: packages/verify/artifacts/files-surface/8d12b50/assert.txt ---
+
+feature: files-surface
+command: bun packages/verify/scripts/files-surface.ts
+timestamp: 2026-10-19T21:01:24.528Z
+git sha: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086
+git sha short: 8d12b50
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+the line the model was asked to write: freebot-u4.1 e7708105d091
+the bots root this driver made: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-files-bots-uFcXJW
+the file outside it the refused read points at: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-files-out-i8Hcdu/secret.txt
+
+# files-surface live-ui frames
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open` with FREEBOT_WORKSPACE pointing at a fresh directory, so the server starts with no Bots, the page creates its own, and no Bot a person has run is touched. The provider mode is `auto`, so the model is whatever the vault selects; the prompt is typed into the page's own box and the approval card is answered on the page. The file the Library reads is the one the model wrote through /workspace inside the container. The symlink the refused state opens is made by this driver with `ln -s`, because asking a live model to plant one is not this driver's to ask; the passwd-shaped target is a file this driver wrote outside the workspace.
+containers before the run (label freebot.unit=u1.7): 0
+
+## the launcher, and the bots root it holds
+the printed URL, redacted: http://127.0.0.1:60960/#token=<redacted>
+the launcher's line: freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-files-bots-uFcXJW; each Bot's workspace is mounted at /workspace and kept across runs
+ok - the launcher holds the bots root this driver made, with one workspace per Bot: "freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-files-bots-uFcXJW; each Bot's workspace is mounted at /workspace and kept across runs"
+the launcher's line: freebot up: model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)
+ok - the launcher selected the keyed path from the vault, so the file is a real model's: [true,true]
+ok - and named the vault's endpoint and model, never the key's name or value: [true,true,false]
+the launcher's line: freebot up: vault /Users/yusufameri/.freebot/provider.env present, mode 600
+ok - the vault it read is present: true
+cdp: Chrome/155.0.8059.85, headless, DevToolsActivePort file (dynamic)
+
+## the Library on an empty workspace
+the Bot this driver made over the route a page uses: {"botId":"bot-local","threadId":"thread-1"}
+the request: POST /rpc/list_bots content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60960 body={"json":{}}
+the answer: 200 {"json":{"bots":[{"botId":"bot-local","name":"Local Bot","role":"","purpose":"","createdAt":1792443685054,"threadCount":1,"pinned":false,"section":"Work","hidden":false,"group":false,"members":[]}]}}
+ok - one Bot exists on a server that held none, made through the same arm a person's click uses: [200,"bot-local","Local Bot"]
+ok - the page is the URL the launcher printed, token in the fragment and never sent to a server: {"fragmentKey":"#token=","search":""}
+ok - the Library starts hidden behind its tab, and the conversation is what is on screen: {"tab":"conversation","hidden":true}
+ok - frame 01-empty: the page held still across the capture: "{\"tab\":\"library\",\"state\":\"empty\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[],\"entries\":[],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"Nothing here yet. Files a run writes to /workspace land in this list.\"}"
+ok - frame 01-empty: the element the caption is about is inside the captured pixels (#library-pinned): [true,0]
+ok - frame 01-empty: claim - the Library tab is open: true
+ok - frame 01-empty: claim - the state is empty: true
+ok - frame 01-empty: claim - the pinned row is /workspace: true
+ok - frame 01-empty: claim - no grou
+[...]
+ver's own command: ln -s /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-files-out-i8Hcdu/secret.txt /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-files-bots-uFcXJW/bot-local/workspace/escape.txt
+ok - the symlink is listed, so opening it is what refuses: true
+the request: POST /rpc/read_file content-type: application/json authorization: Bearer <redacted> origin: http://127.0.0.1:60960 body={"json":{"botId":"bot-local","path":"escape.txt"}}
+the answer: 403 {"json":{"defined":true,"code":"symlink_escape","status":403,"message":"symlink_escape: escape.txt resolves to /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-files-out-i8Hcdu/secret.txt"}}
+ok - the route surface refused the escape with its own code and status: [403,"symlink_escape"]
+ok - an absolute path is refused at the contract boundary: [400,"BAD_REQUEST"]
+ok - a .. traversal is refused at the contract boundary: [400,"BAD_REQUEST"]
+ok - frame 04-refused: the page held still across the capture: "{\"tab\":\"library\",\"state\":\"loaded\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[\"Today\"],\"entries\":[{\"path\":\"escape.txt\",\"kind\":\"file\",\"name\":\"escape.txt\",\"size\":0,\"group\":\"Today\"},{\"path\":\"note.txt\",\"kind\":\"file\",\"name\":\"note.txt\",\"size\":26,\"group\":\"Today\"}],\"openPath\":\"escape.txt\",\"openText\":null,\"refused\":\"symlink_escape\",\"message\":\"\"}"
+ok - frame 04-refused: the element the caption is about is inside the captured pixels (#library-view-refused): [true,0]
+ok - frame 04-refused: claim - the refusal is the named one: true
+ok - frame 04-refused: claim - no bytes were rendered: true
+ok - frame 04-refused: claim - the list still shows the workspace: true
+frame 04-refused: 04-refused.png (153184 bytes, sha256 835827cc5fb8742e4c96c2295d579af8b7f8b06e9778f6af79eafb23d9172751) - tab=library state=loaded listPath=. groups=Today entries=2 open=escape.txt refused=symlink_escape
+
+## shutdown, and the containers this driver created
+ok - the launch exits zero on SIGINT: 0
+ok - the label's container set is back where it started: true
+ok - nothing listens on the launch's page port: []
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+
+## frame index
+name -> asserted DOM facts -> caption
+01-empty -> tab=library state=empty listPath=. groups=(none) entries=0 open=(none) refused=(none) -> The Library on a Bot that has written nothing: /workspace is pinned at the top of the list and the list is otherwise empty.
+  unmet claims: []
+02-populated -> tab=library state=loaded listPath=. groups=Today entries=1 open=(none) refused=(none) -> After a real run wrote a file through /workspace: the list shows it under Today, with its size, from the Bot's own directory on this computer.
+  unmet claims: []
+03-file-open -> tab=library state=loaded listPath=. groups=Today entries=1 open=note.txt refused=(none) -> The file open: the view shows the path and the bytes the container wrote, which carry the nonce this run minted.
+  unmet claims: []
+04-refused -> tab=library state=loaded listPath=. groups=Today entries=2 open=escape.txt refused=symlink_escape -> A path that resolves outside the workspace, opened from the list: the read is refused by name and no bytes are shown.
+  unmet claims: []
+
+## the committed artifact carries no token and no key
+ok - frames: one committed PNG per key state: 4
+artifact: 01-empty.png (93647 bytes)
+artifact: 02-populated.png (146459 bytes)
+artifact: 03-file-open.png (150221 bytes)
+artifact: 04-refused.png (153184 bytes)
+ok - no committed line carries the launch's operator token: false
+ok - no committed line carries a key-shaped literal: false
+
+chrome Google Chrome over CDP; really launched `bun run up --no-open`; the model is the vault's keyed provider; the container is from the pinned image and is gone before the Library reads the file
+RESULT: FAIL (52/54)
+
+
+--- captured output (stdout and stderr) ---
+
+FAIL - the page's prompt reached the run's own box: "" (expected "Use the bash tool to write exactly this, and nothing else, into the file /workspace/note.txt: 'freebot-u4.1 e7708105d091' followed by a newline. Create no other file and read nothing. Then reply with one short sentence.")
+FAIL - the buttons are the two real answers: ["›View the full request","Allow once","Deny"] (expected ["Allow once","Deny"])
+RESULT: FAIL (52/54)
+assert.txt: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout/packages/verify/artifacts/files-surface/8d12b50/assert.txt
+frames: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout/packages/verify/artifacts/files-surface/8d12b50

@@ -1,0 +1,55 @@
+sweep-main: every driver the subject manifest names, once, against a commit of main
+command: bun packages/verify/scripts/sweep-main.ts
+timestamp: 2026-10-19T21:04:46.203Z
+commit: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086
+commit short: 8d12b50
+main was at: origin/main (8d12b50)
+checkout: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout (detached at the commit, bun install from its own lockfile)
+runtime: bun 1.2.5 on darwin arm64
+host docker: docker 28.3.2
+host microsandbox: msb 0.7.8, freebot-sandbox:u0.6 ready
+host chrome: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+host vaultKey: /Users/yusufameri/.freebot/provider.env present
+host liveInstance: absent, FREEBOT_STATUS_URL is not set
+
+PASS pixel-gate: RESULT: PASS (31s)
+PASS sandbox-pin-repair: RESULT: PASS (13/13) (14s)
+SKIP mvp-status-capture: needs a live instance named by FREEBOT_STATUS_URL (FREEBOT_STATUS_URL is not set)
+FAIL launch: FAIL - driver crashed before the run finished: evaluate failed: Uncaught :: document.querySelector('header p').textContent (1s)
+  proof: packages/verify/artifacts/sweep-main/8d12b50/launch.log
+  file a unit: "sweep-main: launch is red against main". The launch driver (`bun packages/verify/scripts/launch.ts`, one command, one URL, the whole click, and the reap on SIGINT) exited 1 with "FAIL - driver crashed before the run finished: evaluate failed: Uncaught :: document.querySelector('header p').textContent" at 8d12b50. Proof packages/verify/artifacts/sweep-main/8d12b50/launch.log.
+PASS landing: RESULT: PASS (51/51) (3s)
+FAIL first-run: RESULT: FAIL (112/113) (8s)
+  proof: packages/verify/artifacts/sweep-main/8d12b50/first-run.log
+  file a unit: "sweep-main: first-run is red against main". The first-run driver (`bun packages/verify/scripts/first-run.ts`, the first-run wizard, the run it starts, and the container census) exited 1 with "RESULT: FAIL (112/113)" at 8d12b50. Proof packages/verify/artifacts/sweep-main/8d12b50/first-run.log.
+FAIL overlays: RESULT: FAIL (0/1) (57s)
+  proof: packages/verify/artifacts/sweep-main/8d12b50/overlays.log
+  file a unit: "sweep-main: overlays is red against main". The overlays driver (`bun packages/verify/scripts/overlays.ts`, the command palette, the Bot picker and the modal) exited 1 with "RESULT: FAIL (0/1)" at 8d12b50. Proof packages/verify/artifacts/sweep-main/8d12b50/overlays.log.
+PASS bots-and-threads: RESULT: PASS (81/81) (9s)
+FAIL aside: RESULT: FAIL (15/16) (42s)
+  proof: packages/verify/artifacts/sweep-main/8d12b50/aside.log
+  file a unit: "sweep-main: aside is red against main". The aside driver (`bun packages/verify/scripts/aside.ts`, the details pane, the notices and the reconnect banner) exited 1 with "RESULT: FAIL (15/16)" at 8d12b50. Proof packages/verify/artifacts/sweep-main/8d12b50/aside.log.
+FAIL files-surface: RESULT: FAIL (52/54) (6s)
+  proof: packages/verify/artifacts/sweep-main/8d12b50/files-surface.log
+  file a unit: "sweep-main: files-surface is red against main". The files-surface driver (`bun packages/verify/scripts/files-surface.ts`, the Library over the workspace a keyed run wrote) exited 1 with "RESULT: FAIL (52/54)" at 8d12b50. Proof packages/verify/artifacts/sweep-main/8d12b50/files-surface.log.
+FAIL provider-setup: FAIL - frame 01-no-provider: the page held still across the capture: "{\"provider\":{\"state\":\"empty\",\"shown\":false,\"headline\":\"Connect a provider\",\"vault\":{\"path\":\"/private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-provider-home-dSH16o/provider.env\",\"present\":false,\"mode\":null},\"fields\":{\"baseUrl\":\"\",\"model\":\"\",\"keyEmpty\":true},\"connection\":null,\"endpoint\":\"\",\"answer\":null,\"refusal\":null,\"capabilities\":[],\"replaced\":null,\"message\":\"\"},\"shell\":{\"operator\":false,\"bots\":[],\"selectedBotId\":null,\"threads\":[],\"selectedThreadId\":null,\"title\":\"\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"approvalStates\":[],\"toolStates\":[],\"turnPhases\":[],\"turnTexts\":[],\"renderedSeqs\":[],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null},\"headline\":\"Connect a provider\",\"saveLabel\":\"Save and test\",\"saveDisabled\":false,\"replayLabel\":\"Run in replay mode\",\"keyKept\":\"The key goes to the vault file at mode 600. It is never sent back to this page, and nothing here logs it.\",\"footerRow\":\"Connect a provider\",\"sidebarHidden\":true,\"bodyPage\":null,\"error\":null}" (expected "{\"provider\":{\"state\":\"empty\",\"shown\":true,\"headline\":\"Connect a provider\",\"vault\":{\"path\":\"/private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-provider-home-dSH16o/provider.env\",\"present\":false,\"mode\":null},\"fields\":{\"baseUrl\":\"\",\"model\":\"\",\"keyEmpty\":true},\"connection\":null,\"endpoint\":\"\",\"answer\":null,\"refusal\":null,\"capabilities\":[],\"replaced\":null,\"message\":\"\"},\"shell\":{\"operator\":false,\"bots\":[],\"selectedBotId\":null,\"threads\":[],\"selectedThreadId\":null,\"title\":\"\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"approvalStates\":[],\"toolStates\":[],\"turnPhases\":[],\"turnTexts\":[],\"renderedSeqs\":[],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null},\"headline\":\"Connect a provider\",\"saveLabel\":\"Save and test\",\"saveDisabled\":false,\"replayLabel\":\"Run in replay mode\",\"keyKept\":\"The key goes to the vault file at mode 600. It is never sent back to this page, and nothing here logs it.\",\"footerRow\":\"Connect a provider\",\"sidebarHidden\":true,\"bodyPage\":\"connect\",\"error\":null}") (32s)
+  proof: packages/verify/artifacts/sweep-main/8d12b50/provider-setup.log
+  file a unit: "sweep-main: provider-setup is red against main". The provider-setup driver (`bun packages/verify/scripts/provider-setup.ts`, the provider page and a keyed run after the save) exited 1 with "FAIL - frame 01-no-provider: the page held still across the capture: "{\"provider\":{\"state\":\"empty\",\"shown\":false,\"headline\":\"Connect a provider\",\"vault\":{\"path\":\"/private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-provider-home-dSH16o/provider.env\",\"present\":false,\"mode\":null},\"fields\":{\"baseUrl\":\"\",\"model\":\"\",\"keyEmpty\":true},\"connection\":null,\"endpoint\":\"\",\"answer\":null,\"refusal\":null,\"capabilities\":[],\"replaced\":null,\"message\":\"\"},\"shell\":{\"operator\":false,\"bots\":[],\"selectedBotId\":null,\"threads\":[],\"selectedThreadId\":null,\"title\":\"\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"approvalStates\":[],\"toolStates\":[],\"turnPhases\":[],\"turnTexts\":[],\"renderedSeqs\":[],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null},\"headline\":\"Connect a provider\",\"saveLabel\":\"Save and test\",\"saveDisabled\":false,\"replayLabel\":\"Run in replay mode\",\"keyKept\":\"The key goes to the vault file at mode 600. It is never sent back to this page, and nothing here logs it.\",\"footerRow\":\"Connect a provider\",\"sidebarHidden\":true,\"bodyPage\":null,\"error\":null}" (expected "{\"provider\":{\"state\":\"empty\",\"shown\":true,\"headline\":\"Connect a provider\",\"vault\":{\"path\":\"/private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-provider-home-dSH16o/provider.env\",\"present\":false,\"mode\":null},\"fields\":{\"baseUrl\":\"\",\"model\":\"\",\"keyEmpty\":true},\"connection\":null,\"endpoint\":\"\",\"answer\":null,\"refusal\":null,\"capabilities\":[],\"replaced\":null,\"message\":\"\"},\"shell\":{\"operator\":false,\"bots\":[],\"selectedBotId\":null,\"threads\":[],\"selectedThreadId\":null,\"title\":\"\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"approvalStates\":[],\"toolStates\":[],\"turnPhases\":[],\"turnTexts\":[],\"renderedSeqs\":[],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null},\"headline\":\"Connect a provider\",\"saveLabel\":\"Save and test\",\"saveDisabled\":false,\"replayLabel\":\"Run in replay mode\",\"keyKept\":\"The key goes to the vault file at mode 600. It is never sent back to this page, and nothing here logs it.\",\"footerRow\":\"Connect a provider\",\"sidebarHidden\":true,\"bodyPage\":\"connect\",\"error\":null}")" at 8d12b50. Proof packages/verify/artifacts/sweep-main/8d12b50/provider-setup.log.
+FAIL connectors: RESULT: FAIL (68/76) (35s)
+  proof: packages/verify/artifacts/sweep-main/8d12b50/connectors.log
+  file a unit: "sweep-main: connectors is red against main". The connectors driver (`bun packages/verify/scripts/connectors.ts`, the connector seam over an emulated service, with the bash arm beside it) exited 1 with "RESULT: FAIL (68/76)" at 8d12b50. Proof packages/verify/artifacts/sweep-main/8d12b50/connectors.log.
+PASS connector-credentials: RESULT: PASS (37/37) (1s)
+PASS cancel-run: RESULT: PASS (50/50) (23s)
+PASS spend-cap: RESULT: PASS (21/21) (0s)
+PASS design-contract: RESULT: PASS (264/264) (5s)
+PASS sandbox-conformance: PASS sandbox-conformance (36s)
+PASS sandbox-microsandbox: PASS sandbox-microsandbox (26s)
+PASS keyed-run: RESULT: PASS (69/69) (10s)
+FAIL type-gate: FAIL type-gate (29s)
+  proof: packages/verify/artifacts/sweep-main/8d12b50/type-gate.log
+  file a unit: "sweep-main: type-gate is red against main". The type-gate driver (`bun packages/verify/scripts/type-gate.ts`, the root typecheck is not blind, proven by three planted errors) exited 1 with "FAIL type-gate" at 8d12b50. Proof packages/verify/artifacts/sweep-main/8d12b50/type-gate.log.
+
+artifact: packages/verify/artifacts/sweep-main/8d12b50/sweep.txt
+runnable 19, passed 11, failed 8, skipped 1
+arithmetic: 19 = 11 + 8 (passed + failed), 20 = 19 + 1 (runnable + skipped)
+RESULT: FAIL (11/19)

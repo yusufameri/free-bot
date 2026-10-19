@@ -1,0 +1,70 @@
+driver: aside
+subject: the details pane, the notices and the reconnect banner
+command: bun packages/verify/scripts/aside.ts
+commit: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086 (8d12b50)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout
+exit: 1
+verdict: RESULT: FAIL (15/16)
+seconds: 42
+
+--- the driver's own artifact: packages/verify/artifacts/aside/8d12b50/assert.txt ---
+
+
+## what this driver runs
+artifact directory: packages/verify/artifacts/aside/8d12b50/
+launch A: `bun run up --no-open --replay` over a fresh FREEBOT_HOME and bots root, its own placeholder vault at mode 600, its page opened through this driver's own TCP relay
+launch B: `bun run up --no-open` over the same kind of fresh home, so the mode is `auto` and the vault's placeholder endpoint is what a run reaches: http://127.0.0.1:9/…, a port nothing listens on. Nothing is billed and no packet leaves the loopback interface.
+the real vault at ~/.freebot/provider.env is never read, printed or copied by this driver; the only vault files it opens are its own, under the temp directories named below
+mobile-compact 360x800 mobile mustAvoidHorizontalScroll=true
+mobile-standard 390x844 mobile mustAvoidHorizontalScroll=true
+mobile-large 430x932 mobile mustAvoidHorizontalScroll=true
+foldable-small-tablet 600x960 foldable-tablet mustAvoidHorizontalScroll=true
+tablet-portrait 820x1180 tablet mustAvoidHorizontalScroll=true
+tablet-landscape 1024x768 tablet mustAvoidHorizontalScroll=true
+laptop 1366x768 desktop mustAvoidHorizontalScroll=true
+desktop 1440x900 desktop mustAvoidHorizontalScroll=true
+wide 1920x1080 wide mustAvoidHorizontalScroll=true
+containers before this driver runs anything (label freebot.unit=u1.7): 0
+launch A home: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-aside-replay-IE1uuP
+launch A workspace: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-aside-replay-IE1uuP/bots/bot-local/workspace
+launch A url, redacted: http://127.0.0.1:60872/#token=<redacted>
+launch A relay: 127.0.0.1:60874 -> 127.0.0.1:60872; the page is opened at 127.0.0.1:60874, so its own origin is the relay
+chrome Chrome/155.0.8059.85 over CDP
+the witness socket: a second /events client this driver opened on the origin, following thread thread-1 from seq 0, reading the server's log while the page cannot
+
+## the pane's frame
+the shell's own title line: "Aside Check · New conversation"
+ok   the pane's strip carries the export's tablist role: "tablist"
+ok   the pane's tabs are the four with a real source, in UX.md's order: [["computer","Computer"],["details","Details"],["tasks","Tasks"],["library","Library"]]
+ok   every tab carries the export's tab role: ["tab","tab","tab","tab"]
+ok   exactly the default tab is selected, by class and by aria-selected: [["computer"],["computer"],"computer"]
+ok   the export's two extra tabs and the Media delta are absent: 0
+ok   the pane's the strip carries the export's close button, labelled `Collapse the pane`, drawing the sprite's x: ["Collapse the pane","#i-x"]
+ok   the header's own control reads Details, pressed, labelled with what it does: ["Details","true","Collapse the pane"]
+ok   the frame renders the export's default width, in the grid and in the token: [372,372,"372px"]
+ok   and the stylesheet still declares the export's own token, so the settlement is real and not a token edit: "384px"
+ok   the resizer is the export's 5px track: 5
+the 384/372 settlement: the export declares --aside-w: 384px (freebot-prototype.html:37) and overwrites it at boot with S.asideW || 372 (:2248, seeded 372 at :829), so the export renders 372. This app keeps the declared token and renders the same 372, which closes both the aside and the thread deltas: the export's rendered aside is 372px and so is this app's.
+artifact 01-pane-open.png (89605 bytes)
+
+## the notices, from the records they come from
+get_provider over /rpc answers: {"baseUrl":"http://127.0.0.1:9/aside-not-a-provider","model":"aside-replay-placeholder","status":"untested","testedAt":null,"flags":null,"refusal":null,"answer":null}
+ok   the provider record this launch holds is `untested`, which is the notice's own signal: "untested"
+ok   the stack holds exactly the provider notice, its text the provider page's own headline, with its Open action: [["provider-untested"],["The connection did not pass its test"],["open-provider"]]
+ok   the dismiss controls are the export's: an Open button and a Dismiss control, then Dismiss all: [[["btn btn-secondary btn-xs",null,null,"Open"],["iconbtn","Dismiss","#i-x",""],["btn btn-ghost btn-xs",null,null,"Dismiss all"]]]
+ok   the stack is on the page, and the banner is not: nothing has dropped yet: [1,false,false,true,"Reconnecting — the stream dropped. The transcript refills from the last event it held."]
+the run notice is absent for a run that has not failed: `noticesFrom` raises one only for a thread whose newest run failed, and this launch has no run yet
+ok   Dismiss takes the one notice off the page and remembers it: [[],0,["provider-untested"]]
+
+FAIL the driver stopped early, so every check after this point is unrun: timed out waiting for the page's own hooks after a reload
+
+chrome Chrome/155.0.8059.85; two real launches (`bun run up --no-open --replay` and `bun run up --no-open`), one relay the driver severed, one witness socket on the server's own log
+RESULT: FAIL (15/16)
+
+
+--- captured output (stdout and stderr) ---
+
+FAIL the driver stopped early, so every check after this point is unrun: timed out waiting for the page's own hooks after a reload
+RESULT: FAIL (15/16)
+artifact: packages/verify/artifacts/aside/8d12b50/assert.txt
+driver crashed: timed out waiting for the page's own hooks after a reload

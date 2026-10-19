@@ -1,0 +1,120 @@
+driver: design-contract
+subject: the shell measured against the export at the nine viewports
+command: bun packages/verify/scripts/design-contract.ts
+commit: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086 (8d12b50)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout
+exit: 0
+verdict: RESULT: PASS (264/264)
+seconds: 5
+
+--- the driver's own artifact: packages/verify/artifacts/design-contract/8d12b50/assert.txt ---
+
+
+## the contract's matrix
+read from design/prototype-84c6b185/DESIGN-MANIFEST.json
+mobile-compact 360x800 mobile mustAvoidHorizontalScroll=true
+mobile-standard 390x844 mobile mustAvoidHorizontalScroll=true
+mobile-large 430x932 mobile mustAvoidHorizontalScroll=true
+foldable-small-tablet 600x960 foldable-tablet mustAvoidHorizontalScroll=true
+tablet-portrait 820x1180 tablet mustAvoidHorizontalScroll=true
+tablet-landscape 1024x768 tablet mustAvoidHorizontalScroll=true
+laptop 1366x768 desktop mustAvoidHorizontalScroll=true
+desktop 1440x900 desktop mustAvoidHorizontalScroll=true
+wide 1920x1080 wide mustAvoidHorizontalScroll=true
+ok   every viewport forbids horizontal scroll: true
+compared tokens: 22 names, all read from packages/ui/src/tokens.ts
+ok   the export's initial screen was replaced exactly once: "1 replacement(s) of \"screen: 'welcome',\" in design/prototype-84c6b185/freebot-prototype.html"
+
+## the app under test
+booted as `bun run up --no-open --replay` over a fresh FREEBOT_HOME and bots root, read from its own stdout
+url http://127.0.0.1:61382/#token=<redacted>
+shell {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+ok   the pane is the export's aside and not an empty region: a strip holding the four tabs and the close button, one body, and an empty resizer track (U6.3): [2,4,0]
+fonts: body stack resolved to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; a Geist-family string measures 243.62px, the absent-family fallback 215.98px, system-ui 244.54px, so Geist resolves to a family of its own
+
+## the export under test
+design/prototype-84c6b185/freebot-prototype.html, byte-identical to the store's copy apart from its initial screen
+fonts: body stack resolved to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; a Geist-family string measures 215.98px, the absent-family fallback 215.98px
+
+## the deltas this frame declares
+3 entries, shared with the pixel gate so the list has one source. This driver's own geometry fields are all zero at every viewport; these are the content-region exceptions the gate measures.
+geometry pixel-gate content.sidebar-bot-row: allowed deltas [8.02]. The app's first Bot row starts 8.02px higher. Both pages now group their rows under Pinned and Work headings; the remaining difference is the export's 6px brand-row padding and 12px label top against this app's 2px brand padding and 12px label. The row's own 34px height and 9px gap are the export's.
+  pixels: tablet-landscape left 0, top -8.02, width 0, height 0; laptop left 0, top -8.02, width 0, height 0; desktop left 0, top -8.02, width 0, height 0; wide left 0, top -8.02, width 0, height 0
+geometry pixel-gate content.center-transcript: allowed deltas [0.2,2.05,15.76,6.05]. Both transcripts start on the header's bottom edge, and the 0.2px top is the export's 55.8px header against this page's 56px. The remaining height difference is the composer band's own box: the app now carries the export's growing textarea, five tool controls and hint row, so the gap is 2.05px at most widths, 6.05px on the desktop viewports and -15.76px at 430, where the export's textarea wraps a line the app's placeholder does not.
+  pixels: mobile-compact left 0, top 0.2, width 0, height 2.05; mobile-standard left 0, top 0.2, width 0, height 2.05; mobile-large left 0, top 0.2, width 0, height -15.76; foldable-small-tablet left 0, top 0.2, width 0, height 2.05; tablet-portrait left 0, top 0.2, width 0, height 2.05; tablet-landscape left 0, top 0.2, width 0, height 6.05; laptop left 0, top 0.2, width 0, height 6.05; desktop left 0, top 0.2, width 0, height 6.05; wide left 0, top 0.2, width 0, height 6.05
+geometry pixel-gate content.center-composer: allowed deltas [2.25,15.56,15.57,6.25]. The composer band is pinned to the bottom edge on both pages. The app now carries the export's textarea, five tool controls, Stop run and s
+[...]
+9]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 20.12% differ (417,118/2,073,600), mean|delta| 4.61 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 09-wide-1920x1080.png (92060 bytes)
+reference 09-wide-1920x1080-export.png (183175 bytes)
+RESULT: PASS — viewport 09-wide-1920x1080
+
+## the nine overflow pairs
+01-mobile-compact-360x800: documentElement.scrollWidth 360 <= window.innerWidth 360 ok
+02-mobile-standard-390x844: documentElement.scrollWidth 390 <= window.innerWidth 390 ok
+03-mobile-large-430x932: documentElement.scrollWidth 430 <= window.innerWidth 430 ok
+04-foldable-small-tablet-600x960: documentElement.scrollWidth 600 <= window.innerWidth 600 ok
+05-tablet-portrait-820x1180: documentElement.scrollWidth 820 <= window.innerWidth 820 ok
+06-tablet-landscape-1024x768: documentElement.scrollWidth 1024 <= window.innerWidth 1024 ok
+07-laptop-1366x768: documentElement.scrollWidth 1366 <= window.innerWidth 1366 ok
+08-desktop-1440x900: documentElement.scrollWidth 1440 <= window.innerWidth 1440 ok
+09-wide-1920x1080: documentElement.scrollWidth 1920 <= window.innerWidth 1920 ok
+
+## token assertions
+ok   --bg             #000000                                                      freebot-prototype.html:12
+ok   --surface        #0a0a0a                                                      freebot-prototype.html:13
+ok   --fg             #ffffff                                                      freebot-prototype.html:14
+ok   --muted          #737373                                                      freebot-prototype.html:15
+ok   --border         #242424                                                      freebot-prototype.html:16
+ok   --accent         #000000                                                      freebot-prototype.html:17
+ok   --accent-2       #0f172a                                                      freebot-prototype.html:18
+ok   --hover          color-mix(in oklch, var(--fg) 7%, transparent)               freebot-prototype.html:21
+ok   --hover-2        color-mix(in oklch, var(--fg) 12%, transparent)              freebot-prototype.html:22
+ok   --fg-soft        color-mix(in oklch, var(--fg) 5%, transparent)               freebot-prototype.html:23
+ok   --muted-2        color-mix(in oklch, var(--muted) 45%, transparent)           freebot-prototype.html:24
+ok   --font-display   'Geist', 'Geist Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif freebot-prototype.html:26
+ok   --font-body      'Geist', 'Geist Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif freebot-prototype.html:27
+ok   --font-mono      ui-monospace, 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace freebot-prototype.html:28
+ok   --fs-h1          clamp(30px, 4.4vw, 46px)                                     freebot-prototype.html:30
+ok   --fs-h2          24px                                                         freebot-prototype.html:31
+ok   --fs-h3          17px                                                         freebot-prototype.html:32
+ok   --fs-body        15px                                                         freebot-prototype.html:33
+ok   --fs-meta        12.5px                                                       freebot-prototype.html:34
+ok   --radius         8px                                                          freebot-prototype.html:36
+ok   --aside-w        384px                                                        freebot-prototype.html:37
+ok   --sb-w           264px                                                        freebot-prototype.html:38
+
+chrome Chrome/155.0.8059.85; the app in replay mode with no provider call, the export served from the committed copy
+RESULT: PASS (264/264)
+
+
+--- captured output (stdout and stderr) ---
+
+RESULT: PASS — viewport 01-mobile-compact-360x800
+RESULT: PASS — viewport 02-mobile-standard-390x844
+RESULT: PASS — viewport 03-mobile-large-430x932
+RESULT: PASS — viewport 04-foldable-small-tablet-600x960
+RESULT: PASS — viewport 05-tablet-portrait-820x1180
+RESULT: PASS — viewport 06-tablet-landscape-1024x768
+RESULT: PASS — viewport 07-laptop-1366x768
+RESULT: PASS — viewport 08-desktop-1440x900
+RESULT: PASS — viewport 09-wide-1920x1080
+RESULT: PASS (264/264)
+artifact: packages/verify/artifacts/design-contract/8d12b50/assert.txt
+app up http://127.0.0.1:61382/#token=<redacted>
+export served http://127.0.0.1:61384/
+chrome Chrome/155.0.8059.85
+app page loaded
+app shell ready
+export page loaded
+ok   01-mobile-compact-360x800
+ok   02-mobile-standard-390x844
+ok   03-mobile-large-430x932
+ok   04-foldable-small-tablet-600x960
+ok   05-tablet-portrait-820x1180
+ok   06-tablet-landscape-1024x768
+ok   07-laptop-1366x768
+ok   08-desktop-1440x900
+ok   09-wide-1920x1080
