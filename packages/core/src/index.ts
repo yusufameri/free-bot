@@ -9,4 +9,5 @@ export * from "./run-status.ts";
 export * from "./run-store.ts";
 export * from "./run-usage.ts";
 export * from "./seq-log.ts";
+export * from "./transcript-store.ts";
 export * from "./tunnel.ts";

@@ -6,8 +6,12 @@
  * The binding lives here rather than at each call site so a new code cannot land with a status and
  * no copy, or with a copy and no status.
  *
- * Seven codes settle at `failed`, one parks the run at `paused` instead (the sandbox can be
+ * Eight codes settle at `failed`, one parks the run at `paused` instead (the sandbox can be
  * rejoined, so losing it mid-run is not an ending), and one settles at `cancelled`.
+ *
+ * One of the eight is not a mid-run failure at all: `server_restart` is what the boot settlement
+ * names a run the last process left in flight, so the closed union still holds every way a run
+ * stops short of finishing, whether the run stopped or the process did.
  */
 
 import type { RunEventKind } from "./run-events.ts";
@@ -23,6 +27,7 @@ export const RUN_FAILURE_CODES = [
   "spend_cap",
   "cancelled",
   "internal_invariant",
+  "server_restart",
 ] as const;
 
 export type RunFailureCode = (typeof RUN_FAILURE_CODES)[number];
@@ -98,6 +103,13 @@ export const FAILURE_TAXONOMY = {
     status: "failed",
     event: "run.failed",
     copy: "FreeBot hit an internal error and stopped this run.",
+  },
+  server_restart: {
+    means:
+      "The server stopped while the run was in flight. The next boot settled it, because a run nobody is driving is not a run that is still going.",
+    status: "failed",
+    event: "run.failed",
+    copy: "FreeBot stopped while this run was in flight.",
   },
 } as const satisfies Record<RunFailureCode, FailureEntry>;
 

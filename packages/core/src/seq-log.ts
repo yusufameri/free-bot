@@ -44,22 +44,36 @@ export class SeqLog<TFrame> {
     return this.#entries.length;
   }
 
-  append(seq: number, frame: TFrame): SeqAppend {
-    if (!Number.isSafeInteger(seq) || seq < 1) {
-      this.#rejected += 1;
-      return "rejected";
-    }
-    if (seq <= this.#lastSeq) {
-      this.#suppressedAtIngest.push(seq);
-      return "duplicate";
-    }
-    if (seq > this.#lastSeq + 1) {
-      this.#gapEvents.push({ expected: this.#lastSeq + 1, got: seq });
-      return "gap";
-    }
-    this.#entries.push({ seq, frame });
-    this.#lastSeq = seq;
+  /**
+   * The verdict `append` would reach for this seq, recording nothing. A store that keeps its frames
+   * somewhere else asks this first so it can settle that copy before the log's tail moves: the rule
+   * is written here once and both callers read it, rather than each keeping its own copy of it.
+   */
+  verdict(seq: number): SeqAppend {
+    if (!Number.isSafeInteger(seq) || seq < 1) return "rejected";
+    if (seq <= this.#lastSeq) return "duplicate";
+    if (seq > this.#lastSeq + 1) return "gap";
     return "appended";
+  }
+
+  append(seq: number, frame: TFrame): SeqAppend {
+    const outcome = this.verdict(seq);
+    switch (outcome) {
+      case "rejected":
+        this.#rejected += 1;
+        break;
+      case "duplicate":
+        this.#suppressedAtIngest.push(seq);
+        break;
+      case "gap":
+        this.#gapEvents.push({ expected: this.#lastSeq + 1, got: seq });
+        break;
+      case "appended":
+        this.#entries.push({ seq, frame });
+        this.#lastSeq = seq;
+        break;
+    }
+    return outcome;
   }
 
   /** Refuse one malformed payload without letting it touch the log. */

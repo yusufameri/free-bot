@@ -1,0 +1,126 @@
+feature: transcript-restart
+command: bun packages/verify/scripts/transcript-restart.ts
+timestamp: 2026-10-19T09:50:39.457Z
+git sha: 23a4c89a43d089ee6adf285bd609cb5e986af5aa
+git sha short: 23a4c89
+branch: u10.4-transcript-persistence
+runtime: bun 1.2.5 on darwin arm64
+
+containers before the runs (label freebot.unit=u1.7): 0
+
+== launch A: a run driven to done from the page
+the launcher's printed URL, redacted: http://127.0.0.1:61553/#token=<redacted>
+the transcript this driver asserts, by the path the service writes: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-transcript-home-rHtCoH/bots/bot-local/threads/thread-1/transcript.jsonl
+PASS the bots root this driver asserts under is the one the launcher's own line named: "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-transcript-home-rHtCoH/bots"
+PASS before the first run the thread is empty and says so: [0,false,"Waiting for the run to start."]
+PASS and no transcript is on disk yet: false
+PASS the page parked one governed call, waiting for an answer: ["awaiting approval"]
+PASS the run finished at done: "done"
+PASS with one tool card carrying the container's own stdout: [{"call":"bash {\"command\":\"echo native-should-not-run\"}","status":"done","output":"native-should-not-run\n","shown":true}]
+PASS and every frame the page holds came from the log in order: [true,0,""]
+PASS frame 01-finished-run: the page held still across the capture: "{\"frameCount\":16,\"lastSeq\":16,\"duplicatesIgnored\":0,\"prompts\":[\"run one gated command\"],\"toolCards\":[{\"call\":\"bash {\\\"command\\\":\\\"echo native-should-not-run\\\"}\",\"status\":\"done\",\"output\":\"native-should-not-run\\n\",\"shown\":true}],\"runStatuses\":[\"running\",\"awaiting_approval\",\"running\",\"done\"],\"runFailed\":[],\"finished\":\"stream complete\",\"header\":{\"run\":\"run run-1\",\"runId\":\"run-1\",\"status\":\"done\",\"lastSeq\":16,\"dups\":\"duplicates ignored: 0\"},\"approvals\":[{\"decision\":\"allow\",\"result\":\"allowed once\",\"buttons\":0,\"disabled\":0}],\"idle\":{\"hidden\":true,\"text\":\"Waiting for the run to start.\"},\"error\":\"\",\"text\":\"stub-model saw tool result: Tool bash not found\"}"
+PASS frame 01-finished-run: the element the caption is about is inside the captured pixels (#thread .run-finished): [true,0]
+PASS frame 01-finished-run: claim - the prompt that was typed is on the page: true
+PASS frame 01-finished-run: claim - the governed call ran and its output is shown: true
+PASS frame 01-finished-run: claim - the run reached its terminal frame: true
+PASS frame 01-finished-run: claim - and the page names its status: true
+PASS frame 01-finished-run: claim - with no frame unaccounted for: true
+frame 01-finished-run: 01-finished-run.png (128085 bytes, sha256 564495fa1a1ca4d23ebfa2f8882a6b9c1efd13f597868378496ce90fa0258854) - A run driven to done from the page before any restart: the prompt the page sent, the governed call with the container's own stdout, and the terminal frame.
+the transcript A wrote: 16 lines, keyed by botsRoot/botId/threadId
+  the first line, verbatim: {"seq":1,"frame":{"v":1,"seq":1,"ts":1792403440237,"runId":"run-1","type":"run.started","payload":{"prompt":"run one gated command"}}}
+PASS the transcript is where the service says it is: true
+PASS one line per frame the page rendered: 16
+PASS the lines are one record per seq, in order, each carrying the frame: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+PASS each line is a seq and a frame, and the frame is the five-key envelope the log carries: [["seq","frame"],["v","seq","ts","runId","type","payload"]]
+PASS the first record is the prompt the page sent: {"v":1,"seq":1,"runId":"run-1","type":"run.started","payload":{"prompt":"run one gated command"}}
+PASS the last record is the run's own terminal status: {"v":1,"seq":16,"runId":"run-1","type":"run.status","payload":{"runId":"run-1","status":"done"}}
+PASS and every frame on the line carries the seq its envelope does: []
+launch A: SIGINT, exit 0, it announced removing 1 sandbox(es)
+PASS the first launch exits zero on SIGINT: 0
+PASS and leaves no container under this unit's label: true
+PASS the torn last line is on the disk before the next boot: [false,17,true]
+
+== launch B: the same home, and the next run after the hydrated tail
+PASS the page after the restart is the page before it, fact for fact: "{\"frameCount\":16,\"lastSeq\":16,\"duplicatesIgnored\":0,\"prompts\":[\"run one gated command\"],\"toolCards\":[{\"call\":\"bash {\\\"command\\\":\\\"echo native-should-not-run\\\"}\",\"status\":\"done\",\"output\":\"native-should-not-run\\n\",\"shown\":true}],\"runStatuses\":[\"running\",\"awaiting_approval\",\"running\",\"done\"],\"runFailed\":[],\"finished\":\"stream complete\",\"header\":{\"run\":\"run run-1\",\"runId\":\"run-1\",\"status\":\"done\",\"lastSeq\":16,\"dups\":\"duplicates ignored: 0\"},\"approvals\":[{\"decision\":\"allow\",\"result\":\"allowed once\",\"buttons\":0,\"disabled\":0}],\"idle\":{\"hidden\":true,\"text\":\"Waiting for the run to start.\"},\"error\":\"\",\"text\":\"stub-model saw tool result: Tool bash not found\"}"
+PASS the torn last line was dropped and the file repaired in place: [16,true]
+PASS and no page exception was raised while hydrating: []
+PASS the second run's first frame continues the hydrated seq space: 17
+PASS so the page holds both runs' frames with nothing skipped and nothing replayed twice: [true,0,["run one gated command","run one gated command, after the restart"],["done","awaiting approval"]]
+PASS and the run the page names is the second one: "run run-2"
+PASS and the file behind the page is still one line per frame it renders: 22
+PASS frame 02-after-restart: the page held still across the capture: "{\"frameCount\":22,\"lastSeq\":22,\"duplicatesIgnored\":0,\"prompts\":[\"run one gated command\",\"run one gated command, after the restart\"],\"toolCards\":[{\"call\":\"bash {\\\"command\\\":\\\"echo native-should-not-run\\\"}\",\"status\":\"done\",\"output\":\"native-should-not-run\\n\",\"shown\":true},{\"call\":\"bash {\\\"command\\\":\\\"echo native-should-not-run\\\"}\",\"status\":\"awaiting approval\",\"output\":\"\",\"shown\":false}],\"runStatuses\":[\"running\",\"awaiting_approval\",\"running\",\"done\",\"running\",\"awaiting_approval\"],\"runFailed\":[],\"finished\":\"stream complete\",\"header\":{\"run\":\"run run-2\",\"runId\":\"run-2\",\"status\":\"awaiting_approval\",\"lastSeq\":22,\"dups\":\"duplicates ignored: 0\"},\"approvals\":[{\"decision\":\"allow\",\"result\":\"allowed once\",\"buttons\":0,\"disabled\":0},{\"decision\":null,\"result\":null,\"buttons\":2,\"disabled\":0}],\"idle\":{\"hidden\":true,\"text\":\"Waiting for the run to start.\"},\"error\":\"\",\"text\":\"stub-model saw tool result: Tool bash not found\"}"
+PASS frame 02-after-restart: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
+PASS frame 02-after-restart: claim - both prompts are on the page, the hydrated one first: true
+PASS frame 02-after-restart: claim - the replayed call kept its output: true
+PASS frame 02-after-restart: claim - the streamed run is parked behind the hydrated frames: true
+PASS frame 02-after-restart: claim - and its first frame continues the seq space rather than restarting it: true
+frame 02-after-restart: 02-after-restart.png (142271 bytes, sha256 637a510dbdaf96918440b7ddce13a3afbd88b7756324e18e35bd5a3f647d9a58) - A second launch over the same home: the finished run's transcript came back from disk, and the next run's frames continue the same seq space behind them.
+launch B: SIGINT, exit 0, it announced removing 1 sandbox(es)
+PASS the second launch exits zero on SIGINT: 0
+
+== launch C: the run the last process left parked
+PASS the page names the interrupted run: "run run-2"
+PASS and shows it failed: "failed"
+PASS with the taxonomy's own sentence on the frame: ["run failed: FreeBot stopped while this run was in flight."]
+PASS the status trail ends at failed, with the run the first launch finished still done: ["failed",1,2]
+PASS the card the parked run left behind is closed, not allowed and not denied: [{"decision":"allow","result":"allowed once","buttons":0,"disabled":0},{"decision":"failed","result":"run failed","buttons":2,"disabled":2}]
+PASS the frames the transcript brought back are still there: ["done","stream complete","run one gated command",true]
+PASS the settlement is on the disk: the last two lines are the ending frames: ["run.failed","run.status"]
+PASS and the ending the frames carry is the taxonomy's own copy for the code: {"reason":"FreeBot stopped while this run was in flight."}
+PASS the code the interrupted run converged to is the taxonomy's, in the run's own journal: [["fail","run-2","server_restart"]]
+PASS the records answer that the first run finished and the second did not: [["run-1","done"],["run-2","failed"]]
+PASS and the two prompts the records kept are the two the page sent: ["run one gated command","run one gated command, after the restart"]
+PASS frame 03-interrupted-run: the page held still across the capture: "{\"frameCount\":24,\"lastSeq\":24,\"duplicatesIgnored\":0,\"prompts\":[\"run one gated command\",\"run one gated command, after the restart\"],\"toolCards\":[{\"call\":\"bash {\\\"command\\\":\\\"echo native-should-not-run\\\"}\",\"status\":\"done\",\"output\":\"native-should-not-run\\n\",\"shown\":true},{\"call\":\"bash {\\\"command\\\":\\\"echo native-should-not-run\\\"}\",\"status\":\"awaiting approval\",\"output\":\"\",\"shown\":false}],\"runStatuses\":[\"running\",\"awaiting_approval\",\"running\",\"done\",\"running\",\"awaiting_approval\",\"failed\"],\"runFailed\":[\"run failed: FreeBot stopped while this run was in flight.\"],\"finished\":\"stream complete\",\"header\":{\"run\":\"run run-2\",\"runId\":\"run-2\",\"status\":\"failed\",\"lastSeq\":24,\"dups\":\"duplicates ignored: 0\"},\"approvals\":[{\"decision\":\"allow\",\"result\":\"allowed once\",\"buttons\":0,\"disabled\":0},{\"decision\":\"failed\",\"result\":\"run failed\",\"buttons\":2,\"disabled\":2}],\"idle\":{\"hidden\":true,\"text\":\"Waiting for the run to start.\"},\"error\":\"\",\"text\":\"stub-model saw tool result: Tool bash not found\"}"
+PASS frame 03-interrupted-run: the element the caption is about is inside the captured pixels (#thread .run-failed): [true,0]
+PASS frame 03-interrupted-run: claim - the interrupted run is shown failed: true
+PASS frame 03-interrupted-run: claim - with the taxonomy's own sentence: true
+PASS frame 03-interrupted-run: claim - and the card that was waiting is no longer answerable: true
+PASS frame 03-interrupted-run: claim - while the finished run the transcript brought back is untouched: true
+frame 03-interrupted-run: 03-interrupted-run.png (146699 bytes, sha256 b1611786217955e1ed7f765f2dd718cb1a6874688b3e85a04b690fa880f45541) - The third launch over that home: the run the last process left parked is shown failed, at the taxonomy's own code, and the card it left behind is closed.
+launch C: SIGINT, exit 0, it announced removing 0 sandbox(es)
+PASS the third launch exits zero on SIGINT: 0
+
+== launch D: a fourth boot over a home that was already settled
+PASS a second boot over the same home appends no second ending: [24,1,"failed"]
+PASS and the interrupted run is still shown the same way: "{\"frameCount\":24,\"lastSeq\":24,\"duplicatesIgnored\":0,\"prompts\":[\"run one gated command\",\"run one gated command, after the restart\"],\"toolCards\":[{\"call\":\"bash {\\\"command\\\":\\\"echo native-should-not-run\\\"}\",\"status\":\"done\",\"output\":\"native-should-not-run\\n\",\"shown\":true},{\"call\":\"bash {\\\"command\\\":\\\"echo native-should-not-run\\\"}\",\"status\":\"awaiting approval\",\"output\":\"\",\"shown\":false}],\"runStatuses\":[\"running\",\"awaiting_approval\",\"running\",\"done\",\"running\",\"awaiting_approval\",\"failed\"],\"runFailed\":[\"run failed: FreeBot stopped while this run was in flight.\"],\"finished\":\"stream complete\",\"header\":{\"run\":\"run run-2\",\"runId\":\"run-2\",\"status\":\"failed\",\"lastSeq\":24,\"dups\":\"duplicates ignored: 0\"},\"approvals\":[{\"decision\":\"allow\",\"result\":\"allowed once\",\"buttons\":0,\"disabled\":0},{\"decision\":\"failed\",\"result\":\"run failed\",\"buttons\":2,\"disabled\":2}],\"idle\":{\"hidden\":true,\"text\":\"Waiting for the run to start.\"},\"error\":\"\",\"text\":\"stub-model saw tool result: Tool bash not found\"}"
+launch D: SIGINT, exit 0, it announced removing 0 sandbox(es)
+PASS the fourth launch exits zero on SIGINT: 0
+
+== launch E: a home with no transcript, the control
+PASS a home with no transcript shows the empty state, not a replayed conversation: [0,0,false,"Waiting for the run to start."]
+PASS and no transcript file was created for reading it: false
+PASS frame 04-empty-home: the page held still across the capture: "{\"frameCount\":0,\"lastSeq\":0,\"duplicatesIgnored\":0,\"prompts\":[],\"toolCards\":[],\"runStatuses\":[],\"runFailed\":[],\"finished\":null,\"header\":{\"run\":null,\"runId\":null,\"status\":null,\"lastSeq\":0,\"dups\":\"duplicates ignored: 0\"},\"approvals\":[],\"idle\":{\"hidden\":false,\"text\":\"Waiting for the run to start.\"},\"error\":\"\",\"text\":\"\"}"
+PASS frame 04-empty-home: the element the caption is about is inside the captured pixels (#thread .idle): [true,0]
+PASS frame 04-empty-home: claim - no frame is rendered: true
+PASS frame 04-empty-home: claim - the thread says it is waiting for a run: true
+PASS frame 04-empty-home: claim - and no run or status is on the page: true
+PASS frame 04-empty-home: claim - with nothing recorded yet: true
+frame 04-empty-home: 04-empty-home.png (81593 bytes, sha256 c1fb885a490c923af61970e9b5d35a7753e2903c0b8bf0ba602ba0a84e0f1cb5) - The negative control: a launch over a home with no transcript yet, which is what the page shows before anything was ever recorded.
+PASS streaming from a page with no history is unchanged: the frames arrive, in order, once: [true,0,"done",""]
+PASS and the run the page drove is the one the transcript now holds: [16,{"v":1,"seq":1,"runId":"run-1","type":"run.started","payload":{"prompt":"run one gated command, on a home with no transcript"}}]
+launch E: SIGINT, exit 0, it announced removing 1 sandbox(es)
+PASS the fifth launch exits zero on SIGINT: 0
+PASS no container under this unit's label survived any of the five launches: true
+
+== pairwise distinctness of the committed frames
+PASS frames: every committed frame differs from every other in its page facts: []
+the real vault at ~/.freebot/provider.env is never read, printed or copied by this driver; the only vaults in play are the placeholders this driver wrote under the two temporary homes, and the scan below names every file that carries one
+
+== the key scan
+scanned 4 artifact file(s) and 8 file(s) under the two homes
+PASS the only file under this driver's homes or artifacts carrying its placeholder key is the vault it wrote: ["/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-transcript-home-UGeF0X/provider.env","/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-transcript-home-rHtCoH/provider.env"]
+PASS and the store the runs wrote holds no key, and no key-shaped literal at all: []
+the vault this driver wrote, mode 600, and the bots roots the runs wrote into: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-transcript-home-rHtCoH/bots, /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-transcript-home-UGeF0X/bots
+
+== the committed files
+artifact: 01-finished-run.png (128085 bytes)
+artifact: 02-after-restart.png (142271 bytes)
+artifact: 03-interrupted-run.png (146699 bytes)
+artifact: 04-empty-home.png (81593 bytes)
+PASS one committed PNG per key state: ["01-finished-run.png","02-after-restart.png","03-interrupted-run.png","04-empty-home.png"]
+PASS and every launch printed a token, so the search below is not vacuous: [true,true,true,true,true]
+PASS and this run's own lines carry none of them: 0
+
+checks: 77/77 PASS
+
+RESULT: PASS (77/77)
