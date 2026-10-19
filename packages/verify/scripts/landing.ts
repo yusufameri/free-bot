@@ -356,18 +356,20 @@ async function main(): Promise<number> {
 
   const viewports = readViewports();
   const exported = exportRegion();
-  // Read the repository's facts before the launcher starts, so a missing fact throws with no
-  // process to leak and no temporary home to remove.
+  // Read the repository's facts before the launcher starts, so a missing fact or a failed git call
+  // throws with no process to leak and no temporary home to remove.
   const repo = repoFacts();
+  const gitSha = git(["rev-parse", "HEAD"]);
+  const gitBranch = git(["rev-parse", "--abbrev-ref", "HEAD"]);
   const app = await startApp();
 
   log.push(
     "landing route driver",
     "command: bun packages/verify/scripts/landing.ts",
     `timestamp: ${new Date().toISOString()}`,
-    `git sha: ${git(["rev-parse", "HEAD"])}`,
+    `git sha: ${gitSha}`,
     `git sha short: ${sha}`,
-    `branch: ${git(["rev-parse", "--abbrev-ref", "HEAD"])}`,
+    `branch: ${gitBranch}`,
     `runtime: bun ${Bun.version} on ${process.platform} ${process.arch}`,
     `app: ${redacted(app.url)} (bun run up --no-open --replay, keyless, no run started)`,
     `route: ${landingUrl(app)}`,

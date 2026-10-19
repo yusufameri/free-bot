@@ -8,12 +8,12 @@ are the ones that run measured; the earlier transcript at
 
 `bun run typecheck` is the cheap gate every unit, every PR and CI runs. Until this unit it was blind
 to 14 source files and to every `.tsx` file in the repo. It now covers each workspace's `src` and
-`scripts` directories in both extensions. When this unit landed the widened include reached 16 files
-the pre-widening one does not, 112 repo files against 96; the head the Status names measures 193
-against 161, because later units kept landing. The two beyond the first measurement were this unit's
-own probe script and `apps/server/scripts/verify.ts`, which landed on `main` while this branch
-waited. This closes follow-up 1 of `docs/web-shell.md`, which parked the React and Next.js port on
-exactly this change.
+`scripts` directories in both extensions. At the merge head (`2c9b605`) the widened include reached 16
+files the pre-widening one does not: 112 repo files against 96. The head the Status names measures
+193 against 161, because later units kept landing. The two beyond the first measurement were this
+unit's own probe script and `apps/server/scripts/verify.ts`, which landed on `main` while this
+branch waited. This closes follow-up 1 of `docs/web-shell.md`, which parked the React and Next.js
+port on exactly this change.
 
 ## The include, before and after
 
@@ -39,8 +39,8 @@ apps/*/scripts/**/*.ts
 apps/*/scripts/**/*.tsx
 ```
 
-The program went from 82 to 97 repo files when this landed, and measures 161 to 193 at the commit
-the Status names.
+The program went from 82 to 97 repo files at this unit's pre-merge head (`28d8de0`), 96 to 112 once
+the branch merged `main` (`2c9b605`), and measures 161 to 193 at the commit the Status names.
 The widened gate exits 0 at each head, so none of the newly covered files had a type error waiting.
 `tsconfig.base.json` gains `jsx: "preserve"` in the same change. It transforms nothing under
 `noEmit`, and it is the value the port's Next.js config needs, so a `.tsx` file parses in the root
