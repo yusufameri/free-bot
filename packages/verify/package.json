@@ -4,11 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./cdp": "./src/cdp.ts"
   },
   "dependencies": {
     "@freebot/connectors": "workspace:*",
     "@freebot/core": "workspace:*",
+    "@freebot/sandbox": "workspace:*",
     "emulate": "^0.12.2"
   }
 }

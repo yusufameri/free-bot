@@ -45,6 +45,9 @@ import { createRunService, type RunService } from "./run-service.ts";
 
 const HOST_DIR = fileURLToPath(new URL("../../web/host/", import.meta.url));
 
+/** The landing route's own directory, beside the host's. U6.6. */
+const LANDING_DIR = fileURLToPath(new URL("../../web/landing/", import.meta.url));
+
 interface SocketData {
   kind: "rpc" | "events";
   abort: AbortController;
@@ -72,12 +75,15 @@ export interface ApiServerOptions {
   connectors?: ConnectorRegistry;
   /** Where the web host's page lives. Defaults to this repo's `apps/web/host`. */
   hostDir?: string;
+  /** Where the landing page lives. Defaults to this repo's `apps/web/landing`. */
+  landingDir?: string;
 }
 
 export function startApiServer(options: ApiServerOptions = {}): ApiServer {
   const token = options.token ?? mintToken();
   const service = options.service ?? createRunService();
   const hostDir = options.hostDir ?? HOST_DIR;
+  const landingDir = options.landingDir ?? LANDING_DIR;
   const router = createApiRouter(service, undefined, options.connectors);
   const http = new FetchHandler(router);
   const socket = new BunWebSocketHandler(router);
@@ -98,6 +104,35 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
       return { html: readFileSync(join(hostDir, "index.html"), "utf8"), js: await bundle.text() };
     })();
     return page;
+  }
+
+  /**
+   * The landing route (U6.6): the export's landing page at its own path, out of the app shell.
+   *
+   * It is built the way `/` is, from the directory beside the host's, and it is served the same way:
+   * static markup that carries no run state, behind only the Host check. Its controls link to `/`
+   * and its one script writes the clipboard, so it asks the server for nothing and needs no token.
+   * `/` is untouched by this: the page it serves, its bundle and the state it opens on are the ones
+   * it served before.
+   */
+  let landing: Promise<{ html: string; js: string }> | null = null;
+
+  function landingPage(): Promise<{ html: string; js: string }> {
+    landing ??= (async () => {
+      const build = await Bun.build({
+        entrypoints: [join(landingDir, "main.ts")],
+        target: "browser",
+        format: "esm",
+      });
+      if (!build.success) throw new Error(`landing bundle failed:\n${build.logs.join("\n")}`);
+      const bundle = build.outputs[0];
+      if (bundle === undefined) throw new Error("landing bundle produced no output");
+      return {
+        html: readFileSync(join(landingDir, "index.html"), "utf8"),
+        js: await bundle.text(),
+      };
+    })();
+    return landing;
   }
 
   const server = Bun.serve<SocketData, Record<string, never>>({
@@ -165,6 +200,20 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
 
       if (path === "/main.js") {
         const { js } = await hostPage();
+        return new Response(js, {
+          headers: { "content-type": "application/javascript; charset=utf-8" },
+        });
+      }
+
+      // The landing route (U6.6). Its own path, its own document and its own bundle; `/` above is
+      // unchanged, so a first-run flow that never visits this path behaves exactly as it did.
+      if (path === "/landing" || path === "/landing/") {
+        const { html } = await landingPage();
+        return new Response(html, { headers: { "content-type": "text/html; charset=utf-8" } });
+      }
+
+      if (path === "/landing.js") {
+        const { js } = await landingPage();
         return new Response(js, {
           headers: { "content-type": "application/javascript; charset=utf-8" },
         });

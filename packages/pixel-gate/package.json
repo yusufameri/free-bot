@@ -1,0 +1,14 @@
+{
+  "name": "@freebot/pixel-gate",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/gate.ts",
+    "./regions": "./src/regions.ts",
+    "./report": "./src/report.ts"
+  },
+  "dependencies": {
+    "@freebot/verify": "workspace:*"
+  }
+}

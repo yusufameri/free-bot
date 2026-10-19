@@ -70,6 +70,13 @@
         "@earendil-works/pi-coding-agent": "1.3.0",
       },
     },
+    "packages/pixel-gate": {
+      "name": "@freebot/pixel-gate",
+      "version": "0.0.0",
+      "dependencies": {
+        "@freebot/verify": "workspace:*",
+      },
+    },
     "packages/protocol": {
       "name": "@freebot/protocol",
       "version": "0.0.0",
@@ -114,6 +121,7 @@
       "dependencies": {
         "@freebot/connectors": "workspace:*",
         "@freebot/core": "workspace:*",
+        "@freebot/sandbox": "workspace:*",
         "emulate": "^0.12.2",
       },
     },
@@ -202,6 +210,8 @@
     "@freebot/mobile": ["@freebot/mobile@workspace:apps/mobile"],
 
     "@freebot/pi-bridge": ["@freebot/pi-bridge@workspace:packages/pi-bridge"],
+
+    "@freebot/pixel-gate": ["@freebot/pixel-gate@workspace:packages/pixel-gate"],
 
     "@freebot/protocol": ["@freebot/protocol@workspace:packages/protocol"],
 
