@@ -345,7 +345,7 @@ const SPECS: readonly FrameSpec[] = [
   {
     name: "04-denied-done",
     caption:
-      "Denied and still finished: a denial is the call's refusal rather than the run's ending, so the card is denied with no output, the decision marker names user_denied, and the run reaches its terminal frame.",
+      "Denied and still finished: the approval card carries the deny decision, the tool card shows denied with its output closed, and the run reaches its terminal frame.",
     claims: [
       {
         label: "the approval card shows the deny decision",

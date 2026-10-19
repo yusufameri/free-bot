@@ -791,11 +791,14 @@ async function main(): Promise<void> {
     const b = await launch(first);
     tokens.push(b.token);
     const bPage = await openArmed(chrome.cdp, b, "launch B");
+    // Wait past the last rendered frame to the stream's final seq: the transcript ends at
+    // `done.lastSeq` with the run's own `run.status` frame, which lands after the last card body,
+    // so a frame-count wait alone can read the page before that ending has arrived.
     await waitFor(
       chrome.cdp,
       bPage,
       "the conversation to come back",
-      `document.querySelectorAll('#thread .frame[data-seq]').length === ${done.frameCount}`,
+      `document.querySelectorAll('#thread .frame[data-seq]').length === ${done.frameCount} && Number(document.querySelector('#lastseq').dataset.lastSeq) === ${done.lastSeq} && document.querySelector('#run').dataset.runStatus === ${JSON.stringify(done.header.status)}`,
     );
     const replayed = await facts(chrome.cdp, bPage);
     check(
@@ -939,11 +942,14 @@ async function main(): Promise<void> {
     const d = await launch(first);
     tokens.push(d.token);
     const dPage = await openArmed(chrome.cdp, d, "launch D");
+    // The interrupted run's last rendered frame is at seq 23 while its settled ending is the
+    // `run.status` frame at `interrupted.lastSeq`; wait for that watermark and the failed status
+    // the record already holds before reading the page for the second-boot comparison.
     await waitFor(
       chrome.cdp,
       dPage,
       "the settled conversation to come back",
-      `document.querySelectorAll('#thread .frame[data-seq]').length === ${interrupted.frameCount}`,
+      `document.querySelectorAll('#thread .frame[data-seq]').length === ${interrupted.frameCount} && Number(document.querySelector('#lastseq').dataset.lastSeq) === ${interrupted.lastSeq} && document.querySelector('#run').dataset.runStatus === ${JSON.stringify(interrupted.header.status)}`,
     );
     const settledAgain = await facts(chrome.cdp, dPage);
     check(
