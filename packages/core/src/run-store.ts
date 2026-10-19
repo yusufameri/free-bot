@@ -15,16 +15,7 @@
  * else is corruption and throws.
  */
 
-import {
-  closeSync,
-  fsyncSync,
-  mkdirSync,
-  openSync,
-  readFileSync,
-  writeFileSync,
-  writeSync,
-} from "node:fs";
-import { dirname } from "node:path";
+import { JsonlFile } from "./jsonl.ts";
 import {
   FAILURE_TAXONOMY,
   failureFor,
@@ -139,12 +130,6 @@ export interface ParkInput {
   expiresAt: number;
 }
 
-function isEnoent(error: unknown): boolean {
-  return (
-    typeof error === "object" && error !== null && (error as { code?: string }).code === "ENOENT"
-  );
-}
-
 function deepFreeze<T>(value: T): T {
   if (typeof value !== "object" || value === null) return value;
   for (const inner of Object.values(value)) deepFreeze(inner);
@@ -226,13 +211,12 @@ export class RunStore {
   readonly #usageIds = new Map<string, Set<string>>();
   readonly #events = new Map<string, UsageEvent[]>();
   readonly #duplicateUsage: string[] = [];
-  readonly #file: string | undefined;
+  readonly #file: JsonlFile;
   readonly #now: () => number;
-  #fd: number | null = null;
   #loadReport: RunLoadReport;
 
   constructor(options: RunStoreOptions = {}) {
-    this.#file = options.file;
+    this.#file = new JsonlFile(options.file);
     this.#now = options.now ?? (() => Date.now());
     this.#loadReport = this.#readAndReplay();
   }
@@ -387,7 +371,7 @@ export class RunStore {
    * in-memory store has no journal to read, so it reports its current state as converged.
    */
   reload(): { report: RunLoadReport; converged: boolean } {
-    if (this.#file === undefined) {
+    if (this.#file.path === undefined) {
       return {
         report: { commands: 0, refused: [], duplicateUsage: [], tornTrailingLine: false },
         converged: true,
@@ -400,10 +384,7 @@ export class RunStore {
 
   /** Release the journal handle. A process that dies here leaves exactly the commands it applied. */
   close(): void {
-    if (this.#fd !== null) {
-      closeSync(this.#fd);
-      this.#fd = null;
-    }
+    this.#file.close();
   }
 
   #requireEntry(id: string): RunRecord {
@@ -553,17 +534,15 @@ export class RunStore {
   }
 
   #append(command: RunCommand): void {
-    if (this.#file === undefined) return;
-    if (this.#fd === null) {
-      mkdirSync(dirname(this.#file), { recursive: true });
-      this.#fd = openSync(this.#file, "a");
-    }
-    writeSync(this.#fd, `${JSON.stringify(command)}\n`);
-    fsyncSync(this.#fd);
+    this.#file.append(JSON.stringify(command));
   }
 
+  /**
+   * Read the journal and replay it. The torn-tail rule is the file's, so this only has to parse and
+   * apply: a file whose last line has no newline comes back with that line already dropped.
+   */
   #readAndReplay(): RunLoadReport {
-    const loaded = this.#readLines();
+    const loaded = this.#file.read();
     this.#reset();
     const refused: Array<{ line: number; reason: string }> = [];
     let commands = 0;
@@ -592,36 +571,6 @@ export class RunStore {
       refused,
       duplicateUsage: [...this.#duplicateUsage],
       tornTrailingLine: loaded.tornTrailingLine,
-    };
-  }
-
-  /**
-   * Read the journal. A file whose last line has no newline ends in a write the process never
-   * reported applied, so the tail is dropped and the file repaired in place: left there, it would
-   * turn into a malformed line in the middle of the journal as soon as the next command is
-   * appended, and poison every later restart.
-   */
-  #readLines(): { lines: string[]; tornTrailingLine: boolean } {
-    if (this.#file === undefined) return { lines: [], tornTrailingLine: false };
-    let text: string;
-    try {
-      text = readFileSync(this.#file, "utf8");
-    } catch (error) {
-      if (isEnoent(error)) return { lines: [], tornTrailingLine: false };
-      throw error;
-    }
-    if (text.length === 0) return { lines: [], tornTrailingLine: false };
-    if (!text.endsWith("\n")) {
-      const complete = text.slice(0, text.lastIndexOf("\n") + 1);
-      writeFileSync(this.#file, complete);
-      return {
-        lines: complete.split("\n").filter((line) => line.trim().length > 0),
-        tornTrailingLine: true,
-      };
-    }
-    return {
-      lines: text.split("\n").filter((line) => line.trim().length > 0),
-      tornTrailingLine: false,
     };
   }
 
