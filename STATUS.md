@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-19T17:56Z, against `origin/main` `6b70e1e`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-19T19:30Z, against `origin/main` `261c096`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-57 units in the register: 50 done, 0 running, 6 pending, 1 parked.
+58 units in the register: 51 done, 0 running, 6 pending, 1 parked.
 
-The verification ledger holds 58 rows: 20 `live-ui-verified`, 30 `unit-test-verified`, 2 `type-check-only`, 6 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 60 rows: 21 `live-ui-verified`, 30 `unit-test-verified`, 2 `type-check-only`, 7 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -95,12 +95,13 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U6.7 | The fidelity pass armed in the build: the pixel gate inside `bun run verify` and CI | [#56](https://github.com/yusufameri/free-bot/pull/56) |
 | U10.8 | The sandbox pin repairs itself: an off-pin tag is re-pointed at a layer-matching image, and a build that cannot match the pin refuses and says so | [#58](https://github.com/yusufameri/free-bot/pull/58) |
 | U10.9 | The landing page's spend-cap sentence now states what the run loop does, asserted from the DOM | [#60](https://github.com/yusufameri/free-bot/pull/60) |
+| U10.10 | The landing page's cancel row now says a run can be stopped from the page, asserted from the DOM | [#62](https://github.com/yusufameri/free-bot/pull/62) |
 
 ## Not built yet
 
 Nothing is running. The fleet is idle between coordinator turns, which is the state order 35 exists to shorten.
 
-Queued, with no brief written except where named. U10.8 and U10.9 carry briefs.
+Queued, with no brief written except where named. U10.11 carries a brief; U10.8, U10.9 and U10.10 have landed.
 
 | Unit | What it is |
 | --- | --- |
