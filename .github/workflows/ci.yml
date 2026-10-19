@@ -24,6 +24,7 @@ jobs:
       - run: bun run typecheck
 
       - run: bun run verify
+        timeout-minutes: 15
         env:
           FREEBOT_CHROME: ${{ steps.chrome.outputs.chrome-path }}
 

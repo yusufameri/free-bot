@@ -556,12 +556,16 @@ export async function prepare(
   await waitFor(cdp, sessionId, describe, ready, 60_000);
   const stopped = await freeze(cdp, sessionId);
   // The face arrives over the page's own route; wait for it before the first probe, so a capture
-  // can never hold the fallback while the real font is still in flight.
-  await evaluate<boolean>(
-    cdp,
-    sessionId,
-    `(async () => { await document.fonts.ready; return document.fonts.check('16px Geist'); })()`,
-  );
+  // can never hold the fallback while the real font is still in flight. The wait is bounded: a
+  // stalled font request is a page-state finding, not a reason for the gate to hang forever.
+  await Promise.race([
+    evaluate<boolean>(
+      cdp,
+      sessionId,
+      `(async () => { await document.fonts.ready; return document.fonts.check('16px Geist'); })()`,
+    ),
+    sleep(5_000),
+  ]);
   await setViewport(cdp, sessionId, viewport.width, viewport.height);
   await settle(cdp, sessionId, 250);
   return stopped;
