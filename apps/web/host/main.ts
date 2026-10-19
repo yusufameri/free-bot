@@ -35,6 +35,7 @@ import { RPCLink } from "@orpc/client/fetch";
 import type { ContractRouterClient } from "@orpc/contract";
 import type {
   apiContract,
+  ConnectorRow,
   Message,
   ProviderConnection,
 } from "../../../packages/protocol/src/index.ts";
@@ -43,6 +44,7 @@ import {
   exposeAsideFacts,
   mountAside,
 } from "../../../packages/ui/browser/aside.ts";
+import { exposeConnectAppsFacts } from "../../../packages/ui/browser/connect-apps.ts";
 import {
   exposeFirstRunFacts,
   type FirstRunOutcome,
@@ -65,6 +67,7 @@ import {
 } from "../../../packages/ui/browser/workspace.ts";
 import { latestCommand, latestRun, liveRunStatus } from "../../../packages/ui/src/aside.ts";
 import { liveBotStatus } from "../../../packages/ui/src/bots.ts";
+import { connectionSummary } from "../../../packages/ui/src/connections.ts";
 import type { OverlayCommand } from "../../../packages/ui/src/overlays.ts";
 import { providerRowLabel } from "../../../packages/ui/src/provider.ts";
 
@@ -311,11 +314,21 @@ function workspaceRecords() {
 const workspace = mountWorkspace({
   read: workspaceRecords,
   calls: {
-    listConnectors: async () => {
-      if (api === null) return [];
-      return (await api.list_connectors({})).connectors;
+    list: async () => (api === null ? [] : (await api.list_connectors({})).connectors),
+    connect: async (input) => {
+      if (api === null) throw new Error("Connect apps needs the operator token.");
+      return await api.connect_connector(input);
+    },
+    test: async (id) => {
+      if (api === null) throw new Error("Connect apps needs the operator token.");
+      return await api.test_connector({ id });
+    },
+    remove: async (id) => {
+      if (api === null) throw new Error("Connect apps needs the operator token.");
+      return await api.remove_connector({ id });
     },
   },
+  onConnectors: (rows) => paintConnectAppsCount(rows),
   onOpenProvider: () => providerPage.show(),
   onSelectBot: async (botId) => {
     workspace.hide();
@@ -326,23 +339,18 @@ const workspace = mountWorkspace({
     void library.show("conversation");
   },
 });
+exposeConnectAppsFacts(workspace.connectApps());
+
+/** The sidebar footer's own count: how many connectors the record holds in `connected`. */
+function paintConnectAppsCount(rows: readonly ConnectorRow[]): void {
+  const count = document.querySelector<HTMLElement>("#connect-apps-count");
+  if (count !== null) count.textContent = connectionSummary(rows).label;
+}
 
 /** Open a Workspace page, and put the conversation chrome down while it is on screen. */
 function openWorkspace(view: WorkspaceView): void {
   showOperator(false);
   void workspace.show(view);
-  if (view === "apps" && api !== null) {
-    void api
-      .list_connectors({})
-      .then(({ connectors }) => {
-        const count = document.querySelector<HTMLElement>("#connect-apps-count");
-        if (count !== null) {
-          const on = connectors.filter((connector) => connector.state === "connected").length;
-          count.textContent = `${on} on`;
-        }
-      })
-      .catch(() => undefined);
-  }
 }
 
 for (const button of document.querySelectorAll<HTMLButtonElement>("#nav-list [data-view]")) {

@@ -1,0 +1,76 @@
+feature: connect apps
+command: bun packages/verify/scripts/connect-apps.ts
+timestamp: 2026-10-19T22:10:26.095Z
+git sha: 3190f7f7bde45fcbe831c1b41fbe0e58b071389c
+git sha short: 3190f7f
+branch: u8.4-connect-apps
+runtime: bun 1.2.5 on darwin arm64
+the freebot home this driver made: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-connect-apps-home-66t7Nh
+the record file the screen reads: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-connect-apps-home-66t7Nh/connectors.json
+the vault file the credential lives in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-connect-apps-home-66t7Nh/connectors.env
+
+# connect apps evidence: one launch, one page, every state the record can say
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open --replay` with FREEBOT_HOME and FREEBOT_WORKSPACE pointing at directories this driver made. The provider is the replay provider, so no model is called and no key is spent. The connector's service is an MCP server this process serves over the `emulate` GitHub fixture bound on 0.0.0.0 and seeded per run, with an exact bearer gate. No real third-party account, service or key is involved anywhere.
+the credentials this run minted are named by label everywhere below, never by value; the artifact writer refuses a line carrying one.
+
+## the person's own service, over an emulated GitHub on every interface
+the emulated service is at http://127.0.0.1:53291 (port 53291)
+the connector's MCP service is at http://127.0.0.1:53292
+ok - the connector's service refuses a handshake with no credential: [401,"no credential"]
+
+## the launch, and the screen's empty state
+the printed URL, redacted: http://127.0.0.1:53295/#token=<redacted>
+shot: 01-empty.png (the gallery before any connector exists)
+ok - the footer's Connect apps lands on the export's gallery, over an install holding none: ["gallery","Apps and connectors",[],true]
+ok - the screen names the deltas it cannot close, Composio's adapter kind first: true
+ok - the gallery has no horizontal overflow at 1440x900: false
+
+## Add: the person's name, endpoint and credential, through connect_connector
+shot: 02-add-form.png (the add form with a credential typed)
+ok - the add form holds the credential only until it is submitted: ["add",true,false]
+shot: 03-connected.png (the connector added and probed, with the tools its service offered)
+ok - Add saved the record, probed the person's own service, and opened its detail: ["detail","Emulated GitHub","connected",true,"connector:emulated-github",["create_issue","list_issues"],true,["Test"]]
+ok - the credential field is gone with the form, and the page's text carries no value: [null,true]
+ok - the list re-read the record the save wrote: one row, the same state the screen shows: [["emulated-github","connected"]]
+ok - the record file carries the id, the endpoint and the credential's reference, and no header: [[["emulated-github","connected","connector:emulated-github"]],false,false]
+ok - the vault holds the credential at mode 600, which is the positive control for the scans: ["600",true]
+
+## Test: the route probes again, and the screen shows its answer
+ok - Test kept the connector connected, reported the probe's state, and the route's own clock moved: ["connected","Tested Emulated GitHub. The probe answered Connected.",true,true]
+
+## Unreachable: a service that does not answer, and the failure control it offers
+shot: 04-unreachable.png (a connector whose service did not answer, with Retry as its failure control)
+ok - the screen shows the route's own answer, not a fixture string: ["unreachable","connector notes-service: Unable to connect. Is the computer able to access the url?","connector notes-service: Unable to connect. Is the computer able to access the url?"]
+ok - the unreachable state offers Retry and Reconnect, and never the credential: [["Retry","Reconnect"],false,[]]
+ok - Retry ran the route's real probe again and the state is still unreachable: ["unreachable","Tested Notes service. The probe answered Unreachable."]
+
+## Untested: a record the vault holds no credential for, and Authorize
+shot: 05-untested.png (a record with no credential, which reads untested rather than broken)
+ok - an untested record says the vault holds no credential, offers Authorize, and lists no tools: ["untested",true,true,["Authorize","Test"],[],"Never tested"]
+shot: 06-authorized.png (the same record after Authorize saved a credential and probed)
+ok - Authorize saved a credential through the real route and the record became connected: ["connected",["create_issue","list_issues"],"Saved a credential for Fixture notes. The probe answered Connected.",null,true]
+
+## Remove: the confirmation, the record and the credential
+shot: 07-remove-confirm.png (the removal confirmation before it is sent)
+shot: 08-removed.png (the gallery after Remove, with the removed connector gone)
+ok - Remove took the record and the vault line, and the gallery re-read the store: ["Removed Notes service. Its record and its credential are gone.",["emulated-github","fixture-notes"],false]
+ok - the footer's count follows the rows the screen holds: "2 on"
+
+## the same gallery at 390x844, and the credential census
+shot: 09-gallery-390.png (the gallery at 390x844)
+ok - the gallery has no horizontal overflow at 390x844: false
+ok - the narrow gallery still holds both connectors and their states: [["emulated-github","Connected"],["fixture-notes","Connected"]]
+
+the census, each with its literal search:
+ok - no response body this driver read carries a credential: [7,0]
+ok - the record file carries no header value and no header name: [false,false,false]
+ok - the vault holds a line for each connector that has a credential, sorted by id: [["emulated-github","fixture-notes"]]
+ok - no file of the worktree carries any credential this run minted: []
+ok - and the driver's own table names them, never their values: ["the placeholder provider key","the emulated service's token","a","b"]
+
+## shutdown
+ok - the launch exits zero on SIGINT: 0
+ok - nothing listens on the launch's port once it has stopped: true
+
+one really launched `bun run up --no-open --replay` process over a home this driver made; the screen is the page's own sidebar entry and the Workspace Apps page; every state is reached through the page's controls except the untested record, which is hand-written because no route creates a credential-less record; the connector's service and the service its tools act on are fixtures this run serves; no run was started, so no container was created and no Docker resource was touched.
+RESULT: PASS (27/27)

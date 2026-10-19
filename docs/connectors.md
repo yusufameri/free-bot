@@ -235,6 +235,77 @@ against the vendor's own REST surface. The delete test then moves `composio.ts` 
 runs `bun run typecheck` and `bun test`, asserting exit 0, a real pass count, and no `composio.test.ts`
 in the run, before restoring the file and checking its sha256 is the one it had.
 
+## The Connect apps screen (U8.4)
+
+The export's `Connect apps` entry is the sidebar footer's row (`UX.md:24`), and the Workspace nav's
+`Apps` row lands on the same screen. Both open `Apps and connectors` inside the Workspace page
+shell U6.8 landed, so the screen carries no chrome of its own: it replaces `#page` the way Skills,
+Rules and Settings do.
+
+The gallery holds one row per connector record. A row shows the label, the endpoint, a monogram and
+the state tag, and rows that need a person sort above healthy ones. `What this screen does not
+carry` lists the deltas below, in the export's card vocabulary. A row opens a detail page with the
+endpoint, the credential's reference, the last probe's time, the state's own sentence, the last
+probe's words and the tools the server offered.
+
+`Add` takes the connector's name, endpoint, header name and credential. The id is a slug of the
+name, and a second connector with the same name takes the next suffix rather than rotating the
+first one's credential. The form posts `connect_connector`, which saves the credential first and the
+record second, then probes. The screen re-reads the list through `list_connectors` after the save,
+so the row is the store's own answer rather than the form's.
+
+Each state offers the controls it can honour:
+
+| state | failure control | other controls |
+| --- | --- | --- |
+| `connected` | none | `Test`, `Remove` |
+| `unreachable` | `Retry` | `Reconnect` (replaces the credential and probes), `Test`, `Remove` |
+| `untested` | `Authorize` | `Test`, `Remove` |
+
+`Remove` asks first, because it takes the record and the vault line together.
+
+The three states are reached with real data in the driver, not described:
+
+- `connected` is the fixture MCP server accepting the exact bearer value the form sent;
+- `unreachable` is a connector pointed at a closed port, and the detail line is the route's own
+  `detail` string, asserted equal to `list_connectors`' answer;
+- `untested` is a record put in `connectors.json` by hand with no line in `connectors.env`, because
+  no route creates a credential-less record. `Authorize` then saves one and the same record becomes
+  `connected`.
+
+The credential input is a password field. It is cleared the moment its call answers, refused or not,
+and no fact the screen exposes can carry it. The driver's census asserts the vault holds the
+credential at mode 600 (the positive control), and that no response body, no record file, no DOM
+text, no source file and no artifact line carries it.
+
+### What the screen does not carry
+
+- **The Composio adapter kind.** The registry builds every record from its `url` as an
+  `McpConnector`, and `connectorRowSchema` has no adapter-kind field. A connector pointed at a
+  person's own Composio MCP endpoint works today, and the screen cannot label it as the Composio
+  adapter. Adding the field is a protocol change no unit owns.
+- **The `bash` arm.** `bash` is declared in the run's tool table as `kind: "sandbox"`. It is not a
+  connector, has no record, and does not appear on this screen.
+- **Five states in the export, three in the record.** `Added but not signed in` reads as `untested`
+  and `Disconnected` reads as `unreachable`. `Needs auth` and `Disabled by team admin` need record
+  fields that do not exist.
+- **`Reopen`.** There is no app catalog. A connector is a record in this install.
+- **`Accounts` and `Add another account`.** The vault holds one credential line per connector id.
+- **Per-tool switches.** Tools are listed as the server offered them. A switch needs a permission
+  field on the record. Every connector tool is destructive and parks at the run's gate today.
+- **`Add secret`.** A Bot's named secrets are not a connector. No Bot secret record exists.
+
+### The screen's evidence
+
+`bun packages/verify/scripts/connect-apps.ts` is one really launched app over a home the driver
+made, its page in headless Chrome, and the fixture MCP server over the `emulate` GitHub fixture. It
+clicks the page's own controls for Add, Test, Retry, Authorize, Remove and the 390-wide layout, and
+commits one PNG per state plus `facts.jsonl` and `assert.txt` under
+`packages/verify/artifacts/connect-apps/<short-sha>/`. Each shot reads the page's facts before and
+after the capture and fails when they moved. `bun test packages/ui/src/connections.test.ts` covers
+the state derivation and the list model, and `bun test packages/verify/scripts/connect-apps.test.ts`
+covers the artifact's credential census and the capture guard.
+
 ## What remains
 
 - **The OAuth browser flow is a later unit.** This unit's sign-in is the credential a person already
@@ -249,8 +320,10 @@ in the run, before restoring the file and checking its sha256 is the one it had.
   and adding one is a protocol change no unit owns yet, so it is named here rather than half-built. A
   person can point a connector at their own Composio MCP endpoint today, which is the shape the
   registry already holds.
-- **U8.4 owns the "Connect apps" screen.** It renders the four arms and the three states above. It
-  must never show a header value, and it does not have one to show: no route answers with one.
+- **U8.4 landed the Connect apps screen.** It renders the record's three states and the four arms
+  this seam has: a person's own MCP server, the emulated fixture the evidence uses, a Composio MCP
+  endpoint, and the `bash` arm, which has no connector record and is named as a delta rather than
+  shown as a row. See "The Connect apps screen".
 - **Not in this unit:** streaming tool results, per-connector permission policy beyond the run's own
   gate, connector discovery outside a run's start (the route probe is the on-demand one), and any
   write path from a route to the sandbox.
