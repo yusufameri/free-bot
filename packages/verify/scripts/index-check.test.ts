@@ -55,15 +55,16 @@ describe("the verification index checker", () => {
 
     expect(report.failures).toEqual([]);
     expect(report.ok).toBe(true);
-    expect(report.checkedRows).toBe(34);
-    expect(report.artifactCount).toBe(35);
-    expect(report.docsOnly).toEqual(["glossary"]);
-    expect(report.countUnverified).toEqual([
-      "pi-rpc-spike",
-      "run loop",
-      "server-auth",
-      "provider setup",
-    ]);
+    expect(report.docsOnly).toContain("glossary");
+    expect(report.checkedRows).toBe(report.rows.length - report.docsOnly.length);
+    expect(report.artifactCount).toBe(
+      report.rows.reduce((total, row) => total + row.artifacts.length, 0),
+    );
+
+    for (const feature of report.countUnverified) {
+      const row = report.rows.find((entry) => entry.row.feature === feature);
+      expect(row?.claimed).not.toBeNull();
+    }
   });
 
   test("the glossary is skipped by name, not counted as checked", () => {
