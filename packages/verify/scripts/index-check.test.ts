@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -121,5 +121,76 @@ describe("the verification index checker", () => {
     expect(report.ok).toBe(false);
     expect(report.failures.join("\n")).toContain('row "launch"');
     expect(report.failures.join("\n")).toContain("is not a prefix");
+  });
+
+  test("a malformed artifact reference is rejected instead of read as its own prefix", () => {
+    const report = checkIndex(
+      repoRoot,
+      plant({
+        feature: "launch",
+        from: "artifacts/launch/8d892fa/assert.txt",
+        to: "artifacts/launch/8d892fa/assert.txt/missing",
+      }),
+    );
+
+    expect(report.ok).toBe(false);
+    const failures = report.failures.join("\n");
+    expect(failures).toContain('row "launch"');
+    expect(failures).toContain("not artifacts/<feature>/<short-sha>/<file>");
+  });
+
+  test("an unequal fraction is a claim, not a denominator the bare-count fallback can read", () => {
+    const report = checkIndex(
+      repoRoot,
+      plant({
+        feature: "launch",
+        from: "live-ui-verified (116 checks",
+        to: "live-ui-verified (115/116 checks",
+      }),
+    );
+
+    expect(report.ok).toBe(false);
+    const failures = report.failures.join("\n");
+    expect(failures).toContain('row "launch"');
+    expect(failures).toContain("claimed 115/116 checks");
+    expect(failures).toContain("artifact says 116/116");
+  });
+
+  test("a fraction whose denominator disagrees with the artifact is a mismatch", () => {
+    const report = checkIndex(
+      repoRoot,
+      plant({
+        feature: "launch",
+        from: "live-ui-verified (116 checks",
+        to: "live-ui-verified (116/117 checks",
+      }),
+    );
+
+    expect(report.ok).toBe(false);
+    expect(report.failures.join("\n")).toContain("claimed 116/117 checks");
+  });
+
+  test("an artifact whose final result is FAIL is rejected, with or without a count claim", () => {
+    const root = mkdtempSync(join(tmpdir(), "freebot-index-fail-"));
+    const dir = join(root, "packages", "verify", "artifacts", "demo", "abc1234");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "assert.txt"), "some output\nRESULT: FAIL (2/3)\n");
+    writeFileSync(join(dir, "uncounted.txt"), "some output\nRESULT: FAIL\n");
+    const header = "| Feature | Script | Verdict | Artifact | Commit | Date |";
+    const rule = "| --- | --- | --- | --- | --- | --- |";
+    const counted =
+      "| demo counted | `bun demo` | unit-test-verified (2 checks) | `packages/verify/artifacts/demo/abc1234/assert.txt` | abc1234 | 2026-10-19 |";
+    const uncounted =
+      "| demo uncounted | `bun demo` | docs-only | `packages/verify/artifacts/demo/abc1234/uncounted.txt` | abc1234 | 2026-10-19 |";
+    const table = join(root, "VERIFICATION.md");
+    writeFileSync(table, `${[header, rule, counted, uncounted].join("\n")}\n`);
+
+    const report = checkIndex(root, table);
+
+    expect(report.ok).toBe(false);
+    const failures = report.failures.join("\n");
+    expect(failures).toContain('row "demo counted"');
+    expect(failures).toContain('row "demo uncounted"');
+    expect(report.failures.filter((line) => line.includes("final result is FAIL"))).toHaveLength(2);
   });
 });

@@ -9,8 +9,10 @@
  *
  * 1. asserts the artifact file exists;
  * 2. asserts the artifact directory's short sha is a prefix of the row's Commit cell;
- * 3. asserts the check count the row claims equals the count in the artifact's own last `RESULT:`
- *    line.
+ * 3. asserts the artifact's own last `RESULT:` line is `PASS`, whether or not the row claims a
+ *    count, so a failing artifact cannot pass a row by matching a count it reports;
+ * 4. asserts the count a row claims equals the count in that line, comparing the whole fraction
+ *    when the claim is one.
  *
  * A row with no artifact path, the glossary for instance, is docs-only. It is skipped by name and
  * reported as skipped, never folded into the pass count. A row whose count claim cannot be compared
@@ -18,12 +20,14 @@
  * than failing: the claim is unknown, not contradicted. Four rows are in that state today, and the
  * report names every one.
  *
- * The claim is read from the Verdict cell. Three shapes count, in order: an explicit `N/N total`, a
- * fraction attached to a count noun (`39/39 assertions`, `7/7 browser probes`), and a bare
- * `N checks` or `N-check`. A fraction not attached to a count noun is not a claim: the
- * connector-credentials row says another driver "passes 57/57 at this head" while its own artifact
- * is the 37-check driver. The explicit total is what makes the composio row's `76/76 total` beat
- * its `19 new checks` in the same sentence.
+ * The claim is read from the Verdict cell. Two shapes count, in order: an explicit `N/M total` and a
+ * fraction attached to a count noun (`39/39 assertions`, `7/7 browser probes`, and equally
+ * `115/116 checks`, which claims a run that did not finish rather than falling through to the
+ * denominator). Failing both, a bare `N checks` or `N-check` claims N passed with the total unknown.
+ * A fraction not attached to a count noun is not a claim: the connector-credentials row says another
+ * driver "passes 57/57 at this head" while its own artifact is the 37-check driver. The explicit
+ * total is what makes the composio row's `76/76 total` beat its `19 new checks` in the same
+ * sentence.
  *
  * Run from the repo root: `bun packages/verify/scripts/index-check.ts [--table <path>]`.
  */
@@ -34,8 +38,12 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url)).replace(/\/$/, "");
 
-const ARTIFACT_PATH =
-  /packages\/verify\/artifacts\/[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+/g;
+/**
+ * The whole referenced path, not a valid prefix of one. The match runs on through any further
+ * path characters so `.../assert.txt/missing` is captured entire and then rejected by
+ * `ARTIFACT_SHAPE`, rather than being silently truncated to the `assert.txt` that does exist.
+ */
+const ARTIFACT_PATH = /packages\/verify\/artifacts\/[A-Za-z0-9._/-]+/g;
 const ARTIFACT_SHAPE = /^packages\/verify\/artifacts\/([^/]+)\/([^/]+)\/([^/]+)$/;
 const SHORT_SHA = /^[0-9a-f]{7,40}$/;
 
@@ -48,8 +56,11 @@ export type TableRow = {
 };
 
 export type ArtifactResult =
-  | { kind: "counted"; line: string; passed: number; total: number }
-  | { kind: "uncounted"; line: string };
+  | { kind: "counted"; line: string; status: "PASS" | "FAIL"; passed: number; total: number }
+  | { kind: "uncounted"; line: string; status: "PASS" | "FAIL" };
+
+/** A Verdict cell's claim: `total` is null for a bare `N checks`, set for a fraction. */
+export type CheckClaim = { passed: number; total: number | null };
 
 export type ArtifactCheck = {
   path: string;
@@ -59,7 +70,7 @@ export type ArtifactCheck = {
 
 export type RowCheck = {
   row: TableRow;
-  claimed: number | null;
+  claimed: CheckClaim | null;
   artifacts: ArtifactCheck[];
   problems: string[];
   countUnverified: boolean;
@@ -118,29 +129,53 @@ export function readResult(body: string): ArtifactResult | null {
   const lines = body.split("\n");
   for (let index = lines.length - 1; index >= 0; index -= 1) {
     const line = (lines[index] ?? "").trim();
-    if (!/^RESULT:\s*(PASS|FAIL)\b/.test(line)) continue;
+    const verdict = line.match(/^RESULT:\s*(PASS|FAIL)\b/);
+    if (verdict === null) continue;
+    const status = verdict[1] === "FAIL" ? "FAIL" : "PASS";
     const count = line.match(/\((\d+)\s*\/\s*(\d+)/);
-    if (count === null) return { kind: "uncounted", line };
-    return { kind: "counted", line, passed: Number(count[1]), total: Number(count[2]) };
+    if (count === null) return { kind: "uncounted", line, status };
+    return {
+      kind: "counted",
+      line,
+      status,
+      passed: Number(count[1]),
+      total: Number(count[2]),
+    };
   }
   return null;
 }
 
-/** The check count a Verdict cell claims, or null when it claims none. */
-export function claimedCheckCount(verdict: string): number | null {
+/**
+ * The check count a Verdict cell claims, or null when it claims none.
+ *
+ * A fraction attached to a count noun is a claim whatever its two sides are, so `115/116 checks`
+ * claims 115 of 116 and never falls through to the bare-count fallback, which would otherwise read
+ * the denominator as a claim of 116 and pass a row whose run did not finish. The same holds for an
+ * explicit `N/M total`. A bare `N checks` claims N passed with the total unknown.
+ */
+export function claimedCheckCount(verdict: string): CheckClaim | null {
   const total = verdict.match(/\b(\d+)\s*\/\s*(\d+)\s+total\b/);
-  if (total !== null && total[1] === total[2] && Number(total[1]) > 0) {
-    return Number(total[1]);
+  if (total !== null && Number(total[1]) > 0 && Number(total[2]) > 0) {
+    return { passed: Number(total[1]), total: Number(total[2]) };
   }
 
   for (const match of verdict.matchAll(
     /\b(\d+)\s*\/\s*(\d+)\s+(?:[A-Za-z][A-Za-z-]*\s+)?(?:checks?|assertions?|tests?|probes?)\b/g,
   )) {
-    if (match[1] === match[2] && Number(match[1]) > 0) return Number(match[1]);
+    if (Number(match[1]) > 0 && Number(match[2]) > 0) {
+      return { passed: Number(match[1]), total: Number(match[2]) };
+    }
   }
 
   const single = verdict.match(/\b(\d+)(?:-|\s+(?:[A-Za-z][A-Za-z-]*\s+)?)checks?\b/);
-  return single === null ? null : Number(single[1]);
+  return single === null ? null : { passed: Number(single[1]), total: null };
+}
+
+/** How a claim reads in a failure line, so a fraction is quoted as the fraction it is. */
+export function describeClaim(claim: CheckClaim): string {
+  return claim.total === null
+    ? `claimed ${claim.passed} checks`
+    : `claimed ${claim.passed}/${claim.total} checks`;
 }
 
 /**
@@ -247,12 +282,21 @@ export function checkIndex(root: string, tablePath: string): Report {
         }
       }
 
+      if (result !== null) {
+        const statusOk = result.status === "PASS";
+        const statusProblem = `row "${row.feature}": artifact's final result is ${result.status} — ${path}: ${result.line}`;
+        if (!statusOk) problems.push(statusProblem);
+        record(statusOk, statusProblem);
+      }
+
       if (claimed !== null) {
         if (result === null || result.kind === "uncounted") {
           rowUnverified = true;
         } else {
-          const countOk = claimed === result.passed;
-          const countProblem = `row "${row.feature}": claimed ${claimed} checks, artifact says ${result.passed}/${result.total} — ${path}`;
+          const countOk =
+            claimed.passed === result.passed &&
+            (claimed.total === null || claimed.total === result.total);
+          const countProblem = `row "${row.feature}": ${describeClaim(claimed)}, artifact says ${result.passed}/${result.total} — ${path}`;
           if (!countOk) problems.push(countProblem);
           record(countOk, countProblem);
         }
@@ -305,8 +349,9 @@ export function formatReport(report: Report, root: string): string {
     }
 
     if (row.countUnverified) {
+      const claim = row.claimed === null ? "a count claim" : describeClaim(row.claimed);
       lines.push(
-        `UNVERIFIED row "${name}": artifact exists at the commit, but claimed ${row.claimed} checks and the artifact carries no counted RESULT line — ${row.artifacts.map((artifact) => artifact.path).join(", ")}`,
+        `UNVERIFIED row "${name}": artifact exists at the commit, but ${claim} and the artifact carries no counted RESULT line — ${row.artifacts.map((artifact) => artifact.path).join(", ")}`,
       );
       continue;
     }
