@@ -84,7 +84,7 @@ describe("the driver relay", () => {
     server.stop(true);
   });
 
-  test("holds the first request carrying the pattern, then forwards it", async () => {
+  test("holds the first request carrying the pattern, then forwards later requests on that connection", async () => {
     const server = Bun.listen({
       hostname: "127.0.0.1",
       port: 0,
@@ -95,41 +95,43 @@ describe("the driver relay", () => {
       },
     });
     const relay = openRelay(server.port);
-    const answer = await new Promise<string>((resolve, reject) => {
-      Bun.connect({
-        hostname: "127.0.0.1",
-        port: relay.port,
-        socket: {
-          open(socket) {
-            socket.write("GET /slow HTTP/1.1\r\n\r\n");
-          },
-          data(_socket, chunk) {
-            resolve(new TextDecoder().decode(chunk));
-          },
+    const queued: string[] = [];
+    let waiting: ((value: string) => void) | null = null;
+    const next = (): Promise<string> =>
+      new Promise((resolve) => {
+        const ready = queued.shift();
+        if (ready !== undefined) resolve(ready);
+        else waiting = resolve;
+      });
+    const client = await Bun.connect({
+      hostname: "127.0.0.1",
+      port: relay.port,
+      socket: {
+        data(_socket, chunk) {
+          const text = new TextDecoder().decode(chunk);
+          if (waiting !== null) {
+            const resolve = waiting;
+            waiting = null;
+            resolve(text);
+          } else queued.push(text);
         },
-      }).catch(reject);
+      },
     });
     relay.hold("GET /slow", 250);
-    // The first connection above was opened before the hold was armed, so it is the control: the
-    // armed request is the next one.
     const startedHeld = Date.now();
-    const held = await new Promise<string>((resolve, reject) => {
-      Bun.connect({
-        hostname: "127.0.0.1",
-        port: relay.port,
-        socket: {
-          open(socket) {
-            socket.write("GET /slow HTTP/1.1\r\n\r\n");
-          },
-          data(_socket, chunk) {
-            resolve(new TextDecoder().decode(chunk));
-          },
-        },
-      }).catch(reject);
-    });
-    expect(answer).toBe("echo:GET /slow HTTP/1.1\r\n\r\n");
-    expect(held).toBe("echo:GET /slow HTTP/1.1\r\n\r\n");
+    client.write("GET /slow HTTP/1.1\r\n\r\n");
+    expect(await next()).toBe("echo:GET /slow HTTP/1.1\r\n\r\n");
     expect(Date.now() - startedHeld).toBeGreaterThanOrEqual(200);
+
+    const secondStarted = Date.now();
+    client.write("GET /fast HTTP/1.1\r\n\r\n");
+    const second = await Promise.race([
+      next(),
+      new Promise<string>((resolve) => setTimeout(() => resolve("timed out"), 500)),
+    ]);
+    expect(second).toBe("echo:GET /fast HTTP/1.1\r\n\r\n");
+    expect(Date.now() - secondStarted).toBeLessThan(200);
+    client.terminate();
     relay.stop();
     server.stop(true);
   });

@@ -213,7 +213,7 @@ describe("the failure path", () => {
     expect(outcome.verdict).toBe("RESULT: FAIL (1/2)");
     expect(outcome.proof).toBe(`${artifactLabel}/fake-red.log`);
     expect(outcome.proposed).toBe(
-      `file a unit: "sweep-main: fake-red is red against main". The fake-red driver (\`bun ${red}\`, the fake surface) exited 1 with "RESULT: FAIL (1/2)" at ${shortSha}. Proof ${artifactLabel}/fake-red.log.`,
+      `file a unit: "sweep-main: fake-red is red against ${shortSha}". The fake-red driver (\`bun ${red}\`, the fake surface) exited 1 with "RESULT: FAIL (1/2)" at ${shortSha}. Proof ${artifactLabel}/fake-red.log.`,
     );
 
     const log = readFileSync(join(checkout, artifactLabel, "fake-red.log"), "utf8");

@@ -134,6 +134,7 @@ export function openRelay(upstreamPort: number): Relay {
             const ms = holdMs;
             pair.timer = setTimeout(() => {
               pair.timer = null;
+              pair.held = false;
               if (pair.upstream !== null) flush(pair.upstream, pair.toUpstream);
             }, ms);
           }
