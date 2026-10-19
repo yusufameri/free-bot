@@ -115,6 +115,24 @@ export function mountThread(config: {
     config.onAnswer(decision, approvalId);
   }
 
+  /**
+   * A card whose run has ended has no answer to give, so its buttons go and the card carries the
+   * run's word instead of a person's. A replayed transcript can hold a card whose run the process
+   * never came back to (a restart, a stop) and its request is nobody's to approve now: leaving the
+   * buttons live would invite a click that reaches no parked call.
+   */
+  function closeWaitingCards(end: "cancelled" | "failed"): void {
+    for (const refs of approvalRefs.values()) {
+      for (const button of refs.actions.querySelectorAll("button")) button.disabled = true;
+      if (refs.card.dataset.decision === undefined) {
+        refs.card.dataset.decision = end;
+        refs.actions.append(
+          el("span", "approval-result", end === "cancelled" ? "run stopped" : "run failed"),
+        );
+      }
+    }
+  }
+
   function renderMessage(message: Message): void {
     if (idleNote !== null) idleNote.hidden = true;
     switch (message.type) {
@@ -285,13 +303,7 @@ export function mountThread(config: {
         threadEl.append(marker);
         if (message.payload.status === "cancelled") {
           // The card that was waiting has no answer now; a stop is not an allow and not a denial.
-          for (const refs of approvalRefs.values()) {
-            for (const button of refs.actions.querySelectorAll("button")) button.disabled = true;
-            if (refs.card.dataset.decision === undefined) {
-              refs.card.dataset.decision = "cancelled";
-              refs.actions.append(el("span", "approval-result", "run stopped"));
-            }
-          }
+          closeWaitingCards("cancelled");
         }
         break;
       }
@@ -307,6 +319,8 @@ export function mountThread(config: {
         marker.dataset.seq = String(message.seq);
         marker.dataset.runFailed = "true";
         threadEl.append(marker);
+        // A failed run never reads its parked approval, so the card it left behind closes too.
+        closeWaitingCards("failed");
         break;
       }
       case "stream.resumed": {
