@@ -88,6 +88,17 @@ const CANCEL_CLAIM =
 const OLD_CANCEL_CLAIM =
   "There is no control in the page that cancels a run. The route exists and the page has no button for it.";
 
+/**
+ * The later-phases sentence this page states after U8.4 landed the connectors screen in the page and
+ * U6.8 landed Settings as a Workspace page. Routines, skills, search and the computer view are still
+ * absent, so those clauses stay.
+ */
+const LATER_PHASES_CLAIM = "Routines, skills, search, and the computer view are later phases.";
+
+/** The sentence U8.4 and U6.8 made false, kept here so a page that reverts it fails this driver. */
+const OLD_LATER_PHASES_CLAIM =
+  "Settings, routines, skills, connectors in the page, search, and the computer view are later phases.";
+
 /** Regions whose own content extent is checked against their own box, per viewport. */
 const REGIONS = [
   ".landing",
@@ -556,6 +567,39 @@ async function main(): Promise<number> {
       "the cancel claim sits in the runs-today card and carries no Not built tag",
       cancelPlacement.card === "landing-runs" && cancelPlacement.tag === "",
       cancelPlacement,
+    );
+
+    section("the later-phases sentence this unit corrects");
+    const laterPhases = await evaluate<string>(
+      chrome.cdp,
+      session,
+      `document.querySelector('#landing-later-phases')?.textContent?.replace(/\\s+/g, ' ').trim() ?? ''`,
+    );
+    check(
+      "the later-phases sentence lists routines, skills, search and the computer view, and no longer lists Settings or in-page connectors",
+      laterPhases,
+      LATER_PHASES_CLAIM,
+    );
+    check(
+      "the old sentence listing Settings and in-page connectors as later phases is absent from the page",
+      (await renderedText(chrome.cdp, session)).includes(OLD_LATER_PHASES_CLAIM),
+      false,
+    );
+    const laterPhasesPlacement = await evaluate<{ card: string; tag: string }>(
+      chrome.cdp,
+      session,
+      `(() => {
+        const node = document.querySelector('#landing-later-phases');
+        return {
+          card: node?.closest('.listcard')?.id ?? '',
+          tag: node?.closest('.listrow')?.querySelector('.tag')?.textContent?.trim() ?? '',
+        };
+      })()`,
+    );
+    checkThat(
+      "the later-phases sentence sits in the Not built card and carries its tag",
+      laterPhasesPlacement.card === "landing-gaps" && laterPhasesPlacement.tag === "Not built",
+      laterPhasesPlacement,
     );
 
     const exportEyebrow = exportTextFor('class="eyebrow"');

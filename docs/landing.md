@@ -70,6 +70,15 @@ and `Stop run` settles a run at `cancelled` with every frame that arrived before
 moved the cap claim and U10.10 moved the cancel claim from the gap list into `What runs today`, and
 the landing driver holds both.
 
+U8.4 landed the connectors screen inside the page and U6.8 landed Settings as one of the seven
+Workspace pages, so the Not built sentence lists neither. It reads `Routines, skills, search, and the
+computer view are later phases.` The driver asserts that exact sentence from `#landing-later-phases`,
+that it sits in the Not built card under the card's tag, and that the old list is absent. The
+remaining four clauses are still true at this head: the Skills page holds no skill records, and the
+app has no routines, no content search route, and no computer view. The command palette filters the
+labels it already holds and its own comment says a quoted search would need a route the app does not
+have.
+
 ## The controls, and what each one does
 
 | Control | Does |
