@@ -1,0 +1,185 @@
+feature: sandbox-microsandbox
+command: bun packages/verify/scripts/sandbox-microsandbox.ts
+timestamp: 2026-10-19T06:47:13.773Z
+git sha: ea8323c7d4ee182a2285e47e40fcafe97395f547
+git sha short: ea8323c
+branch: u9.5-sandbox-selector
+runtime: bun 1.2.5 on darwin arm64
+msb: msb 0.7.8
+run token: 1thg-eb1234 (this run owns freebot.unit=u1.2-run-1thg-eb1234; the app's run owns u1.7)
+
+
+## the engine, and the proof that Docker is not reachable for this launch
+msb --version: msb 0.7.8
+msb doctor exit: 0
+PASS msb doctor reports a ready host
+docker on this driver's own PATH: /usr/local/bin/docker
+PATH directories dropped because they resolve a docker executable: /usr/local/bin
+docker on the launched app's PATH after the drop: (absent)
+PASS the PATH the launched app gets resolves no docker executable, so its backend cannot be Docker
+
+## the selector's refusals, run literal: each exits 2 and names the way out
+forced docker with the daemon down: exit 2
+forced docker said: $ bun apps/server/src/cli/up.ts --no-open --sandbox docker | freebot up: asked for docker by --sandbox=docker, but the Docker daemon did not answer; install and start Docker Desktop (docs/RUNNING.md, "What you need") | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS forcing docker with the daemon down exits 2 and names the daemon and RUNNING.md
+PATH directories dropped because they resolve an msb executable: /Users/yusufameri/.local/bin
+forced microsandbox with msb absent: exit 2
+forced microsandbox said: $ bun apps/server/src/cli/up.ts --no-open --sandbox microsandbox | freebot up: asked for microsandbox by --sandbox=microsandbox, but msb doctor did not answer; install microsandbox: `curl -fsSL https://install.microsandbox.dev | sh` (docs/microsandbox.md) | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS forcing microsandbox with msb absent exits 2 and names its install path
+auto with neither backend: exit 2
+auto with neither backend said: $ bun apps/server/src/cli/up.ts --no-open --sandbox auto | freebot up: no sandbox backend: the Docker daemon did not answer; msb doctor did not answer; install and start Docker Desktop (docs/RUNNING.md, "What you need") or install microsandbox: `curl -fsSL https://install.microsandbox.dev | sh` (docs/microsandbox.md) | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS auto with neither backend exits 2 and names both install paths
+
+## the app, launched by `bun run up --sandbox microsandbox` on that PATH
+launcher line: http://127.0.0.1:60497/#token=<redacted>
+launcher said: freebot up: page and run on 127.0.0.1:60497, tunnel on 127.0.0.1:60496
+launcher said: freebot up: sandbox backend microsandbox (chosen by --sandbox=microsandbox; msb doctor answered)
+launcher said: freebot up: model mode replay, keyless, replaying /Users/yusufameri/projects/free-bot-u9.5/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+launcher said: freebot up: vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1thg-eb1234-GjGzDL/provider.env absent
+launcher said: freebot up: bots under /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-bots-1thg-eb1234-HqTiZd; each Bot's workspace is mounted at /workspace and kept across runs
+launcher said: freebot up: connectors none; records /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1thg-eb1234-GjGzDL/connectors.json, credential vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1thg-eb1234-GjGzDL/connectors.env at mode 600
+launcher said: freebot up: the operator token rides the URL's fragment and is printed nowhere else
+launcher said: freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (microsandbox)
+PASS the launcher's own boot line names microsandbox and why: "freebot up: sandbox backend microsandbox (chosen by --sandbox=microsandbox; msb doctor answered)"
+GET http://127.0.0.1:60497/#token=<redacted> -> 200 text/html; charset=utf-8
+PASS the launched app serves its own printed URL: 200
+PASS create_bot -> 200 {"json":{"botId":"bot-local","name":"Micro Bot","role":"","purpose":"","createdAt":1792392410649,"threadCount":0}}
+PASS create_thread -> 200 {"json":{"threadId":"thread-1","botId":"bot-local","title":"New conversation","createdAt":1792392410658,"runs":[]}}
+
+## run one: a real approval answered on the app's own stream, inside a microsandbox
+PASS start_run("u9.5 run one: a command "...) -> 200 {"json":{"runId":"run-1"}}
+PASS run one is parked at its own gate: "bash {\"command\":\"echo native-should-not-run\"}"
+
+## the sandbox the app's run used is a microsandbox, inspected while it lived
+inspect run-1-st8ofq2y, while it lived: {"running":true,"labels":{"freebot.provider":"microsandbox","freebot.sandbox":"run-1-st8ofq2y","freebot.unit":"u1.7","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}}
+PASS the run's sandbox run-1-st8ofq2y carried freebot.provider=microsandbox while the run was in it
+PASS the run's sandbox carried its own name as freebot.sandbox: "run-1-st8ofq2y"
+PASS the run's sandbox was really running: true
+
+## run two: the same recorded turn, left parked, so the sweep meets a sandbox it does not own
+PASS start_run("u9.5 run two: the same r"...) -> 200 {"json":{"runId":"run-2"}}
+run two is waiting on approval "run-2:call_stub_11" for "bash {\"command\":\"echo native-should-not-run\"}", unanswered
+PASS run two is really parked at its own gate, unanswered, while the suite runs
+PASS the two runs parked on their own approvals: "run-1:call_stub_11" and "run-2:call_stub_11"
+the app's sandboxes this driver claimed: run-1-st8ofq2y, run-2-st8ofq2y
+PASS each of the app's two runs created its own sandbox: run-1-st8ofq2y, run-2-st8ofq2y
+PASS the parked run's own sandbox is alive for the suite to find: ["run-1-st8ofq2y=running","run-2-st8ofq2y=running"]
+
+## run one's gate answer: only that run's approval, so run two stays parked
+answered approval run-1:call_stub_11 with allow; "run-2:call_stub_11" stays unanswered
+frames run one produced: stream.hello, run.started, run.status, turn.started, tool_call.requested, approval.requested, run.status, run.started, run.status, turn.started, tool_call.requested, approval.requested, run.status, approval.resolved, run.status, tool_call.decision, tool_call.result, turn.ended, turn.started, message.text.delta, turn.ended, run.finished, run.status
+PASS run one reached run.finished on the app's own stream
+tool_call.result: {"toolCallId":"call_stub_11","ok":true,"denied":false,"output":"native-should-not-run\n","durationMs":41}
+PASS the recorded turn's own command ran inside the microsandbox: native-should-not-run
+PASS run two did not finish: its approval is still the one nobody answered
+the engine holds, under u1.7: run-2-st8ofq2y=running
+PASS run one's own sandbox is gone with its run, leaving run two's: ["run-2-st8ofq2y=running"]
+
+## the conformance suite, against microsandbox
+check create: handle={"provider":"microsandbox","id":"u91-main-1thg-eb1234"} engine=u91-main-1thg-eb1234 running=true labels={"freebot.provider":"microsandbox","freebot.sandbox":"u91-main-1thg-eb1234","freebot.unit":"u1.2-run-1thg-eb1234","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: freebot-sandbox:u0.6 sha256:130dbb9ca6a220ec8dcb8b4331d3d35656d6fda21e9dc3aadefdeda0e67bcce5 7 OCI layers, imported with msb image load; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=710a454a97f35b0662c3aefa6de598e00fcb0819fa77d0c1f5773b67e565d2c8 the sandbox's sha256sum=710a454a97f35b0662c3aefa6de598e00fcb0819fa77d0c1f5773b67e565d2c8 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=710a454a97f35b0662c3aefa6de598e00fcb0819fa77d0c1f5773b67e565d2c8
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in u91-no-link-1thg-eb1234: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), msb said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1thg-eb1234 is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1thg-eb1234:u91-round-trip ref=freebot-snapshot-u91-main-1thg-eb1234:u91-round-trip createdAt=2026-10-19T06:46:55.140Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1thg-eb1234 booted from freebot-snapshot-u91-main-1thg-eb1234:u91-round-trip reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1thg-eb1234 is gone from the engine
+check idle-kill: u91-idle-1thg-eb1234 (idleTtlMs=3000) stopped after 3088ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u92-decoy-foreign-unit-1thg-eb1234=running
+census before sweep, decoy (a sibling run of this suite): u92-decoy-sibling-run-1thg-eb1234=running
+census before sweep, decoy (no ownership label at all): u92-decoy-bare-1thg-eb1234=running
+census before sweep, this run: u91-main-1thg-eb1234=u91-main-1thg-eb1234
+census before sweep, this run: u91-no-link-1thg-eb1234=gone
+census before sweep, this run: u91-restored-1thg-eb1234=gone
+census before sweep, this run: u91-idle-1thg-eb1234=u91-idle-1thg-eb1234
+check sweep: removed 2 of 2 live sandboxes: u91-idle-1thg-eb1234, u91-main-1thg-eb1234
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+census after sweep, decoy unchanged: u92-decoy-foreign-unit-1thg-eb1234=running
+census after sweep, decoy unchanged: u92-decoy-sibling-run-1thg-eb1234=running
+census after sweep, decoy unchanged: u92-decoy-bare-1thg-eb1234=running
+PASS operation create
+PASS operation exec
+PASS operation upload
+PASS operation download
+PASS operation tunnel
+PASS operation snapshot-resume
+PASS operation idle-kill
+PASS operation sweep
+PASS the suite ran all 8 operations in order: create exec upload download tunnel snapshot-resume idle-kill sweep
+PASS the microsandbox backend passes all 8 operations
+
+## the sweep's decoy census, and the app-owned sandbox the sweep must leave alone
+the app's parked run's sandbox after the suite: run-2-st8ofq2y=running
+PASS the app's own sandbox is unchanged by the suite's sweep: 1 before, 1 after
+PASS the sandbox the sweep left alone is the app's parked run's own: ["run-2-st8ofq2y=running"]
+PASS the suite's own label u1.2-run-1thg-eb1234 holds nothing after its sweep
+decoy held after the suite: u92-decoy-foreign-unit-1thg-eb1234=running
+decoy held after the suite: u92-decoy-sibling-run-1thg-eb1234=running
+decoy held after the suite: u92-decoy-bare-1thg-eb1234=running
+PASS all 3 decoys of the suite's census survived the sweep and are still running
+PASS the driver's own cleanup removed every decoy it created
+
+## the negative control: two operations sabotaged, each where it must fail
+check create: handle={"provider":"microsandbox","id":"u91-main-1thg-eb1234b"} engine=u91-main-1thg-eb1234b running=true labels={"freebot.provider":"microsandbox","freebot.sandbox":"u91-main-1thg-eb1234b","freebot.unit":"u1.2-run-1thg-eb1234b","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: freebot-sandbox:u0.6 sha256:130dbb9ca6a220ec8dcb8b4331d3d35656d6fda21e9dc3aadefdeda0e67bcce5 7 OCI layers, imported with msb image load; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+sabotaged upload: create:true exec:true upload:false
+PASS the suite reports the sabotaged upload: upload failed
+sabotaged upload, literal: the uploaded bytes, hashed inside the sandbox: expected "d68f6714a54529c20443ed2f468e17c1e342c0950718acf15bebe914eb96723e", got "71cbdbeec021b7f441e73b1594b1a99d2366ffe2011bb71d9a0c256d616c34c3"
+check create: handle={"provider":"microsandbox","id":"u91-main-1thg-eb1234s"} engine=u91-main-1thg-eb1234s running=true labels={"freebot.provider":"microsandbox","freebot.sandbox":"u91-main-1thg-eb1234s","freebot.unit":"u1.2-run-1thg-eb1234s","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: freebot-sandbox:u0.6 sha256:130dbb9ca6a220ec8dcb8b4331d3d35656d6fda21e9dc3aadefdeda0e67bcce5 7 OCI layers, imported with msb image load; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=c55e0a0cac8e00fa82f1b77b4439c09a9eebce1a1fe2f3a6c2b6a9afdee7ba1d the sandbox's sha256sum=c55e0a0cac8e00fa82f1b77b4439c09a9eebce1a1fe2f3a6c2b6a9afdee7ba1d path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=c55e0a0cac8e00fa82f1b77b4439c09a9eebce1a1fe2f3a6c2b6a9afdee7ba1d
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in u91-no-link-1thg-eb1234s: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), msb said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1thg-eb1234s is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1thg-eb1234s:u91-round-trip ref=freebot-snapshot-u91-main-1thg-eb1234s:u91-round-trip createdAt=2026-10-19T06:47:07.325Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1thg-eb1234s booted from freebot-snapshot-u91-main-1thg-eb1234s:u91-round-trip reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1thg-eb1234s is gone from the engine
+check idle-kill: u91-idle-1thg-eb1234s (idleTtlMs=3000) stopped after 3094ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u92-decoy-foreign-unit-1thg-eb1234s=running
+census before sweep, decoy (a sibling run of this suite): u92-decoy-sibling-run-1thg-eb1234s=running
+census before sweep, decoy (no ownership label at all): u92-decoy-bare-1thg-eb1234s=running
+census before sweep, this run: u91-main-1thg-eb1234s=u91-main-1thg-eb1234s
+census before sweep, this run: u91-no-link-1thg-eb1234s=gone
+census before sweep, this run: u91-restored-1thg-eb1234s=gone
+census before sweep, this run: u91-idle-1thg-eb1234s=u91-idle-1thg-eb1234s
+check sweep: removed 2 of 2 live sandboxes: u91-idle-1thg-eb1234s, u91-main-1thg-eb1234s
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+sabotaged sweep: create:true exec:true upload:true download:true tunnel:true snapshot-resume:true idle-kill:true sweep:false
+PASS the suite reports the sabotaged sweep: sweep failed
+PASS every operation before the sabotaged sweep passed: 7 of 7
+sabotaged sweep, literal: the decoy another unit's label: expected "u92-decoy-foreign-unit-1thg-eb1234s=running", got "u92-decoy-foreign-unit-1thg-eb1234s=gone"
+
+## cleanup: the launched app stops the way a person stops it, and reaps its own sandboxes
+launcher exited with 0
+launcher said: freebot up: removed sandbox run-1-st8ofq2y (microsandbox)
+launcher said: freebot up: removed sandbox run-2-st8ofq2y (microsandbox)
+of the 2 sandboxes this driver claimed, gone after the app's own reap: 2
+PASS the launched app reaped every sandbox it created: run-1-st8ofq2y, run-2-st8ofq2y
+PASS nothing answers the printed URL after the app stopped
+sandboxes left under the suite's label u1.2-run-1thg-eb1234: 0
+PASS nothing survives under the suite's label u1.2-run-1thg-eb1234
+PASS the driver's own cleanup removed every decoy it created
+this driver left no sandbox behind
+
+PASS sandbox-microsandbox

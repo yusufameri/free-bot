@@ -1,0 +1,14 @@
+feature: scaffold
+command: bun run verify
+timestamp: 2026-10-19T06:46:15.313Z
+git sha: ea8323c7d4ee182a2285e47e40fcafe97395f547
+git sha short: ea8323c
+branch: u9.5-sandbox-selector
+runtime: bun 1.2.5 on darwin arm64
+
+step typecheck: PASS
+step tests: PASS
+step scaffold-shape: PASS
+step healthz: PASS
+
+PASS scaffold
