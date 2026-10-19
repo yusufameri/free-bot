@@ -679,9 +679,23 @@ function framesOfType(frames: readonly Frame[], type: string): Frame[] {
   return frames.filter((frame) => frame.type === type);
 }
 
+/** The run ids the thread's record already holds: what a replayed transcript's frames name. */
+async function runIdsOf(launch: Launched, botId: string): Promise<Set<string>> {
+  const answer = await post(launch, "list_threads", { botId });
+  const body = JSON.parse(answer.body) as {
+    json: { threads: Array<{ runs: Array<{ runId: string }> }> };
+  };
+  return new Set(body.json.threads.flatMap((thread) => thread.runs.map((run) => run.runId)));
+}
+
 /**
  * One run, driven the way the page drives it: a start control message, the approval card answered
  * with `allow`, then the run's end. The frames this run wrote are returned in order.
+ *
+ * A thread's transcript replays on every launch, so the stream carries the conversation that was
+ * already there as well as the run this call starts. Every wait below is scoped to the run id the
+ * new `run.started` frame carries, and the approval answered is that run's own card: a replayed
+ * `approval.requested` from an earlier run is a frame on the page, not this run's gate.
  *
  * A run that does not reach its end says what it did instead: the frames it wrote and the tail of
  * the launcher's own stderr go into the artifact before the failure, because a driver that hangs
@@ -701,33 +715,52 @@ async function runThrough(
     `ws://127.0.0.1:${input.launch.apiPort}/events?token=${input.launch.token}&thread_id=${input.threadId}&last_seen_seq=0`,
   );
   try {
-    const before = stream.frames.length;
+    const known = await runIdsOf(input.launch, input.botId);
     stream.send({
       type: "start",
       prompt: input.prompt,
       botId: input.botId,
       threadId: input.threadId,
     });
+    const started = await stream.next(
+      (frame) =>
+        frame.type === "run.started" &&
+        frame.payload.prompt === input.prompt &&
+        !known.has(frame.runId),
+      "this run's own start",
+    );
+    const runId = started.runId;
+    const own = (frame: Frame): boolean => frame.runId === runId;
     const requested = await stream.next(
-      (frame) => frame.type === "tool_call.requested" && frame.payload.toolName === input.toolName,
+      (frame) =>
+        own(frame) &&
+        frame.type === "tool_call.requested" &&
+        frame.payload.toolName === input.toolName,
       `the model to ask for ${input.toolName}`,
     );
+    log.note(`the run: ${runId}`);
     log.note(`the model's call: ${JSON.stringify(requested.payload)}`);
-    const parked = await stream.next((frame) => frame.type === "approval.requested", "the park");
+    const parked = await stream.next(
+      (frame) => own(frame) && frame.type === "approval.requested",
+      "the park",
+    );
     log.note(`the parked approval: ${JSON.stringify(parked.payload)}`);
     stream.send({ type: "answer", decision: "allow", approvalId: parked.payload.approvalId });
     log.note(`answered with allow`);
-    const failed = stream.next((frame) => frame.type === "run.failed", "the run to fail");
+    const failed = stream.next(
+      (frame) => own(frame) && frame.type === "run.failed",
+      "the run to fail",
+    );
     // The race below drops the loser: a rejection nobody kept must not surface as an unhandled one.
     void failed.catch(() => {});
     const finished = await Promise.race([
-      stream.next((frame) => frame.type === "run.finished", "the run's end"),
+      stream.next((frame) => own(frame) && frame.type === "run.finished", "the run's end"),
       failed.then((frame) => {
         throw new Error(`the run failed: ${JSON.stringify(frame.payload)}`);
       }),
     ]);
     log.note(`the run ended at seq ${finished.seq}`);
-    return stream.frames.slice(before);
+    return stream.frames.filter(own);
   } catch (error) {
     log.note(`the run did not finish: ${error instanceof Error ? error.message : String(error)}`);
     log.note(

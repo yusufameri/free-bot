@@ -36,7 +36,9 @@ import {
   BotStore,
   failureEntry,
   isTerminal,
+  type LogPort,
   type ProviderPort,
+  ProviderTurnError,
   type RunRecord,
   RunStore,
   runRunLoop,
@@ -304,7 +306,9 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
    * page reads: a crash between the two writes then leaves a conversation that already ends, and the
    * next boot sees the frame, keeps it, and fails the record instead of appending a second ending.
    * Each frame is asked for separately, since a crash can land between them, and a run the taxonomy
-   * has already failed at this code is repaired too, for the same reason.
+   * has already failed at this code is repaired too, for the same reason. An ending already on disk
+   * that the record never took is the run's own failure, so the boot finishes the record at that
+   * failure instead of relabeling it a restart.
    *
    * A `paused` run is left alone. The taxonomy parks a run that can be rejoined, so its status is a
    * wait rather than an ending, and a restart is not evidence that the wait ended. `queued`,
@@ -315,7 +319,12 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     if (record.status === "paused" || (isTerminal(record.status) && !restartFailure)) return;
     const ending = failureEntry("server_restart");
     const frames = runtime.log.since(0).filter((entry) => entry.frame.runId === record.id);
-    const hasFailFrame = frames.some((entry) => entry.frame.type === "run.failed");
+    const failFrame = frames.find((entry) => entry.frame.type === "run.failed");
+    const failReason =
+      failFrame !== undefined && failFrame.frame.type === "run.failed"
+        ? failFrame.frame.payload.reason
+        : null;
+    const hasFailFrame = failFrame !== undefined;
     const hasFailedStatus = frames.some(
       (entry) => entry.frame.type === "run.status" && entry.frame.payload.status === "failed",
     );
@@ -327,7 +336,53 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     });
     if (!hasFailFrame) logPort.append("run.failed", { reason: ending.copy });
     if (!hasFailedStatus) logPort.append("run.status", { runId: record.id, status: "failed" });
+    if (!restartFailure && failReason !== null && failReason !== ending.copy) {
+      // The ending on disk is the run's own, so a crash between its frames and the record write is
+      // finished at that failure rather than relabeled a restart. A restart's own ending carries the
+      // restart copy, so it keeps the path below. Only a setup settlement writes an ending before
+      // the record, so an in-flight run never reaches this branch.
+      runtime.store.fail(record.id, "internal_invariant", failReason);
+      return;
+    }
     runtime.store.fail(record.id, "server_restart", null);
+  }
+
+  /**
+   * Settle a run whose setup threw before the loop could begin.
+   *
+   * `start` creates the record and returns, and the work that prepares the loop (tool discovery, the
+   * provider's construction) runs after that. An error there used to leave the run `queued` with no
+   * frame and no owner, which the page can only render as a run that never starts. The record is
+   * failed at the taxonomy entry the error carries, or at the internal error when it carries none,
+   * with the frames the page reads written first, and a run that already reached a terminal state is
+   * left exactly as it is.
+   */
+  function settleSetupFailure(
+    runtime: ThreadRuntime,
+    logPort: LogPort,
+    runId: string,
+    error: unknown,
+  ): void {
+    const record = runtime.store.get(runId);
+    if (record === undefined || isTerminal(record.status)) return;
+    const detail =
+      error instanceof ProviderTurnError
+        ? error.detail
+        : error instanceof Error
+          ? error.message
+          : String(error);
+    const carried = error instanceof ProviderTurnError ? error.code : null;
+    // `RunStore.fail` refuses a code the taxonomy parks. A setup error has no parked state, so a
+    // carried code that would pause is reported as the internal error instead of thrown.
+    const code =
+      carried !== null && failureEntry(carried).status === "failed"
+        ? carried
+        : "internal_invariant";
+    // The frames go first, as in `settleAbandoned`: a crash between the two writes leaves a
+    // conversation that already ends, which the next boot finishes rather than leaving queued.
+    logPort.append("run.failed", { reason: detail });
+    logPort.append("run.status", { runId, status: "failed" });
+    runtime.store.fail(runId, code, detail);
   }
 
   function openRuntime(thread: ThreadRecord): ThreadRuntime {
@@ -510,48 +565,53 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
           for (const wake of [...runtime.waiters]) wake();
         },
       });
-      const injected = options.sandbox;
-      const sandbox =
-        typeof injected === "function"
-          ? injected()
-          : (injected ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT })));
       const run = (async () => {
-        // The run's table, discovered when the run starts: the landed arms, plus one arm per tool
-        // the run's connectors offer. A connector that cannot be reached right now contributes no
-        // arms and says so on the note line, rather than failing a run that the other tools could
-        // still finish.
-        const tools = await runToolsFor(connectors(), options.note);
-        const provider = await providerFor(input.prompt, tools);
-        return await runRunLoop(
-          {
-            sandbox: new RunToolExecutor(sandbox, tools),
-            provider,
-            gate: createReviewGate(grants, refusals, { now, tools }),
-            approvals,
-            store: runtime.store,
-            log: logPort,
-            now,
-            cancelled: () => cancelled.has(runId),
-          },
-          {
-            runId,
-            threadId: runtime.thread.id,
-            botId: bot.id,
-            prompt: input.prompt,
-            sandbox: {
-              name: `${runId}-${LAUNCH_TAG}`,
-              idleTtlMs: RUN_IDLE_TTL_MS,
-              // This Bot's workspace is the container's `/workspace`. A run's container is destroyed
-              // when the run ends, so the files a run produced would go with it; the mount is what
-              // makes them outlive the run, and it is what keeps one Bot's files out of another's.
-              mounts: [{ host: readerFor(bot.id).root, container: RUN_WORKSPACE }],
+        try {
+          const injected = options.sandbox;
+          const sandbox =
+            typeof injected === "function"
+              ? injected()
+              : (injected ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT })));
+          // The run's table, discovered when the run starts: the landed arms, plus one arm per tool
+          // the run's connectors offer. A connector that cannot be reached right now contributes no
+          // arms and says so on the note line, rather than failing a run that the other tools could
+          // still finish.
+          const tools = await runToolsFor(connectors(), options.note);
+          const provider = await providerFor(input.prompt, tools);
+          return await runRunLoop(
+            {
+              sandbox: new RunToolExecutor(sandbox, tools),
+              provider,
+              gate: createReviewGate(grants, refusals, { now, tools }),
+              approvals,
+              store: runtime.store,
+              log: logPort,
+              now,
+              cancelled: () => cancelled.has(runId),
             },
-            tools: runToolDefinitions(tools),
-            ...(options.spendCapNanoUsd === undefined
-              ? {}
-              : { spendCapNanoUsd: options.spendCapNanoUsd }),
-          },
-        );
+            {
+              runId,
+              threadId: runtime.thread.id,
+              botId: bot.id,
+              prompt: input.prompt,
+              sandbox: {
+                name: `${runId}-${LAUNCH_TAG}`,
+                idleTtlMs: RUN_IDLE_TTL_MS,
+                // This Bot's workspace is the container's `/workspace`. A run's container is destroyed
+                // when the run ends, so the files a run produced would go with it; the mount is what
+                // makes them outlive the run, and it is what keeps one Bot's files out of another's.
+                mounts: [{ host: readerFor(bot.id).root, container: RUN_WORKSPACE }],
+              },
+              tools: runToolDefinitions(tools),
+              ...(options.spendCapNanoUsd === undefined
+                ? {}
+                : { spendCapNanoUsd: options.spendCapNanoUsd }),
+            },
+          );
+        } catch (error) {
+          settleSetupFailure(runtime, logPort, runId, error);
+          return undefined;
+        }
       })();
       inflight.push(run);
       return { runId };
