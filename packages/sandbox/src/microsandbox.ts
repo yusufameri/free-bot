@@ -64,6 +64,8 @@ export const MSB_SNAPSHOT_NAME = /^[a-z0-9][a-z0-9._-]{0,62}$/;
 const TUNNEL_HANDSHAKE_TIMEOUT_MS = 5000;
 /** How long a lifecycle postcondition may take to become true in the engine's own account. */
 const MSB_LIFECYCLE_TIMEOUT_MS = 10_000;
+/** Engine statuses that mean a stop is still finishing; a start issued in that window is lost. */
+const MSB_SETTLING_STATUSES = new Set(["draining", "stopping"]);
 const DESKTOP_FOLLOW_UP =
   "the screen channel (Xvfb + noVNC) lands in Phase 2; the interface carries it now so boat and E2B implement it without a redesign";
 
@@ -414,8 +416,11 @@ export class MicrosandboxAdapter implements SandboxProvider {
 
   async resume(handle: SandboxHandle): Promise<void> {
     this.#require(handle);
+    // The engine reports "draining" while `msb stop` finishes; a `msb start` issued in that window
+    // is accepted and then lost with the stop, leaving the sandbox stopped.
+    await this.#awaitSettled(handle.id, MSB_LIFECYCLE_TIMEOUT_MS);
     await this.#lifecycle(["start", handle.id], /already running/i);
-    await this.#awaitRunning(handle.id, true, MSB_LIFECYCLE_TIMEOUT_MS);
+    await this.#awaitRunning(handle.id, true, MSB_LIFECYCLE_TIMEOUT_MS, true);
     const key = liveKey(handle);
     const existing = this.#live.get(key);
     if (existing === undefined) {
@@ -612,8 +617,8 @@ export class MicrosandboxAdapter implements SandboxProvider {
     throw msbFailure(args, outcome);
   }
 
-  /** Wait, bounded, for the engine to report a sandbox running (or not), so a postcondition holds. */
-  async #awaitRunning(name: string, want: boolean, timeoutMs: number): Promise<void> {
+  /** Wait, bounded, for the engine to leave a still-finishing stop ("draining"/"stopping"). */
+  async #awaitSettled(name: string, timeoutMs: number): Promise<void> {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
       const outcome = await msbOutcome(["inspect", name, "--format", "json"]);
@@ -629,9 +634,51 @@ export class MicrosandboxAdapter implements SandboxProvider {
       } catch {
         return;
       }
-      if (status === "") return;
-      if ((status === "running") === want) return;
+      if (status === "" || !MSB_SETTLING_STATUSES.has(status)) return;
       await Bun.sleep(100);
+    }
+  }
+
+  /** Wait, bounded, for the engine to report a sandbox running (or settled not running), so a
+   * postcondition holds. A stop reports "draining" while it finishes; that is not yet stopped.
+   * With `strict`, a timeout throws instead of returning, so resume() cannot claim success for a
+   * sandbox that never came back.
+   */
+  async #awaitRunning(
+    name: string,
+    want: boolean,
+    timeoutMs: number,
+    strict = false,
+  ): Promise<void> {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+      const outcome = await msbOutcome(["inspect", name, "--format", "json"]);
+      if (outcome.exitCode !== 0) {
+        if (!strict) return;
+      } else {
+        let status = "";
+        try {
+          status = (
+            (JSON.parse(outcome.stdout.toString("utf8")) as { status?: unknown }).status ?? ""
+          )
+            .toString()
+            .trim()
+            .toLowerCase();
+        } catch {
+          status = "";
+        }
+        if (want ? status === "running" : status !== "" && !MSB_SETTLING_STATUSES.has(status)) {
+          return;
+        }
+        if (status === "" && !strict) return;
+      }
+      await Bun.sleep(100);
+    }
+    if (strict) {
+      throw new SandboxError(
+        "msb_cli",
+        `the sandbox ${name} did not report ${want ? "running" : "stopped"} within ${timeoutMs}ms`,
+      );
     }
   }
 
