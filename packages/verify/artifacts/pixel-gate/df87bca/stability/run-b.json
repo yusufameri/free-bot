@@ -1,11 +1,11 @@
 {
   "feature": "pixel-gate",
-  "command": "bun packages/pixel-gate/src/cli.ts --artifact /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/opencode/u6.7a-run-b",
-  "commit": "da448a02ae4107f7130e138dcc6a9a7b5a57227c",
-  "shortSha": "da448a0",
-  "branch": "u6.7a-pixel-gate",
-  "dirty": true,
-  "startedAt": "2026-10-19T05:59:55.785Z",
+  "command": "bun packages/pixel-gate/src/cli.ts --artifact /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/opencode/u6.7a-followup-run-f",
+  "commit": "df87bca9d6eabe678ad703b58a777cac427ece43",
+  "shortSha": "df87bca",
+  "branch": "u6.7a-coderabbit-followup",
+  "dirty": false,
+  "startedAt": "2026-10-19T06:55:43.386Z",
   "runtime": "bun 1.2.5 on darwin arm64",
   "chrome": "chrome Chrome/155.0.8059.85",
   "fonts": {
@@ -19,17 +19,17 @@
     "geistResolves": false
   },
   "app": {
-    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-Ujbdck",
-    "url": "http://127.0.0.1:52636/#token=<redacted>",
+    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-mF8qZc",
+    "url": "http://127.0.0.1:62003/#token=<redacted>",
     "botId": "bot-local",
     "threadId": "thread-1",
     "provider": "replay",
-    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-Ujbdck/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-Ujbdck)"
+    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-mF8qZc/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-mF8qZc)"
   },
   "exportSource": {
     "file": "design/prototype-84c6b185/freebot-prototype.html",
     "initialScreenReplacements": 1,
-    "servedAt": "http://127.0.0.1:52638/"
+    "servedAt": "http://127.0.0.1:62005/"
   },
   "viewports": [
     {
@@ -47,15 +47,15 @@
         "visible": 0
       },
       "content": {
-        "differing": 45224,
-        "total": 137160,
-        "share": 0.3297171186934966,
-        "meanAbsolute": 6.527214566929134,
+        "differing": 78336,
+        "total": 194760,
+        "share": 0.4022181146025878,
+        "meanAbsolute": 7.293079944547135,
         "maxChannel": 255,
-        "visible": 44288
+        "visible": 77130
       },
       "chromeRegions": 0,
-      "contentRegions": 2,
+      "contentRegions": 3,
       "whole": {
         "differing": 143862,
         "total": 288000,
@@ -440,15 +440,15 @@
         "visible": 0
       },
       "content": {
-        "differing": 59240,
-        "total": 189540,
-        "share": 0.31254616439801625,
-        "meanAbsolute": 12.09514086736309,
+        "differing": 95216,
+        "total": 251940,
+        "share": 0.3779312534730491,
+        "meanAbsolute": 11.273246606334842,
         "maxChannel": 255,
-        "visible": 57723
+        "visible": 93421
       },
       "chromeRegions": 0,
-      "contentRegions": 2,
+      "contentRegions": 3,
       "whole": {
         "differing": 142740,
         "total": 329160,
@@ -2436,15 +2436,15 @@
         "visible": 0
       },
       "content": {
-        "differing": 230807,
-        "total": 629077,
-        "share": 0.36689785193227537,
-        "meanAbsolute": 8.454839789087822,
+        "differing": 302220,
+        "total": 897681,
+        "share": 0.3366674798731398,
+        "meanAbsolute": 7.980046363908783,
         "maxChannel": 255,
-        "visible": 227963
+        "visible": 296043
       },
       "chromeRegions": 4,
-      "contentRegions": 5,
+      "contentRegions": 6,
       "whole": {
         "differing": 358630,
         "total": 1049088,
@@ -2920,15 +2920,15 @@
         "visible": 0
       },
       "content": {
-        "differing": 250585,
-        "total": 815955,
-        "share": 0.30710639679884305,
-        "meanAbsolute": 7.566020491326115,
+        "differing": 323352,
+        "total": 1133531,
+        "share": 0.28526083538959235,
+        "meanAbsolute": 7.122182586978212,
         "maxChannel": 255,
-        "visible": 247142
+        "visible": 316369
       },
       "chromeRegions": 4,
-      "contentRegions": 5,
+      "contentRegions": 6,
       "whole": {
         "differing": 384480,
         "total": 1296000,
@@ -3404,15 +3404,15 @@
         "visible": 0
       },
       "content": {
-        "differing": 371153,
-        "total": 1459755,
-        "share": 0.2542570499844152,
-        "meanAbsolute": 5.719947696702529,
+        "differing": 443920,
+        "total": 1844111,
+        "share": 0.24072303673694262,
+        "meanAbsolute": 5.557894698312628,
         "maxChannel": 255,
-        "visible": 367630
+        "visible": 436857
       },
       "chromeRegions": 4,
-      "contentRegions": 5,
+      "contentRegions": 6,
       "whole": {
         "differing": 535070,
         "total": 2073600,

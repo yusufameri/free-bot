@@ -42,11 +42,20 @@ function parse(argv: readonly string[]): Args {
   let write = true;
   let artifact: string | undefined;
   let stabilityPair: readonly [string, string] | undefined;
-  for (let at = 0; at < argv.length; at++) {
+  let at = 0;
+  /** The value after a flag, so a bare or empty flag fails instead of silently changing what runs. */
+  const take = (flag: string): string => {
+    const next = argv[++at];
+    if (next === undefined || next.startsWith("--") || next.length === 0) {
+      throw new Error(`${flag} needs a value`);
+    }
+    return next;
+  };
+  for (; at < argv.length; at++) {
     const arg = argv[at];
     switch (arg) {
       case "--viewport":
-        viewport = argv[++at];
+        viewport = take("--viewport");
         break;
       case "--repeat":
         repeat = true;
@@ -58,14 +67,11 @@ function parse(argv: readonly string[]): Args {
         write = false;
         break;
       case "--artifact":
-        artifact = argv[++at];
+        artifact = take("--artifact");
         break;
       case "--stability": {
-        const a = argv[++at];
-        const b = argv[++at];
-        if (a === undefined || b === undefined) {
-          throw new Error("--stability needs two run.json paths");
-        }
+        const a = take("--stability");
+        const b = take("--stability");
         stabilityPair = [a, b];
         break;
       }

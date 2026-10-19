@@ -27,7 +27,7 @@ region exceeds its tolerance.
 | `--repeat` | Capture each viewport twice and diff the two captures against each other. |
 | `--json` | The per-viewport summary as JSON on stdout, with the human transcript on stderr. |
 | `--no-write` | Print without writing the artifact directory. |
-| `--artifact <path>` | Write the artifact somewhere other than the convention. |
+| `--artifact <path>` | Write the artifact somewhere other than the convention. A directory that already exists and is not empty is refused, never cleared. |
 | `--stability <a> <b>` | Compare two committed `run.json` files instead of running. Exits non-zero if any chrome region's differing-pixel count moved. |
 
 The artifact directory is `packages/verify/artifacts/pixel-gate/<short-sha>/`, holding `assert.txt`,
@@ -75,14 +75,16 @@ stale, and a same-run pair cancels it.
 
 ## The tests
 
-`bun test packages/pixel-gate/src` drives 62 tests over the three modules whose arithmetic a
+`bun test packages/pixel-gate/src` drives 66 tests over the three modules whose arithmetic a
 verdict depends on. The diff tests call `diffRegion` and `digestImage` directly, and those two
 functions are injected into the browser with `Function.prototype.toString`, so the tests drive the
 same bytes the diff page runs rather than a re-implementation of them. The region tests drive the
 snapping, the absence rule and the delta's sign over boxes written by hand. The report tests drive
 the summing, the two-run proof and the JSON emitter, including the one shape that got a baseline
 artifact a lint error: an array short enough to fit on its own but too long for the line its key
-puts it on.
+puts it on. They also drive the two-run proof's symmetry: a viewport or chrome region with no
+counterpart in the other run fails it, whether the counterpart is simply missing or shares its id
+under another kind.
 
 The artifact's JSON is written by `canonicalJson` in `report.ts` rather than by
 `JSON.stringify(value, null, 2)`, because `packages/verify/artifacts/**` is committed and
@@ -133,6 +135,11 @@ does not carry.
 **A zero over zero is an empty set, not a pass.** At 360x800 there are no chrome regions at all, so
 the transcript prints that sentence where a `0/0` would read as a perfect score. The shell's evidence
 at those widths is the box deltas and the content regions.
+
+**A clipped region is still checked.** When a rectangle has to be cut at the viewport's edge the
+region prints `clipped` instead of `measured`, and it keeps its pixel statistic. A clipped chrome
+region is summed into the chrome total and checked against the tolerance like any other. Only
+`absent` is left out, because a region that is not on screen has nothing to compare.
 
 ## Determinism
 
@@ -190,8 +197,8 @@ same pixels. The committed pair is under the baseline's `stability/`.
 
 ## The baseline
 
-The committed baseline is `packages/verify/artifacts/pixel-gate/da448a0/`, produced by
-`bun packages/pixel-gate/src/cli.ts --repeat` at commit `da448a0`, against the app as it stands. The app state
+The committed baseline is `packages/verify/artifacts/pixel-gate/df87bca/`, produced by
+`bun packages/pixel-gate/src/cli.ts --repeat` at commit `df87bca`, against the app as it stands. The app state
 is stated in `assert.txt`: booted as `bun run up --no-open --replay` over a fresh temporary
 `FREEBOT_HOME` and bots root, one Bot and one thread created over `/rpc` before the page opens, the
 vault this run's own three-line placeholder at mode 600 in that temporary directory. No key is read,
@@ -199,15 +206,15 @@ no request leaves the machine, and the real vault at `~/.freebot/provider.env` i
 
 | # | Viewport | Chrome regions | Chrome differing | Content share | Whole share | Boxes differing |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 360x800 | 0 | 0/0 (none on screen) | 32.9717% | 49.9521% | 3 |
-| 2 | 390x844 | 0 | 0/0 | 31.2546% | 43.3649% | 3 |
+| 1 | 360x800 | 0 | 0/0 (none on screen) | 40.2218% | 49.9521% | 3 |
+| 2 | 390x844 | 0 | 0/0 | 37.7931% | 43.3649% | 3 |
 | 3 | 430x932 | 0 | 0/0 | 43.8881% | 46.3095% | 3 |
 | 4 | 600x960 | 0 | 0/0 | 55.5591% | 56.6024% | 3 |
 | 5 | 820x1180 | 0 | 0/0 | 42.9239% | 43.8372% | 3 |
 | 6 | 1024x768 | 1 | 0/768 | 37.4262% | 37.6520% | 4 |
-| 7 | 1366x768 | 4 | 0/6118 | 36.6898% | 34.1849% | 4 |
-| 8 | 1440x900 | 4 | 0/7042 | 30.7106% | 29.6667% | 4 |
-| 9 | 1920x1080 | 4 | 0/8302 | 25.4257% | 25.8039% | 4 |
+| 7 | 1366x768 | 4 | 0/6118 | 33.6667% | 34.1849% | 4 |
+| 8 | 1440x900 | 4 | 0/7042 | 28.5261% | 29.6667% | 4 |
+| 9 | 1920x1080 | 4 | 0/8302 | 24.0723% | 25.8039% | 4 |
 
 **Chrome is zero everywhere it exists.** 0 differing pixels over 22,230 chrome pixels, summed across
 every viewport that carries a chrome region. With a tolerance of zero and every non-zero pixel a
@@ -242,7 +249,7 @@ no probed region's content is wider than its box, at every one. That is `mustAvo
 true` from the manifest, checked rather than assumed.
 
 **The whole-frame share is information, not a verdict,** and it is not what the command's exit code
-reads. It runs from 26.00% at 1920x1080 to 56.60% at 600x960. The export paints seven seeded Bots and
+reads. It runs from 25.80% at 1920x1080 to 56.60% at 600x960. The export paints seven seeded Bots and
 a run in progress; the app paints one real Bot and an idle thread. Two pages whose content differs
 render different pixels whatever their styling, which is why the content regions carry a named reason
 each and the exit code reads only the chrome regions.

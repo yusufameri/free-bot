@@ -129,31 +129,37 @@ export async function startApp(root: string, label: string): Promise<AppUnderTes
       for await (const chunk of stream) keep(decoder.decode(chunk));
     })();
   }
-  const deadline = Date.now() + 30_000;
-  while (!URL_LINE.test(out)) {
-    if (Date.now() > deadline) throw new Error(`the launcher printed no URL: ${out}\n${err}`);
-    await sleep(100);
+  let url = "";
+  let botId = "";
+  let threadId = "";
+  try {
+    const deadline = Date.now() + 30_000;
+    while (!URL_LINE.test(out)) {
+      if (Date.now() > deadline) throw new Error(`the launcher printed no URL: ${out}\n${err}`);
+      await sleep(100);
+    }
+    url = URL_LINE.exec(out)?.[1] ?? "";
+    const parsed = new URL(url);
+    const token = new URLSearchParams(parsed.hash.replace(/^#/, "")).get("token") ?? "";
+    botId = await rpc(
+      `http://${parsed.host}`,
+      token,
+      "create_bot",
+      { name: "Pixel Gate" },
+      "botId",
+    );
+    // A thread as well as a Bot, because the page opens its stream only for a selected thread
+    // (`apps/web/host/main.ts:294`: a token with no thread returns before the socket is made) and this
+    // run's subject is the armed operator shell rather than a half-connected one.
+    threadId = await rpc(`http://${parsed.host}`, token, "create_thread", { botId }, "threadId");
+  } catch (error) {
+    // A launcher that started but never answered is still this run's process, so it dies with the
+    // home it was given rather than outliving the run that spawned it.
+    proc.kill("SIGINT");
+    await proc.exited;
+    rmSync(home, { recursive: true, force: true });
+    throw error;
   }
-  const url = URL_LINE.exec(out)?.[1] ?? "";
-  const parsed = new URL(url);
-  const token = new URLSearchParams(parsed.hash.replace(/^#/, "")).get("token") ?? "";
-  const botId = await rpc(
-    `http://${parsed.host}`,
-    token,
-    "create_bot",
-    { name: "Pixel Gate" },
-    "botId",
-  );
-  // A thread as well as a Bot, because the page opens its stream only for a selected thread
-  // (`apps/web/host/main.ts:294`: a token with no thread returns before the socket is made) and this
-  // run's subject is the armed operator shell rather than a half-connected one.
-  const threadId = await rpc(
-    `http://${parsed.host}`,
-    token,
-    "create_thread",
-    { botId },
-    "threadId",
-  );
   return {
     url,
     home,
