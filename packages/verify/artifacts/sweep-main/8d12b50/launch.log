@@ -1,0 +1,54 @@
+driver: launch
+subject: one command, one URL, the whole click, and the reap on SIGINT
+command: bun packages/verify/scripts/launch.ts
+commit: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086 (8d12b50)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout
+exit: 1
+verdict: FAIL - driver crashed before the run finished: evaluate failed: Uncaught :: document.querySelector('header p').textContent
+seconds: 1
+
+--- the driver's own artifact: packages/verify/artifacts/launch/8d12b50/assert.txt ---
+
+feature: launch
+command: bun packages/verify/scripts/launch.ts
+timestamp: 2026-10-19T20:59:24.423Z
+git sha: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086
+git sha short: 8d12b50
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+pinned image: freebot-sandbox:u0.6
+transcript: packages/pi-bridge/fixtures/rpc-handshake.jsonl
+
+# launch live-ui frames - 2026-10-19T20:59:24.423Z
+worktree /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout/  head 8d12b50  branch HEAD
+DRIVER DISCLOSURE: the driver pins FREEBOT_PROVIDER=replay in every launch it spawns, so the model's turns are the committed transcript at packages/pi-bridge/fixtures/rpc-handshake.jsonl and the launcher's own keyed default is exercised by packages/verify/scripts/keyed-run.ts instead. The sandbox is the pinned image. The launcher, both listeners, the gate, the loop, the run store, the log, the container, the page, its stream and the reap are real.
+WHY THREE LAUNCHES: a launch parks only its first run. Once a run is allowed, the landed ledger holds that action's grant, and the same call again is refused as grant_consumed rather than parked (packages/review/src/policy.ts). So the parked state that shutdown needs, and the two answered states, are each driven from a launch that has not answered that action yet.
+
+## the one command
+containers before the first run (label freebot.unit=u1.7): 0
+ok - the launcher printed a URL of the required shape, token in the fragment: true
+the printed URL, redacted: http://127.0.0.1:60628/#token=<redacted>
+ok - and its stdout held exactly one line at that moment, the URL: 1
+ok - the launcher's own diagnostic names the same page port: "60628"
+ok - the page answers on the URL's port: 200
+ok - healthz answers on the URL's port: "{\"status\":\"ok\",\"service\":\"freebot-server\"}"
+the thread the page's stream follows: thread-1
+ok - a page stream with no token is refused: "refused"
+ok - a page stream with a wrong token is refused: "refused"
+ok - a page stream that names no thread is refused: the stream is a thread's, not the server's: "refused"
+ok - a page stream that names a thread this launch does not hold is refused: "refused"
+ok - a page stream with the URL's own token and a real thread is accepted: "open"
+ok - the token reaches the launch's output once, inside the URL and nowhere else: 1
+cdp: Chrome/155.0.8059.85, headless, remote debugging on the DevToolsActivePort file (dynamic)
+
+## the printed URL, clicked the way a person clicks it
+ok - first launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:60628","fragmentKey":"#token=","fragmentLength":50,"search":""}
+ok - first launch: operator mode is on, so the prompt box is the way in: false
+ok - first launch: the connection is live: "connected"
+FAIL - driver crashed before the run finished: evaluate failed: Uncaught :: document.querySelector('header p').textContent
+
+
+--- captured output (stdout and stderr) ---
+
+driver crashed: evaluate failed: Uncaught :: document.querySelector('header p').textContent
+assert.txt (partial, crashed): /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout/packages/verify/artifacts/launch/8d12b50/assert.txt

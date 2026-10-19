@@ -1,0 +1,105 @@
+driver: keyed-run
+subject: a real model's turn, typed into the page and answered at the gate
+command: bun packages/verify/scripts/keyed-run.ts
+commit: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086 (8d12b50)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout
+exit: 0
+verdict: RESULT: PASS (69/69)
+seconds: 10
+
+--- the driver's own artifact: packages/verify/artifacts/keyed-run/8d12b50/assert.txt ---
+
+feature: keyed-run
+command: bun packages/verify/scripts/keyed-run.ts
+timestamp: 2026-10-19T21:04:07.493Z
+git sha: 8d12b50198ea22efe3cecde6bbaebdef3fe1e086
+git sha short: 8d12b50
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+the year the container's own stdout is asserted to carry: 2026
+
+# keyed-run live-ui frames
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open`, with no provider flag, so the mode is `auto` and the model is whatever the vault selects. The prompt is typed into the page's own box. The model's request line, its text and its tool call are read out of the server's stderr, and the container's stdout is read off the page.
+containers before the first run (label freebot.unit=u1.7): 0
+
+## the launcher's own provider choice
+the printed URL, redacted: http://127.0.0.1:61486/#token=<redacted>
+the launcher's line: freebot up: model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)
+ok - the launcher selected the keyed path from the vault, with no flag asking for it: [true,true]
+ok - and named the vault's endpoint and model, and never the key's name or value: [true,true,false]
+the launcher's vault line: freebot up: vault /Users/yusufameri/.freebot/provider.env present, mode 600
+ok - the vault it read is present, so the keyed path is the real one: true
+the thread the page's stream follows: thread-1
+ok - a page stream with no token is refused: "refused"
+ok - a page stream with the URL's own token and a real thread is accepted: "open"
+cdp: Chrome/155.0.8059.85, headless, remote debugging on the DevToolsActivePort file (dynamic)
+
+## the prompt typed into the page, parked at the gate
+ok - first launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:61486","fragmentKey":"#token=","search":""}
+ok - first launch: operator mode is on, so the prompt box is the way in: false
+ok - frame 01-armed: the page held still across the capture: "{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"approvalStates\":[],\"toolStates\":[],\"turnPhases\":[],\"turnTexts\":[],\"renderedSeqs\":[],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null}"
+ok - frame 01-armed: the element the caption is about is inside the captured pixels (#operator): [true,0]
+ok - frame 01-armed: the driver's own DOM read agrees with the page's facts hook: [0,0,[],[]]
+ok - frame 01-armed: claim - no message is rendered: true
+ok - frame 01-armed: claim - the run has not finished: true
+ok - frame 01-armed: claim - no approval is pending: true
+frame 01-armed: 01-armed.png (89953 bytes, sha256 b0682e2c78bfc9c0fd7e4add07aa4ec8cb21e8289619ad33d7ebcef75bbf6507) - last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text ""
+ok - first launch: the run is the one the page started: "run run-1"
+ok - first launch: the prompt the page sent is the run's prompt: "Use the bash tool to print today's date in the sandbox, then tell me what it printed."
+ok - first launch: the buttons are the two real answers: ["Allow once","Deny"]
+ok - first launch: the run's own status is on the header and the parked cards, so it does not look frozen: ["awaiting_approval","awaiting approval","pending"]
+ok - first launch: the parked command is a bash call and is not the committed transcript's: [true,false]
+first launch: the card's command, read off the page: bash {"command":"date"}
+first launch: the assistant text before the park: "I'll check the date in the sandbox."
+ok - the parked run holds one live container, this launch's own: [1,1]
+containers while the run is parked: 1 (freebot-sbx-run-1-uztggvdy)
+ok - frame 02-parked: the page held still across the capture: "{\"lastSeq\":7,\"done\":false,\"frameCo
+[...]
+enied"],["deny"]]
+ok - frame 04-denied: claim - the approval card shows the deny decision: true
+ok - frame 04-denied: claim - a tool card shows denied with no output: true
+ok - frame 04-denied: claim - every rendered frame has a unique seq within the stream: true
+frame 04-denied: 04-denied.png (146757 bytes, sha256 b53f969b17c9e9e23d0c331f6f479977931a46c78f5329e45330305bc7d6b9f2) - last seq 16 · done true · turns 2 · cards [call_00_1dtnhyymf33febhizp1drucq:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "I ran `date` to print today's date in the sandbox, but the call was refused by the gate (a single refusal, which is final), so I did not retry or attempt a workaround — no date output was produced, and I won't guess at one. If you approve the command, I can run it right away."
+
+## shutdown, and the containers this driver created
+ok - the second launch: exits zero on SIGINT: 0
+the second launch: removed 1 container(s): freebot-sbx-run-1-1s7w9mf0
+ok - the second launch: every container it says it removed is gone from Docker: []
+ok - the first launch: exits zero on SIGINT: 0
+the first launch: removed 1 container(s): freebot-sbx-run-1-uztggvdy
+ok - the first launch: every container it says it removed is gone from Docker: []
+ok - the label's container set is back where it started: true
+ok - nothing listens on the first launch's page port: []
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+
+## frame index
+name -> asserted DOM facts -> caption
+01-armed -> last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text "" -> The URL the launcher printed, opened: the real engine is connected, the vault's model is selected, and the prompt box is the way in.
+  unmet claims: []
+02-parked -> last seq 7 · done false · turns 1 · cards [call_00_f0n4nhecq1qyfcdgegrth5bw:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text "I'll check the date in the sandbox." -> A prompt typed into the page parked at the gate: the approval card names the command the live model asked for, and the governed card waits for the answer.
+  unmet claims: []
+03-finished -> last seq 17 · done true · turns 2 · cards [call_00_f0n4nhecq1qyfcdgegrth5bw:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "The sandbox printed `Mon Oct 19 21:04:10 UTC 2026`, so today's date there is Monday, October 19, 2026, at about 21:04 UTC." -> Allowed once, then finished: the card shows the allow, the call ran in the container so its output block holds that container's own stdout, and the model's closing turn is on the page.
+  unmet claims: []
+04-denied -> last seq 16 · done true · turns 2 · cards [call_00_1dtnhyymf33febhizp1drucq:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "I ran `date` to print today's date in the sandbox, but the call was refused by the gate (a single refusal, which is final), so I did not retry or attempt a workaround — no date output was produced, and I won't guess at one. If you approve the command, I can run it right away." -> A second launch, denied: the same page and the same engine on a free port of its own, where the refusal is the card's denied state and no command runs.
+  unmet claims: []
+
+## the committed artifact carries no token and no key
+ok - frames: one committed PNG per key state: 4
+artifact: 01-armed.png (89953 bytes)
+artifact: 02-parked.png (128059 bytes)
+artifact: 03-finished.png (149675 bytes)
+artifact: 04-denied.png (146757 bytes)
+ok - no committed line carries any launch's operator token: [false,false]
+ok - no committed line carries a key-shaped literal: false
+
+chrome Google Chrome over CDP; really launched `bun run up --no-open`; the model is the vault's keyed provider; containers from the pinned image
+RESULT: PASS (69/69)
+
+
+--- captured output (stdout and stderr) ---
+
+RESULT: PASS (69/69)
+assert.txt: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout/packages/verify/artifacts/keyed-run/8d12b50/assert.txt
+frames: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-5AXli5/checkout/packages/verify/artifacts/keyed-run/8d12b50
