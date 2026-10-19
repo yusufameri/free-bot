@@ -139,7 +139,11 @@ export function parseUpArgs(
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
 ): UpArgs {
-  const fromEnv = envSandboxBackend(env);
+  const help = argv.includes("--help") || argv.includes("-h");
+  // The flag outranks the environment, and help must print whatever the environment says, so the
+  // environment is read only when neither is present: a misspelling in it cannot refuse a launch
+  // that asked for a backend by name or only wanted the usage.
+  const fromEnv = argv.includes("--sandbox") || help ? null : envSandboxBackend(env);
   const args: UpArgs = {
     apiPort: 0,
     tunnelPort: 0,
@@ -150,7 +154,7 @@ export function parseUpArgs(
     transcript: envPath("FREEBOT_TRANSCRIPT", env),
     connectors: envPath("FREEBOT_CONNECTORS", env),
     workspace: envWorkspace(env),
-    help: argv.includes("--help") || argv.includes("-h"),
+    help,
   };
   let next: UpArgs = args;
   for (let index = 0; index < argv.length; index++) {
@@ -172,7 +176,10 @@ export function parseUpArgs(
         next = { ...next, providerMode: "replay" };
         break;
       case "--sandbox": {
-        const value = path(argv[index + 1], flag);
+        const value = argv[index + 1];
+        if (value === undefined || value.length === 0 || value.startsWith("--")) {
+          throw new UpArgError(`${flag} needs a backend id: docker, microsandbox or auto`);
+        }
         const request = parseSandboxBackendValue(value);
         if (request === null) {
           throw new UpArgError(

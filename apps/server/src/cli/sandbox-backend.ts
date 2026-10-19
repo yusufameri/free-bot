@@ -40,7 +40,13 @@ export interface SandboxBackend {
   readonly id: SandboxBackendId;
   /** Open for the whole launch, label-scoped to this unit so its cleanup can never touch another (order 22). */
   readonly provider: SandboxProvider;
-  /** Whether this backend's engine still holds a sandbox by that name, running or stopped. */
+  /**
+   * Whether this backend's engine still holds a sandbox by that name, running or stopped.
+   *
+   * `false` means the engine answered and does not hold it: the only answer a reaper may act on.
+   * An engine that could not be asked throws SandboxBackendError, so a failed inspection is never
+   * read as an absent sandbox.
+   */
   holds(name: string): Promise<boolean>;
   /**
    * What this backend's engine calls the sandbox a run's spec named.
@@ -124,7 +130,16 @@ const BACKENDS: Readonly<Record<SandboxBackendId, BackendEntry>> = {
           "--format",
           "{{.Names}}",
         ]);
-        return outcome.exitCode === 0 && outcome.stdout.toString("utf8").trim() !== "";
+        // A listing that fails (the daemon down, for one) proves nothing about the container, so it
+        // is an inspection failure, not an empty answer.
+        if (outcome.exitCode !== 0) {
+          throw new SandboxBackendError(
+            `docker ps could not answer for ${containerName(name)}: ${
+              outcome.stderr.toString("utf8").trim() || `exit ${outcome.exitCode}`
+            }`,
+          );
+        }
+        return outcome.stdout.toString("utf8").trim() !== "";
       },
     }),
     install: 'install and start Docker Desktop (docs/RUNNING.md, "What you need")',
@@ -143,8 +158,17 @@ const BACKENDS: Readonly<Record<SandboxBackendId, BackendEntry>> = {
       provider: new MicrosandboxAdapter({ unit }),
       // microsandbox names a sandbox by the spec name itself, so there is nothing to rewrite.
       engineName: (name) => name,
-      holds: async (name) =>
-        (await msbOutcome(["inspect", name, "--format", "json"])).exitCode === 0,
+      holds: async (name) => {
+        const outcome = await msbOutcome(["inspect", name, "--format", "json"]);
+        if (outcome.exitCode === 0) return true;
+        const text = `${outcome.stdout.toString("utf8")}${outcome.stderr.toString("utf8")}`;
+        // The engine's own "not found" is the one nonzero answer that proves absence; any other is
+        // an inspection that failed and must not be read as gone.
+        if (/sandbox not found/i.test(text)) return false;
+        throw new SandboxBackendError(
+          `msb inspect could not answer for ${name}: ${text.trim() || `exit ${outcome.exitCode}`}`,
+        );
+      },
     }),
     install:
       "install microsandbox: `curl -fsSL https://install.microsandbox.dev | sh` (docs/microsandbox.md)",

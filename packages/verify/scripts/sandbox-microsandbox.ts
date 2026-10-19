@@ -259,18 +259,23 @@ interface App {
  * and a replay bills nobody (order 9).
  */
 async function launchApp(home: string, bots: string, path: string): Promise<App> {
-  const proc = Bun.spawn(["bun", "run", "up", "--no-open", "--sandbox", "microsandbox"], {
-    cwd: root,
-    env: {
-      ...process.env,
-      PATH: path,
-      FREEBOT_PROVIDER: "replay",
-      FREEBOT_HOME: home,
-      FREEBOT_WORKSPACE: bots,
+  // process.execPath, not "bun": the filtered PATH drops every directory that holds docker or msb,
+  // and on a host where bun shares a directory with either the name would not resolve.
+  const proc = Bun.spawn(
+    [process.execPath, "run", "up", "--no-open", "--sandbox", "microsandbox"],
+    {
+      cwd: root,
+      env: {
+        ...process.env,
+        PATH: path,
+        FREEBOT_PROVIDER: "replay",
+        FREEBOT_HOME: home,
+        FREEBOT_WORKSPACE: bots,
+      },
+      stdout: "pipe",
+      stderr: "pipe",
     },
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+  );
   let out = "";
   let err = "";
   for (const [stream, keep] of [
@@ -313,7 +318,7 @@ function refusedLauncher(
   sandbox: "docker" | "microsandbox" | "auto",
   env: Record<string, string> = {},
 ): { readonly code: number; readonly stderr: string } {
-  const proc = Bun.spawnSync(["bun", "run", "up", "--no-open", "--sandbox", sandbox], {
+  const proc = Bun.spawnSync([process.execPath, "run", "up", "--no-open", "--sandbox", sandbox], {
     cwd: root,
     env: {
       ...process.env,

@@ -100,7 +100,12 @@ describe("parseUpArgs", () => {
     expect(() => parseUpArgs(["--sandbox", "e2b"], {})).toThrow(
       '--sandbox names no backend: "e2b"; use docker, microsandbox or auto',
     );
-    expect(() => parseUpArgs(["--sandbox"], {})).toThrow("--sandbox needs a path");
+    expect(() => parseUpArgs(["--sandbox"], {})).toThrow(
+      "--sandbox needs a backend id: docker, microsandbox or auto",
+    );
+    expect(() => parseUpArgs(["--sandbox", "--no-open"], {})).toThrow(
+      "--sandbox needs a backend id: docker, microsandbox or auto",
+    );
     expect(() => envSandboxBackend({ FREEBOT_SANDBOX: "boat" })).toThrow(
       'FREEBOT_SANDBOX="boat" names no sandbox backend; use docker, microsandbox, auto',
     );
@@ -108,6 +113,15 @@ describe("parseUpArgs", () => {
     expect(envSandboxBackend({ FREEBOT_SANDBOX: "" })).toBeNull();
     expect(parseSandboxBackendValue("auto")).toBe("auto");
     expect(parseSandboxBackendValue("firecracker")).toBeNull();
+  });
+
+  test("an invalid FREEBOT_SANDBOX cannot refuse a flag or help", () => {
+    const flagWins = parseUpArgs(["--sandbox", "docker"], { FREEBOT_SANDBOX: "boat" });
+    expect(flagWins.sandbox).toBe("docker");
+    expect(flagWins.sandboxSource).toBe("--sandbox");
+    const help = parseUpArgs(["--help"], { FREEBOT_SANDBOX: "boat" });
+    expect(help.help).toBe(true);
+    expect(help.sandboxSource).toBe("default");
   });
 
   test("an unknown flag is refused and named", () => {

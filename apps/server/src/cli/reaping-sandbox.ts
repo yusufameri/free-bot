@@ -89,7 +89,15 @@ export class LaunchSandboxes {
     const surviving: string[] = [];
     for (const port of this.#ports) {
       for (const name of port.names()) {
-        if (await this.#backend.holds(name)) {
+        let held: boolean;
+        try {
+          held = await this.#backend.holds(name);
+        } catch {
+          // The engine could not be asked, which is not proof of absence: the check below reports
+          // the sandbox as surviving and the name is never forgotten.
+          held = true;
+        }
+        if (held) {
           try {
             await this.#backend.provider.delete({ provider: this.#backend.id, id: name });
           } catch {
@@ -118,8 +126,18 @@ export class LaunchSandboxes {
  */
 async function stillThere(backend: SandboxBackend, name: string): Promise<boolean> {
   for (let attempt = 0; attempt < REAP_ATTEMPTS; attempt++) {
-    if (!(await backend.holds(name))) return false;
+    let held: boolean;
+    try {
+      held = await backend.holds(name);
+    } catch {
+      return true; // Not an answer that it is gone, so it counts as still there.
+    }
+    if (!held) return false;
     await Bun.sleep(REAP_BACKOFF_MS);
   }
-  return await backend.holds(name);
+  try {
+    return await backend.holds(name);
+  } catch {
+    return true;
+  }
 }
