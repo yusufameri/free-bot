@@ -626,6 +626,8 @@ async function main(): Promise<void> {
   const second = home();
   /** The two homes every launch in this driver runs over. */
   const homes = [first, second];
+  /** The mode the placeholder vault was written at, read while it is still on disk. */
+  const vaultMode = statSync(join(first, "provider.env")).mode.toString(8).slice(-3);
   /** Every operator token the launcher printed, so the last check can search the artifact for them. */
   const tokens: string[] = [];
   /** Every file under the two homes, by content, read before `finally` removes them. */
@@ -1055,7 +1057,7 @@ async function main(): Promise<void> {
     [],
   );
   say(
-    `the vault this driver wrote, mode ${statSync(join(first, "provider.env")).mode.toString(8).slice(-3)}, and the bots roots the runs wrote into: ${join(first, "bots")}, ${join(second, "bots")}`,
+    `the vault this driver wrote, mode ${vaultMode}, and the bots roots the runs wrote into: ${join(first, "bots")}, ${join(second, "bots")}`,
   );
 
   say("");
