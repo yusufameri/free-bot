@@ -66,7 +66,7 @@ const GEOMETRY = [
 /** A computed style, read off one element per page, paired by the role the element plays. */
 const STYLES = [
   { field: "row radius", prop: "border-radius", mine: ".bot-row", theirs: ".sb-row" },
-  { field: "row name size", prop: "font-size", mine: ".bot-name", theirs: ".sb-row .name" },
+  { field: "row name size", prop: "font-size", mine: "#bot-list .name", theirs: ".sb-row .name" },
   { field: "label size", prop: "font-size", mine: "#sidebar-title", theirs: ".sb-label" },
   { field: "button radius", prop: "border-radius", mine: "#start", theirs: ".btn" },
   { field: "button size", prop: "font-size", mine: "#start", theirs: ".btn" },
