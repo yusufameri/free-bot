@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-18T06:45Z, against `origin/main` `44c25ae`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-19T06:54Z, against `origin/main` `9490ffe`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -9,9 +9,9 @@ The plan's §9.1 states when this run ends. Each line needs its evidence, or a n
 | Predicate line | State |
 | --- | --- |
 | 1. Phase 0 exit, six checks green, artifact and ledger row each | Met. Eleven units in wave 0 carry ledger rows. One caveat: the artifacts live under their own feature directories rather than a single `verify/artifacts/phase0/` index. |
-| 2. Phase 1 MVP, every feature merged and verified `live-ui-verified` | Nearly. The feature list below names the three items still short. |
+| 2. Phase 1 MVP, every feature merged and verified `live-ui-verified` | Nearly. The feature list below names the two partial lines. |
 | 3. Gates 1 to 8 hold | No open gates. G1 resolved with the vault key, G3 and G5 narrowed by the no-paid-dependency and no-account direction. |
-| 4. Phase 1.5, goldens deterministic across two CI runs | Not started. The design-parity track builds the harness the goldens would use, and order 36 makes its fidelity pass a pixel diff rather than a stored-golden comparison. |
+| 4. Phase 1.5, goldens deterministic across two CI runs | Partly. The harness exists: U6.7a landed the pixel gate, which renders the app and the export in one browser instance and diffs them against each other rather than against a stored golden, so the cross-run rasterization problem order 36 names is designed out. U6.7 runs that gate across the nine-viewport matrix. |
 | 5. Phases 2 to 7 | Not started. The tracks that opened instead are T6 design parity, T7 documentation truth, T8 connectors and sandbox backends, and T9 for the parked paid backends. |
 | 6. Exclusions labeled | Met. `docs/VERIFICATION.md` states that arbitrary third-party MCP servers and arbitrary models sit outside the absolute bar. |
 
@@ -36,9 +36,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-52 units in the register: 38 done, 5 running, 8 pending, 1 parked.
+53 units in the register: 42 done, 1 running, 9 pending, 1 parked.
 
-The verification ledger holds 40 rows: 12 `live-ui-verified`, 24 `unit-test-verified`, 2 `type-check-only`, 2 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 44 rows: 12 `live-ui-verified`, 28 `unit-test-verified`, 2 `type-check-only`, 2 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -82,18 +82,18 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U8.2 | Connector credentials in the person's own vault, with the routes that write and probe them | [#33](https://github.com/yusufameri/free-bot/pull/33) |
 | U9.1 | The sandbox conformance suite, the one gate every backend passes | [#32](https://github.com/yusufameri/free-bot/pull/32) |
 | U9.2 | The microsandbox backend, a local microVM that needs no account | [#38](https://github.com/yusufameri/free-bot/pull/38) |
+| U6.7a | The pixel gate: app and export rendered and diffed in one browser instance, no stored golden | [#44](https://github.com/yusufameri/free-bot/pull/44) |
+| U6.6 | The landing route at `/landing`, out of the app shell, with the repository's real state on it | [#45](https://github.com/yusufameri/free-bot/pull/45) |
+| U8.3 | The Composio adapter behind the seam, with its MCP endpoint path and the gate-8 delete test | [#43](https://github.com/yusufameri/free-bot/pull/43) |
+| U10.6 | The index checker: a row that disagrees with its artifact fails the build | [#46](https://github.com/yusufameri/free-bot/pull/46) |
 
 ## Not built yet
 
-Running now, five units, each in its own worktree with its own brief. Liveness is read from a climbing turn count rather than from a status field, and file writes are the progress signal, a distinction order 41 records because a file-write read alone called three live workers idle.
+Running now, one unit, in its own worktree with its own brief. Liveness is read from a climbing turn count rather than from a status field, and file writes are the progress signal, a distinction order 41 records because a file-write read alone called three live workers idle.
 
 | Unit | What it is | State |
 | --- | --- | --- |
-| U6.6 | The landing route | running, branch `u6.6-landing` |
-| U6.7a | The pixel-gate harness, built now so the fidelity pass becomes calibration | running, branch `u6.7a-gate-harness` |
-| U8.3 | The MCP and raw HTTP adapters | running, branch `u8.3-adapters` |
-| U9.5 | The sandbox selector and the sabotage-drill fix | running, branch `u9.5-selector` |
-| U10.1 | The verification record as data plus a check that reads it, dispatched by the reflection that found two rows disagreeing with their own artifacts | running, branch `u10.1-index-check` |
+| U9.5 | The sandbox selector and the sabotage-drill fix | running, branch `u9.5-sandbox-selector` |
 
 Queued, with no brief written yet, which is deliberate so a queued slice cannot go stale.
 
@@ -101,15 +101,16 @@ Queued, with no brief written yet, which is deliberate so a queued slice cannot 
 | --- | --- |
 | U6.5 | The item components and Bot status |
 | U6.7 | The fidelity pass: every screen diffed against the export across nine viewports, under order 36's pixel gate, with every delta fixed or written down. Its brief must carry the shell mask the gate needs, since the export's own baseline contradicts itself in two places |
-| U8.4 | The Composio adapter behind the vendor-neutral seam |
+| U8.4 | The Connect apps surface: the export's own entry and its states, and the brief must name whether a Composio connector arrives as a preset that fills the url field or through a protocol change no unit owns |
 | U9.3 | The E2B Embed backend for Linux hosts and CI |
+| U10.1 | The verification record as data plus a check that reads it. The checker half landed as U10.6; this carries what remains |
 | U10.2 | Artifact hygiene: a real prune script, an ignore rule for the Chrome profiles three throwaway capture scripts left behind, and one shared screenshot helper instead of the ten that hand-roll it |
 | U10.3 | The two partial MVP lines: a control for `cancel_run` in the page, and the spend-cap check wired into the run loop |
 | U10.4 | Transcript persistence, so a restart brings back the conversation and not only the runs |
 | U10.5 | A scheduled sweep that runs the live drivers against current main and files a unit when one fails |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
 
-Two notes on honesty that the surface now carries. The verification index is per-unit history rather than coverage of main: an artifact certifies the commit it was produced at, and twelve rows today certify code between 189 and 239 commits behind head, which order 40 and U10.5 address. And the four gaps below have no unit at all, named so they are not lost. A transcript does not survive a server restart, since the log is in memory. A run cannot be stopped from the page: `cancel_run` has a route and no control. The details pane's mobile drawers are unowned, so a narrow screen has no way into the pane. And the `Media` tab has no capture source, since this app never records a screen. Two of those four, the cancel control and the transcript, are MVP predicate lines rather than phase-later work, which is why U10.3 and U10.4 sit ahead of the rest of the queued list.
+Two notes on honesty that the surface now carries. The verification index is per-unit history rather than coverage of main: an artifact certifies the commit it was produced at, and all 37 rows that name a commit today certify code between 17 and 276 commits behind head, which order 40 and U10.5 address. And the four gaps below have no unit at all, named so they are not lost. A transcript does not survive a server restart, since the log is in memory. A run cannot be stopped from the page: `cancel_run` has a route and no control. The details pane's mobile drawers are unowned, so a narrow screen has no way into the pane. And the `Media` tab has no capture source, since this app never records a screen. Two of those four, the cancel control and the transcript, are MVP predicate lines rather than phase-later work, which is why U10.3 and U10.4 sit ahead of the rest of the queued list.
 
 ## Where things live
 
