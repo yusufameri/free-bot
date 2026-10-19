@@ -76,8 +76,12 @@ export interface ThreadState {
   grants: GrantRecord[];
   /** The approval whose card is waiting for an answer. */
   awaiting: string | null;
+  /** The run's last `run.status` payload, so a surface can name its terminal state. */
+  runStatus: string | null;
   done: boolean;
   failed: string | null;
+  /** The run ended at the taxonomy's `cancelled`, which carries no `run.finished` frame. */
+  cancelled: boolean;
   error: string | null;
   resumedFrom: number | null;
 }
@@ -96,11 +100,18 @@ export function initialState(): ThreadState {
     approvals: [],
     grants: [],
     awaiting: null,
+    runStatus: null,
     done: false,
     failed: null,
+    cancelled: false,
     error: null,
     resumedFrom: null,
   };
+}
+
+/** Whether a run is on screen and has not reached one of the three terminal states. */
+export function runInFlight(state: ThreadState): boolean {
+  return state.runId !== null && !state.done && state.failed === null && !state.cancelled;
 }
 
 export function markResumed(state: ThreadState, fromSeq: number): ThreadState {
@@ -161,16 +172,27 @@ function applyEvent(state: ThreadState, message: EventMessage): ThreadState {
   };
   switch (message.type) {
     case "run.started":
-      return { ...base, runId: message.runId, prompt: message.payload.prompt };
+      // A new run in this thread starts a new in-flight period: the previous run's terminal flags
+      // belong to the conversation behind it, not to this one.
+      return {
+        ...base,
+        runId: message.runId,
+        prompt: message.payload.prompt,
+        runStatus: "running",
+        done: false,
+        failed: null,
+        cancelled: false,
+      };
     case "run.finished":
-      return { ...base, done: true, awaiting: null };
+      return { ...base, done: true, awaiting: null, runStatus: "done" };
     case "run.failed":
-      return { ...base, failed: message.payload.reason };
+      return { ...base, failed: message.payload.reason, runStatus: "failed" };
     case "run.status":
-      // The run's status is carried but not rendered yet. The arm exists so the stream's new kind
-      // applies instead of hitting the exhaustive default below; the surface that shows a run's
-      // status adopts the payload in the unit that renders it.
-      return base;
+      return {
+        ...base,
+        runStatus: message.payload.status,
+        cancelled: message.payload.status === "cancelled",
+      };
     case "turn.started":
       return {
         ...base,

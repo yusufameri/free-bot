@@ -5,8 +5,8 @@
  * through oRPC's fetch adapter and `ws://…/rpc-ws` carries the same router through the Bun
  * WebSocket adapter, where `subscribe_events` streams. `GET /` serves the web host's page and
  * `ws://…/events` is the page's transport: the named thread's log, in the shape the page already
- * renders, plus the two control messages the page sends (`start`, `answer`). There is no second run
- * path: every one of them lands on `service.start`, `service.cancel` or `service.answer`.
+ * renders, plus the three control messages the page sends (`start`, `answer`, `cancel`). There is no
+ * second run path: every one of them lands on `service.start`, `service.cancel` or `service.answer`.
  *
  * The page's stream names the thread it is watching, because a log belongs to a thread. A socket
  * that asks for no thread, or for one this server does not hold, is refused before the upgrade
@@ -271,7 +271,7 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
     }
   }
 
-  /** The page's two control messages. Both land on the one run authority. */
+  /** The page's three control messages. Every one lands on the one run authority. */
   function control(text: string): void {
     let parsed: unknown;
     try {
@@ -287,7 +287,14 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
       prompt?: unknown;
       botId?: unknown;
       threadId?: unknown;
+      runId?: unknown;
     };
+    if (message.type === "cancel" && typeof message.runId === "string") {
+      // The page's own stop, on the fixture peer or any transport that carries control frames. The
+      // real server also serves the same authority at `POST /rpc/cancel_run`; both land here.
+      service.cancel(message.runId);
+      return;
+    }
     if (
       message.type === "answer" &&
       (message.decision === "allow" || message.decision === "deny") &&

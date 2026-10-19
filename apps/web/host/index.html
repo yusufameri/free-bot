@@ -217,6 +217,13 @@
     transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
   }
   .composer-submit:disabled { border-color: var(--border); background: none; color: var(--muted); }
+  .composer-stop {
+    flex: none; height: 38px; padding: 0 16px; border: 1px solid var(--border); border-radius: var(--radius);
+    background: none; color: var(--fg); font-size: 14px; font-weight: 500; white-space: nowrap;
+    transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  }
+  .composer-stop:hover:not(:disabled) { border-color: var(--fg); background: var(--hover); }
+  .composer-stop:disabled { border-color: var(--border); color: var(--muted); }
   #thread {
     flex: 1; overflow-y: auto; overflow-x: hidden; min-width: 0; min-height: 0;
     padding: 18px 14px 14px; display: flex; flex-direction: column;
@@ -896,6 +903,7 @@
   <form id="operator" hidden>
     <input id="prompt" class="composer-input" type="text" placeholder="what should the bot do?" autocomplete="off">
     <button id="start" class="composer-submit" type="submit">Start run</button>
+    <button id="stop" class="composer-stop" type="button" disabled data-in-flight="false" data-stopping="false">Stop run</button>
   </form>
   <main id="thread"><p class="idle" id="idle-note">Waiting for the run to start.</p></main>
   <section id="library" hidden data-library-state="idle">

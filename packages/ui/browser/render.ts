@@ -9,7 +9,7 @@
 
 import type { Message } from "@freebot/protocol";
 import type { FrameFacts } from "../src/frames.ts";
-import { applyMessage, initialState, type ThreadState } from "../src/thread.ts";
+import { applyMessage, initialState, runInFlight, type ThreadState } from "../src/thread.ts";
 
 declare global {
   interface Window {
@@ -50,6 +50,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
 
 export function mountThread(config: {
   onAnswer: (decision: "allow" | "deny", approvalId: string) => void;
+  /** The page's stop, sent for the run on screen. Omitted leaves the control inert. */
+  onCancel?: (runId: string) => void;
   autoAnswer?: "allow" | "deny" | null;
   /** Fired on every connection change, so a second surface (the banner) reads the same state. */
   onConnection?: (connection: Connection) => void;
@@ -58,6 +60,7 @@ export function mountThread(config: {
   const lastSeqEl = must<HTMLSpanElement>("#lastseq");
   const dupsEl = must<HTMLSpanElement>("#dups");
   const runEl = must<HTMLSpanElement>("#run");
+  const stopEl = must<HTMLButtonElement>("#stop");
   const resumeEl = must<HTMLDivElement>("#resume");
   const errorEl = must<HTMLDivElement>("#error");
   const threadEl = must<HTMLElement>("#thread");
@@ -73,6 +76,8 @@ export function mountThread(config: {
   >();
   let currentAssistant: HTMLElement | null = null;
   let state = initialState();
+  /** A click already sent, so the control cannot send the same stop twice. */
+  let stopRequested = false;
 
   function updateHeader(): void {
     lastSeqEl.textContent = `last seq ${state.lastSeq}`;
@@ -83,6 +88,22 @@ export function mountThread(config: {
       runEl.textContent = `run ${state.runId}`;
       runEl.dataset.runId = state.runId;
     }
+    if (state.runStatus === null) delete runEl.dataset.runStatus;
+    else runEl.dataset.runStatus = state.runStatus;
+  }
+
+  /**
+   * The stop control's whole state: present always, enabled only while a run is in flight and no
+   * stop is already on its way. The driver reads `disabled`, the label and these data attributes.
+   */
+  function updateStop(): void {
+    const inFlight = runInFlight(state);
+    stopEl.textContent = "Stop run";
+    stopEl.disabled = !inFlight || stopRequested || config.onCancel === undefined;
+    stopEl.dataset.inFlight = String(inFlight);
+    stopEl.dataset.stopping = String(stopRequested);
+    if (state.runId === null) delete stopEl.dataset.runId;
+    else stopEl.dataset.runId = state.runId;
   }
 
   function sendAnswer(decision: "allow" | "deny", approvalId: string): void {
@@ -262,6 +283,16 @@ export function mountThread(config: {
         marker.dataset.seq = String(message.seq);
         marker.dataset.runStatus = message.payload.status;
         threadEl.append(marker);
+        if (message.payload.status === "cancelled") {
+          // The card that was waiting has no answer now; a stop is not an allow and not a denial.
+          for (const refs of approvalRefs.values()) {
+            for (const button of refs.actions.querySelectorAll("button")) button.disabled = true;
+            if (refs.card.dataset.decision === undefined) {
+              refs.card.dataset.decision = "cancelled";
+              refs.actions.append(el("span", "approval-result", "run stopped"));
+            }
+          }
+        }
         break;
       }
       case "run.finished": {
@@ -328,7 +359,15 @@ export function mountThread(config: {
     announceConnection("error");
   }
 
+  stopEl.addEventListener("click", () => {
+    if (state.runId === null || !runInFlight(state) || stopRequested) return;
+    stopRequested = true;
+    updateStop();
+    config.onCancel?.(state.runId);
+  });
+
   updateHeader();
+  updateStop();
 
   return {
     apply(message: Message): void {
@@ -336,8 +375,10 @@ export function mountThread(config: {
       const applied = next.applied > state.applied;
       const announced = "seq" in message ? null : message.type;
       state = next;
+      if (message.type === "run.started") stopRequested = false;
       if (applied || announced === "stream.resumed") renderMessage(message);
       updateHeader();
+      updateStop();
       if (state.error !== null) showError(state.error);
     },
     setConnection(connection: Connection): void {
@@ -345,6 +386,7 @@ export function mountThread(config: {
     },
     reset(): void {
       state = initialState();
+      stopRequested = false;
       toolRefs.clear();
       approvalRefs.clear();
       currentAssistant = null;
@@ -361,7 +403,9 @@ export function mountThread(config: {
       delete errorEl.dataset.error;
       runEl.textContent = "";
       delete runEl.dataset.runId;
+      delete runEl.dataset.runStatus;
       updateHeader();
+      updateStop();
     },
     showError,
     state(): ThreadState {

@@ -38,6 +38,7 @@ import {
   type SandboxPort,
   SeqLog,
   type ThreadRecord,
+  type TokenPrices,
 } from "@freebot/core";
 import type { BotRefusal, EventMessage, ListFilesOutput, ReadFileOutput } from "@freebot/protocol";
 import { GrantStore } from "@freebot/review";
@@ -133,6 +134,17 @@ export interface RunServiceOptions {
   readonly mode?: ProviderMode;
   /** Read the vault, injectable so a test drives the keyed path with no key on the machine. */
   readonly readVaultEntry?: (path?: string) => VaultEntry | null;
+  /**
+   * The per-run spend ceiling in integer nano-USD. The loop consults it before each provider turn
+   * against the run's settled usage. Omitted means a run is uncapped.
+   */
+  readonly spendCapNanoUsd?: number;
+  /**
+   * What a token costs on the configured model, so the keyed adapter can turn the provider's token
+   * usage into the nano-USD the cap compares. Omitted means the adapter reports no cost and the cap
+   * has nothing to measure; the operator path configures both together.
+   */
+  readonly prices?: TokenPrices;
   /** Where one line per real turn goes. Defaults to stderr, so a driver can read the run's turns. */
   readonly note?: (line: string) => void;
   readonly now?: () => number;
@@ -308,6 +320,7 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
       prompt,
       destructive: (name) => destructiveTool(name, tools),
       tools: governedTools(tools),
+      ...(options.prices === undefined ? {} : { prices: options.prices }),
       ...(options.note === undefined ? {} : { note: options.note }),
     });
   }
@@ -473,6 +486,9 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
               mounts: [{ host: readerFor(bot.id).root, container: RUN_WORKSPACE }],
             },
             tools: runToolDefinitions(tools),
+            ...(options.spendCapNanoUsd === undefined
+              ? {}
+              : { spendCapNanoUsd: options.spendCapNanoUsd }),
           },
         );
       })();
@@ -483,6 +499,10 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     cancel(runId) {
       if (runOf(runId) === undefined) return false;
       cancelled.add(runId);
+      // A run parked at the gate is waiting on a promise, not on the loop's next check: wake it so
+      // the stop lands now. The loop reads its cancelled flag before the answer, so this wake
+      // records no decision.
+      approvals.cancelRun(runId);
       return true;
     },
 

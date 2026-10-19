@@ -348,6 +348,12 @@ export interface PendingApprovals extends ApprovalPort {
     readonly refusals: Set<string>;
     readonly ttlMs?: number;
   }): boolean;
+  /**
+   * Wake every approval one run is parked on, so a stop while the run waits reaches it now rather
+   * than at the approval's deadline. The loop checks its cancelled flag before reading the answer,
+   * so nothing here records a decision the human did not make.
+   */
+  cancelRun(runId: string): boolean;
   /** The approvals still waiting, for a surface that renders the cards. */
   pending(): string[];
 }
@@ -398,6 +404,18 @@ export function createPendingApprovals(
         grant: { grantId: grant.id, actionHash: grant.actionHash, expiresAt: grant.expiresAt },
       });
       return true;
+    },
+    cancelRun(runId) {
+      let woke = false;
+      for (const [approvalId, entry] of waiting) {
+        if (entry.request.runId !== runId) continue;
+        waiting.delete(approvalId);
+        // The loop sees its cancelled flag first and never reads this answer, so the deny is only
+        // the value that ends the wait; no grant and no refusal is recorded.
+        entry.resolve({ decision: "deny" });
+        woke = true;
+      }
+      return woke;
     },
     pending: () => [...waiting.keys()],
   };

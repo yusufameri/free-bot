@@ -14,7 +14,7 @@
 
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { type ProviderPort, ProviderTurnError } from "@freebot/core";
+import { type ProviderPort, ProviderTurnError, type TokenPrices } from "@freebot/core";
 import { KeyedProvider } from "./keyed-provider.ts";
 import {
   firstTurnForTools,
@@ -122,6 +122,8 @@ export interface ProviderOptions {
   readonly destructive?: (toolName: string) => boolean;
   /** The tools this run offers, so a replay picks the recorded block that asks for one of them. */
   readonly tools?: readonly string[];
+  /** What a token costs, so a keyed turn can report the cost the spend cap compares. */
+  readonly prices?: TokenPrices;
   readonly timeoutMs?: number;
 }
 
@@ -137,6 +139,7 @@ export async function createProviderPort(
       prompt: options.prompt,
       ...(options.note === undefined ? {} : { note: options.note }),
       ...(options.destructive === undefined ? {} : { destructive: options.destructive }),
+      ...(options.prices === undefined ? {} : { prices: options.prices }),
       ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
     });
   }

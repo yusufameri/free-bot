@@ -18,6 +18,7 @@
  * around the launcher, which is what makes the boot line the driver's own evidence.
  */
 
+import { nanoPerToken, type TokenPrices, usdToNano } from "@freebot/core";
 import type { ProviderMode } from "../provider.ts";
 import {
   envSandboxBackend,
@@ -45,6 +46,10 @@ export interface UpArgs {
   readonly connectors: string | null;
   /** The directory that holds the Bot registry and one workspace per Bot, or null for the default. */
   readonly workspace: string | null;
+  /** The per-run spend ceiling in integer nano-USD, or null when the environment sets none. */
+  readonly spendCapNanoUsd: number | null;
+  /** The token prices the keyed adapter prices a turn with, or null when none are configured. */
+  readonly prices: TokenPrices | null;
   /** Print the usage and exit. */
   readonly help: boolean;
 }
@@ -88,6 +93,12 @@ export const UP_USAGE = [
   "run writes outlive it. Every Bot has one of its own, and the Bot records live beside them.",
   "They default to ~/.freebot/bots and FREEBOT_WORKSPACE moves the whole set, which is how an",
   "evidence driver starts from no Bots at all.",
+  "",
+  "The run loop consults a per-run spend cap before every provider turn. FREEBOT_SPEND_CAP_USD",
+  "sets it (default 5.00). Cost comes from the provider's token usage priced by four variables,",
+  "FREEBOT_PRICE_INPUT_PER_MTOK, FREEBOT_PRICE_OUTPUT_PER_MTOK, FREEBOT_PRICE_CACHE_READ_PER_MTOK",
+  "and FREEBOT_PRICE_CACHE_WRITE_PER_MTOK; setting them all makes a keyed run cap-able, and with",
+  "none set the adapter reports no cost and the cap has nothing to measure.",
   "",
   "Ctrl-C stops the servers and removes the sandboxes this launch created.",
 ].join("\n");
@@ -135,6 +146,65 @@ function port(value: string | undefined, flag: string): number {
   return parsed;
 }
 
+/**
+ * The per-run cap `FREEBOT_SPEND_CAP_USD` names, as integer nano-USD. An absent value is null, and a
+ * malformed one is refused at boot rather than silently turning the cap off.
+ */
+export function envSpendCapNanoUsd(
+  env: Record<string, string | undefined> = process.env,
+): number | null {
+  const raw = env.FREEBOT_SPEND_CAP_USD;
+  if (raw === undefined || raw === "") return null;
+  try {
+    return usdToNano(raw);
+  } catch (error) {
+    throw new UpArgError(
+      `FREEBOT_SPEND_CAP_USD is not a USD amount: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+const PRICE_NAMES = {
+  inputPerMTok: "FREEBOT_PRICE_INPUT_PER_MTOK",
+  outputPerMTok: "FREEBOT_PRICE_OUTPUT_PER_MTOK",
+  cacheReadPerMTok: "FREEBOT_PRICE_CACHE_READ_PER_MTOK",
+  cacheWritePerMTok: "FREEBOT_PRICE_CACHE_WRITE_PER_MTOK",
+} as const;
+
+/**
+ * The four token prices the keyed adapter prices a turn with. All four or none: a partial set is a
+ * misspelling, not a policy, and three prices plus one default would silently understate a cost.
+ */
+export function envTokenPrices(
+  env: Record<string, string | undefined> = process.env,
+): TokenPrices | null {
+  const found = Object.entries(PRICE_NAMES).flatMap(([key, name]) => {
+    const value = env[name];
+    return value === undefined || value === "" ? [] : [[key, value] as const];
+  });
+  if (found.length === 0) return null;
+  if (found.length !== 4) {
+    const missing = Object.entries(PRICE_NAMES)
+      .filter(([, name]) => env[name] === undefined || env[name] === "")
+      .map(([, name]) => name);
+    throw new UpArgError(`token prices are all four or none; missing ${missing.join(", ")}`);
+  }
+  const prices: TokenPrices = {
+    inputPerMTok: env[PRICE_NAMES.inputPerMTok] ?? "",
+    outputPerMTok: env[PRICE_NAMES.outputPerMTok] ?? "",
+    cacheReadPerMTok: env[PRICE_NAMES.cacheReadPerMTok] ?? "",
+    cacheWritePerMTok: env[PRICE_NAMES.cacheWritePerMTok] ?? "",
+  };
+  try {
+    for (const value of Object.values(prices)) nanoPerToken(value);
+  } catch (error) {
+    throw new UpArgError(
+      `a configured token price is unusable: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+  return prices;
+}
+
 export function parseUpArgs(
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
@@ -154,6 +224,8 @@ export function parseUpArgs(
     transcript: envPath("FREEBOT_TRANSCRIPT", env),
     connectors: envPath("FREEBOT_CONNECTORS", env),
     workspace: envWorkspace(env),
+    spendCapNanoUsd: help ? null : envSpendCapNanoUsd(env),
+    prices: help ? null : envTokenPrices(env),
     help,
   };
   let next: UpArgs = args;

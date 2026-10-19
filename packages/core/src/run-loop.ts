@@ -30,6 +30,7 @@ import type { SandboxSpec } from "@freebot/sandbox";
 import { failureEntry, type RunFailureCode } from "./run-errors.ts";
 import type { RunStatus } from "./run-status.ts";
 import type { ParkedApproval, RunStore } from "./run-store.ts";
+import { checkSpendCap, nanoToUsd, type TokenCounts } from "./run-usage.ts";
 
 /** One tool as the provider sees it. Mirrors `packages/providers`' `ToolSpec` structurally. */
 export interface ToolDefinition {
@@ -46,10 +47,25 @@ export interface ProviderToolCall {
   readonly destructive: boolean;
 }
 
+/**
+ * One provider call's settled usage, as the adapter reports it. The loop records it on the run and
+ * consults the cap before the next turn; an adapter that cannot price a call reports nothing rather
+ * than a zero that would make a cap look enforced.
+ */
+export interface ProviderUsage {
+  readonly provider: string;
+  readonly model: string;
+  readonly tokens: TokenCounts;
+  /** Integer nano-USD for this call. */
+  readonly costNanoUsd: number;
+}
+
 /** One model turn: the assistant text it streamed and the calls it asked for. */
 export interface ProviderTurn {
   readonly text: readonly string[];
   readonly toolCalls: readonly ProviderToolCall[];
+  /** What this call cost, when the adapter knows. Absent for the replay provider. */
+  readonly usage?: ProviderUsage | null;
 }
 
 /** What a call did, or why it did not run. The same shape the log and the next turn carry. */
@@ -167,6 +183,12 @@ export interface RunLoopRequest {
   readonly approvalTtlMs?: number;
   /** Ceiling on provider turns, so a provider that never settles cannot spin forever. */
   readonly maxTurns?: number;
+  /**
+   * Per-run spend ceiling in integer nano-USD. The loop checks the run's settled usage before each
+   * provider turn: a total over the cap settles the run at `spend_cap` and the next call is never
+   * made. Omitted means the run is uncapped.
+   */
+  readonly spendCapNanoUsd?: number;
 }
 
 export interface RunLoopOutcome {
@@ -224,6 +246,7 @@ export async function runRunLoop(
   const now = ports.now ?? Date.now;
   const approvalTtlMs = request.approvalTtlMs ?? DEFAULT_APPROVAL_TTL_MS;
   const maxTurns = request.maxTurns ?? DEFAULT_MAX_TURNS;
+  const spendCapNanoUsd = request.spendCapNanoUsd;
   const cancelled = () => ports.cancelled?.() === true;
 
   let lastSeq = 0;
@@ -356,6 +379,9 @@ export async function runRunLoop(
 
     const answer = await ports.approvals.await(parked);
 
+    // A stop while the run is parked wakes the wait; the answer it woke with is not the human's.
+    if (cancelled()) return { kind: "settled", status: cancel() };
+
     if (answer.decision === "timeout") {
       return {
         kind: "settled",
@@ -429,6 +455,24 @@ export async function runRunLoop(
 
     while (true) {
       if (cancelled()) return outcome(cancel());
+      // The cap is read from the run's own settled usage, before this turn's provider call. A total
+      // over the ceiling ends the run here, so the call that would spend past it is never made.
+      if (spendCapNanoUsd !== undefined) {
+        const usage = store.get(request.runId)?.usage;
+        if (usage !== undefined) {
+          const check = checkSpendCap(usage, spendCapNanoUsd);
+          if (!check.ok) {
+            return outcome(
+              settle(
+                "spend_cap",
+                `settled spend ${nanoToUsd(check.spentNanoUsd)} USD exceeded the cap ${nanoToUsd(
+                  check.capNanoUsd,
+                )} USD by ${nanoToUsd(check.overByNanoUsd)} USD`,
+              ),
+            );
+          }
+        }
+      }
       if (turns >= maxTurns) {
         return outcome(
           settle(
@@ -447,6 +491,17 @@ export async function runRunLoop(
       } catch (error) {
         const code = error instanceof ProviderTurnError ? error.code : "internal_invariant";
         return outcome(settle(code, messageOf(error)));
+      }
+
+      // One call's settled usage, journaled under this turn's id so a replay cannot count it twice.
+      if (turn.usage !== undefined && turn.usage !== null) {
+        store.recordUsage(request.runId, {
+          usageId: `${request.runId}:turn-${turns}`,
+          provider: turn.usage.provider,
+          model: turn.usage.model,
+          tokens: turn.usage.tokens,
+          costNanoUsd: turn.usage.costNanoUsd,
+        });
       }
 
       for (const delta of turn.text) emit("message.text.delta", { text: delta });

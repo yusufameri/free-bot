@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { envProviderMode, envWorkspace, pageUrl, parseUpArgs, UP_USAGE } from "./args.ts";
+import {
+  envProviderMode,
+  envSpendCapNanoUsd,
+  envTokenPrices,
+  envWorkspace,
+  pageUrl,
+  parseUpArgs,
+  UP_USAGE,
+} from "./args.ts";
 import { envSandboxBackend, parseSandboxBackendValue } from "./sandbox-backend.ts";
 
 describe("parseUpArgs", () => {
@@ -14,6 +22,8 @@ describe("parseUpArgs", () => {
       transcript: null,
       connectors: null,
       workspace: null,
+      spendCapNanoUsd: null,
+      prices: null,
       help: false,
     });
   });
@@ -29,6 +39,8 @@ describe("parseUpArgs", () => {
       transcript: null,
       connectors: null,
       workspace: null,
+      spendCapNanoUsd: null,
+      prices: null,
       help: false,
     });
   });
@@ -46,6 +58,8 @@ describe("parseUpArgs", () => {
       transcript: "/tmp/turn.jsonl",
       connectors: "/tmp/c.json",
       workspace: null,
+      spendCapNanoUsd: null,
+      prices: null,
       help: false,
     });
     expect(parseUpArgs([], { FREEBOT_TRANSCRIPT: "/tmp/t.jsonl" }).transcript).toBe("/tmp/t.jsonl");
@@ -74,6 +88,38 @@ describe("parseUpArgs", () => {
     expect(envProviderMode({ FREEBOT_PROVIDER: "live" })).toBe("live");
     expect(envProviderMode({ FREEBOT_PROVIDER: "keyed" })).toBeNull();
     expect(envProviderMode({})).toBeNull();
+  });
+
+  test("FREEBOT_SPEND_CAP_USD sets the cap, and a malformed one is refused at boot", () => {
+    expect(parseUpArgs([], { FREEBOT_SPEND_CAP_USD: "0.25" }).spendCapNanoUsd).toBe(250_000_000);
+    expect(envSpendCapNanoUsd({})).toBeNull();
+    expect(envSpendCapNanoUsd({ FREEBOT_SPEND_CAP_USD: "" })).toBeNull();
+    expect(() => envSpendCapNanoUsd({ FREEBOT_SPEND_CAP_USD: "a dollar" })).toThrow(
+      "FREEBOT_SPEND_CAP_USD is not a USD amount",
+    );
+    expect(parseUpArgs(["--help"], { FREEBOT_SPEND_CAP_USD: "a dollar" }).help).toBe(true);
+  });
+
+  test("the four token prices are all four or none, and a finer-than-nano price is refused", () => {
+    const prices = {
+      FREEBOT_PRICE_INPUT_PER_MTOK: "3.00",
+      FREEBOT_PRICE_OUTPUT_PER_MTOK: "15.00",
+      FREEBOT_PRICE_CACHE_READ_PER_MTOK: "0.30",
+      FREEBOT_PRICE_CACHE_WRITE_PER_MTOK: "3.75",
+    };
+    expect(envTokenPrices(prices)).toEqual({
+      inputPerMTok: "3.00",
+      outputPerMTok: "15.00",
+      cacheReadPerMTok: "0.30",
+      cacheWritePerMTok: "3.75",
+    });
+    expect(envTokenPrices({})).toBeNull();
+    expect(() => envTokenPrices({ FREEBOT_PRICE_INPUT_PER_MTOK: "3.00" })).toThrow(
+      "token prices are all four or none",
+    );
+    expect(() =>
+      envTokenPrices({ ...prices, FREEBOT_PRICE_OUTPUT_PER_MTOK: "0.0000000001" }),
+    ).toThrow("a configured token price is unusable");
   });
 
   test("FREEBOT_WORKSPACE moves the Bots directory, and an empty one means the default", () => {
