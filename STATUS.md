@@ -102,7 +102,7 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 
 Nothing is running. The fleet is idle between coordinator turns, which is the state order 35 exists to shorten.
 
-Queued, with no brief written. Every unit that carries one has landed; the next five need briefs cut from the plan row before they can run.
+Queued, and every one of the five carries a brief at `briefs/<id>.md`: U8.4, U9.3, U10.1, U10.2, U10.5. That is read from the register and the briefs directory, not from prose.
 
 | Unit | What it is |
 | --- | --- |
