@@ -39,6 +39,18 @@
   }
   /* tokens:end */
 
+  /* The export's first family, vendored from the Geist project (SIL OFL 1.1, licence beside the
+     file). One variable face carries every weight the two stylesheets ask for. `font-display: block`
+     keeps a capture from ever holding the fallback: the page waits for the face rather than swapping
+     it under the screenshot. */
+  @font-face {
+    font-family: 'Geist';
+    src: url('/fonts/geist-var.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: block;
+  }
+
   /* ── base ────────────────────────────────────────────────────────────────
      The export's base rules (freebot-prototype.html:39-64). `color-scheme: dark` is not in the
      export and is here so the page's own form controls and scrollbars are dark while its chrome
@@ -111,13 +123,15 @@
   @media (max-width: 860px) {
     .shell[data-operator="true"] { grid-template-columns: minmax(0, 1fr); }
     #sidebar { display: none; }
+    #composer-wrap { padding: 10px 14px 12px; }
   }
 
   /* ── sidebar ─────────────────────────────────────────────────────────────
      The export's sidebar (freebot-prototype.html:212-247): a head row, a scrolling list, a pinned
-     foot. Sizes and radii are its `.sb-row`. */
-  .sb-head { display: flex; align-items: center; gap: 6px; padding: 12px 12px 6px; flex: none; }
-  .sb-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding: 0 10px 10px; }
+     foot. Sizes and radii are its `.sb-row`. The head's padding and the list's 2px top inset are the
+     export's own, so the list starts on the same device row. */
+  .sb-head { display: flex; align-items: center; gap: 6px; padding: 10px; flex: none; }
+  .sb-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding: 2px 10px 10px; }
   .sb-foot { flex: none; border-top: 1px solid var(--border); padding: 8px 10px; }
   #sidebar-title, #threads-title, .library-group-title {
     display: block; width: 100%; margin: 0; padding: 12px 4px 4px;
@@ -189,14 +203,23 @@
   /* ── the thread column ───────────────────────────────────────────────────
      The export's `.main` (freebot-prototype.html:250-380): a head row, the transcript that scrolls,
      the composer pinned at the bottom. */
+  /* The export's `.chead` (:251) is one 56px row: the Bot's name, its hint, and the controls on
+     the right, on `min-height: 53px` with 10px of padding. This header is that row. The three text
+     pieces shrink and truncate together, so the band stays one row at 360px rather than wrapping
+     into the four-row band it used to be. The live stream facts (`.meta`) move with the composer,
+     where the export keeps its own model hint. */
   header {
-    display: flex; flex-direction: column; gap: 2px; flex: none;
-    padding: 12px 14px 10px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; flex: none;
+    min-height: 56px; padding: 10px 14px; border-bottom: 1px solid var(--border);
   }
-  header h1 { font-size: 16px; letter-spacing: -0.01em; }
-  header p { font-size: var(--fs-meta); color: var(--muted); }
-  #bot-title { font-size: 14px; color: var(--fg); }
-  .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: var(--fs-meta); color: var(--muted); }
+  header h1 { flex: none; font-size: 16px; line-height: 1.2; letter-spacing: -0.01em; }
+  header p {
+    min-width: 0; font-size: var(--fs-meta); color: var(--muted);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  header p:first-of-type { flex: 0 1 auto; }
+  #bot-title { flex: 0 1 auto; font-size: 14px; color: var(--fg); }
+  .meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-meta); color: var(--muted); }
   .meta span { overflow-wrap: anywhere; }
   #resume, #error {
     flex: none; margin: 0; padding: 9px 14px; border-bottom: 1px solid var(--border);
@@ -205,7 +228,7 @@
   #resume { background: var(--fg-soft); color: var(--fg); }
   #error { border-bottom-color: var(--fg); color: var(--fg); font-weight: 600; }
   #resume[hidden], #error[hidden] { display: none; }
-  #tabs { display: flex; flex: none; gap: 6px; padding: 10px 14px 0; }
+  #tabs { display: flex; flex: none; gap: 6px; margin-left: auto; }
   .tab {
     height: 26px; padding: 0 11px; border: 1px solid var(--border); border-radius: 999px;
     background: none; color: var(--muted); font-size: 13px; white-space: nowrap;
@@ -213,7 +236,15 @@
   }
   .tab:hover { border-color: var(--fg); color: var(--fg); }
   .tab[data-active="true"] { background: var(--fg); border-color: var(--fg); color: var(--bg); }
-  #operator { display: flex; flex: none; gap: 8px; padding: 10px 14px 0; }
+  /* The export's `.composer-wrap` (:364) is the column's last child and the transcript's `flex: 1`
+     sibling, which is what pins it to the bottom edge. Its padding is the export's own; the live
+     meta line takes the place of the export's `.chint` hint row. */
+  #composer-wrap {
+    display: flex; flex-direction: column; gap: 6px; flex: none;
+    padding: 10px 22px 16px;
+  }
+  #composer-wrap[hidden] { display: none; }
+  #operator { display: flex; flex: none; gap: 8px; }
   #operator[hidden] { display: none; }
   .composer-input {
     flex: 1; min-width: 0; height: 38px; padding: 0 12px; border: 1px solid var(--border);
@@ -237,8 +268,13 @@
   .composer-stop:disabled { border-color: var(--border); color: var(--muted); }
   #thread {
     flex: 1; overflow-y: auto; overflow-x: hidden; min-width: 0; min-height: 0;
-    padding: 18px 14px 14px; display: flex; flex-direction: column;
+    padding: 18px 14px 14px; display: flex; flex-direction: column; justify-content: flex-end;
   }
+  /* The export's transcript rides its own end (`freebot-prototype.html:1086`, `scrollTop =
+     scrollHeight`), so a short conversation sits on the bottom edge rather than the top. The auto
+     margin keeps the first row reachable when a long transcript overflows, which a bare
+     `justify-content: flex-end` would clip. */
+  #thread > :first-child { margin-top: auto; }
 
   .idle { margin: 10px 0; font-size: var(--fs-meta); color: var(--muted); }
   .frame { display: block; min-width: 0; }
@@ -460,8 +496,6 @@
      The export's header carries the pane's own control (freebot-prototype.html:1040-1041): one row,
      the conversation's own words on the left and the control on the right. Its label is the export's
      `Details` and its state is `aria-pressed`, which is this app's one control for both directions. */
-  .head-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-  .head-titles { min-width: 0; }
   #aside-toggle { flex: none; }
 
   /* ── the details pane ────────────────────────────────────────────────────
@@ -747,6 +781,7 @@
      last because it is the strongest rule in the sheet, on purpose. The first-run screen is the same
      arrangement, for the same reason. */
   body[data-page="connect"] #tabs,
+  body[data-page="connect"] #composer-wrap,
   body[data-page="connect"] #operator,
   body[data-page="connect"] #thread,
   body[data-page="connect"] #library,
@@ -757,6 +792,7 @@
   body[data-page="connect"] .meta,
   body[data-page="connect"] #bot-title,
   body[data-page="first-run"] #tabs,
+  body[data-page="first-run"] #composer-wrap,
   body[data-page="first-run"] #operator,
   body[data-page="first-run"] #thread,
   body[data-page="first-run"] #library,
@@ -765,7 +801,8 @@
   body[data-page="first-run"] #banner,
   body[data-page="first-run"] #notices,
   body[data-page="first-run"] .meta,
-  body[data-page="first-run"] #bot-title { display: none; }
+  body[data-page="first-run"] #bot-title,
+  body[data-tab="library"] #composer-wrap { display: none; }
 </style>
 </head>
 <body>
@@ -807,20 +844,14 @@
   </aside>
   <section id="center">
   <header>
-    <div class="head-row">
-      <div class="head-titles">
-        <h1>freebot</h1>
-        <p>One thread. Local run. A real model when the vault holds a key, the committed replay when it does not.</p>
-      </div>
-      <button id="aside-toggle" class="btn btn-secondary btn-sm" type="button" aria-pressed="true" aria-label="Collapse the pane">Details</button>
-    </div>
+    <h1>freebot</h1>
+    <p>One thread. Local run. A real model when the vault holds a key, the committed replay when it does not.</p>
     <p id="bot-title"></p>
-    <div class="meta">
-      <span id="conn" data-connection="connecting">connecting</span>
-      <span id="run"></span>
-      <span id="lastseq" data-last-seq="0">last seq 0</span>
-      <span id="dups" data-duplicates-ignored="0">duplicates ignored: 0</span>
-    </div>
+    <nav id="tabs">
+      <button id="tab-conversation" class="tab" type="button" data-tab="conversation" data-active="true" aria-current="true">Conversation</button>
+      <button id="tab-library" class="tab" type="button" data-tab="library" data-active="false" aria-current="false">Library</button>
+    </nav>
+    <button id="aside-toggle" class="btn btn-secondary btn-sm" type="button" aria-pressed="true" aria-label="Collapse the pane">Details</button>
   </header>
   <div id="resume" hidden></div>
   <div id="error" hidden></div>
@@ -916,16 +947,20 @@
     <button id="provider-replay" type="button"></button>
     <p id="provider-replay-note"></p>
   </section>
-  <nav id="tabs">
-    <button id="tab-conversation" class="tab" type="button" data-tab="conversation" data-active="true" aria-current="true">Conversation</button>
-    <button id="tab-library" class="tab" type="button" data-tab="library" data-active="false" aria-current="false">Library</button>
-  </nav>
-  <form id="operator" hidden>
-    <input id="prompt" class="composer-input" type="text" placeholder="what should the bot do?" autocomplete="off">
-    <button id="start" class="composer-submit" type="submit">Start run</button>
-    <button id="stop" class="composer-stop" type="button" disabled data-in-flight="false" data-stopping="false">Stop run</button>
-  </form>
   <main id="thread"><p class="idle" id="idle-note">Waiting for the run to start.</p></main>
+  <div id="composer-wrap">
+    <div class="meta">
+      <span id="conn" data-connection="connecting">connecting</span>
+      <span id="run"></span>
+      <span id="lastseq" data-last-seq="0">last seq 0</span>
+      <span id="dups" data-duplicates-ignored="0">duplicates ignored: 0</span>
+    </div>
+    <form id="operator" hidden>
+      <input id="prompt" class="composer-input" type="text" placeholder="what should the bot do?" autocomplete="off">
+      <button id="start" class="composer-submit" type="submit">Start run</button>
+      <button id="stop" class="composer-stop" type="button" disabled data-in-flight="false" data-stopping="false">Stop run</button>
+    </form>
+  </div>
   <section id="library" hidden data-library-state="idle">
     <p id="library-note"></p>
     <p id="library-status" data-library-status="idle"></p>

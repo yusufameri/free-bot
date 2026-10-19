@@ -53,6 +53,23 @@ export const FREEZE_CSS = `*, *::before, *::after {
   scroll-behavior: auto !important;
 }`;
 
+/**
+ * The font the export assumes and this repo vendors: one Geist variable face, committed with its
+ * OFL licence at `apps/web/host/fonts/`. The app's own page declares the same `@font-face`; this
+ * injected copy is what makes the committed export use the same bytes, because the frozen export is
+ * never edited and its stylesheet only names the family. Both routes answer the same file, so the
+ * two pages resolve one face rather than two fallbacks that happen to measure alike.
+ */
+export const FONT_FILE = "apps/web/host/fonts/geist-var.woff2";
+export const FONT_ROUTE = "/fonts/geist-var.woff2";
+export const FONT_CSS = `@font-face {
+  font-family: 'Geist';
+  src: url('${FONT_ROUTE}') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
+}`;
+
 export interface AppUnderTest {
   readonly url: string;
   readonly home: string;
@@ -214,12 +231,27 @@ async function rpc(
  */
 export function serveExport(root: string, file: string): ExportUnderTest {
   const source = readFileSync(join(root, file), "utf8");
+  const font = readFileSync(join(root, FONT_FILE));
+  const licence = readFileSync(join(root, "apps/web/host/fonts/OFL.txt"), "utf8");
   const replacements = source.split("screen: 'welcome',").length - 1;
   const html = source.replace("screen: 'welcome',", "screen: 'app',");
   const server = Bun.serve({
     port: 0,
     fetch(request) {
       const path = new URL(request.url).pathname;
+      if (path === FONT_ROUTE) {
+        return new Response(font, {
+          headers: {
+            "content-type": "font/woff2",
+            "cache-control": "public, max-age=31536000, immutable",
+          },
+        });
+      }
+      if (path === "/fonts/OFL.txt") {
+        return new Response(licence, {
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
+      }
       if (path !== "/" && path !== "/index.html") {
         return new Response("not found", { status: 404 });
       }
@@ -281,7 +313,7 @@ export async function freeze(cdp: Cdp, sessionId: string): Promise<number> {
     `(() => {
       const style = document.createElement('style');
       style.id = 'freebot-pixel-gate-freeze';
-      style.textContent = ${JSON.stringify(FREEZE_CSS)};
+      style.textContent = ${JSON.stringify(`${FONT_CSS}\n${FREEZE_CSS}`)};
       document.head.appendChild(style);
       let stopped = 0;
       for (const animation of document.getAnimations()) {
@@ -505,9 +537,39 @@ export async function prepare(
 ): Promise<number> {
   await waitFor(cdp, sessionId, describe, ready, 60_000);
   const stopped = await freeze(cdp, sessionId);
+  // The face arrives over the page's own route; wait for it before the first probe, so a capture
+  // can never hold the fallback while the real font is still in flight.
+  await evaluate<boolean>(
+    cdp,
+    sessionId,
+    `(async () => { await document.fonts.ready; return document.fonts.check('16px Geist'); })()`,
+  );
   await setViewport(cdp, sessionId, viewport.width, viewport.height);
   await settle(cdp, sessionId, 250);
   return stopped;
+}
+
+/**
+ * Dismiss both pages' notice stacks.
+ *
+ * The app raises its notices from the provider record and the export seeds two; their heights
+ * differ for a reason that is not the shell's. The gate measures the shell, so both stacks are
+ * cleared before the probe, the same way on both sides. The aside driver is where the notice
+ * surface itself is measured.
+ */
+export async function dismissNotices(cdp: Cdp, sessionId: string): Promise<number> {
+  return evaluate<number>(
+    cdp,
+    sessionId,
+    `(() => {
+      const all = [...document.querySelectorAll('button')].find(
+        (node) => (node.textContent ?? '').trim() === 'Dismiss all',
+      );
+      if (all === undefined) return 0;
+      all.click();
+      return 1;
+    })()`,
+  );
 }
 
 export interface Capture {

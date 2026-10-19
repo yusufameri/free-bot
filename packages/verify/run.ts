@@ -116,6 +116,9 @@ const steps: Array<[string, () => Outcome | Promise<Outcome>]> = [
   ["tests", () => shell(["bun", "run", "test"])],
   ["index-check", () => shell(["bun", "packages/verify/scripts/index-check.ts"])],
   ["scaffold-shape", () => shell(["sh", "packages/verify/features/scaffold.sh"])],
+  // Order 36's hard pixel gate. One command, one browser, nine viewports; it exits non-zero on a
+  // chrome mismatch or an undeclared box delta, so this step is the arming.
+  ["pixel-gate", () => shell(["bun", "packages/pixel-gate/src/cli.ts", "--no-write"])],
   ["healthz", healthz],
 ];
 

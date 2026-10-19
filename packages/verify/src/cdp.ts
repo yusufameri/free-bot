@@ -16,8 +16,13 @@ import { mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-/** Where Chrome lives on this project's build host (order 18: this Mac is the build host). */
-export const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+/**
+ * Where Chrome lives on this project's build host (order 18: this Mac is the build host), or the
+ * path a caller pins through `FREEBOT_CHROME`. CI installs its own Chrome and sets that variable,
+ * so the one gate that needs a browser names the browser rather than assuming the host.
+ */
+export const CHROME =
+  process.env.FREEBOT_CHROME ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 export type CdpReply = {
   id?: number;

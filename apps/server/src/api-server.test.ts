@@ -11,7 +11,7 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ProviderPort, SandboxPort } from "@freebot/core";
@@ -404,6 +404,27 @@ describe("the page's stream over the real server", () => {
     expect(bundle.status).toBe(200);
     expect(bundle.headers.get("content-type")).toContain("javascript");
     expect((await bundle.text()).length).toBeGreaterThan(1000);
+  });
+
+  test("the vendored Geist face and its licence are served beside the page", async () => {
+    const server = serve();
+
+    const font = await fetch(`http://127.0.0.1:${server.port}/fonts/geist-var.woff2`);
+    expect(font.status).toBe(200);
+    expect(font.headers.get("content-type")).toBe("font/woff2");
+    const bytes = Buffer.from(await font.arrayBuffer());
+    expect(bytes.length).toBeGreaterThan(20_000);
+    // The woff2 signature, so the route is proven to serve the font and not a text fallback.
+    expect(bytes.subarray(0, 4).toString("latin1")).toBe("wOF2");
+
+    const licence = await fetch(`http://127.0.0.1:${server.port}/fonts/OFL.txt`);
+    expect(licence.status).toBe(200);
+    expect(await licence.text()).toContain("SIL OPEN FONT LICENSE");
+
+    // The page names the route rather than inlining the bytes, so a reader can see the reference
+    // without a second bundle build in this test. The gate's own run proves both pages load it.
+    const page = readFileSync(new URL("../../web/host/index.html", import.meta.url), "utf8");
+    expect(page).toContain("/fonts/geist-var.woff2");
   });
 });
 

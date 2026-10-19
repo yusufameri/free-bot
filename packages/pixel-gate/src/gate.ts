@@ -22,6 +22,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { join } from "node:path";
 import { artifactDir } from "@freebot/verify";
 import { settle, setViewport } from "@freebot/verify/cdp";
+import { declaredBoxDelta } from "./deltas.ts";
 import type { Comparison, RegionDiff } from "./diff.ts";
 import {
   APP_READY,
@@ -30,6 +31,7 @@ import {
   capture,
   compareShots,
   crop,
+  dismissNotices,
   EXPORT_READY,
   type ExportUnderTest,
   OVERFLOW_SELECTORS,
@@ -45,6 +47,7 @@ import {
   targets,
 } from "./page.ts";
 import {
+  BOX_TOLERANCE,
   type BoxMap,
   CHROME_TOLERANCE_DEFAULT,
   REGIONS,
@@ -312,7 +315,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
     log(`  export resolves to ${fonts.exportStack}`);
     log(`  the two stacks ${fonts.same ? "are the same" : "differ"}`);
     log(
-      `  a 'Geist' string measures ${fonts.appGeistWidth}px against an absent family's ${fonts.appAbsentWidth}px, so Geist ${fonts.geistResolves ? "has a face of its own here" : "has no face here and both pages render the stack's fallback"}`,
+      `  a 'Geist' string measures ${fonts.appGeistWidth}px against an absent family's ${fonts.appAbsentWidth}px, so ${fonts.geistResolves ? "the vendored Geist face is in use on both pages" : "Geist has no face here and both pages render the stack's fallback"}`,
     );
 
     for (const [index, viewport] of viewports.entries()) {
@@ -375,20 +378,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
   if (exported === null) throw new Error("the run finished without its export");
   if (chromeVersion === "") throw new Error("the run finished without its browser");
 
-  for (const report of reports) {
-    for (const region of report.regions) {
-      if (region.kind !== "chrome" || region.status === "absent") continue;
-      if (region.stat === null) {
-        failures.push(`${report.label} ${region.id}: measured with no statistic`);
-        continue;
-      }
-      if (region.stat.differing > CHROME_TOLERANCE) {
-        failures.push(
-          `${report.label} ${region.id}: ${region.stat.differing} differing pixel(s) over a tolerance of ${CHROME_TOLERANCE} (max channel ${region.stat.maxChannel})`,
-        );
-      }
-    }
-  }
+  failures.push(...verdictFailures(reports, CHROME_TOLERANCE));
 
   const chromeTotal = sumDiffs(
     reports.flatMap((report) =>
@@ -457,7 +447,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
   );
   log(`RESULT: ${runReport.verdict}`);
 
-  return { report: runReport, dir, exitCode: failures.length === 0 ? 0 : 1 };
+  return { report: runReport, dir, exitCode: exitCodeFor(failures) };
 }
 
 async function openPageFor(
@@ -525,7 +515,19 @@ async function visit(input: VisitInput): Promise<Visit> {
     settle(browser.cdp, appSession, 250),
     settle(browser.cdp, exportSession, 250),
   ]);
-
+  // Both pages may paint a notice after the ready predicate; clear both stacks before the probe so
+  // the shell's band is the shell's, not the notice surface's.
+  const dismissed = await Promise.all([
+    dismissNotices(browser.cdp, appSession),
+    dismissNotices(browser.cdp, exportSession),
+  ]);
+  if (dismissed[0] + dismissed[1] > 0) {
+    input.log(`  notices dismissed: ${dismissed[0]} app, ${dismissed[1]} export`);
+  }
+  await Promise.all([
+    settle(browser.cdp, appSession, 100),
+    settle(browser.cdp, exportSession, 100),
+  ]);
   const appProbe = await probe(browser.cdp, appSession, input.appSelectors, OVERFLOW_SELECTORS);
   const exportProbe = await probe(browser.cdp, exportSession, input.exportSelectors, []);
   for (const [side, probed] of [
@@ -740,4 +742,116 @@ export interface StabilityRequest {
 /** The two-run proof, exposed so the CLI can print it and a test can drive it. */
 export function stability(request: StabilityRequest): ReturnType<typeof compareRuns> {
   return compareRuns(request.first, request.second, request.epsilon);
+}
+
+/**
+ * Every chrome region whose differing-pixel count is over the tolerance, by name.
+ *
+ * Exposed so the failure path is driven by a test with a fake report rather than by damaging a real
+ * page. The run's exit code is a function of this list, and `exitCodeFor` is that function.
+ */
+export function chromeFailures(
+  reports: readonly ViewportReport[],
+  tolerance = CHROME_TOLERANCE,
+): string[] {
+  const failures: string[] = [];
+  for (const report of reports) {
+    for (const region of report.regions) {
+      if (region.kind !== "chrome" || region.status === "absent") continue;
+      if (region.stat === null) {
+        failures.push(`${report.label} ${region.id}: measured with no statistic`);
+        continue;
+      }
+      if (region.stat.differing > tolerance) {
+        failures.push(
+          `${report.label} ${region.id}: ${region.stat.differing} differing pixel(s) over a tolerance of ${tolerance} (max channel ${region.stat.maxChannel})`,
+        );
+      }
+    }
+  }
+  return failures;
+}
+
+/**
+ * Every box that moved without a matching declaration.
+ *
+ * A box that moved is a finding even when the pixels inside the chosen rectangle happen to match,
+ * which is exactly why `resolveRegions` prints the delta beside every region. The chrome regions
+ * must agree outright. A content region is allowed to differ only through an entry in the
+ * contract's list, and only by the pixels that entry records.
+ */
+export function boxFailures(
+  reports: readonly ViewportReport[],
+  tolerance = BOX_TOLERANCE,
+): string[] {
+  const failures: string[] = [];
+  for (const report of reports) {
+    for (const region of report.regions) {
+      const delta = region.boxDelta;
+      if (delta === null || delta.agree) continue;
+      const shown = `left ${delta.left}, top ${delta.top}, width ${delta.width}, height ${delta.height}`;
+      if (region.kind === "chrome") {
+        failures.push(`${report.label} ${region.id}: chrome box delta (${shown}) is not zero`);
+        continue;
+      }
+      const declared = declaredBoxDelta(region.id);
+      if (declared === undefined) {
+        failures.push(
+          `${report.label} ${region.id}: box delta (${shown}) is not declared in docs/DESIGN-CONTRACT.md`,
+        );
+        continue;
+      }
+      const expected = declared.pixels[report.name];
+      if (expected === undefined) {
+        failures.push(
+          `${report.label} ${region.id}: the declaration has no pixels for viewport ${report.name}`,
+        );
+        continue;
+      }
+      const moved = (["left", "top", "width", "height"] as const).filter(
+        (axis) => Math.abs(delta[axis] - expected[axis]) > tolerance,
+      );
+      if (moved.length > 0) {
+        failures.push(
+          `${report.label} ${region.id}: box delta (${shown}) moved from the declared (left ${expected.left}, top ${expected.top}, width ${expected.width}, height ${expected.height}) on ${moved.join(", ")}`,
+        );
+      }
+    }
+  }
+  return failures;
+}
+
+/** The one place a failure list becomes a process exit code. */
+export function exitCodeFor(failures: readonly string[]): number {
+  return failures.length === 0 ? 0 : 1;
+}
+
+/** A viewport that scrolls horizontally is a failure, not a note, per the manifest's flag. */
+export function overflowFailures(reports: readonly ViewportReport[]): string[] {
+  const failures: string[] = [];
+  for (const report of reports) {
+    const [scrollWidth, innerWidth] = report.overflow.document;
+    if (scrollWidth > innerWidth) {
+      failures.push(
+        `${report.label}: documentElement.scrollWidth ${scrollWidth} > window.innerWidth ${innerWidth}`,
+      );
+    }
+    for (const selector of report.overflow.overflowing) {
+      failures.push(`${report.label}: ${selector} has content wider than its box`);
+    }
+  }
+  return failures;
+}
+
+/** Both checks in the order the run reports them. */
+export function verdictFailures(
+  reports: readonly ViewportReport[],
+  chromeTolerance = CHROME_TOLERANCE,
+  boxTolerance = BOX_TOLERANCE,
+): string[] {
+  return [
+    ...chromeFailures(reports, chromeTolerance),
+    ...boxFailures(reports, boxTolerance),
+    ...overflowFailures(reports),
+  ];
 }

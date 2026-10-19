@@ -30,6 +30,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TOKENS } from "../../../packages/ui/src/tokens.ts";
+import { DECLARED_BOX_DELTAS } from "../../pixel-gate/src/deltas.ts";
 import {
   type Cdp,
   evaluate,
@@ -91,16 +92,13 @@ const REGIONS = [
 ] as const;
 
 /**
- * Deltas the contract declares. Any delta not here fails the run, so a new one is a decision rather
- * than a drift. The list is empty since U6.3: the one entry it carried was the aside's 12px, and the
- * pane now renders the export's own 372px against the export's own 372px, so every field this
- * harness compares is equal on both pages at every viewport.
+ * Deltas the contract declares. The list is the pixel gate's, imported from
+ * `packages/pixel-gate/src/deltas.ts`, so there is one copy of it and the tool that measures the
+ * delta and the driver that prints the declaration cannot disagree. This driver's own geometry
+ * fields are all zero at every viewport, so no entry here is read by `compare`; the entries are the
+ * content-region exceptions order 36's last sentence asks for, and they are printed below.
  */
-const DECLARED_DELTAS: readonly {
-  readonly field: string;
-  readonly allow: readonly number[];
-  readonly reason: string;
-}[] = [];
+export const DECLARED_DELTAS = DECLARED_BOX_DELTAS;
 
 /** Tokens the export declares one way and uses another, with the reason this page uses the token. */
 const TOKEN_OVERRIDES: Readonly<Record<string, string>> = {
@@ -510,15 +508,20 @@ async function main(): Promise<number> {
     );
 
     section("the deltas this frame declares");
-    if (DECLARED_DELTAS.length === 0) {
-      note(
-        "none: every measured geometry and style field is equal on both pages at every viewport (U6.3 closed the aside's 12px, see docs/DESIGN-CONTRACT.md)",
-      );
-    }
+    note(
+      `${DECLARED_DELTAS.length} entries, shared with the pixel gate so the list has one source. This driver's own geometry fields are all zero at every viewport; these are the content-region exceptions the gate measures.`,
+    );
     for (const entry of DECLARED_DELTAS) {
+      const pixels = Object.entries(entry.pixels)
+        .map(
+          ([name, delta]) =>
+            `${name} left ${delta.left}, top ${delta.top}, width ${delta.width}, height ${delta.height}`,
+        )
+        .join("; ");
       note(
         `geometry ${entry.field}: allowed deltas ${JSON.stringify(entry.allow)}. ${entry.reason}`,
       );
+      note(`  pixels: ${pixels}`);
     }
     for (const [name, reason] of Object.entries(TOKEN_OVERRIDES)) {
       if (appProbes.tokens[name] === exportProbes.tokens[name]) continue;
@@ -666,9 +669,11 @@ async function main(): Promise<number> {
   return failed === 0 ? 0 : 1;
 }
 
-try {
-  process.exit(await main());
-} catch (error) {
-  console.error(`driver crashed: ${error instanceof Error ? error.message : String(error)}`);
-  process.exit(1);
+if (import.meta.main) {
+  try {
+    process.exit(await main());
+  } catch (error) {
+    console.error(`driver crashed: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
 }
