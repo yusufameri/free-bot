@@ -27,7 +27,7 @@ region exceeds its tolerance.
 | `--repeat` | Capture each viewport twice and diff the two captures against each other. |
 | `--json` | The per-viewport summary as JSON on stdout, with the human transcript on stderr. |
 | `--no-write` | Print without writing the artifact directory. |
-| `--artifact <path>` | Write the artifact somewhere other than the convention. |
+| `--artifact <path>` | Write the artifact somewhere other than the convention. A directory that already exists and is not empty is refused, never cleared. |
 | `--stability <a> <b>` | Compare two committed `run.json` files instead of running. Exits non-zero if any chrome region's differing-pixel count moved. |
 
 The artifact directory is `packages/verify/artifacts/pixel-gate/<short-sha>/`, holding `assert.txt`,
@@ -75,14 +75,15 @@ stale, and a same-run pair cancels it.
 
 ## The tests
 
-`bun test packages/pixel-gate/src` drives 62 tests over the three modules whose arithmetic a
+`bun test packages/pixel-gate/src` drives 64 tests over the three modules whose arithmetic a
 verdict depends on. The diff tests call `diffRegion` and `digestImage` directly, and those two
 functions are injected into the browser with `Function.prototype.toString`, so the tests drive the
 same bytes the diff page runs rather than a re-implementation of them. The region tests drive the
 snapping, the absence rule and the delta's sign over boxes written by hand. The report tests drive
 the summing, the two-run proof and the JSON emitter, including the one shape that got a baseline
 artifact a lint error: an array short enough to fit on its own but too long for the line its key
-puts it on.
+puts it on. They also drive the two-run proof's symmetry: a viewport or chrome region that exists in
+only one of the two runs fails it.
 
 The artifact's JSON is written by `canonicalJson` in `report.ts` rather than by
 `JSON.stringify(value, null, 2)`, because `packages/verify/artifacts/**` is committed and
@@ -133,6 +134,11 @@ does not carry.
 **A zero over zero is an empty set, not a pass.** At 360x800 there are no chrome regions at all, so
 the transcript prints that sentence where a `0/0` would read as a perfect score. The shell's evidence
 at those widths is the box deltas and the content regions.
+
+**A clipped region is still checked.** When a rectangle has to be cut at the viewport's edge the
+region prints `clipped` instead of `measured`, and it keeps its pixel statistic. A clipped chrome
+region is summed into the chrome total and checked against the tolerance like any other. Only
+`absent` is left out, because a region that is not on screen has nothing to compare.
 
 ## Determinism
 
@@ -242,7 +248,7 @@ no probed region's content is wider than its box, at every one. That is `mustAvo
 true` from the manifest, checked rather than assumed.
 
 **The whole-frame share is information, not a verdict,** and it is not what the command's exit code
-reads. It runs from 26.00% at 1920x1080 to 56.60% at 600x960. The export paints seven seeded Bots and
+reads. It runs from 25.80% at 1920x1080 to 56.60% at 600x960. The export paints seven seeded Bots and
 a run in progress; the app paints one real Bot and an idle thread. Two pages whose content differs
 render different pixels whatever their styling, which is why the content regions carry a named reason
 each and the exit code reads only the chrome regions.

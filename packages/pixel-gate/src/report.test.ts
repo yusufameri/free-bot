@@ -285,6 +285,31 @@ describe("compareRuns", () => {
     expect(compareRuns(a, b, 0).same).toBe(false);
   });
 
+  test("a viewport present only in the second run is unstable", () => {
+    const a = run([]);
+    const b = run([viewport("01", [region("chrome.x", "chrome", diff(0, 100))])]);
+    const proof = compareRuns(a, b, 0);
+    expect(proof.same).toBe(false);
+    expect(proof.lines.some((line) => line.includes("the first run has no such viewport"))).toBe(
+      true,
+    );
+  });
+
+  test("a chrome region present only in the second run is unstable", () => {
+    const a = run([viewport("01", [region("chrome.x", "chrome", diff(0, 100))])]);
+    const b = run([
+      viewport("01", [
+        region("chrome.x", "chrome", diff(0, 100)),
+        region("chrome.y", "chrome", diff(0, 100)),
+      ]),
+    ]);
+    const proof = compareRuns(a, b, 0);
+    expect(proof.same).toBe(false);
+    expect(
+      proof.lines.some((line) => line.includes("the first run has no such chrome region")),
+    ).toBe(true);
+  });
+
   test("a region measured in one run and absent in the other is unstable", () => {
     const a = run([viewport("01", [region("chrome.x", "chrome", diff(0, 100))])]);
     const b = run([viewport("01", [region("chrome.x", "chrome", null, "absent")])]);

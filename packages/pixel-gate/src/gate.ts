@@ -18,7 +18,7 @@
  *    regions are summed into a second and reported with each region's named variance.
  */
 
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { artifactDir } from "@freebot/verify";
 import { settle, setViewport } from "@freebot/verify/cdp";
@@ -31,6 +31,7 @@ import {
   compareShots,
   crop,
   EXPORT_READY,
+  type ExportUnderTest,
   OVERFLOW_SELECTORS,
   openDiffPage,
   type Probe,
@@ -242,9 +243,16 @@ export async function run(options: RunOptions): Promise<RunResult> {
       ".",
       `:(exclude)packages/verify/artifacts/${FEATURE}`,
     ]) !== "";
-  const dir = options.write ? (options.dir ?? artifactDir(root, FEATURE, shortSha)) : null;
+  const conventional = artifactDir(root, FEATURE, shortSha);
+  const dir = options.write ? (options.dir ?? conventional) : null;
   if (dir !== null) {
-    rmSync(dir, { recursive: true, force: true });
+    // Only the run's own conventional directory is cleared. A directory a person passed for
+    // `--artifact` is never deleted, because a wrong path must not take the whole tree with it.
+    if (dir === conventional) {
+      rmSync(dir, { recursive: true, force: true });
+    } else if (existsSync(dir) && readdirSync(dir).length > 0) {
+      throw new Error(`--artifact ${dir} exists and is not empty; refusing to overwrite it`);
+    }
     mkdirSync(join(dir, "shots"), { recursive: true });
   }
 
@@ -255,27 +263,30 @@ export async function run(options: RunOptions): Promise<RunResult> {
   if (dir !== null) log(`artifact: ${dir.replace(`${root}/`, "")}`);
 
   const app = await startApp(root, "run");
-  log(`app up ${redact(app.url)}`);
-  log(`  home ${app.home}`);
-  const exported = serveExport(root, EXPORT_HTML);
-  log(`export served ${exported.url} from ${exported.file}`);
-  if (exported.replacements !== 1) {
-    throw new Error(
-      `the export's initial screen was replaced ${exported.replacements} time(s), expected exactly 1: ${EXPORT_HTML}`,
-    );
-  }
-  const browser = await startBrowser();
-  log(`chrome ${browser.version}`);
-  log(`  determinism flags ${browser.flags.join(" ")}`);
-
   const appSelectors = selectorsFor(REGIONS, "app");
   const exportSelectors = selectorsFor(REGIONS, "export");
   const reports: ViewportReport[] = [];
   const failures: string[] = [];
   let fonts: FontFacts = EMPTY_FONTS;
-  let chromeVersion = browser.version;
+  let chromeVersion = "";
+  let exported: ExportUnderTest | null = null;
+  let browser: Browser | null = null;
 
   try {
+    log(`app up ${redact(app.url)}`);
+    log(`  home ${app.home}`);
+    exported = serveExport(root, EXPORT_HTML);
+    log(`export served ${exported.url} from ${exported.file}`);
+    if (exported.replacements !== 1) {
+      throw new Error(
+        `the export's initial screen was replaced ${exported.replacements} time(s), expected exactly 1: ${EXPORT_HTML}`,
+      );
+    }
+    browser = await startBrowser();
+    chromeVersion = browser.version;
+    log(`chrome ${browser.version}`);
+    log(`  determinism flags ${browser.flags.join(" ")}`);
+
     const appSession = await openPageFor(browser, app.url, APP_READY, "app shell", log);
     const exportSession = await openPageFor(
       browser,
@@ -355,14 +366,17 @@ export async function run(options: RunOptions): Promise<RunResult> {
       );
     }
   } finally {
-    browser.stop();
-    exported.stop();
+    browser?.stop();
+    exported?.stop();
     await app.stop();
   }
 
+  if (exported === null) throw new Error("the run finished without its export");
+  if (chromeVersion === "") throw new Error("the run finished without its browser");
+
   for (const report of reports) {
     for (const region of report.regions) {
-      if (region.kind !== "chrome" || region.status !== "measured") continue;
+      if (region.kind !== "chrome" || region.status === "absent") continue;
       if (region.stat === null) {
         failures.push(`${report.label} ${region.id}: measured with no statistic`);
         continue;
@@ -590,10 +604,10 @@ async function visit(input: VisitInput): Promise<Visit> {
   }
 
   const chromeRegions = regionReports.filter(
-    (region) => region.kind === "chrome" && region.status === "measured",
+    (region) => region.kind === "chrome" && region.status !== "absent",
   );
   const contentRegions = regionReports.filter(
-    (region) => region.kind === "content" && region.status === "measured",
+    (region) => region.kind === "content" && region.status !== "absent",
   );
 
   input.log(

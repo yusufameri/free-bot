@@ -464,12 +464,19 @@ export interface Stability {
  * This is the two-run proof order 36's acceptance asks for, as a command rather than a paragraph.
  * The verdict is exact equality of the differing-pixel count, with the largest channel difference
  * reported beside it so a reader can see that a zero came from identical pixels and not from a
- * region that was never compared.
+ * region that was never compared. The comparison is symmetric: a viewport or chrome region that
+ * exists in only one of the two runs fails it rather than going unread.
  */
 export function compareRuns(left: RunReport, right: RunReport, epsilon = 0): Stability {
   const lines: string[] = [];
   let same = true;
   const byLabel = new Map(right.viewports.map((viewport) => [viewport.label, viewport]));
+  const leftLabels = new Set(left.viewports.map((viewport) => viewport.label));
+  for (const extra of right.viewports) {
+    if (leftLabels.has(extra.label)) continue;
+    same = false;
+    lines.push(`FAIL ${extra.label}: the first run has no such viewport`);
+  }
   for (const a of left.viewports) {
     const b = byLabel.get(a.label);
     if (b === undefined) {
@@ -477,6 +484,9 @@ export function compareRuns(left: RunReport, right: RunReport, epsilon = 0): Sta
       lines.push(`FAIL ${a.label}: the second run has no such viewport`);
       continue;
     }
+    const mineIds = new Set(
+      a.regions.filter((entry) => entry.kind === "chrome").map((entry) => entry.id),
+    );
     for (const region of a.regions.filter((entry) => entry.kind === "chrome")) {
       const twin = b.regions.find((entry) => entry.id === region.id);
       const mine = region.stat;
@@ -495,6 +505,11 @@ export function compareRuns(left: RunReport, right: RunReport, epsilon = 0): Sta
       lines.push(
         `${ok ? "ok  " : "FAIL"} ${a.label} ${region.id}: ${mine.differing}/${mine.total} then ${theirs.differing}/${theirs.total}, differing-pixel delta ${delta}; max channel ${mine.maxChannel} then ${theirs.maxChannel}`,
       );
+    }
+    for (const region of b.regions.filter((entry) => entry.kind === "chrome")) {
+      if (mineIds.has(region.id)) continue;
+      same = false;
+      lines.push(`FAIL ${a.label} ${region.id}: the first run has no such chrome region`);
     }
     const chromeA = a.chrome;
     const chromeB = b.chrome;
