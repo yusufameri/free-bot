@@ -1,0 +1,187 @@
+driver: sandbox-microsandbox
+subject: the same eight operations on microsandbox, plus a run inside a microVM
+command: bun packages/verify/scripts/sandbox-microsandbox.ts
+commit: 74186eda855f041ee72bbca86386babcca75def9 (74186ed)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-KpTCOA/checkout
+exit: 0
+verdict: PASS sandbox-microsandbox
+seconds: 26
+
+--- the driver's own artifact: packages/verify/artifacts/sandbox-microsandbox/74186ed/assert.txt ---
+
+feature: sandbox-microsandbox
+command: bun packages/verify/scripts/sandbox-microsandbox.ts
+timestamp: 2026-10-19T23:20:30.892Z
+git sha: 74186eda855f041ee72bbca86386babcca75def9
+git sha short: 74186ed
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+msb: msb 0.7.8
+run token: 1j7-945123 (this run owns freebot.unit=u1.2-run-1j7-945123; the app's run owns u1.7)
+
+
+## the engine, and the proof that Docker is not reachable for this launch
+msb --version: msb 0.7.8
+msb doctor exit: 0
+PASS msb doctor reports a ready host
+docker on this driver's own PATH: /usr/local/bin/docker
+PATH directories dropped because they resolve a docker executable: /usr/local/bin
+docker on the launched app's PATH after the drop: (absent)
+PASS the PATH the launched app gets resolves no docker executable, so its backend cannot be Docker
+
+## the selector's refusals, run literal: each exits 2 and names the way out
+forced docker with the daemon down: exit 2
+forced docker said: $ bun apps/server/src/cli/up.ts --no-open --sandbox docker | freebot up: asked for docker by --sandbox=docker, but the Docker daemon did not answer; install and start Docker Desktop (docs/RUNNING.md, "What you need") | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS forcing docker with the daemon down exits 2 and names the daemon and RUNNING.md
+PATH directories dropped because they resolve an msb executable: /Users/yusufameri/.local/bin
+forced microsandbox with msb absent: exit 2
+forced microsandbox said: $ bun apps/server/src/cli/up.ts --no-open --sandbox microsandbox | freebot up: asked for microsandbox by --sandbox=microsandbox, but msb doctor did not answer; install microsandbox: `curl -fsSL https://install.microsandbox.dev | sh` (docs/microsandbox.md) | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS forcing microsandbox with msb absent exits 2 and names its install path
+auto with neither backend: exit 2
+auto with neither backend said: $ bun apps/server/src/cli/up.ts --no-open --sandbox auto | freebot up: no sandbox backend: the Docker daemon did not answer; msb doctor did not answer; install and start Docker Desktop (docs/RUNNING.md, "What you need") or install microsandbox: `curl -fsSL https://install.microsandbox.dev | sh` (docs/microsandbox.md) | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS auto with neither backend exits 2 and names both install paths
+
+## the app, launched by `bun run up --sandbox microsandbox` on that PATH
+launcher line: http://127.0.0.1:50121/#token=<redacted>
+launcher said: freebot up: page and run on 127.0.0.1:50121, tunnel on 127.0.0.1:50120
+launcher said: freebot up: sandbox backend microsandbox (chosen by --sandbox=microsandbox; msb doctor answered)
+launcher said: freebot up: model mode replay, keyless, replaying /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-KpTCOA/checkout/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+launcher said: freebot up: vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1j7-945123-DGQmey/provider.env absent
+launcher said: freebot up: bots under /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-bots-1j7-945123-DP4S9R; each Bot's workspace is mounted at /workspace and kept across runs
+launcher said: freebot up: spend cap 5.00 USD per run; no token prices configured, so a keyed run reports no cost
+launcher said: freebot up: connectors none; records /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1j7-945123-DGQmey/connectors.json, credential vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1j7-945123-DGQmey/connectors.env at mode 600
+launcher said: freebot up: the operator token rides the URL's fragment and is printed nowhere else
+launcher said: freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (microsandbox)
+PASS the launcher's own boot line names microsandbox a
+[...]
+","freebot.sandbox":"u91-main-1j7-945123s","freebot.unit":"u1.2-run-1j7-945123s","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: freebot-sandbox:u0.6 sha256:130dbb9ca6a220ec8dcb8b4331d3d35656d6fda21e9dc3aadefdeda0e67bcce5 7 OCI layers, imported with msb image load; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=c235f42c5f1efc16279c1b63cb8b932ccf52d48da0976549e802eafccd3086d5 the sandbox's sha256sum=c235f42c5f1efc16279c1b63cb8b932ccf52d48da0976549e802eafccd3086d5 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=c235f42c5f1efc16279c1b63cb8b932ccf52d48da0976549e802eafccd3086d5
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in u91-no-link-1j7-945123s: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), msb said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1j7-945123s is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1j7-945123s:u91-round-trip ref=freebot-snapshot-u91-main-1j7-945123s:u91-round-trip createdAt=2026-10-19T23:20:24.164Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1j7-945123s booted from freebot-snapshot-u91-main-1j7-945123s:u91-round-trip reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1j7-945123s is gone from the engine
+check idle-kill: u91-idle-1j7-945123s (idleTtlMs=3000) stopped after 3059ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u92-decoy-foreign-unit-1j7-945123s=running
+census before sweep, decoy (a sibling run of this suite): u92-decoy-sibling-run-1j7-945123s=running
+census before sweep, decoy (no ownership label at all): u92-decoy-bare-1j7-945123s=running
+census before sweep, this run: u91-main-1j7-945123s=u91-main-1j7-945123s
+census before sweep, this run: u91-no-link-1j7-945123s=gone
+census before sweep, this run: u91-restored-1j7-945123s=gone
+census before sweep, this run: u91-idle-1j7-945123s=u91-idle-1j7-945123s
+check sweep: removed 2 of 2 live sandboxes: u91-idle-1j7-945123s, u91-main-1j7-945123s
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+sabotaged sweep: create:true exec:true upload:true download:true tunnel:true snapshot-resume:true idle-kill:true sweep:false
+PASS the suite reports the sabotaged sweep: sweep failed
+PASS every operation before the sabotaged sweep passed: 7 of 7
+sabotaged sweep, literal: the decoy another unit's label: expected "u92-decoy-foreign-unit-1j7-945123s=running", got "u92-decoy-foreign-unit-1j7-945123s=gone"
+
+## cleanup: the launched app stops the way a person stops it, and reaps its own sandboxes
+launcher exited with 0
+launcher said: freebot up: removed sandbox run-1-op3c1i2u (microsandbox)
+launcher said: freebot up: removed sandbox run-2-op3c1i2u (microsandbox)
+of the 2 sandboxes this driver claimed, gone after the app's own reap: 2
+PASS the launched app reaped every sandbox it created: run-1-op3c1i2u, run-2-op3c1i2u
+PASS nothing answers the printed URL after the app stopped
+sandboxes left under the suite's label u1.2-run-1j7-945123: 0
+PASS nothing survives under the suite's label u1.2-run-1j7-945123
+PASS the driver's own cleanup removed every decoy it created
+this driver left no sandbox behind
+
+PASS sandbox-microsandbox
+
+
+--- captured output (stdout and stderr) ---
+
+## the engine, and the proof that Docker is not reachable for this launch
+msb --version: msb 0.7.8
+msb doctor exit: 0
+PASS msb doctor reports a ready host
+docker on this driver's own PATH: /usr/local/bin/docker
+PATH directories dropped because they resolve a docker executable: /usr/local/bin
+docker on the launched app's PATH after the drop: (absent)
+PASS the PATH the launched app gets resolves no docker executable, so its backend cannot be Docker
+
+## the selector's refusals, run literal: each exits 2 and names the way out
+forced docker with the daemon down: exit 2
+forced docker said: $ bun apps/server/src/cli/up.ts --no-open --sandbox docker | freebot up: asked for docker by --sandbox=docker, but the Docker daemon did not answer; install and start Docker Desktop (docs/RUNNING.md, "What you need") | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS forcing docker with the daemon down exits 2 and names the daemon and RUNNING.md
+PATH directories dropped because they resolve an msb executable: /Users/yusufameri/.local/bin
+forced microsandbox with msb absent: exit 2
+forced microsandbox said: $ bun apps/server/src/cli/up.ts --no-open --sandbox microsandbox | freebot up: asked for microsandbox by --sandbox=microsandbox, but msb doctor did not answer; install microsandbox: `curl -fsSL https://install.microsandbox.dev | sh` (docs/microsandbox.md) | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS forcing microsandbox with msb absent exits 2 and names its install path
+auto with neither backend: exit 2
+auto with neither backend said: $ bun apps/server/src/cli/up.ts --no-open --sandbox auto | freebot up: no sandbox backend: the Docker daemon did not answer; msb doctor did not answer; install and start Docker Desktop (docs/RUNNING.md, "What you need") or install microsandbox: `curl -fsSL https://install.microsandbox.dev | sh` (docs/microsandbox.md) | freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it
+PASS auto with neither backend exits 2 and names both install paths
+
+## the app, launched by `bun run up --sandbox microsandbox` on that PATH
+launcher line: http://127.0.0.1:50121/#token=<redacted>
+launcher said: freebot up: page and run on 127.0.0.1:50121, tunnel on 127.0.0.1:50120
+launcher said: freebot up: sandbox backend microsandbox (chosen by --sandbox=microsandbox; msb doctor answered)
+launcher said: freebot up: model mode replay, keyless, replaying /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-KpTCOA/checkout/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+launcher said: freebot up: vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1j7-945123-DGQmey/provider.env absent
+launcher said: freebot up: bots under /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-bots-1j7-945123-DP4S9R; each Bot's workspace is mounted at /workspace and kept across runs
+launcher said: freebot up: spend cap 5.00 USD per run; no token prices configured, so a keyed run reports no cost
+launcher said: freebot up: connectors none; records /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1j7-945123-DGQmey/connectors.json, credential vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u95-home-1j7-945123-DGQmey/connectors.env at mode 600
+launcher said: freebot up: the operator token rides the URL's fragment and is printed nowhere else
+launcher said: freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (microsandbox)
+PASS the launcher's own boot line names microsandbox and why: "freebot up: sandbox backend microsandbox (chosen by --sandbox=microsandbox; msb doctor answered)"
+GET http://127.0.0.1:50121/#token=<redacted> -> 200 text/html; charset=utf-8
+PASS the launched app serves its own printed URL: 200
+PASS create_bot -> 200 {"json":{"botId":"bot-local","name":"Micro Bot","role":"","purpose":"","createdAt":1792452007111,"th
+[...]
+5123s","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: freebot-sandbox:u0.6 sha256:130dbb9ca6a220ec8dcb8b4331d3d35656d6fda21e9dc3aadefdeda0e67bcce5 7 OCI layers, imported with msb image load; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=c235f42c5f1efc16279c1b63cb8b932ccf52d48da0976549e802eafccd3086d5 the sandbox's sha256sum=c235f42c5f1efc16279c1b63cb8b932ccf52d48da0976549e802eafccd3086d5 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=c235f42c5f1efc16279c1b63cb8b932ccf52d48da0976549e802eafccd3086d5
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in u91-no-link-1j7-945123s: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), msb said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1j7-945123s is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1j7-945123s:u91-round-trip ref=freebot-snapshot-u91-main-1j7-945123s:u91-round-trip createdAt=2026-10-19T23:20:24.164Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1j7-945123s booted from freebot-snapshot-u91-main-1j7-945123s:u91-round-trip reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1j7-945123s is gone from the engine
+check idle-kill: u91-idle-1j7-945123s (idleTtlMs=3000) stopped after 3059ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u92-decoy-foreign-unit-1j7-945123s=running
+census before sweep, decoy (a sibling run of this suite): u92-decoy-sibling-run-1j7-945123s=running
+census before sweep, decoy (no ownership label at all): u92-decoy-bare-1j7-945123s=running
+census before sweep, this run: u91-main-1j7-945123s=u91-main-1j7-945123s
+census before sweep, this run: u91-no-link-1j7-945123s=gone
+census before sweep, this run: u91-restored-1j7-945123s=gone
+census before sweep, this run: u91-idle-1j7-945123s=u91-idle-1j7-945123s
+check sweep: removed 2 of 2 live sandboxes: u91-idle-1j7-945123s, u91-main-1j7-945123s
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+sabotaged sweep: create:true exec:true upload:true download:true tunnel:true snapshot-resume:true idle-kill:true sweep:false
+PASS the suite reports the sabotaged sweep: sweep failed
+PASS every operation before the sabotaged sweep passed: 7 of 7
+sabotaged sweep, literal: the decoy another unit's label: expected "u92-decoy-foreign-unit-1j7-945123s=running", got "u92-decoy-foreign-unit-1j7-945123s=gone"
+
+## cleanup: the launched app stops the way a person stops it, and reaps its own sandboxes
+launcher exited with 0
+launcher said: freebot up: removed sandbox run-1-op3c1i2u (microsandbox)
+launcher said: freebot up: removed sandbox run-2-op3c1i2u (microsandbox)
+of the 2 sandboxes this driver claimed, gone after the app's own reap: 2
+PASS the launched app reaped every sandbox it created: run-1-op3c1i2u, run-2-op3c1i2u
+PASS nothing answers the printed URL after the app stopped
+sandboxes left under the suite's label u1.2-run-1j7-945123: 0
+PASS nothing survives under the suite's label u1.2-run-1j7-945123
+PASS the driver's own cleanup removed every decoy it created
+this driver left no sandbox behind
+artifact: packages/verify/artifacts/sandbox-microsandbox/74186ed/assert.txt
+PASS sandbox-microsandbox

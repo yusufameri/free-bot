@@ -1,0 +1,57 @@
+driver: items
+subject: the conversation's items, their states, and the Bot row's derived status
+command: bun packages/verify/scripts/items.ts
+commit: 74186eda855f041ee72bbca86386babcca75def9 (74186ed)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-KpTCOA/checkout
+exit: 0
+verdict: RESULT: PASS (203/203)
+seconds: 153
+
+--- the driver's own artifact: packages/verify/artifacts/items/74186ed/assert.txt ---
+
+feature: items
+command: bun packages/verify/scripts/items.ts
+timestamp: 2026-10-19T23:20:43.518Z
+git sha: 74186eda855f041ee72bbca86386babcca75def9
+git sha short: 74186ed
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+the transcript this run replayed: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-items-aabvvC/items-transcript.jsonl
+the home and bots root this driver made: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-items-aabvvC
+
+# items live-ui frames
+DRIVER DISCLOSURE: `bun run up --no-open --replay` is spawned over a temporary FREEBOT_HOME and bots root, with a Pi transcript this driver writes. The three `bash` calls in that transcript are the scripted model turns; each executes in a real container from the pinned image. The vault file is a placeholder in the temporary home, and --replay means no request reads it. Both `allow` answers and the `deny` answer are clicked on the page's own approval card. The expired card is a real 120s approval window nobody answered, which fails the run at `approval_timeout`. That state is run under a second launch over the same bots root, because the grant ledger is per process and a consumed grant refuses the same action hash as `grant_consumed` rather than parking it again; the first launch is SIGINTed and its Bots and transcript come back. No key value is read, printed or written to the artifact.
+the printed URL, redacted: http://127.0.0.1:50254/#token=<redacted>
+the launcher's line: freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-items-aabvvC/bots; each Bot's workspace is mounted at /workspace and kept across runs
+ok - the launcher holds this driver's bots root: "freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-items-aabvvC/bots; each Bot's workspace is mounted at /workspace and kept across runs"
+the launcher's line: freebot up: model mode replay, keyless, replaying /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-items-aabvvC/items-transcript.jsonl
+ok - the launcher is replaying, not billing a provider: true
+the two Bots this driver made: [{"botId":"bot-local","threadId":"thread-1"},{"botId":"bot-2","threadId":"thread-2"}]
+cdp: Chrome/155.0.8059.85, headless, a dynamic DevToolsActivePort
+the page's shell: {"operator":true,"bots":[{"botId":"bot-local","name":"Items","threadCount":1,"selected":true,"status":"idle","sub":"","dot":"dot","pinned":false,"section":"Work","hidden":false,"group":false},{"botId":"bot-2","name":"Bystander","threadCount":1,"selected":false,"status":"idle","sub":"","dot":"dot","pinned":false,"section":"Work","hidden":false,"group":false}],"selectedBotId":"bot-local","threads":[{"threadId":"thread-1","title":"New conversation","runs":0,"selected":true}],"selectedThreadId":"thread-1","title":"Items · New conversation"}
+
+## the first run: a park, an allow, a done call, a failure, a denial
+ok - the disclosure opens the full request: ["true",false]
+ok - frame 01-approval-pending: the page held still across the capture: "{\"thread\":{\"lastSeq\":6,\"done\":false,\"frameCount\":4,\"turns\":1,\"cards\":[[\"items-call-1\",\"awaiting approval\"]],\"outputShown\":[false],\"approvals\":[null],\"deltas\":[],\"approvalStates\":[\"pending\"],\"toolStates\":[\"running\"],\"turnPhases\":[\"working\"],\"turnTexts\":[\"Working on your computer\"],\"renderedSeqs\":[1,3,4,5],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null},\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Items\",\"threadCount\":1,\"selected\":true,\"status\":\"attention\",\"sub\":\"needs you\",\"dot\":\"dot on\",\"pinned\":false,\"section\":\"Work\",\"hidden\":false,\"group\":false},{\"botId\":\"bot-2\",\"name\":\"Bystander\",\"threadCount\":1,\"selected\":false,\"status\":\"idle\",\"sub\":\"\",\"dot\":\"dot\",\
+[...]
+5)"}]
+  the approval cards: [{"approval":"run-1:items-call-1","state":"allowed","decision":"allow","head":"Allowed once","tag":"allowed","dot":"dot on","bar":"100%","barClass":"gate-bar","proposal":"A shell command that runs on this Bot's computer and can change its workspace.","disclosure":"›View the full request","expanded":"false","fullHidden":true,"scope":"Scope · this Bot's workspace · this command only","expiry":"decided by you · 16:20","buttons":[],"result":"allowed once"},{"approval":"run-1:items-call-2","state":"allowed","decision":"allow","head":"Allowed once","tag":"allowed","dot":"dot on","bar":"100%","barClass":"gate-bar","proposal":"A shell command that runs on this Bot's computer and can change its workspace.","disclosure":"›View the full request","expanded":"false","fullHidden":true,"scope":"Scope · this Bot's workspace · this command only","expiry":"decided by you · 16:20","buttons":[],"result":"allowed once"},{"approval":"run-1:items-call-3","state":"denied","decision":"deny","head":"Denied","tag":"denied","dot":"dot ring","bar":"100%","barClass":"gate-bar done","proposal":"A shell command that runs on this Bot's computer and can change its workspace.","disclosure":"›View the full request","expanded":"false","fullHidden":true,"scope":"Scope · this Bot's workspace · this command only","expiry":"decided by you · 16:20","buttons":[],"result":"denied"},{"approval":"run-2:items-call-1","state":"expired","decision":"expired","head":"Expired","tag":"expired","dot":"dot ring","bar":"100%","barClass":"gate-bar done","proposal":"A shell command that runs on this Bot's computer and can change its workspace.","disclosure":"›View the full request","expanded":"false","fullHidden":true,"scope":"Scope · this Bot's workspace · this command only","expiry":"run ended unanswered","buttons":[],"result":"expired"}]
+  the tool cards: [{"call":"items-call-1","status":"done","tag":"done","dot":"dot on","command":"bash {\"command\":\"sleep 8; printf 'alpha\\\\n'\"}","copy":true,"outputShown":true,"outputOpen":true,"summary":"Output · 1 line","output":"alpha\n","hint":null,"finished":"done"},{"call":"items-call-2","status":"failed","tag":"failed","dot":"dot ring","command":"bash {\"command\":\"printf 'boom\\\\n' >&2; exit 7\"}","copy":true,"outputShown":true,"outputOpen":true,"summary":"Output · 1 line","output":"boom\n","hint":null,"finished":"failed"},{"call":"items-call-3","status":"denied","tag":"denied","dot":"dot ring","command":"bash {\"command\":\"printf 'never\\\\n'\"}","copy":true,"outputShown":false,"outputOpen":false,"summary":"Output · 0 lines","output":"","hint":"Nothing ran. This call was denied.","finished":"denied"},{"call":"items-call-1","status":"denied","tag":"denied","dot":"dot ring","command":"bash {\"command\":\"sleep 8; printf 'alpha\\\\n'\"}","copy":true,"outputShown":false,"outputOpen":false,"summary":"Output · 0 lines","output":"","hint":"The run ended before this call was answered.","finished":"denied"}]
+  status proof: record runs [["run-1","done"],["run-2","failed"]] -> failed; row {"botId":"bot-local","state":"failed","name":"Items","sub":"failed","dot":"dot ring","selected":true,"threads":"1","nameColor":"rgb(115, 115, 115)"}
+ok - frame 14-bot-failed: the run record derives the row's status: "failed"
+ok - frame 14-bot-failed: the row's sub line follows the derivation: "failed"
+ok - frame 14-bot-failed: the row's dot follows the derivation: "dot ring"
+  the status the record derives: failed (failed)
+ok - frame 14-bot-failed: the Bot is the one this driver made: "bot-local"
+ok - every removed marker line is absent from the whole transcript: {"turnTitle":0,"turnEnd":0,"toolDecision":0,"toolResult":0,"approvalResolved":0,"runStatus":0,"grantLifecycle":0}
+ok - the page raised no error: null
+ok - both Bots are still listed, with the second untouched by the first's runs: [["Items","failed"],["Bystander","idle"]]
+ok - the status proof for the other Bot reads its own empty run set: "idle"
+
+RESULT: PASS (203/203)
+
+
+--- captured output (stdout and stderr) ---
+
+artifact: packages/verify/artifacts/items/74186ed/assert.txt
+RESULT: PASS (203/203)
