@@ -40,8 +40,10 @@ computed with `git rev-parse --short HEAD`, not the commit the artifact was comm
 `bun run verify` runs `bun packages/pixel-gate/src/cli.ts --no-write` as its `pixel-gate` step, and
 `.github/workflows/ci.yml` installs Chrome and sets `FREEBOT_CHROME` before that step, so the gate
 runs on the build host and in CI. The command's exit code is `exitCodeFor(verdictFailures(...))`:
-zero only when every carried chrome region's differing-pixel count is at or under the tolerance and
-every moved box is either zero or matched by a declared delta.
+zero only when every carried chrome region's differing-pixel count is at or under the tolerance, every
+desktop chrome region above its breakpoint is present, every moved box is either zero or matched by a
+declared delta, no viewport scrolls horizontally, and both pages measure the vendored Geist face. A
+font that times out or falls back is a failure, not a note.
 
 The failure path has its own proof, and it does not wreck a page. `packages/pixel-gate/src/gate.test.ts`
 builds the report shapes the run produces and shifts one number: one differing chrome pixel fails the
@@ -202,8 +204,9 @@ On the build host the Geist string measures 243.62px against the absent family's
 face is in use on both sides rather than the stack's fallback. `assert.txt` prints that pair, and a
 run where the two numbers are equal reports the fallback instead. This is measured rather than asked,
 because `document.fonts.check('16px Geist')` answers `true` on a machine with no Geist at all; the
-run also waits on `document.fonts.ready` before its first probe, so a capture cannot hold the
-fallback while the face is still in flight.
+run also waits on `document.fonts.ready` before its first probe, with a five-second bound that fails
+the run rather than capturing a fallback, and the verdict carries a font failure when either page's
+Geist string measures the absent family's width.
 
 **A freeze, injected before any capture.** `packages/pixel-gate/src/page.ts`'s `FREEZE_CSS` removes
 animations and transitions and hides the caret, and every running animation is cancelled through
@@ -354,12 +357,13 @@ At 360x800 the same rows read: header +0.2, transcript top +0.2 and height +70.3
    verdict. No entry in the delta list justifies a number, because no chrome pixel differs.
 3. **The middle column is the export's order.** The transcript is the composer's `flex: 1` sibling,
    the composer is the column's last child and pinned to the bottom edge, and the transcript carries
-   the export's bottom pinning (`justify-content: flex-end` plus a first-row auto margin so a long
-   transcript can still be scrolled to its top). The header is one 56px row, the export's
-   `min-height: 53px` plus its 10px padding: `h1`, the copy that holds in both provider modes, the
-   Bot-and-thread title, the Conversation/Library strip and the Details control, all truncating
-   rather than wrapping. The export's header measures 55.8px, so the header delta is 0.2px, inside
-   the half-pixel box tolerance.
+   the export's bottom pinning: a first-row auto margin for a short conversation, and a scroll to
+   the end when a frame lands, which is the export's own `scrollTop = scrollHeight` without
+   `justify-content: flex-end`'s clipping of a long transcript's first rows. The header is one 56px
+   row, the export's `min-height: 53px` plus its 10px padding: `h1`, the copy that holds in both
+   provider modes, the Bot-and-thread title, the Conversation/Library strip and the Details control,
+   all truncating rather than wrapping. The export's header measures 55.8px, so the header delta is
+   0.2px, inside the half-pixel box tolerance.
 4. **The delta list has its pixels.** Four content-region entries remain, in
    `docs/DESIGN-CONTRACT.md` and in `packages/pixel-gate/src/deltas.ts`, re-exported as
    `DECLARED_DELTAS` in `packages/verify/scripts/design-contract.ts`. A moved box that is not in the

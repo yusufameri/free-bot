@@ -382,6 +382,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
   if (chromeVersion === "") throw new Error("the run finished without its browser");
 
   failures.push(...verdictFailures(reports, CHROME_TOLERANCE));
+  failures.push(...fontFailures(fonts));
 
   const chromeTotal = sumDiffs(
     reports.flatMap((report) =>
@@ -748,7 +749,22 @@ export function stability(request: StabilityRequest): ReturnType<typeof compareR
 }
 
 /**
- * Every chrome region whose differing-pixel count is over the tolerance, by name.
+ * The chrome regions each viewport must carry, read from the two breakpoints the stylesheets share:
+ * the aside and resizer leave below 1120px, the sidebar below 860px. A region that is `absent`
+ * above its breakpoint is a missing selector, not a viewport that does not carry it.
+ */
+export function expectedChromeAt(width: number): string[] {
+  const expected: string[] = [];
+  if (width > 860) expected.push("chrome.sidebar-edge");
+  if (width > 1120) {
+    expected.push("chrome.resizer", "chrome.aside-edge", "chrome.aside-strip-rule");
+  }
+  return expected;
+}
+
+/**
+ * Every chrome region whose differing-pixel count is over the tolerance, by name, plus any desktop
+ * chrome region that is absent above its own breakpoint.
  *
  * Exposed so the failure path is driven by a test with a fake report rather than by damaging a real
  * page. The run's exit code is a function of this list, and `exitCodeFor` is that function.
@@ -759,6 +775,18 @@ export function chromeFailures(
 ): string[] {
   const failures: string[] = [];
   for (const report of reports) {
+    const present = new Set(
+      report.regions
+        .filter((region) => region.kind === "chrome" && region.status !== "absent")
+        .map((region) => region.id),
+    );
+    for (const id of expectedChromeAt(report.width)) {
+      if (!present.has(id)) {
+        failures.push(
+          `${report.label} ${id}: chrome region is absent at ${report.width}px, above its breakpoint`,
+        );
+      }
+    }
     for (const region of report.regions) {
       if (region.kind !== "chrome" || region.status === "absent") continue;
       if (region.stat === null) {
@@ -771,6 +799,31 @@ export function chromeFailures(
         );
       }
     }
+  }
+  return failures;
+}
+
+/**
+ * A run whose vendored face did not resolve is not a fidelity pass, even if every pixel it picked
+ * happened to agree. `document.fonts.check` is not used here; the measurement is the advance width
+ * of a Geist-family string against a family that cannot exist, on each page.
+ */
+export function fontFailures(fonts: FontFacts): string[] {
+  const failures: string[] = [];
+  if (!fonts.same) {
+    failures.push(
+      `the two pages resolve different font stacks: app ${fonts.appStack}; export ${fonts.exportStack}`,
+    );
+  }
+  if (fonts.appGeistWidth === fonts.appAbsentWidth) {
+    failures.push(
+      `the app's 'Geist' string measures ${fonts.appGeistWidth}px, the same as the absent family's ${fonts.appAbsentWidth}px, so the vendored face did not resolve`,
+    );
+  }
+  if (fonts.exportGeistWidth === fonts.exportAbsentWidth) {
+    failures.push(
+      `the export's 'Geist' string measures ${fonts.exportGeistWidth}px, the same as the absent family's ${fonts.exportAbsentWidth}px, so the vendored face did not resolve`,
+    );
   }
   return failures;
 }

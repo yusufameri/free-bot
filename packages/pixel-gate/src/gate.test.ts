@@ -10,7 +10,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { RegionDiff } from "./diff.ts";
-import { boxFailures, chromeFailures, exitCodeFor, verdictFailures } from "./gate.ts";
+import { boxFailures, chromeFailures, exitCodeFor, fontFailures, verdictFailures } from "./gate.ts";
 import { LINUX_FLAGS, launchFlags } from "./page.ts";
 import type { BoxDelta } from "./regions.ts";
 import type { RegionReport, ViewportReport } from "./report.ts";
@@ -49,7 +49,25 @@ function region(over: Partial<RegionReport> & Pick<RegionReport, "id" | "kind">)
   return { ...base, ...over };
 }
 
-function report(regions: RegionReport[]): ViewportReport {
+const CHROME_IDS = [
+  "chrome.resizer",
+  "chrome.sidebar-edge",
+  "chrome.aside-edge",
+  "chrome.aside-strip-rule",
+] as const;
+
+function report(
+  regions: RegionReport[],
+  over: Partial<ViewportReport> = {},
+  stubs = true,
+): ViewportReport {
+  const ids = new Set(regions.map((entry) => entry.id));
+  const all = stubs
+    ? [
+        ...CHROME_IDS.filter((id) => !ids.has(id)).map((id) => region({ id, kind: "chrome" })),
+        ...regions,
+      ]
+    : regions;
   return {
     index: 1,
     name: "wide",
@@ -58,14 +76,15 @@ function report(regions: RegionReport[]): ViewportReport {
     label: "09-wide-1920x1080",
     chrome: ZERO,
     content: ZERO,
-    chromeRegions: regions.filter((entry) => entry.kind === "chrome").length,
-    contentRegions: regions.filter((entry) => entry.kind === "content").length,
+    chromeRegions: all.filter((entry) => entry.kind === "chrome").length,
+    contentRegions: all.filter((entry) => entry.kind === "content").length,
     whole: ZERO,
-    regions,
+    regions: all,
     overflow: { document: [1920, 1920], regions: {}, overflowing: [] },
     digests: { app: "0000000000000000", export: "0000000000000000" },
     repeat: null,
     files: [],
+    ...over,
   };
 }
 
@@ -83,7 +102,7 @@ describe("the chrome verdict", () => {
     expect(exitCodeFor(failures)).toBe(1);
   });
 
-  test("an absent chrome region is not a failure, because it has no statistic to read", () => {
+  test("an absent chrome region below its breakpoint is not a failure", () => {
     const absent = region({
       id: "chrome.aside-edge",
       kind: "chrome",
@@ -91,8 +110,53 @@ describe("the chrome verdict", () => {
       rect: null,
       stat: null,
     });
-    expect(chromeFailures([report([absent])])).toEqual([]);
+    const low = report([absent], {
+      index: 5,
+      name: "tablet-portrait",
+      width: 820,
+      height: 1180,
+      label: "05-tablet-portrait-820x1180",
+    });
+    expect(chromeFailures([low])).toEqual([]);
     expect(exitCodeFor([])).toBe(0);
+  });
+
+  test("a desktop chrome region that went absent above its breakpoint fails", () => {
+    const only = region({ id: "chrome.sidebar-edge", kind: "chrome" });
+    const failures = chromeFailures([report([only], {}, false)]);
+    expect(failures).toHaveLength(3);
+    expect(failures.join("\n")).toContain("chrome.resizer: chrome region is absent at 1920px");
+    expect(failures.join("\n")).toContain("chrome.aside-edge");
+    expect(failures.join("\n")).toContain("chrome.aside-strip-rule");
+  });
+});
+
+describe("the font verdict", () => {
+  const resolved = {
+    appStack: "Geist, system-ui",
+    exportStack: "Geist, system-ui",
+    same: true,
+    appGeistWidth: 243.62,
+    appAbsentWidth: 215.98,
+    exportGeistWidth: 243.62,
+    exportAbsentWidth: 215.98,
+    geistResolves: true,
+  };
+
+  test("both pages measuring the vendored face passes", () => {
+    expect(fontFailures(resolved)).toEqual([]);
+  });
+
+  test("a page that fell back to the absent family fails by name", () => {
+    expect(fontFailures({ ...resolved, appGeistWidth: 215.98 })).toHaveLength(1);
+    expect(fontFailures({ ...resolved, appGeistWidth: 215.98 })[0]).toContain("the app's 'Geist'");
+    expect(fontFailures({ ...resolved, exportGeistWidth: 215.98 })[0]).toContain(
+      "the export's 'Geist'",
+    );
+  });
+
+  test("two different stacks fail even when each resolves its own face", () => {
+    expect(fontFailures({ ...resolved, same: false })[0]).toContain("different font stacks");
   });
 });
 

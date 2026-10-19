@@ -603,7 +603,13 @@ export function mountThread(config: {
       const announced = "seq" in message ? null : message.type;
       state = next;
       if (message.type === "run.started") stopRequested = false;
-      if (applied || announced === "stream.resumed") renderMessage(message);
+      if (applied || announced === "stream.resumed") {
+        renderMessage(message);
+        // The export pins a growing transcript to its own end (`freebot-prototype.html:1086`), so a
+        // new frame lands where a person reads it. The auto margin on the first row still bottom-
+        // aligns a short conversation, without clipping a long one's start.
+        threadEl.scrollTop = threadEl.scrollHeight;
+      }
       updateHeader();
       updateStop();
       if (state.error !== null) showError(state.error);
