@@ -14,7 +14,8 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
-  writeFileSync,
+  renameSync,
+  unlinkSync,
   writeSync,
 } from "node:fs";
 import { dirname } from "node:path";
@@ -23,6 +24,43 @@ function isEnoent(error: unknown): boolean {
   return (
     typeof error === "object" && error !== null && (error as { code?: string }).code === "ENOENT"
   );
+}
+
+/**
+ * Replace a file's contents without ever letting a reader, or a crash, see it half-written: the
+ * bytes go to a neighbour, are fsynced, and the neighbour is renamed over the target, and the
+ * directory is fsynced so the rename is what survives a power cut. Rewriting the live file in place
+ * would leave a window that starts by truncating it, which is a window where records a previous
+ * append already fsynced are gone and the crash that lands in the middle of it keeps them gone.
+ */
+function rewriteAtomically(path: string, content: string): void {
+  const dir = dirname(path);
+  mkdirSync(dir, { recursive: true });
+  const neighbour = `${path}.${process.pid}.tmp`;
+  const fd = openSync(neighbour, "w");
+  try {
+    writeSync(fd, content);
+    fsyncSync(fd);
+  } finally {
+    closeSync(fd);
+  }
+  try {
+    renameSync(neighbour, path);
+  } catch (error) {
+    try {
+      unlinkSync(neighbour);
+    } catch {
+      // The rename is what failed and the reason for it is the error being thrown; a neighbour that
+      // survives one attempt at removing it is a stray file, not a second failure worth reporting.
+    }
+    throw error;
+  }
+  const dirFd = openSync(dir, "r");
+  try {
+    fsyncSync(dirFd);
+  } finally {
+    closeSync(dirFd);
+  }
 }
 
 export class JsonlFile {
@@ -53,7 +91,12 @@ export class JsonlFile {
     }
     if (text.length === 0) return { lines: [], tornTrailingLine: false };
     const complete = text.endsWith("\n") ? text : text.slice(0, text.lastIndexOf("\n") + 1);
-    if (!text.endsWith("\n")) writeFileSync(this.#path, complete);
+    if (!text.endsWith("\n")) {
+      // The repair replaces the file, so a handle this instance holds would go on appending to the
+      // inode nothing reads any more. Dropping it makes the next append reopen the file by name.
+      this.close();
+      rewriteAtomically(this.#path, complete);
+    }
     return {
       lines: complete.split("\n").filter((line) => line.trim().length > 0),
       tornTrailingLine: !text.endsWith("\n"),
@@ -81,8 +124,7 @@ export class JsonlFile {
     const path = this.#path;
     if (path === undefined) return;
     this.close();
-    mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, lines.map((line) => `${line}\n`).join(""));
+    rewriteAtomically(path, lines.map((line) => `${line}\n`).join(""));
   }
 
   /** Release the handle. A process that dies here leaves exactly the records it applied. */
