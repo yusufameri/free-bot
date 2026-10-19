@@ -16,8 +16,14 @@ import { existsSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } fr
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ProviderPort, SandboxPort } from "@freebot/core";
+import { ProviderTurnError } from "@freebot/core";
 import type { SandboxSpec } from "@freebot/sandbox";
-import { createRunService, threadTranscriptPath, UnknownRecordError } from "./run-service.ts";
+import {
+  createRunService,
+  threadJournalPath,
+  threadTranscriptPath,
+  UnknownRecordError,
+} from "./run-service.ts";
 
 /** One turn of text and no call, so a run finishes in the few frames it can. */
 /** Creates nothing and runs nothing, so a test that starts a run needs no container. */
@@ -396,6 +402,84 @@ describe("a second process over the same bots root", () => {
       ["run.failed", { reason: "the model could not be built" }],
       ["run.status", { runId: "run-2", status: "failed" }],
     ]);
+    reopened.close();
+  });
+
+  test("a setup error that names a parked code settles instead of throwing", async () => {
+    const service = createRunService({
+      botsRoot: botsRoot(),
+      sandbox: noSandbox,
+      provider: () => {
+        throw new ProviderTurnError("sandbox_lost_mid_run", "the sandbox is gone");
+      },
+    });
+    const bot = service.createBot("Local Bot");
+    const thread = service.createThread(bot.id);
+    const { runId } = service.start({ prompt: "one", botId: bot.id, threadId: thread.id });
+
+    await service.idle();
+
+    expect(service.run(runId)?.record).toMatchObject({
+      status: "failed",
+      error: { code: "internal_invariant", detail: "the sandbox is gone" },
+    });
+    expect(
+      service.events(thread.id, 0).messages.filter((frame) => frame.runId === runId),
+    ).toHaveLength(2);
+    service.close();
+  });
+
+  test("a boot finishes a setup settlement that never reached the record", async () => {
+    const root = botsRoot();
+    const first = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => {
+        throw new Error("the model could not be built");
+      },
+    });
+    const bot = first.createBot("Local Bot");
+    const thread = first.createThread(bot.id);
+    const { runId } = first.start({ prompt: "one", botId: bot.id, threadId: thread.id });
+    await first.idle();
+    first.close();
+
+    // The crash this covers: both ending frames were written, the record never was, and the status
+    // frame was lost too. The next boot finishes the ending from the frame that survived.
+    const journal = threadJournalPath(root, bot.id, thread.id);
+    const commands = readFileSync(journal, "utf8")
+      .split("\n")
+      .filter((line) => line !== "" && (JSON.parse(line) as { op: string }).op !== "fail");
+    writeFileSync(journal, `${commands.join("\n")}\n`);
+    const transcript = threadTranscriptPath(root, bot.id, thread.id);
+    const records = readFileSync(transcript, "utf8")
+      .split("\n")
+      .filter((line) => {
+        if (line === "") return false;
+        const record = JSON.parse(line) as {
+          frame: { type: string; payload: { status?: string } };
+        };
+        return !(record.frame.type === "run.status" && record.frame.payload.status === "failed");
+      });
+    writeFileSync(transcript, `${records.join("\n")}\n`);
+
+    const reopened = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
+
+    expect(reopened.run(runId)?.record).toMatchObject({
+      status: "failed",
+      error: { code: "internal_invariant", detail: "the model could not be built" },
+    });
+    expect(
+      reopened.events(thread.id, 0).messages.filter((frame) => frame.type === "run.failed"),
+    ).toHaveLength(1);
+    expect(reopened.events(thread.id, 0).messages.at(-1)?.payload).toEqual({
+      runId,
+      status: "failed",
+    });
     reopened.close();
   });
 });

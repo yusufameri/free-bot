@@ -306,7 +306,9 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
    * page reads: a crash between the two writes then leaves a conversation that already ends, and the
    * next boot sees the frame, keeps it, and fails the record instead of appending a second ending.
    * Each frame is asked for separately, since a crash can land between them, and a run the taxonomy
-   * has already failed at this code is repaired too, for the same reason.
+   * has already failed at this code is repaired too, for the same reason. An ending already on disk
+   * that the record never took is the run's own failure, so the boot finishes the record at that
+   * failure instead of relabeling it a restart.
    *
    * A `paused` run is left alone. The taxonomy parks a run that can be rejoined, so its status is a
    * wait rather than an ending, and a restart is not evidence that the wait ended. `queued`,
@@ -317,7 +319,12 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     if (record.status === "paused" || (isTerminal(record.status) && !restartFailure)) return;
     const ending = failureEntry("server_restart");
     const frames = runtime.log.since(0).filter((entry) => entry.frame.runId === record.id);
-    const hasFailFrame = frames.some((entry) => entry.frame.type === "run.failed");
+    const failFrame = frames.find((entry) => entry.frame.type === "run.failed");
+    const failReason =
+      failFrame !== undefined && failFrame.frame.type === "run.failed"
+        ? failFrame.frame.payload.reason
+        : null;
+    const hasFailFrame = failFrame !== undefined;
     const hasFailedStatus = frames.some(
       (entry) => entry.frame.type === "run.status" && entry.frame.payload.status === "failed",
     );
@@ -329,6 +336,14 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     });
     if (!hasFailFrame) logPort.append("run.failed", { reason: ending.copy });
     if (!hasFailedStatus) logPort.append("run.status", { runId: record.id, status: "failed" });
+    if (!restartFailure && failReason !== null && failReason !== ending.copy) {
+      // The ending on disk is the run's own, so a crash between its frames and the record write is
+      // finished at that failure rather than relabeled a restart. A restart's own ending carries the
+      // restart copy, so it keeps the path below. Only a setup settlement writes an ending before
+      // the record, so an in-flight run never reaches this branch.
+      runtime.store.fail(record.id, "internal_invariant", failReason);
+      return;
+    }
     runtime.store.fail(record.id, "server_restart", null);
   }
 
@@ -350,11 +365,24 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
   ): void {
     const record = runtime.store.get(runId);
     if (record === undefined || isTerminal(record.status)) return;
-    const detail = error instanceof Error ? error.message : String(error);
-    const code = error instanceof ProviderTurnError ? error.code : "internal_invariant";
-    runtime.store.fail(runId, code, detail);
+    const detail =
+      error instanceof ProviderTurnError
+        ? error.detail
+        : error instanceof Error
+          ? error.message
+          : String(error);
+    const carried = error instanceof ProviderTurnError ? error.code : null;
+    // `RunStore.fail` refuses a code the taxonomy parks. A setup error has no parked state, so a
+    // carried code that would pause is reported as the internal error instead of thrown.
+    const code =
+      carried !== null && failureEntry(carried).status === "failed"
+        ? carried
+        : "internal_invariant";
+    // The frames go first, as in `settleAbandoned`: a crash between the two writes leaves a
+    // conversation that already ends, which the next boot finishes rather than leaving queued.
     logPort.append("run.failed", { reason: detail });
     logPort.append("run.status", { runId, status: "failed" });
+    runtime.store.fail(runId, code, detail);
   }
 
   function openRuntime(thread: ThreadRecord): ThreadRuntime {
