@@ -34,6 +34,27 @@
         "packages/verify/scripts/sandbox-pin-repair.ts",
         "docs/sandbox-image.md"
       ]
+    },
+    {
+      "id": "mvp-status-capture",
+      "command": "bun packages/verify/scripts/status-capture.ts --url <live-instance> --out <directory> --mode both",
+      "artifact": "packages/verify/artifacts/mvp-status-capture",
+      "subjects": [
+        "apps/web/host/index.html",
+        "apps/web/host/main.ts",
+        "packages/ui/browser/render.ts",
+        "packages/ui/browser/shell.ts",
+        "packages/ui/browser/first-run.ts",
+        "packages/ui/src/thread.ts",
+        "packages/ui/src/bots.ts",
+        "packages/ui/src/frames.ts",
+        "packages/verify/src/cdp.ts",
+        "packages/verify/scripts/status-capture.ts",
+        "packages/verify/driver-subjects.json",
+        "apps/server/src/replay-provider.ts",
+        "packages/pi-bridge/fixtures/rpc-handshake.jsonl",
+        "docs/mvp-status-capture.md"
+      ]
     }
   ]
 }

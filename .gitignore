@@ -2,3 +2,7 @@ node_modules/
 dist/
 .DS_Store
 .env*
+
+# Chrome profiles the CDP drivers create in the worktree. A driver removes its own; this covers
+# the one a crashed run leaves behind.
+.freebot-chrome-profile-*/
