@@ -446,8 +446,8 @@ export async function probeHost(
       ? { present: true, detail: CHROME }
       : { present: false, detail: `${CHROME} absent` },
     vaultKey: existsSync(vault)
-      ? { present: true, detail: `${vault} present` }
-      : { present: false, detail: `${vault} absent` },
+      ? { present: true, detail: "a model key is present in the vault the drivers boot with" }
+      : { present: false, detail: "the vault the drivers boot with is absent" },
     liveInstance:
       statusUrl === ""
         ? { present: false, detail: "FREEBOT_STATUS_URL is not set" }

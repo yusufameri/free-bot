@@ -33,7 +33,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
@@ -626,7 +626,7 @@ const made: string[] = [];
 
 /** Write the artifact, refusing one that carries an operator token or a key-shaped literal. */
 function writeArtifact(): string | null {
-  const text = [...headerLines, ...log.lines, ""].join("\n");
+  const text = [...headerLines, ...log.lines, ""].join("\n").replaceAll(homedir(), "~");
   for (const launched of live) {
     if (launched.token !== "" && text.includes(launched.token)) {
       console.error("refusing to write an artifact that contains the operator token");

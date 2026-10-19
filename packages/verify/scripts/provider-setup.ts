@@ -27,7 +27,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describeVault, readVault } from "../../../apps/server/src/vault.ts";
@@ -958,7 +958,9 @@ const made: string[] = [];
 
 /** Write the artifact, refusing one that carries the key, the operator token, or a key-shaped literal. */
 function writeArtifact(): string | null {
-  const text = [...headerLines, ...log.lines, "", log.result(), ""].join("\n");
+  const text = [...headerLines, ...log.lines, "", log.result(), ""]
+    .join("\n")
+    .replaceAll(homedir(), "~");
   for (const launched of live) {
     if (launched.token !== "" && text.includes(launched.token)) {
       console.error("refusing to write an artifact that contains the operator token");
