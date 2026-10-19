@@ -1,11 +1,11 @@
 {
   "feature": "pixel-gate",
-  "command": "bun packages/pixel-gate/src/cli.ts --artifact /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/opencode/u6.7a-followup-run-d",
-  "commit": "4d2c0d35acc9af322184bbce544561d2be990a0c",
-  "shortSha": "4d2c0d3",
+  "command": "bun packages/pixel-gate/src/cli.ts --artifact /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/opencode/u6.7a-followup-run-f",
+  "commit": "df87bca9d6eabe678ad703b58a777cac427ece43",
+  "shortSha": "df87bca",
   "branch": "u6.7a-coderabbit-followup",
   "dirty": false,
-  "startedAt": "2026-10-19T06:47:22.605Z",
+  "startedAt": "2026-10-19T06:55:43.386Z",
   "runtime": "bun 1.2.5 on darwin arm64",
   "chrome": "chrome Chrome/155.0.8059.85",
   "fonts": {
@@ -19,17 +19,17 @@
     "geistResolves": false
   },
   "app": {
-    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-Xt4P5v",
-    "url": "http://127.0.0.1:60602/#token=<redacted>",
+    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-mF8qZc",
+    "url": "http://127.0.0.1:62003/#token=<redacted>",
     "botId": "bot-local",
     "threadId": "thread-1",
     "provider": "replay",
-    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-Xt4P5v/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-Xt4P5v)"
+    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-mF8qZc/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-mF8qZc)"
   },
   "exportSource": {
     "file": "design/prototype-84c6b185/freebot-prototype.html",
     "initialScreenReplacements": 1,
-    "servedAt": "http://127.0.0.1:60604/"
+    "servedAt": "http://127.0.0.1:62005/"
   },
   "viewports": [
     {

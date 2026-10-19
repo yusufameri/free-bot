@@ -1,7 +1,7 @@
 {
   "command": "bun packages/pixel-gate/src/cli.ts --repeat",
-  "commit": "4d2c0d35acc9af322184bbce544561d2be990a0c",
-  "shortSha": "4d2c0d3",
+  "commit": "df87bca9d6eabe678ad703b58a777cac427ece43",
+  "shortSha": "df87bca",
   "chrome": "chrome Chrome/155.0.8059.85",
   "chromeTolerance": 0,
   "verdict": "PASS",

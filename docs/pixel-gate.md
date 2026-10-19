@@ -75,15 +75,16 @@ stale, and a same-run pair cancels it.
 
 ## The tests
 
-`bun test packages/pixel-gate/src` drives 65 tests over the three modules whose arithmetic a
+`bun test packages/pixel-gate/src` drives 66 tests over the three modules whose arithmetic a
 verdict depends on. The diff tests call `diffRegion` and `digestImage` directly, and those two
 functions are injected into the browser with `Function.prototype.toString`, so the tests drive the
 same bytes the diff page runs rather than a re-implementation of them. The region tests drive the
 snapping, the absence rule and the delta's sign over boxes written by hand. The report tests drive
 the summing, the two-run proof and the JSON emitter, including the one shape that got a baseline
 artifact a lint error: an array short enough to fit on its own but too long for the line its key
-puts it on. They also drive the two-run proof's symmetry: a viewport or chrome region that exists in
-only one of the two runs fails it.
+puts it on. They also drive the two-run proof's symmetry: a viewport or chrome region with no
+counterpart in the other run fails it, whether the counterpart is simply missing or shares its id
+under another kind.
 
 The artifact's JSON is written by `canonicalJson` in `report.ts` rather than by
 `JSON.stringify(value, null, 2)`, because `packages/verify/artifacts/**` is committed and
@@ -196,8 +197,8 @@ same pixels. The committed pair is under the baseline's `stability/`.
 
 ## The baseline
 
-The committed baseline is `packages/verify/artifacts/pixel-gate/4d2c0d3/`, produced by
-`bun packages/pixel-gate/src/cli.ts --repeat` at commit `4d2c0d3`, against the app as it stands. The app state
+The committed baseline is `packages/verify/artifacts/pixel-gate/df87bca/`, produced by
+`bun packages/pixel-gate/src/cli.ts --repeat` at commit `df87bca`, against the app as it stands. The app state
 is stated in `assert.txt`: booted as `bun run up --no-open --replay` over a fresh temporary
 `FREEBOT_HOME` and bots root, one Bot and one thread created over `/rpc` before the page opens, the
 vault this run's own three-line placeholder at mode 600 in that temporary directory. No key is read,
