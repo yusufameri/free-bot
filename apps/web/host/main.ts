@@ -59,6 +59,7 @@ import {
   type ShellSelection,
 } from "../../../packages/ui/browser/shell.ts";
 import { latestCommand, latestRun, liveRunStatus } from "../../../packages/ui/src/aside.ts";
+import { liveBotStatus } from "../../../packages/ui/src/bots.ts";
 import type { OverlayCommand } from "../../../packages/ui/src/overlays.ts";
 import { providerRowLabel } from "../../../packages/ui/src/provider.ts";
 
@@ -203,7 +204,11 @@ const shell = mountShell({
       await client().create_thread(title === undefined ? { botId } : { botId, title }),
   },
   onChange: (next) => {
+    const previousBot = selection.botId;
     selection = next;
+    if (previousBot !== null && previousBot !== next.botId) {
+      shell.setLiveStatus(previousBot, null);
+    }
     if (token !== null && next.threadId !== null) {
       void library.refresh().catch(() => undefined);
       connect();
@@ -211,6 +216,7 @@ const shell = mountShell({
     }
     // A different thread is a different latest run, which is what the notice stack reads.
     paintNotices();
+    if (next.botId !== null) shell.setLiveStatus(next.botId, liveBotStatus(handle.state()));
   },
 });
 exposeShellFacts(shell);
@@ -388,6 +394,11 @@ function connect(): void {
     }
     // The transcript moved, so the pane's own counters, its run and its newest command moved too.
     paintAside();
+    // The Bot row follows the run's own state between record reads: a park needs a person, a run in
+    // flight is work, and the ending frame is the ending.
+    if (selection.botId !== null) {
+      shell.setLiveStatus(selection.botId, liveBotStatus(handle.state()));
+    }
     if (handle.state().error !== null) ws.close();
     if (
       message.type === "run.finished" ||
@@ -396,10 +407,14 @@ function connect(): void {
     ) {
       // The thread's own counts and its run record both moved, so the list is re-read and the two
       // surfaces that read it — the pane and the notice stack — repaint from what came back. A
-      // cancelled run carries only `run.status`, so it is named here rather than left behind.
+      // cancelled run carries only `run.status`, so it is named here rather than left behind. The
+      // live override is cleared once the record has landed, so the row's dot is derived from the
+      // run store rather than from the stream that reported it.
+      const endedBot = selection.botId;
       void shell
         .refresh()
         .then(() => {
+          if (endedBot !== null) shell.setLiveStatus(endedBot, null);
           paintAside();
           paintNotices();
         })

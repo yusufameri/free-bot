@@ -123,7 +123,7 @@ looks like when you ask it to print today's date.
 | 2. Streaming | The model's first turn arrives: its own text, then the tool call it asked for. |
 | 3. Parked | The run asked to run that command in a container, and the approval card waits for your answer. The tool card reads `awaiting approval`, so a parked run does not look frozen. |
 | 4. Allowed once | The card shows `allowed once`, the command runs inside the container, and the output block holds the container's own stdout. The model then reads that output and answers in its own words. |
-| 5. Denied | The card shows `denied`, the call produces no output, the decision marker reads `deny (user_denied)`, and the run still reaches its terminal frame. |
+| 5. Denied | The card shows `denied`, the call produces no output, the tool card's `data-status` and `data-finished` read `denied` with the approval card's `deny`, and the run still reaches its terminal frame. |
 
 The four committed frames from a live run, at commit `5333adb`:
 

@@ -236,8 +236,9 @@ function domFacts(cdp: Cdp, sessionId: string): Promise<DomFacts> {
     sessionId,
     `({
       frames: document.querySelectorAll('#thread .frame[data-seq]').length,
-      lastSeq: Math.max(0, ...[...document.querySelectorAll('#thread .frame[data-seq]')].map((node) => Number(node.dataset.seq))),
-      cards: [...document.querySelectorAll('#thread .tool-card .status')].map((node) => node.textContent),
+      lastSeq: Number(document.querySelector('#lastseq').dataset.lastSeq),
+      // The page's facts hook reports the card's data-status; read the same fact, not the tag's word.
+      cards: [...document.querySelectorAll('#thread .tool-card')].map((card) => card.dataset.status ?? ''),
       approvals: [...document.querySelectorAll('#thread .approval-card')].map((card) => card.dataset.decision ?? null),
     })`,
   );
@@ -277,7 +278,13 @@ const SPECS: readonly FrameSpec[] = [
         holds: (f) => f.cards.some(([, status]) => status === "awaiting approval"),
       },
       { label: "the run has not finished", holds: (f) => !f.done },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .approval-card",
   },
@@ -297,14 +304,20 @@ const SPECS: readonly FrameSpec[] = [
       },
       { label: "the run reported done", holds: (f) => f.done },
       { label: "the terminal marker is rendered", holds: (f) => f.streamEnd === "stream complete" },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .run-finished",
   },
   {
     name: "04-denied",
     caption:
-      "A second launch, denied: the same page and the same engine on a free port of its own, where the refusal is recorded as user_denied and no command runs.",
+      "A second launch, denied: the same page and the same engine on a free port of its own, where the refusal is the card's denied state and no command runs.",
     claims: [
       {
         label: "the approval card shows the deny decision",
@@ -316,7 +329,13 @@ const SPECS: readonly FrameSpec[] = [
           f.cards.some(([, status]) => status === "denied") &&
           f.outputShown.every((shown) => !shown),
       },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .approval-card",
   },
@@ -617,7 +636,7 @@ interface ParkedView {
   /** `bash ` plus the model's own arguments, as the card renders them. */
   readonly command: string;
   readonly buttons: string[];
-  readonly statusFrames: number;
+  readonly parked: string[];
   /** The assistant text on the page when the run parked. */
   readonly text: string;
 }
@@ -642,8 +661,13 @@ async function parkRun(
       return {
         callId,
         command: tool.querySelector('.cmd').textContent,
-        buttons: [...card.querySelectorAll('button')].map((button) => button.textContent),
-        statusFrames: document.querySelectorAll('#thread .run-status[data-run-status="awaiting_approval"]').length,
+        buttons: [...card.querySelectorAll('.approval-actions button')].map((button) => button.textContent),
+        // Old: '#thread .run-status[data-run-status="awaiting_approval"]' count. New: '#run[data-run-status]' plus the cards.
+        parked: [
+          document.querySelector('#run').dataset.runStatus,
+          tool.dataset.status,
+          card.dataset.state,
+        ],
         text: ${TEXT},
       };
     })()`,
@@ -661,9 +685,9 @@ async function parkRun(
   );
   log.check(`${label}: the buttons are the two real answers`, view.buttons, ["Allow once", "Deny"]);
   log.check(
-    `${label}: the run's own status frame is rendered, so a parked run does not look frozen`,
-    view.statusFrames,
-    1,
+    `${label}: the run's own status is on the header and the parked cards, so it does not look frozen`,
+    view.parked,
+    ["awaiting_approval", "awaiting approval", "pending"],
   );
   log.check(
     `${label}: the parked command is a bash call and is not the committed transcript's`,
@@ -717,8 +741,9 @@ interface SettledView {
   readonly result: string;
   readonly output: string;
   readonly text: string;
-  readonly decisions: string[];
-  readonly runFrames: string[];
+  readonly toolStates: Array<[string, string, string | null]>;
+  readonly approval: [string | null, string | null, string];
+  readonly runStatus: string | null;
   readonly failed: string | null;
   readonly error: string | null;
 }
@@ -733,8 +758,18 @@ function settledView(cdp: Cdp, page: string): Promise<SettledView> {
         result: document.querySelector('#thread .approval-card .approval-result')?.textContent ?? "",
         output: last?.querySelector('.output')?.textContent ?? "",
         text: ${TEXT},
-        decisions: [...document.querySelectorAll('#thread .tool-decision')].map((node) => node.textContent),
-        runFrames: [...document.querySelectorAll('#thread .run-status')].map((node) => node.textContent),
+        // Old: '#thread .tool-decision' and '#thread .run-status' marker lines. New: the cards' own states and '#run[data-run-status]'.
+        toolStates: [...document.querySelectorAll('#thread .tool-card')].map((card) => [
+          card.dataset.toolCall ?? '',
+          card.dataset.status ?? '',
+          card.dataset.finished ?? null,
+        ]),
+        approval: [
+          document.querySelector('#thread .approval-card')?.dataset.state ?? null,
+          document.querySelector('#thread .approval-card')?.dataset.decision ?? null,
+          document.querySelector('#thread .approval-card .approval-result')?.textContent ?? '',
+        ],
+        runStatus: document.querySelector('#run').dataset.runStatus ?? null,
         failed: document.querySelector('#thread .run-failed')?.textContent ?? null,
         error: document.querySelector('#error').hidden ? null : document.querySelector('#error').textContent,
       };
@@ -1021,22 +1056,27 @@ async function main(): Promise<number> {
     laterTurns.some((line) => / turn \d+ text /.test(line)),
     true,
   );
-  log.note(`the run's status frames: ${JSON.stringify(answered.runFrames)}`);
-  log.note(`the decision markers: ${JSON.stringify(answered.decisions)}`);
+  log.note(`the run's status: ${JSON.stringify(answered.runStatus)}`);
+  log.note(`the tool cards' states: ${JSON.stringify(answered.toolStates)}`);
+  log.note(`the approval card's state: ${JSON.stringify(answered.approval)}`);
   log.note(`the governance result on the card: ${JSON.stringify(answered.result)}`);
   log.note(`the container's own stdout: ${JSON.stringify(answered.output)}`);
   log.note(`the assistant text on the page: ${JSON.stringify(answered.text)}`);
   log.check("the allowed run failed nowhere", [answered.failed, answered.error], [null, null]);
   log.check(
     "the run reported done",
-    [answered.runFrames.includes("run done"), answered.failed],
-    [true, null],
+    [answered.runStatus, answered.toolStates.at(-1)?.[2]],
+    ["done", "done"],
   );
-  log.check("the card shows the allow the human gave", answered.result, "allowed once");
+  log.check("the card shows the allow the human gave", answered.approval, [
+    "allowed",
+    "allow",
+    "allowed once",
+  ]);
   log.check(
-    "the governed call ran: its decision is an allow",
-    answered.decisions.some((line) => line.endsWith(": allow")),
-    true,
+    "the governed call ran: its card is done",
+    [answered.toolStates.at(-1)?.[1], answered.toolStates.at(-1)?.[2]],
+    ["done", "done"],
   );
   log.check(
     "the output block holds the container's own stdout, and not the committed transcript's",
@@ -1069,12 +1109,23 @@ async function main(): Promise<number> {
   await parkRun(cdp, log, secondPage, "second launch", SECOND_PROMPT);
   await answerUntilSettled(cdp, log, secondPage, "second launch", "deny");
   const denied = await settledView(cdp, secondPage);
-  log.note(`the denial's decision markers: ${JSON.stringify(denied.decisions)}`);
+  log.note(`the denial's tool cards: ${JSON.stringify(denied.toolStates)}`);
+  log.note(`the denied approval card: ${JSON.stringify(denied.approval)}`);
   log.note(`the container's stdout for the denied call: ${JSON.stringify(denied.output)}`);
-  log.check("the card shows the deny the human gave", denied.result, "denied");
+  log.check("the card shows the deny the human gave", denied.approval, [
+    "denied",
+    "deny",
+    "denied",
+  ]);
   log.check(
-    "the refusal is named user_denied and no command ran",
-    [denied.decisions.some((line) => line.endsWith(": deny (user_denied)")), denied.output],
+    // Old: the '#thread .tool-decision' line ending ': deny (user_denied)'. New: the cards' own denied facts.
+    "the refusal is the card's denied state and no command ran",
+    [
+      denied.toolStates.some(
+        ([, status, finished]) => status === "denied" && finished === "denied",
+      ),
+      denied.output,
+    ],
     [true, ""],
   );
   captures.push(await capture(cdp, secondPage, "04-denied", log));

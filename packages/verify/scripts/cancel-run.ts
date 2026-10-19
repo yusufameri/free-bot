@@ -220,7 +220,8 @@ interface StopFacts {
   readonly prompts: string[];
   readonly toolCards: Array<[string, string]>;
   readonly approvalDecisions: Array<string | null>;
-  readonly runStatuses: string[];
+  readonly approvalStates: string[];
+  readonly approvalResults: string[];
   readonly headerStatus: string | null;
   readonly stop: {
     readonly label: string;
@@ -245,14 +246,18 @@ function facts(cdp: Cdp, page: string): Promise<StopFacts> {
         prompts: [...document.querySelectorAll('#thread .message.user .prompt')].map((node) => node.textContent),
         toolCards: [...document.querySelectorAll('#thread .tool-card')].map((card) => [
           card.dataset.toolCall ?? '',
-          card.querySelector('.status')?.textContent ?? '',
+          card.dataset.status ?? '',
         ]),
         approvalDecisions: [...document.querySelectorAll('#thread .approval-card')].map(
           (card) => card.dataset.decision ?? null,
         ),
-        runStatuses: [...document.querySelectorAll('#thread .run-status')].map(
-          (node) => node.dataset.runStatus ?? '',
+        approvalStates: [...document.querySelectorAll('#thread .approval-card')].map(
+          (card) => card.dataset.state ?? '',
         ),
+        approvalResults: [...document.querySelectorAll('#thread .approval-card .approval-result')].map(
+          (node) => node.textContent,
+        ),
+        // Old: '#thread .run-status' marker lines. New: '#run[data-run-status]' is the run's status.
         headerStatus: document.querySelector('#run').dataset.runStatus ?? null,
         stop: {
           label: stop.textContent,
@@ -308,8 +313,9 @@ const SPECS: readonly StopSpec[] = [
         holds: (f) => f.approvalDecisions.length === 1 && f.approvalDecisions[0] === null,
       },
       {
-        label: "the run's own status frame says awaiting_approval",
-        holds: (f) => f.runStatuses.includes("awaiting_approval"),
+        // Old: '#thread .run-status[data-run-status="awaiting_approval"]' marker. New: '#run[data-run-status]' plus the pending card.
+        label: "the run element says awaiting_approval and the card is pending",
+        holds: (f) => f.headerStatus === "awaiting_approval" && f.approvalStates[0] === "pending",
       },
     ],
     visible: "#stop",
@@ -321,8 +327,12 @@ const SPECS: readonly StopSpec[] = [
     claims: [
       { label: "the run's status is cancelled", holds: (f) => f.headerStatus === "cancelled" },
       {
-        label: "the terminal marker is rendered",
-        holds: (f) => f.runStatuses.at(-1) === "cancelled",
+        // Old: the last '#thread .run-status' marker line. New: '#run[data-run-status]' plus the card it closed.
+        label: "the run element carries cancelled and the waiting card is closed",
+        holds: (f) =>
+          f.headerStatus === "cancelled" &&
+          f.approvalStates[0] === "expired" &&
+          f.approvalResults[0] === "run stopped",
       },
       { label: "the stop control is disabled again", holds: (f) => f.stop.disabled },
       { label: "and reports no run in flight", holds: (f) => f.stop.inFlight === "false" },
@@ -335,11 +345,12 @@ const SPECS: readonly StopSpec[] = [
         holds: (f) => f.toolCards.length === 1,
       },
       {
+        // Old: the approval card's data-decision read 'cancelled'. New: the stop closes it as expired with the word 'run stopped'.
         label: "the waiting approval is no longer answerable",
-        holds: (f) => f.approvalDecisions[0] === "cancelled",
+        holds: (f) => f.approvalStates[0] === "expired" && f.approvalResults[0] === "run stopped",
       },
     ],
-    visible: '#thread .run-status[data-run-status="cancelled"]',
+    visible: "#thread .approval-card",
   },
 ];
 
@@ -560,13 +571,10 @@ async function main(): Promise<void> {
 
     const stopped = await facts(chrome.cdp, page);
     check(
-      "the terminal marker reads run cancelled",
-      await evaluate<string>(
-        chrome.cdp,
-        page,
-        `document.querySelector('#thread .run-status[data-run-status="cancelled"]').textContent`,
-      ),
-      "run cancelled",
+      // Old: '#thread .run-status[data-run-status="cancelled"]' text 'run cancelled'. New: the run element's status attribute.
+      "the run element carries cancelled",
+      await evaluate<string>(chrome.cdp, page, `document.querySelector('#run').dataset.runStatus`),
+      "cancelled",
     );
     check(
       "after the stop the control is disabled again and reports no run in flight",
@@ -579,7 +587,12 @@ async function main(): Promise<void> {
         stopping: "true",
       },
     );
-    check("the run's status frames end at cancelled", stopped.runStatuses.at(-1), "cancelled");
+    check(
+      // Old: the last '#thread .run-status' marker. New: '#run[data-run-status]' at the same observation point.
+      "the run element's status is cancelled",
+      stopped.headerStatus,
+      "cancelled",
+    );
     check(
       "the page kept every frame that arrived before the stop",
       [stopped.frameCount >= beforeStop.frameCount, stopped.lastSeq >= beforeStop.lastSeq],
@@ -591,14 +604,15 @@ async function main(): Promise<void> {
       beforeStop.prompts,
     );
     check(
-      "and so is the tool card that arrived before the stop",
+      "and so is the tool card that arrived before the stop, now closed as denied",
       stopped.toolCards,
-      beforeStop.toolCards,
+      beforeStop.toolCards.map(([call]) => [call, "denied"]),
     );
     check(
-      "the waiting approval is marked cancelled rather than allowed or denied",
-      stopped.approvalDecisions,
-      ["cancelled"],
+      // Old: the approval card's data-decision read 'cancelled'. New: it closes as data-state 'expired' with .approval-result 'run stopped'.
+      "the waiting approval is closed by the stop rather than allowed or denied",
+      [stopped.approvalStates, stopped.approvalResults],
+      [["expired"], ["run stopped"]],
     );
     check(
       "the composer is usable for the next run",

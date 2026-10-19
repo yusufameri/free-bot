@@ -80,9 +80,9 @@ is what keeps `packages/verify/artifacts/web-shell` reproducible: the fixture se
 it rendered before this unit, and its committed frames stay valid.
 
 Rendering the run's status is the other page change. The loop emits `run.status` at every transition
-and the page rendered none of them, so a run parked at the gate looked like a run that had frozen,
-and one rendered message per seq could not hold. `packages/ui/browser/render.ts` gained the arm. It is
-additive and invisible to the fixture page, whose committed fixtures carry no `run.status` frame.
+and the page rendered none of them, so a run parked at the gate looked like a run that had frozen.
+`packages/ui/browser/render.ts` gained the arm. U6.5 later moved that fact to `#run[data-run-status]`
+and removed the marker line, so the page now reads the status off the run element and the cards.
 
 ## The evidence
 
@@ -104,14 +104,13 @@ The four committed states are the idle operator page, the parked approval, the a
 terminal frame, and the denied run at its terminal frame. There is deliberately no "answered, still
 running" frame: after a decision the loop appends the rest of the run in one synchronous burst and
 turn 2 asks for no call, so such a frame would race the finish and fail as often as it passed. The
-decided card, the `user_denied` marker and the container's own stdout are asserted in the terminal
+decided card, the cards' own `denied` state and the container's own stdout are asserted in the terminal
 frames, where nothing races.
 
 Two facts in the artifact are the reason the verdict is `live-ui-verified` rather than a test result.
 The allowed run's tool card shows the string `native-should-not-run\n`, which is the container's own
-stdout and not a replayed frame. And the denied run's decision marker reads
-`decision <toolCallId>: deny (user_denied)`, which no surface could produce before this unit's fold
-because the run that produced it never ran.
+stdout and not a replayed frame. And the denied run's tool card reads `denied` while its approval card
+reads `deny`, the surface the marker line used to duplicate.
 
 ## Two defects this unit found and fixed
 
