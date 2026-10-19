@@ -1,0 +1,16 @@
+feature: scaffold
+command: bun run verify
+timestamp: 2026-10-19T17:57:36.090Z
+git sha: 3d846e0f752baa183f38c62d3c4d9df867c60e20
+git sha short: 3d846e0
+branch: u10.9-landing-cap
+runtime: bun 1.2.5 on darwin arm64
+
+step typecheck: PASS
+step tests: PASS
+step index-check: PASS
+step scaffold-shape: PASS
+step pixel-gate: PASS
+step healthz: PASS
+
+PASS scaffold
