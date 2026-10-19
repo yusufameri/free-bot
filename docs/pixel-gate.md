@@ -43,8 +43,15 @@ runs on the build host and in CI. The command's exit code is `exitCodeFor(verdic
 zero only when every carried chrome region's differing-pixel count is at or under the tolerance, every
 desktop chrome region above its breakpoint is present, every moved box is either zero or matched by a
 declared delta, no viewport scrolls horizontally, and both pages measure the vendored Geist face. A
-font that times out or falls back is a failure, not a note. The CLI also arms a twelve-minute
-watchdog: a run that never returns a verdict exits non-zero rather than holding a CI job open.
+font that times out or falls back is a failure, not a note. The CLI also arms a twelve-minute stall
+watchdog: every line the run prints re-arms it, so a run that keeps producing viewports is making
+progress, and a run that goes twelve minutes without a line exits non-zero.
+
+The bound has to be silence rather than elapsed time, because the same commit's nine viewports
+measured 5m02s on one CI runner and were still producing viewports when a wall-clock version of the
+guard killed them at viewport 7 of 9. A browser call that never answers is caught earlier and by
+name: `Page.captureScreenshot` and the diff page's comparison each carry a three-minute deadline, and
+the error names the call and its viewport.
 
 The failure path has its own proof, and it does not wreck a page. `packages/pixel-gate/src/gate.test.ts`
 builds the report shapes the run produces and shifts one number: one differing chrome pixel fails the
@@ -83,6 +90,14 @@ and evaluates the in-page runtime into it. Both screenshots travel to that page 
 and are drawn into canvases there, and `getImageData` gives back the RGBA buffers the arithmetic runs
 over. No file on disk is ever a comparison source, which is order 36c: the committed PNGs under
 `shots/` are for a human to look at and are never read back.
+
+One target of a browser is the visible tab, and the diff page created last held it, so both captured
+pages were `visibilityState: hidden` for the whole run. A hidden page is painted on the browser's
+schedule: on a CI runner its viewports measured 71 to 131 seconds against under a second on the
+build host, and one run stalled past twelve minutes on a single viewport. `capture()` therefore calls
+`Page.bringToFront`, reads `document.visibilityState` back, and refuses a shot of a page that is not
+`visible` by name. The two pages are captured one at a time, because only one tab is visible, and the
+freeze is what keeps nothing moving between the two shots.
 
 ## No golden images
 

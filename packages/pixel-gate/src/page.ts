@@ -516,10 +516,13 @@ export async function compareShots(
     readonly rect: Rect;
   }[],
 ): Promise<Comparison> {
-  const answer = await evaluate<Comparison>(
-    cdp,
-    diffSession,
-    `window.__pg.compare(${JSON.stringify(left)}, ${JSON.stringify(right)}, ${JSON.stringify(regions)})`,
+  const answer = await withDeadline(
+    evaluate<Comparison>(
+      cdp,
+      diffSession,
+      `window.__pg.compare(${JSON.stringify(left)}, ${JSON.stringify(right)}, ${JSON.stringify(regions)})`,
+    ),
+    `the diff page's comparison of ${left} against ${right}`,
   );
   // The page answers with its own reason rather than rejecting: a CDP exception's own text is empty
   // for a rejected promise, which turns a real cause into "Uncaught (in promise)".
@@ -607,11 +610,54 @@ export interface Capture {
   readonly boxCount: number;
 }
 
-/** One page's screenshot, taken after the page is confirmed frozen and settled. */
+/**
+ * A browser call that does not answer is a failure that names itself.
+ *
+ * The CDP client has no per-request timeout, so a renderer that never produces a frame leaves the
+ * call pending until the process watchdog. Three minutes is far past the measured cost of any call
+ * here (a whole viewport is under a second on the build host, and the slowest CI viewport on record
+ * is 131s) and keeps a stall from being reported as a slow run.
+ */
+const CAPTURE_DEADLINE_MS = 180_000;
+
+async function withDeadline<T>(work: Promise<T>, describe: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${describe} did not answer within ${CAPTURE_DEADLINE_MS / 1000}s`)),
+      CAPTURE_DEADLINE_MS,
+    );
+  });
+  try {
+    return await Promise.race([work, deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * One page's screenshot, taken after the page is confirmed frozen, settled, and being drawn.
+ *
+ * `Page.bringToFront` is not cosmetic. The pages are targets of one browser, and only one target is
+ * the visible tab; a hidden one is painted on the browser's schedule, and its viewports measured 71
+ * to 131 seconds on a CI runner against under a second here, with one run stalling past twelve
+ * minutes on a single viewport. Capturing a hidden page is therefore refused by name rather than
+ * left to wait, and the caller captures the pages one at a time because one tab is visible.
+ */
 export async function capture(cdp: Cdp, sessionId: string, viewport: Viewport): Promise<Capture> {
+  await cdp.send("Page.bringToFront", {}, sessionId);
   await setViewport(cdp, sessionId, viewport.width, viewport.height);
   await settle(cdp, sessionId, 250);
-  const shot = await screenshot(cdp, sessionId);
+  const visibility = await evaluate<string>(cdp, sessionId, "document.visibilityState");
+  if (visibility !== "visible") {
+    throw new Error(
+      `capture at ${viewport.width}x${viewport.height}: the page is ${visibility}, so the browser is not painting it`,
+    );
+  }
+  const shot = await withDeadline(
+    screenshot(cdp, sessionId),
+    `Page.captureScreenshot at ${viewport.width}x${viewport.height}`,
+  );
   return { shot, boxCount: shot.byteLength };
 }
 

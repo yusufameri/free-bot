@@ -511,6 +511,7 @@ interface Visit {
  */
 async function visit(input: VisitInput): Promise<Visit> {
   const { browser, appSession, exportSession, diffSession, viewport, label, dir } = input;
+  const startedAt = performance.now();
   await Promise.all([
     setViewport(browser.cdp, appSession, viewport.width, viewport.height),
     setViewport(browser.cdp, exportSession, viewport.width, viewport.height),
@@ -550,10 +551,11 @@ async function visit(input: VisitInput): Promise<Visit> {
     (region): region is ResolvedRegion & { rect: Rect } => region.rect !== null,
   );
 
-  const [appShot, exportShot] = await Promise.all([
-    capture(browser.cdp, appSession, viewport),
-    capture(browser.cdp, exportSession, viewport),
-  ]);
+  // Sequential, not parallel: one tab of a browser is the visible one, and a hidden page is painted
+  // on the browser's schedule. Each side is brought to the front and captured while it is the page
+  // on screen; the freeze means nothing moves between the two shots.
+  const appShot = await capture(browser.cdp, appSession, viewport);
+  const exportShot = await capture(browser.cdp, exportSession, viewport);
 
   await beginShots(browser.cdp, diffSession);
   await putShot(browser.cdp, diffSession, APP_SHOT, appShot.shot);
@@ -636,6 +638,9 @@ async function visit(input: VisitInput): Promise<Visit> {
   }
   const overflowing = overflowOf(appProbe).overflowing;
   input.log(`  overflow (app): ${overflowing.length === 0 ? "none" : overflowing.join(", ")}`);
+  // A gate that fails on time has to say where the time went: the log is the only window into a CI
+  // run, and the buffered output of a killed run otherwise shows whole viewports with no duration.
+  input.log(`  visited in ${Math.round(performance.now() - startedAt)}ms`);
 
   return {
     comparison,
