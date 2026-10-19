@@ -462,6 +462,33 @@
         "subject": "the root typecheck is not blind, proven by three planted errors",
         "needs": []
       }
+    },
+    {
+      "id": "connect-apps",
+      "command": "bun packages/verify/scripts/connect-apps.ts",
+      "artifact": "packages/verify/artifacts/connect-apps",
+      "subjects": [
+        "packages/verify/scripts/connect-apps.ts",
+        "packages/verify/scripts/connect-apps.test.ts",
+        "packages/verify/src/connect-apps.ts",
+        "packages/verify/src/emulator.ts",
+        "packages/verify/src/github-mcp.ts",
+        "packages/verify/src/cdp.ts",
+        "packages/verify/driver-subjects.json",
+        "apps/web/host/main.ts",
+        "apps/server/src/connectors.ts",
+        "packages/ui/browser/connect-apps.ts",
+        "packages/ui/browser/page.ts",
+        "packages/ui/browser/workspace.ts",
+        "packages/ui/src/connections.ts",
+        "docs/connectors.md",
+        "docs/VERIFICATION.md"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/connect-apps.ts"],
+        "subject": "the Connect apps gallery, its three states, and the credential census",
+        "needs": [["chrome"]]
+      }
     }
   ]
 }

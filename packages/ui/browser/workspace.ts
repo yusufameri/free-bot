@@ -16,6 +16,19 @@ import type {
   Thread,
 } from "@freebot/protocol";
 import { RUN_STATUS_VALUES } from "@freebot/protocol";
+import { type ConnectAppsCalls, type ConnectAppsHandle, mountConnectApps } from "./connect-apps.ts";
+import {
+  actionButton,
+  backButton,
+  card,
+  el,
+  emptyState,
+  icon,
+  kv,
+  must,
+  pageShell,
+  tag,
+} from "./page.ts";
 
 export const WORKSPACE_VIEWS = [
   "skills",
@@ -56,9 +69,7 @@ export interface WorkspaceRecords {
   readonly runs: readonly ActivityRun[];
 }
 
-export interface WorkspaceCalls {
-  readonly listConnectors: () => Promise<readonly ConnectorRow[]>;
-}
+export type WorkspaceCalls = ConnectAppsCalls;
 
 export interface WorkspaceConfig {
   readonly read: () => WorkspaceRecords;
@@ -69,6 +80,8 @@ export interface WorkspaceConfig {
   readonly onSelectBot: (botId: string) => void | Promise<void>;
   /** Leave the page and show the conversation column again. */
   readonly onLeave: () => void;
+  /** Fired whenever the Connect apps screen reads the install's connectors. */
+  readonly onConnectors?: (rows: readonly ConnectorRow[]) => void;
 }
 
 export interface WorkspaceHandle {
@@ -76,6 +89,8 @@ export interface WorkspaceHandle {
   hide(): void;
   current(): WorkspaceView | null;
   repaint(): void;
+  /** The Connect apps screen, so the host can expose its facts to the evidence driver. */
+  connectApps(): ConnectAppsHandle;
 }
 
 type SettingsPane =
@@ -146,98 +161,15 @@ function saveSettings(settings: DisplaySettings): void {
   }
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(
-  tag: K,
-  className = "",
-  text = "",
-): HTMLElementTagNameMap[K] {
-  const node = document.createElement(tag);
-  if (className !== "") node.className = className;
-  if (text !== "") node.textContent = text;
-  return node;
-}
-
-function icon(name: string, size: "ic" | "ic-sm" = "ic-sm"): SVGSVGElement {
-  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", size);
-  svg.setAttribute("aria-hidden", "true");
-  const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-  use.setAttribute("href", `#i-${name}`);
-  svg.append(use);
-  return svg;
-}
-
-function tag(text: string, variant: "" | "solid" | "dim" = ""): HTMLElement {
-  return el("span", `tag${variant === "" ? "" : ` ${variant}`}`, text);
-}
-
-function kv(label: string, value: string): HTMLElement {
-  const row = el("div", "kv");
-  row.append(el("span", "k", label), el("span", "v", value));
-  return row;
-}
-
-function card(children: readonly HTMLElement[], className = "card"): HTMLElement {
-  const node = el("div", className);
-  node.append(...children);
-  return node;
-}
-
-function emptyState(title: string, body: string): HTMLElement {
-  const box = el("div", "card empty-state");
-  box.append(el("h3", "", title), el("p", "hint", body));
-  return box;
-}
-
-function pageShell(
-  title: string,
-  eyebrow: string,
-  actions: readonly HTMLElement[],
-  body: readonly HTMLElement[],
-  narrow = false,
-): HTMLElement {
-  const page = el("div", "page");
-  const inner = el("div", `page-inner${narrow ? " narrow" : ""}`);
-  const head = el("div", "page-title");
-  const titles = el("div");
-  titles.append(el("p", "eyebrow", eyebrow), el("h1", "", title));
-  const controls = el("div", "row");
-  controls.style.flexWrap = "wrap";
-  controls.append(...actions);
-  head.append(titles, controls);
-  inner.append(head, ...body);
-  page.append(inner);
-  return page;
-}
-
-function backButton(onLeave: () => void): HTMLButtonElement {
-  const button = el("button", "btn btn-ghost btn-sm");
-  button.type = "button";
-  button.append(icon("left"), document.createTextNode("Back to the conversation"));
-  button.addEventListener("click", onLeave);
-  return button;
-}
-
-function actionButton(
-  label: string,
-  iconName: string,
-  onClick: () => void,
-  variant: "btn-secondary" | "btn-ghost" = "btn-secondary",
-  disabled = false,
-): HTMLButtonElement {
-  const button = el("button", `btn ${variant} btn-sm`);
-  button.type = "button";
-  button.disabled = disabled;
-  button.append(icon(iconName), document.createTextNode(label));
-  button.addEventListener("click", onClick);
-  return button;
-}
-
 export function mountWorkspace(config: WorkspaceConfig): WorkspaceHandle {
   const pageEl = must<HTMLElement>("#page");
+  const connectApps = mountConnectApps({
+    container: pageEl,
+    calls: config.calls,
+    onLeave: config.onLeave,
+    onRecords: config.onConnectors,
+  });
   let view: WorkspaceView | null = null;
-  let connectors: readonly ConnectorRow[] = [];
-  let connectorsError: string | null = null;
   let settingsPane: SettingsPane = "providers";
   let activityBot = "all";
   let activityStatus = "all";
@@ -251,7 +183,7 @@ export function mountWorkspace(config: WorkspaceConfig): WorkspaceHandle {
         pageEl.replaceChildren(skillsPage(config.onLeave));
         break;
       case "apps":
-        pageEl.replaceChildren(appsPage(connectors, connectorsError, config));
+        connectApps.render();
         break;
       case "rules":
         pageEl.replaceChildren(rulesPage(config.onLeave));
@@ -303,13 +235,8 @@ export function mountWorkspace(config: WorkspaceConfig): WorkspaceHandle {
       document.body.dataset.pageOpen = "true";
       pageEl.hidden = false;
       if (next === "apps") {
-        connectorsError = null;
-        try {
-          connectors = await config.calls.listConnectors();
-        } catch (error) {
-          connectors = [];
-          connectorsError = error instanceof Error ? error.message : String(error);
-        }
+        await connectApps.open();
+        return;
       }
       render();
     },
@@ -327,6 +254,8 @@ export function mountWorkspace(config: WorkspaceConfig): WorkspaceHandle {
     repaint() {
       render();
     },
+
+    connectApps: () => connectApps,
   };
 }
 
@@ -343,54 +272,6 @@ function skillsPage(onLeave: () => void): HTMLElement {
     backButton(onLeave),
   ];
   return pageShell("Skills", "Library · page 9", actions, body);
-}
-
-function appsPage(
-  connectors: readonly ConnectorRow[],
-  refusal: string | null,
-  config: WorkspaceConfig,
-): HTMLElement {
-  const body: HTMLElement[] = [];
-  if (refusal !== null) {
-    const note = el("p", "hint");
-    note.textContent = `The connector list could not be read. ${refusal}`;
-    body.push(note);
-  }
-  if (connectors.length === 0 && refusal === null) {
-    body.push(
-      emptyState(
-        "No apps connected",
-        "A connector is added through the connector API today. The gallery below lists what this install holds, and a connected account appears here with the tools its own server offered.",
-      ),
-    );
-  } else if (connectors.length > 0) {
-    const list = el("div", "listcard");
-    for (const connector of connectors) {
-      const row = el("button", "listrow");
-      row.type = "button";
-      const monogram = el("span", "monogram", connector.label.slice(0, 2).toUpperCase());
-      const copy = el("span", "grow");
-      copy.append(el("span", "", connector.label));
-      copy.lastElementChild?.setAttribute(
-        "style",
-        "display:block;font-size:14px;font-family:var(--font-display);font-weight:600",
-      );
-      copy.append(el("span", "hint truncate", connector.url));
-      copy.lastElementChild?.setAttribute("style", "display:block");
-      row.append(
-        monogram,
-        copy,
-        tag(connector.state, connector.state === "connected" ? "solid" : "dim"),
-      );
-      list.append(row);
-    }
-    body.push(list);
-  }
-  const actions = [
-    actionButton("Add a connection", "plus", config.onOpenProvider),
-    actionButton("Connect apps", "grid", config.onOpenProvider, "btn-ghost"),
-  ];
-  return pageShell("Apps and connectors", "Gallery · page 12", actions, body);
 }
 
 function rulesPage(onLeave: () => void): HTMLElement {
@@ -859,10 +740,4 @@ function phoneProfile(name: string, role: string): HTMLElement {
   screen.append(bar, body);
   phone.append(screen);
   return phone;
-}
-
-function must<T extends Element>(selector: string): T {
-  const found = document.querySelector<T>(selector);
-  if (found === null) throw new Error(`missing element ${selector}`);
-  return found;
 }
