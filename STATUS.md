@@ -39,7 +39,7 @@ The list is fixed by the plan's §5.2 re-cut.
 
 59 units in the register: 53 done, 1 running, 5 pending, 1 parked.
 
-The verification ledger holds 66 rows: 22 `live-ui-verified`, 32 `unit-test-verified`, 2 `type-check-only`, 10 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 65 rows: 22 `live-ui-verified`, 31 `unit-test-verified`, 2 `type-check-only`, 10 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
