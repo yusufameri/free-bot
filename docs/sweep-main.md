@@ -12,10 +12,13 @@ bun packages/verify/scripts/sweep-main.ts
 
 The command exits 0 when every runnable driver passed. It exits non-zero when one failed or when
 its own arithmetic does not add up. `--keep` leaves the isolated checkout on disk for inspection.
+`--base <ref>` sweeps another commit, which is how a unit that changed a driver runs the whole
+manifest against its own branch before it opens the PR; `origin/main` is the default.
 
 ## What it does
 
-1. Fetches `origin/main` and resolves the commit.
+1. Fetches `origin/main` and resolves the base commit. With `--base`, it resolves that ref instead
+   and skips the fetch.
 2. Adds a detached git worktree of that commit under the system temp directory and runs
    `bun install --frozen-lockfile` inside it.
 3. Reads `packages/verify/driver-subjects.json`. That manifest is the driver list.
