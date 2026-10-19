@@ -304,8 +304,8 @@ each and the exit code reads only the chrome regions.
 
 ## The U6.7 pass, at the head it armed
 
-The armed artifact is `packages/verify/artifacts/pixel-gate/8d23e06/`, produced by
-`bun packages/pixel-gate/src/cli.ts --repeat` at commit `8d23e06`. The chrome statistic is unchanged
+The armed artifact is `packages/verify/artifacts/pixel-gate/50c5e27/`, produced by
+`bun packages/pixel-gate/src/cli.ts --repeat` at commit `50c5e27`. The chrome statistic is unchanged
 from the U6.7a baseline, and that is the point: the shell already landed on the same device pixels.
 What moved is the middle column's structure and the font, and the box deltas below are the literal
 record of it.
@@ -330,7 +330,7 @@ chrome region comparisons and nine totals. The whole-frame share fell from 25.80
 
 The five box deltas U6.7a named, before and after:
 
-| Region and axis | U6.7a baseline (df87bca) | U6.7 head (8d23e06) | How it closed or why it stands |
+| Region and axis | U6.7a baseline (df87bca) | U6.7 head (50c5e27) | How it closed or why it stands |
 | --- | --- | --- | --- |
 | `content.center-header` height, 1920 | +62.43 | +0.2 | Closed. The header is one 56px row on the export's `min-height: 53px` and 10px padding; the 0.2px is the export's 55.8px and is inside the half-pixel box tolerance. |
 | `content.center-transcript` top, 1920 | +97.43 | +0.2 | Closed. Both notices are dismissed before the probe and both transcripts start on the header's bottom edge. |
