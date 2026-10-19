@@ -1,0 +1,39 @@
+feature: sandbox-microsandbox
+command: bun test packages/sandbox/src/microsandbox.test.ts
+timestamp: 2026-10-18T07:13:19.269Z
+git short sha: c631efb (branch u9.5-sandbox-selector)
+runtime: bun 1.2.5 on darwin arm64
+msb: msb 0.7.8
+run token: 51s-fac64e (this run owns freebot.unit=u1.2-run-51s-fac64e)
+
+check create: handle={"provider":"microsandbox","id":"u91-main-51s-fac64e"} engine=u91-main-51s-fac64e running=true labels={"freebot.provider":"microsandbox","freebot.sandbox":"u91-main-51s-fac64e","freebot.unit":"u1.2-run-51s-fac64e","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: freebot-sandbox:u0.6 sha256:130dbb9ca6a220ec8dcb8b4331d3d35656d6fda21e9dc3aadefdeda0e67bcce5 7 OCI layers, imported with msb image load; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=5f5d0f9cf5852aca783a940cc267dd2202dfb483317301c0f53eb1fd07135e44 the sandbox's sha256sum=5f5d0f9cf5852aca783a940cc267dd2202dfb483317301c0f53eb1fd07135e44 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=5f5d0f9cf5852aca783a940cc267dd2202dfb483317301c0f53eb1fd07135e44
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in u91-no-link-51s-fac64e: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), msb said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-51s-fac64e is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-51s-fac64e:u91-round-trip ref=freebot-snapshot-u91-main-51s-fac64e:u91-round-trip createdAt=2026-10-18T07:13:22.588Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-51s-fac64e booted from freebot-snapshot-u91-main-51s-fac64e:u91-round-trip reads marker="round-trip-marker\n"
+check delete restored: u91-restored-51s-fac64e is gone from the engine
+check idle-kill: u91-idle-51s-fac64e (idleTtlMs=600) stopped after 705ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 600ms ttl
+census before sweep, decoy (another unit's label): u92-unit-decoy-foreign-51s-fac64e=running
+census before sweep, decoy (a sibling run): u92-unit-decoy-sibling-51s-fac64e=running
+census before sweep, decoy (no ownership label at all): u92-unit-decoy-bare-51s-fac64e=running
+census before sweep, this run: u91-main-51s-fac64e=u91-main-51s-fac64e
+census before sweep, this run: u91-no-link-51s-fac64e=gone
+census before sweep, this run: u91-restored-51s-fac64e=gone
+census before sweep, this run: u91-idle-51s-fac64e=u91-idle-51s-fac64e
+check sweep: removed 2 of 2 live sandboxes: u91-idle-51s-fac64e, u91-main-51s-fac64e
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+census after sweep, decoy unchanged: u92-unit-decoy-foreign-51s-fac64e=running
+census after sweep, decoy unchanged: u92-unit-decoy-sibling-51s-fac64e=running
+census after sweep, decoy unchanged: u92-unit-decoy-bare-51s-fac64e=running
+sandboxes left under u1.2-run-51s-fac64e: 0

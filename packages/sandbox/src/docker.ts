@@ -74,6 +74,8 @@ interface LiveEntry {
   timer: ReturnType<typeof setTimeout> | null;
   /** Open tunnels and port forwards. Non-empty holds the sandbox awake at TTL expiry. */
   readonly resources: Set<() => void>;
+  /** Calls awaited right now. Non-zero holds the sandbox awake at TTL expiry. */
+  inFlight: number;
   /** Set by stop/delete; clears the intent to re-arm the TTL. */
   disarmed: boolean;
 }
@@ -152,6 +154,7 @@ export class DockerAdapter implements SandboxProvider {
       idleTtlMs: spec.idleTtlMs ?? null,
       timer: null,
       resources: new Set(),
+      inFlight: 0,
       disarmed: false,
     });
     this.#touch(handle);
@@ -180,7 +183,7 @@ export class DockerAdapter implements SandboxProvider {
   ): Promise<ExecResult | ExecStream | DetachedExec> {
     this.#require(handle);
     if (cmd.length === 0) throw new SandboxError("invalid_command", "exec needs a command");
-    this.#touch(handle);
+    this.#begin(handle);
     const args = [
       "exec",
       ...(options.cwd === undefined ? [] : ["-w", options.cwd]),
@@ -191,15 +194,21 @@ export class DockerAdapter implements SandboxProvider {
     ];
     const child = spawnDockerCli(args);
     if (options.stream === true) {
-      return { stdout: child.stdout, stderr: child.stderr, result: collect(child) };
+      const stream = { stdout: child.stdout, stderr: child.stderr, result: collect(child) };
+      void stream.result.catch(() => {}).finally(() => this.#end(handle));
+      return stream;
     }
-    const outcome = await collectDockerOutcome(child);
-    if (outcome.timedOut) throw dockerFailure(args, outcome);
-    if (options.detached === true) {
-      if (outcome.exitCode !== 0) throw dockerFailure(args, outcome);
-      return { started: true };
+    try {
+      const outcome = await collectDockerOutcome(child);
+      if (outcome.timedOut) throw dockerFailure(args, outcome);
+      if (options.detached === true) {
+        if (outcome.exitCode !== 0) throw dockerFailure(args, outcome);
+        return { started: true };
+      }
+      return { exitCode: outcome.exitCode, stdout: outcome.stdout, stderr: outcome.stderr };
+    } finally {
+      this.#end(handle);
     }
-    return { exitCode: outcome.exitCode, stdout: outcome.stdout, stderr: outcome.stderr };
   }
 
   async upload(handle: SandboxHandle, localPath: string, remotePath: string): Promise<void> {
@@ -207,8 +216,12 @@ export class DockerAdapter implements SandboxProvider {
     if (!remotePath.startsWith("/")) {
       throw new SandboxError("invalid_spec", `upload needs an absolute remote path: ${remotePath}`);
     }
-    this.#touch(handle);
-    await dockerCli(["cp", localPath, `${containerName(handle.id)}:${remotePath}`]);
+    this.#begin(handle);
+    try {
+      await dockerCli(["cp", localPath, `${containerName(handle.id)}:${remotePath}`]);
+    } finally {
+      this.#end(handle);
+    }
   }
 
   async download(handle: SandboxHandle, remotePath: string, localPath: string): Promise<void> {
@@ -219,8 +232,12 @@ export class DockerAdapter implements SandboxProvider {
         `download needs an absolute remote path: ${remotePath}`,
       );
     }
-    this.#touch(handle);
-    await dockerCli(["cp", `${containerName(handle.id)}:${remotePath}`, localPath]);
+    this.#begin(handle);
+    try {
+      await dockerCli(["cp", `${containerName(handle.id)}:${remotePath}`, localPath]);
+    } finally {
+      this.#end(handle);
+    }
   }
 
   /** Manual, disk-only `docker commit`; memory is not captured (see capabilities()). */
@@ -229,21 +246,25 @@ export class DockerAdapter implements SandboxProvider {
     if (name !== undefined && !/^[a-z0-9][a-z0-9._-]{0,62}$/.test(name)) {
       throw new SandboxError("invalid_spec", `invalid snapshot name: ${JSON.stringify(name)}`);
     }
-    this.#touch(handle);
-    const tag = `freebot-snapshot/${handle.id}:${name ?? timestampTag()}`;
-    await dockerCli(["commit", containerName(handle.id), tag]);
-    const fields = (
-      await dockerCli(["image", "inspect", "--format", "{{.Id}} {{.Created}}", tag])
-    ).split(" ");
-    const ref = fields[0];
-    const createdAt = fields[1];
-    if (ref === undefined || createdAt === undefined) {
-      throw new SandboxError(
-        "docker_cli",
-        `docker image inspect ${tag} returned an unexpected shape`,
-      );
+    this.#begin(handle);
+    try {
+      const tag = `freebot-snapshot/${handle.id}:${name ?? timestampTag()}`;
+      await dockerCli(["commit", containerName(handle.id), tag]);
+      const fields = (
+        await dockerCli(["image", "inspect", "--format", "{{.Id}} {{.Created}}", tag])
+      ).split(" ");
+      const ref = fields[0];
+      const createdAt = fields[1];
+      if (ref === undefined || createdAt === undefined) {
+        throw new SandboxError(
+          "docker_cli",
+          `docker image inspect ${tag} returned an unexpected shape`,
+        );
+      }
+      return { provider: this.id, handleId: handle.id, name: name ?? null, ref, tag, createdAt };
+    } finally {
+      this.#end(handle);
     }
-    return { provider: this.id, handleId: handle.id, name: name ?? null, ref, tag, createdAt };
   }
 
   async fork(_from: SandboxHandle): Promise<SandboxHandle> {
@@ -273,6 +294,7 @@ export class DockerAdapter implements SandboxProvider {
         idleTtlMs: null,
         timer: null,
         resources: new Set(),
+        inFlight: 0,
         disarmed: false,
       });
     } else {
@@ -449,12 +471,33 @@ export class DockerAdapter implements SandboxProvider {
     if (entry.timer !== null) clearTimeout(entry.timer);
     entry.timer = setTimeout(() => {
       entry.timer = null;
-      // A live tunnel or forward holds the sandbox awake; its release re-arms this timer.
+      // A call in flight is activity, and so is a live tunnel or forward. Re-arm rather than stop a
+      // sandbox that is working; a tunnel's release re-arms this timer too (see `#release`).
+      if (entry.inFlight > 0) {
+        this.#touch(handle);
+        return;
+      }
       if (entry.resources.size > 0) return;
       void this.stop(handle).catch(() => {
         // The container was swept or removed elsewhere; the TTL is already spent.
       });
     }, entry.idleTtlMs);
+  }
+
+  /** One operation starting: a call being awaited is not idleness. */
+  #begin(handle: SandboxHandle): void {
+    const entry = this.#live.get(liveKey(handle));
+    if (entry === undefined) return;
+    entry.inFlight += 1;
+    this.#touch(handle);
+  }
+
+  /** One operation finished: the idle clock starts from here. */
+  #end(handle: SandboxHandle): void {
+    const entry = this.#live.get(liveKey(handle));
+    if (entry === undefined) return;
+    entry.inFlight = Math.max(0, entry.inFlight - 1);
+    this.#touch(handle);
   }
 
   #disarm(handle: SandboxHandle): void {

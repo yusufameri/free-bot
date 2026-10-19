@@ -1,9 +1,10 @@
 /**
  * The wiring: the landed parts, adapted into the loop's ports.
  *
- * Nothing here makes a decision the packages already own. The sandbox port is the landed
- * `DockerAdapter` (label-scoped to this unit, so its cleanup can never touch a container another
- * unit created), the gate port is the landed `packages/review` policy over a landed ledger, and the
+ * Nothing here makes a decision the packages already own. The sandbox port is the landed adapter
+ * the launcher selected (`sandbox-backend.ts` picks Docker or microsandbox; the adapter is
+ * label-scoped to this unit, so its cleanup can never touch a sandbox another unit created), the
+ * gate port is the landed `packages/review` policy over a landed ledger, and the
  * log port appends into the landed `SeqLog` the stream already serves.
  *
  * One table holds the run's tools. The tool list the model is offered, the runner that executes an
@@ -216,7 +217,7 @@ async function callConnector(arm: ConnectorToolArm, call: ProviderToolCall): Pro
 }
 
 /**
- * The sandbox port over the landed Docker adapter. One container per run, from the pinned image,
+ * The sandbox port over the landed adapter. One sandbox per run, from the backend's pinned image,
  * destroyed on every path. `delete` on a handle this port never created is a no-op here, because
  * the loop calls `destroy` even when `create` threw.
  */

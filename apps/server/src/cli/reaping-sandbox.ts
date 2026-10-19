@@ -1,48 +1,50 @@
 /**
- * The launch's sandboxes, and the record of the containers they created.
+ * The launch's sandboxes, and the record of the sandboxes they created.
  *
  * The loop destroys its sandbox on every path it can reach, and a Ctrl-C reaches none of them: the
- * process dies mid-run and the container survives with no process left to remove it
+ * process dies mid-run and the sandbox survives with no process left to remove it
  * (docs/one-run-path.md, "What remains"). `LaunchSandboxes` hands each run its own port, keeps the
- * name of every container those ports handed to Docker, and `reap()` asks the landed adapter to
- * `delete` exactly those names. It never sweeps by label or name pattern, so a container another
- * launch or another unit created is never in scope (order 22). One port per run is also what keeps
- * two concurrent runs off each other's container, which one shared port would not.
+ * name of every sandbox those ports asked the chosen backend for, and `reap()` asks the landed
+ * adapter to `delete` exactly those names. It never sweeps by label or name pattern, so a sandbox
+ * another launch or another unit created is never in scope (order 22). One port per run is also
+ * what keeps two concurrent runs off each other's sandbox, which one shared port would not.
  *
- * `reap()` is idempotent. A container counts as removed only after `docker ps -a` no longer knows
- * it, so a second call reports nothing and a container that refused to go is named, not counted as
- * gone.
+ * The backend is the launcher's own choice (`sandbox-backend.ts`), so this class names no engine at
+ * all: `holds` is the chosen backend's answer to "does the engine still know this sandbox", and
+ * `capabilities()` stays the adapter's.
+ *
+ * `reap()` is idempotent. A sandbox counts as removed only after the engine no longer holds it, so
+ * a second call reports nothing and a sandbox that refused to go is named, not counted as gone.
  */
 
 import type { ProviderToolCall, SandboxPort, ToolOutcome } from "@freebot/core";
-import {
-  containerName,
-  DockerAdapter,
-  dockerCli,
-  type SandboxHandle,
-  type SandboxSpec,
-} from "@freebot/sandbox";
-import { DockerRunSandbox, RUN_UNIT } from "../run-ports.ts";
+import type { SandboxSpec } from "@freebot/sandbox";
+import { DockerRunSandbox } from "../run-ports.ts";
+import type { SandboxBackend } from "./sandbox-backend.ts";
 
 /**
- * How long a container that is on its way out is allowed to take. A run's own `destroy` runs as the
+ * How long a sandbox that is on its way out is allowed to take. A run's own `destroy` runs as the
  * run settles, which can be a moment after the page renders its last frame, so a launch that reaps
- * in between would find the container still listed and report a leak that is not one.
+ * in between would find the sandbox still listed and report a leak that is not one.
  */
 const REAP_ATTEMPTS = 8;
 const REAP_BACKOFF_MS = 250;
 
 export interface ReapResult {
-  /** Container names this launch created and removed. */
+  /** Sandbox names this launch created and removed, as the run's spec named them. */
   readonly removed: readonly string[];
-  /** Container names this launch created that Docker still holds. Non-empty is a failure. */
+  /** Sandbox names this launch created that the engine still holds. Non-empty is a failure. */
   readonly surviving: readonly string[];
 }
 
-/** One run's sandbox, remembering the container it asked Docker for. */
+/** One run's sandbox, remembering the name it asked the backend for. */
 class TrackedSandbox implements SandboxPort {
-  readonly #inner = new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT }));
+  readonly #inner: DockerRunSandbox;
   readonly #names = new Set<string>();
+
+  constructor(backend: SandboxBackend) {
+    this.#inner = new DockerRunSandbox(backend.provider);
+  }
 
   async create(spec: SandboxSpec): Promise<void> {
     this.#names.add(spec.name);
@@ -61,39 +63,52 @@ class TrackedSandbox implements SandboxPort {
     return [...this.#names];
   }
 
-  /** Forget a container Docker no longer holds. */
+  /** Forget a sandbox the engine no longer holds. */
   forget(name: string): void {
     this.#names.delete(name);
   }
 }
 
 export class LaunchSandboxes {
+  readonly #backend: SandboxBackend;
   readonly #ports: TrackedSandbox[] = [];
+
+  constructor(backend: SandboxBackend) {
+    this.#backend = backend;
+  }
 
   /** A sandbox for one run. The launcher passes this to the service as its sandbox factory. */
   port(): SandboxPort {
-    const port = new TrackedSandbox();
+    const port = new TrackedSandbox(this.#backend);
     this.#ports.push(port);
     return port;
   }
 
   async reap(): Promise<ReapResult> {
-    const adapter = new DockerAdapter({ unit: RUN_UNIT });
     const removed: string[] = [];
     const surviving: string[] = [];
     for (const port of this.#ports) {
       for (const name of port.names()) {
-        if (await exists(name)) {
-          const handle: SandboxHandle = { provider: "docker", id: name };
+        let held: boolean;
+        try {
+          held = await this.#backend.holds(name);
+        } catch {
+          // The engine could not be asked, which is not proof of absence: the check below reports
+          // the sandbox as surviving and the name is never forgotten.
+          held = true;
+        }
+        if (held) {
           try {
-            await adapter.delete(handle);
+            await this.#backend.provider.delete({ provider: this.#backend.id, id: name });
           } catch {
-            // Whether it is really gone is the check below, not docker's exit code.
+            // Whether it is really gone is the check below, not the CLI's exit code.
           }
         }
-        if (await stillThere(name)) surviving.push(containerName(name));
+        // The engine's own name for it, which is what a person types into `docker ps` or `msb ls`
+        // and what an evidence driver looks the sandbox up by, never the spec's portable name.
+        if (await stillThere(this.#backend, name)) surviving.push(this.#backend.engineName(name));
         else {
-          removed.push(containerName(name));
+          removed.push(this.#backend.engineName(name));
           port.forget(name);
         }
       }
@@ -103,29 +118,26 @@ export class LaunchSandboxes {
 }
 
 /**
- * Whether `docker ps -a` still knows the container named for this sandbox.
+ * Whether the engine still holds the sandbox named for this run.
  *
- * A container the run itself is removing is listed for a moment after its last usage, so "still
- * there" is only a leak once it stays there. A container that really is wedged is reported after
+ * A sandbox the run itself is removing is listed for a moment after its last usage, so "still
+ * there" is only a leak once it stays there. A sandbox that really is wedged is reported after
  * this bounded wait, so the check stays truthful in both directions.
  */
-async function stillThere(name: string): Promise<boolean> {
+async function stillThere(backend: SandboxBackend, name: string): Promise<boolean> {
   for (let attempt = 0; attempt < REAP_ATTEMPTS; attempt++) {
-    if (!(await exists(name))) return false;
+    let held: boolean;
+    try {
+      held = await backend.holds(name);
+    } catch {
+      return true; // Not an answer that it is gone, so it counts as still there.
+    }
+    if (!held) return false;
     await Bun.sleep(REAP_BACKOFF_MS);
   }
-  return await exists(name);
-}
-
-/** Whether `docker ps -a` still knows the container named for this sandbox. */
-async function exists(name: string): Promise<boolean> {
-  const listed = await dockerCli([
-    "ps",
-    "-a",
-    "--filter",
-    `name=^${containerName(name)}$`,
-    "--format",
-    "{{.Names}}",
-  ]);
-  return listed !== "";
+  try {
+    return await backend.holds(name);
+  } catch {
+    return true;
+  }
 }

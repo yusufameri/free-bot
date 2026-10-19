@@ -482,7 +482,7 @@ async function launch(
     },
     exited: () => proc.exited,
     removed: () =>
-      [...err.matchAll(/freebot up: removed sandbox container (\S+)/g)].flatMap((match) =>
+      [...err.matchAll(/freebot up: removed sandbox (\S+) \(/g)].flatMap((match) =>
         match[1] === undefined ? [] : [match[1]],
       ),
   };

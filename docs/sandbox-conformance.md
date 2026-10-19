@@ -75,20 +75,34 @@ backend that boots something else fails at the first operation.
 | 4 | download | The same path comes back as 4096 bytes, byte-equal to what went in |
 | 5 | tunnel | The first line on the duplex is `{"kind":"attached","acked":0,"lastSeq":0}`. An ack with seq 7 comes back as `{"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}`. With no link running, `tunnel()` throws a `SandboxError` whose code is `link_error`. `delete` then removes that sandbox |
 | 6 | snapshot-resume | `snapshot(handle, "u91-round-trip")` returns the tag `freebot-snapshot/<id>:u91-round-trip`. `stop` leaves the sandbox not running, `resume` brings it back running with the marker intact, and a new sandbox created from `snapshot.ref` reads the same marker |
-| 7 | idle-kill | A sandbox created with `idleTtlMs=600` stops with no adapter call. After `resume`, four calls at 200ms intervals against the same 600ms ttl leave it running |
+| 7 | idle-kill | A sandbox created with `idleTtlMs=3000` stops with no adapter call. After `resume`, four calls at 200ms intervals against the same 3000ms ttl leave it running |
 | 8 | sweep | The census before (every decoy, then every sandbox this run still holds), the sweep's engine ids equal to exactly those sandboxes, and the census after (this run holds nothing, and every decoy keeps the identity and running state it had) |
 
 ## The negative control
 
-`sabotageOperation(subject, operation, decoyNames)` returns the same subject with one operation
+`sabotageOperation(subject, operation, decoys)` returns the same subject with one operation
 deliberately wrong. Only the operations a wrapper can falsify from outside the provider are
 supported, which is what keeps the drill honest. `upload` moves the right number of wrong bytes,
 `sweep` removes the decoys it does not own, and `exec` under-reports a success (because `create`
 proves the pinned image with two exec calls, that one surfaces in `create`).
 
+The sweep arm removes its decoys through the subject's own ownership port, `removeDecoys`, so the
+defect is seeded on whatever engine the subject runs on. That matters because the alternative is
+silently backend-specific: U9.1's arm called `dockerCli` directly, which removes nothing on a
+non-Docker backend, and `docker rm -f <missing>` exits **0** on Docker 28.3.2, so against
+microsandbox the sabotaged sweep passed and the drill proved nothing while reading as a pass. U9.5
+found that and fixed it; `docs/microsandbox.md` records it. A backend that answers `removeDecoys` with
+its own engine therefore gets a sabotage that really breaks its decoys.
+
 The drill is the same suite run again against the sabotaged subject, and it must report that
 operation failing. U9.2 and U9.3 each run it once and commit both outputs. A backend's pass means
 nothing until its sabotage fails, because a suite that cannot fail is not evidence.
+
+Both arms of the drill are asserted on both backends (criterion 3 of U9.5): the sabotaged sweep fails
+with the decoy's own census change on Docker **and** on microsandbox, and the unsabotaged sweep passes
+on both. The literal Docker records is
+`the decoy another unit's label: expected "...=d04da4da... running", got "...=gone"`, and
+microsandbox's is the same sentence with its own decoy name and `gone`.
 
 ## The gaps the interface does not yet carry
 

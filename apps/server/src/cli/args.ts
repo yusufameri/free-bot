@@ -11,9 +11,20 @@
  * The mode is the one flag an evidence driver may need to pin, because a driver that asserts a
  * recorded turn needs the recorded provider (order 9), so `FREEBOT_PROVIDER` sets the default for
  * anything that spawns the launcher without a flag.
+ *
+ * `--sandbox` and `FREEBOT_SANDBOX` name the sandbox backend the same way, one flag set and the
+ * flag winning over the environment: `docker`, `microsandbox`, or `auto`, which is the default and
+ * probes the two in order. An evidence driver that must run on one backend pins it here rather than
+ * around the launcher, which is what makes the boot line the driver's own evidence.
  */
 
 import type { ProviderMode } from "../provider.ts";
+import {
+  envSandboxBackend,
+  parseSandboxBackendValue,
+  type SandboxBackendRequest,
+  type SandboxSource,
+} from "./sandbox-backend.ts";
 
 export interface UpArgs {
   /** The page and its stream. 0 asks the OS for a free port. */
@@ -24,6 +35,10 @@ export interface UpArgs {
   readonly open: boolean;
   /** How the run's model is chosen. */
   readonly providerMode: ProviderMode;
+  /** Which sandbox backend to run on: one by name, or the auto-detection. */
+  readonly sandbox: SandboxBackendRequest;
+  /** What named `sandbox`, so the boot line says why this backend and not another. */
+  readonly sandboxSource: SandboxSource;
   /** The transcript a keyless run replays, or null for the committed one. */
   readonly transcript: string | null;
   /** The file the person's connector records live in, or null for `connectors.json` under the home. */
@@ -44,6 +59,7 @@ export const UP_USAGE = [
   "  --no-open          print the URL, do not open a browser",
   "  --live             use the key in ~/.freebot/provider.env, and refuse to start without one",
   "  --replay           replay the committed transcript instead of calling a model",
+  "  --sandbox <id>     the sandbox backend: docker, microsandbox, or auto (default auto)",
   "  --transcript <p>   the transcript a keyless run replays (default packages/pi-bridge's)",
   "  --connectors <p>   the file the person's connector records live in (default connectors.json)",
   "  --api-port <n>     the page and its stream (default 0, a free port)",
@@ -54,6 +70,12 @@ export const UP_USAGE = [
   "replays the transcript. FREEBOT_PROVIDER=live|replay|auto sets that default for a started",
   "process, which is how an evidence driver pins the recorded provider. FREEBOT_TRANSCRIPT and",
   "FREEBOT_CONNECTORS set the two paths the same way.",
+  "",
+  "The sandbox backend defaults to auto: the Docker daemon if it answers, otherwise microsandbox",
+  "if `msb doctor` answers, and a failure naming both install paths when neither is there. Every",
+  "backend it can pick is free and needs no account. FREEBOT_SANDBOX=docker|microsandbox|auto sets",
+  "that default for a started process; --sandbox sets it for one launch. The chosen backend is",
+  "printed at boot. docs/RUNNING.md carries the Docker side and docs/microsandbox.md the other.",
   "",
   "A connectors file lists the connectors this install may call, each with the endpoint its own",
   "server answers at. It is the non-secret half: what those servers need as a credential lives in",
@@ -67,7 +89,7 @@ export const UP_USAGE = [
   "They default to ~/.freebot/bots and FREEBOT_WORKSPACE moves the whole set, which is how an",
   "evidence driver starts from no Bots at all.",
   "",
-  "Ctrl-C stops the servers and removes the sandbox containers this launch created.",
+  "Ctrl-C stops the servers and removes the sandboxes this launch created.",
 ].join("\n");
 
 /** A caller's own mistake, reported with the usage rather than as a crash. */
@@ -117,15 +139,22 @@ export function parseUpArgs(
   argv: readonly string[],
   env: Record<string, string | undefined> = process.env,
 ): UpArgs {
+  const help = argv.includes("--help") || argv.includes("-h");
+  // The flag outranks the environment, and help must print whatever the environment says, so the
+  // environment is read only when neither is present: a misspelling in it cannot refuse a launch
+  // that asked for a backend by name or only wanted the usage.
+  const fromEnv = argv.includes("--sandbox") || help ? null : envSandboxBackend(env);
   const args: UpArgs = {
     apiPort: 0,
     tunnelPort: 0,
     open: true,
     providerMode: envProviderMode(env) ?? "auto",
+    sandbox: fromEnv ?? "auto",
+    sandboxSource: fromEnv === null ? "default" : "FREEBOT_SANDBOX",
     transcript: envPath("FREEBOT_TRANSCRIPT", env),
     connectors: envPath("FREEBOT_CONNECTORS", env),
     workspace: envWorkspace(env),
-    help: argv.includes("--help") || argv.includes("-h"),
+    help,
   };
   let next: UpArgs = args;
   for (let index = 0; index < argv.length; index++) {
@@ -146,6 +175,21 @@ export function parseUpArgs(
       case "--replay":
         next = { ...next, providerMode: "replay" };
         break;
+      case "--sandbox": {
+        const value = argv[index + 1];
+        if (value === undefined || value.length === 0 || value.startsWith("--")) {
+          throw new UpArgError(`${flag} needs a backend id: docker, microsandbox or auto`);
+        }
+        const request = parseSandboxBackendValue(value);
+        if (request === null) {
+          throw new UpArgError(
+            `${flag} names no backend: ${JSON.stringify(value)}; use docker, microsandbox or auto`,
+          );
+        }
+        next = { ...next, sandbox: request, sandboxSource: "--sandbox" };
+        index += 1;
+        break;
+      }
       case "--transcript":
         next = { ...next, transcript: path(argv[index + 1], flag) };
         index += 1;

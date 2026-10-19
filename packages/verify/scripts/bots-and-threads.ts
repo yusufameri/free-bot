@@ -1388,7 +1388,7 @@ async function main(): Promise<number> {
   );
   log.check(
     "and every container the launches said they removed is gone from Docker",
-    [...first.stderr().matchAll(/removed sandbox container (\S+)/g)].flatMap((match) =>
+    [...first.stderr().matchAll(/removed sandbox (\S+) \(/g)].flatMap((match) =>
       match[1] === undefined ? [] : containersNamed(match[1]),
     ),
     [],

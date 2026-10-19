@@ -13,9 +13,15 @@
  * provider is named on stderr, without the key, so an operator and an evidence driver both know
  * which one ran.
  *
- * Ctrl-C stops both listeners and then removes the sandbox containers this launch created. The loop
- * removes its own on every path it can reach; a signal reaches none of them, so the record lives
- * here (see `reaping-sandbox.ts`).
+ * The sandbox backend is the machine's, chosen once here (`sandbox-backend.ts`): `--sandbox` or
+ * `FREEBOT_SANDBOX` names it, and otherwise the launcher takes the Docker daemon when it answers,
+ * microsandbox when `msb doctor` does, and stops with a message naming both install paths when
+ * neither is there. The chosen backend is printed on stderr at boot, so the line an evidence driver
+ * asserts is the launcher's own account of what it built.
+ *
+ * Ctrl-C stops both listeners and then removes the sandboxes this launch created, through whichever
+ * backend's adapter the launch chose. The loop removes its own on every path it can reach; a signal
+ * reaches none of them, so the record lives here (see `reaping-sandbox.ts`).
  *
  * The diagnostics, including the token line the other evidence scripts read, go to stderr, so
  * stdout stays the one URL. See docs/RUNNING.md.
@@ -35,10 +41,16 @@ import {
   MissingKeyError,
   providerLine,
 } from "../provider.ts";
+import { RUN_UNIT } from "../run-ports.ts";
 import { createRunService } from "../run-service.ts";
 import { describeVault, readVault } from "../vault.ts";
 import { pageUrl, parseUpArgs, UP_USAGE, type UpArgs } from "./args.ts";
 import { LaunchSandboxes } from "./reaping-sandbox.ts";
+import {
+  resolveSandboxBackend,
+  type SandboxBackendChoice,
+  SandboxBackendError,
+} from "./sandbox-backend.ts";
 
 export interface Up {
   /** The one URL to open. The token is in its fragment. */
@@ -49,16 +61,19 @@ export interface Up {
   readonly botsRoot: string;
   /** What the run's model is: the endpoint, the model id, and whether a key is in play. */
   readonly provider: ChoiceDescription;
+  /** Which sandbox backend the runs are on, and why this one. */
+  readonly sandbox: SandboxBackendChoice;
   /** The connectors this launch holds, by id, label and address. Never a credential. */
   readonly connectors: ReadonlyArray<{ id: string; label: string; url: string }>;
   /** The two files those connectors were read from, so a diagnostic names what it actually read. */
   readonly connectorPaths: ConnectorPaths;
-  /** Stop the servers, then remove every container this launch created. 0 only when none survived. */
+  /** Stop the servers, then remove every sandbox this launch created. 0 only when none survived. */
   stop(): Promise<number>;
 }
 
-export function startUp(args: UpArgs): Up {
-  const sandboxes = new LaunchSandboxes();
+export async function startUp(args: UpArgs): Promise<Up> {
+  const sandbox = await resolveSandboxBackend(args.sandbox, args.sandboxSource, RUN_UNIT);
+  const sandboxes = new LaunchSandboxes(sandbox.backend);
   const vault = readVault();
   // The choice the launcher reports and the choice the service runs are the same fact: both come
   // from here, with the transcript this launch was asked for. A choice built twice from different
@@ -85,21 +100,25 @@ export function startUp(args: UpArgs): Up {
     }),
   });
   const botsRoot = server.service.workspacesRoot;
+  const backendId = sandbox.backend.id;
   return {
     url: pageUrl(server.apiPort, server.token),
     apiPort: server.apiPort,
     tunnelPort: server.tunnelPort,
     botsRoot,
     provider: describeChoice(choice),
+    sandbox,
     connectors: connectors.describe(),
     connectorPaths: paths,
     async stop() {
       server.stop();
       server.service.close();
       const { removed, surviving } = await sandboxes.reap();
-      for (const name of removed) console.error(`freebot up: removed sandbox container ${name}`);
+      for (const name of removed) {
+        console.error(`freebot up: removed sandbox ${name} (${backendId})`);
+      }
       for (const name of surviving) {
-        console.error(`freebot up: FAILED to remove sandbox container ${name}`);
+        console.error(`freebot up: FAILED to remove sandbox ${name} (${backendId})`);
       }
       return surviving.length === 0 ? 0 : 1;
     },
@@ -132,8 +151,15 @@ export async function main(argv: readonly string[]): Promise<number | null> {
 
   let up: Up;
   try {
-    up = startUp(args);
+    up = await startUp(args);
   } catch (error) {
+    if (error instanceof SandboxBackendError) {
+      console.error(`freebot up: ${error.message}`);
+      console.error(
+        "freebot up: once one is installed, --sandbox docker|microsandbox or FREEBOT_SANDBOX picks it",
+      );
+      return 2;
+    }
     if (error instanceof MissingKeyError) {
       console.error(`freebot up: ${error.message}`);
       console.error(
@@ -151,6 +177,7 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   console.error(
     `freebot up: page and run on 127.0.0.1:${up.apiPort}, tunnel on 127.0.0.1:${up.tunnelPort}`,
   );
+  console.error(`freebot up: sandbox backend ${up.sandbox.backend.id} (${up.sandbox.why})`);
   const vault = describeVault();
   console.error(`freebot up: model mode ${args.providerMode}, ${providerLine(up.provider)}`);
   console.error(
@@ -175,7 +202,7 @@ export async function main(argv: readonly string[]): Promise<number | null> {
     console.error("freebot up: opened the URL in your browser");
   }
   console.error(
-    "freebot up: Ctrl-C stops the servers and removes this launch's sandbox containers",
+    `freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (${up.sandbox.backend.id})`,
   );
   // stdout's one URL is this line. A gate refusal the landed server logs later lands on stdout too,
   // where that server writes it; a launch nobody probes writes nothing else.

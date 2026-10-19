@@ -1,0 +1,133 @@
+feature: sandbox-conformance
+command: bun packages/verify/scripts/sandbox-conformance.ts
+timestamp: 2026-10-19T07:21:57.836Z
+git sha: ff4f655ec990948d5c420aa6c978176a76e78d1d
+git sha short: ff4f655
+branch: u9.5-sandbox-selector
+runtime: bun 1.2.5 on darwin arm64
+docker server: 28.3.2
+run token: gl2-fd11e8 (this run owns freebot.unit=u1.2-run-gl2-fd11e8; the launched app owns u1.7)
+
+
+## the app, launched the way a person launches it
+launcher line: http://127.0.0.1:49792/#token=<redacted>
+launcher said: freebot up: page and run on 127.0.0.1:49792, tunnel on 127.0.0.1:49791
+launcher said: freebot up: sandbox backend docker (chosen by auto: the Docker daemon answered)
+launcher said: freebot up: model mode replay, keyless, replaying /Users/yusufameri/projects/free-bot-u9.5/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+launcher said: freebot up: vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-gl2-fd11e8-Ki077r/provider.env absent
+launcher said: freebot up: bots under /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-bots-gl2-fd11e8-A6ldbE; each Bot's workspace is mounted at /workspace and kept across runs
+launcher said: freebot up: connectors none; records /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-gl2-fd11e8-Ki077r/connectors.json, credential vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-gl2-fd11e8-Ki077r/connectors.env at mode 600
+launcher said: freebot up: the operator token rides the URL's fragment and is printed nowhere else
+launcher said: freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (docker)
+GET http://127.0.0.1:49792/#token=<redacted> -> 200 text/html; charset=utf-8
+PASS the launched app serves its own printed URL: 200
+
+## the app's own run, so the sweep meets containers it does not own
+PASS create_bot -> 200 {"json":{"botId":"bot-local","name":"Conformance Bot","role":"","purpose":"","createdAt":1792394484382,"threadCount":0}}
+PASS create_thread -> 200 {"json":{"threadId":"thread-1","botId":"bot-local","title":"New conversation","createdAt":1792394484393,"runs":[]}}
+PASS start_run -> 200 {"json":{"runId":"run-1"}}
+the app's own container: freebot-sbx-run-1-03ezzkkw=703aa6d19c4093cdc6911bb1448337dfb0ddb79101489be7cd3c8204d57eba78 running
+PASS the launched app's run holds a container under u1.7
+
+## the conformance suite, against Docker
+check create: handle={"provider":"docker","id":"u91-main-gl2-fd11e8"} engine=3a7deb9f1b4e running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-gl2-fd11e8","freebot.unit":"u1.2-run-gl2-fd11e8","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=899fc129ba090f4b3abc3463eb19b7bc420f184489fc49db2b6c8e94fa5010db the sandbox's sha256sum=899fc129ba090f4b3abc3463eb19b7bc420f184489fc49db2b6c8e94fa5010db path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=899fc129ba090f4b3abc3463eb19b7bc420f184489fc49db2b6c8e94fa5010db
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-gl2-fd11e8: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-gl2-fd11e8 is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-gl2-fd11e8:u91-round-trip ref=sha256:9a3f39d286215492641f97c9782388bfa679ae7a5e55001f451154d7b3fd010f createdAt=2026-10-19T07:21:28.865025928Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-gl2-fd11e8 booted from sha256:9a3f39d286215492641f97c9782388bfa679ae7a5e55001f451154d7b3fd010f reads marker="round-trip-marker\n"
+check delete restored: u91-restored-gl2-fd11e8 is gone from the engine
+check idle-kill: u91-idle-gl2-fd11e8 (idleTtlMs=3000) stopped after 5145ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u91-decoy-foreign-unit-gl2-fd11e8=93f30f76f4abb3a60150a80eb5522433c5b04b5e2428930a57bc4caefe76f43e running
+census before sweep, decoy (a sibling run of this suite): u91-decoy-sibling-run-gl2-fd11e8=acb6eb56a6a90531b59994ca53630722aea368129e363a368f8d9657bb1dfd2f running
+census before sweep, decoy (no labels at all): u91-decoy-bare-gl2-fd11e8=4980541be1d0bd58992e5f28a9152c7ea7401f89627fdb2ea08a43d80cf9ccc1 running
+census before sweep, this run: u91-main-gl2-fd11e8=3a7deb9f1b4e
+census before sweep, this run: u91-no-link-gl2-fd11e8=gone
+census before sweep, this run: u91-restored-gl2-fd11e8=gone
+census before sweep, this run: u91-idle-gl2-fd11e8=54fc2b8bf5cf
+check sweep: removed 2 of 2 live sandboxes: 54fc2b8bf5cf, 3a7deb9f1b4e
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+census after sweep, decoy unchanged: u91-decoy-foreign-unit-gl2-fd11e8=93f30f76f4abb3a60150a80eb5522433c5b04b5e2428930a57bc4caefe76f43e running
+census after sweep, decoy unchanged: u91-decoy-sibling-run-gl2-fd11e8=acb6eb56a6a90531b59994ca53630722aea368129e363a368f8d9657bb1dfd2f running
+census after sweep, decoy unchanged: u91-decoy-bare-gl2-fd11e8=4980541be1d0bd58992e5f28a9152c7ea7401f89627fdb2ea08a43d80cf9ccc1 running
+PASS operation create
+PASS operation exec
+PASS operation upload
+PASS operation download
+PASS operation tunnel
+PASS operation snapshot-resume
+PASS operation idle-kill
+PASS operation sweep
+PASS the suite ran all 8 operations in order: create exec upload download tunnel snapshot-resume idle-kill sweep
+PASS the Docker backend passes all 8 operations
+
+## the sweep's census, including the containers the app owns
+the app's own container after the suite: freebot-sbx-run-1-03ezzkkw=703aa6d19c4093cdc6911bb1448337dfb0ddb79101489be7cd3c8204d57eba78 running
+PASS the app's own containers are unchanged by the suite's sweep: 1 before, 1 after
+PASS the suite's own label u1.2-run-gl2-fd11e8 holds nothing after its sweep
+decoy held after the suite: u91-decoy-foreign-unit-gl2-fd11e8=93f30f76f4abb3a60150a80eb5522433c5b04b5e2428930a57bc4caefe76f43e running
+decoy held after the suite: u91-decoy-sibling-run-gl2-fd11e8=acb6eb56a6a90531b59994ca53630722aea368129e363a368f8d9657bb1dfd2f running
+decoy held after the suite: u91-decoy-bare-gl2-fd11e8=4980541be1d0bd58992e5f28a9152c7ea7401f89627fdb2ea08a43d80cf9ccc1 running
+PASS all 3 decoys of the suite's census survived the sweep and are still running
+PASS the driver's own cleanup removed every decoy it created
+
+## the negative control: one operation sabotaged, twice
+check create: handle={"provider":"docker","id":"u91-main-gl2-fd11e8b"} engine=9c17dee95b79 running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-gl2-fd11e8b","freebot.unit":"u1.2-run-gl2-fd11e8b","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+sabotaged upload: create:true exec:true upload:false
+PASS the suite reports the sabotaged upload: upload failed
+sabotaged upload, literal: the uploaded bytes, hashed inside the sandbox: expected "e5fcd44456aa75fd68dd7c3b711a9de2a6f6a88e220e24036536f0ec8cdf3c6c", got "71cbdbeec021b7f441e73b1594b1a99d2366ffe2011bb71d9a0c256d616c34c3"
+check create: handle={"provider":"docker","id":"u91-main-gl2-fd11e8s"} engine=0710890ecb8d running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-gl2-fd11e8s","freebot.unit":"u1.2-run-gl2-fd11e8s","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=6479704af33a96127340572206d1aa1e99e8de7aea426c75356580b70a3f256b the sandbox's sha256sum=6479704af33a96127340572206d1aa1e99e8de7aea426c75356580b70a3f256b path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=6479704af33a96127340572206d1aa1e99e8de7aea426c75356580b70a3f256b
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-gl2-fd11e8s: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-gl2-fd11e8s is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-gl2-fd11e8s:u91-round-trip ref=sha256:ce60b8a176e3d925f41e6269bff06e5204861aedcf6d02ddacda81f5cf7f5209 createdAt=2026-10-19T07:21:46.886278006Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-gl2-fd11e8s booted from sha256:ce60b8a176e3d925f41e6269bff06e5204861aedcf6d02ddacda81f5cf7f5209 reads marker="round-trip-marker\n"
+check delete restored: u91-restored-gl2-fd11e8s is gone from the engine
+check idle-kill: u91-idle-gl2-fd11e8s (idleTtlMs=3000) stopped after 5153ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u91-decoy-foreign-unit-gl2-fd11e8s=0a8cc77c39ac00f4490cec73c7062b35069242bd79d13b5563727c0736c8fd3f running
+census before sweep, decoy (a sibling run of this suite): u91-decoy-sibling-run-gl2-fd11e8s=eaf073993ed7110e888bcde3372db40c470e04393abc9316d8c48cbb6407988f running
+census before sweep, decoy (no labels at all): u91-decoy-bare-gl2-fd11e8s=3c27bafcd854805676abe22ec98557c912e280594d1c38918f53a540f3b54390 running
+census before sweep, this run: u91-main-gl2-fd11e8s=0710890ecb8d
+census before sweep, this run: u91-no-link-gl2-fd11e8s=gone
+census before sweep, this run: u91-restored-gl2-fd11e8s=gone
+census before sweep, this run: u91-idle-gl2-fd11e8s=623c4cd03104
+check sweep: removed 2 of 2 live sandboxes: 623c4cd03104, 0710890ecb8d
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+sabotaged sweep: create:true exec:true upload:true download:true tunnel:true snapshot-resume:true idle-kill:true sweep:false
+PASS the suite reports the sabotaged sweep: sweep failed
+PASS every operation before the sabotaged sweep passed: 7 of 7
+sabotaged sweep, literal: the decoy another unit's label: expected "u91-decoy-foreign-unit-gl2-fd11e8s=0a8cc77c39ac00f4490cec73c7062b35069242bd79d13b5563727c0736c8fd3f running", got "u91-decoy-foreign-unit-gl2-fd11e8s=gone"
+
+## cleanup: the launched app, stopped the way a person stops it
+launcher exited with 0
+PASS the launched app reaped its own containers on SIGINT
+PASS nothing answers the printed URL after the app stopped
+PASS nothing survives under the suite's label u1.2-run-gl2-fd11e8
+this driver left no container behind
+
+PASS sandbox-conformance
