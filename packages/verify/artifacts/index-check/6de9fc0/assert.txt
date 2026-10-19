@@ -1,0 +1,107 @@
+feature: index-check
+command: bun packages/verify/scripts/index-check.ts
+timestamp: 2026-10-19T06:36:40Z
+git sha: 6de9fc0a9872ee3ac02de9c55aa5c542d5e2f029
+git sha short: 6de9fc0
+branch: u10.6-index-check
+runtime: bun 1.2.5 on darwin arm64
+planted index: packages/verify/artifacts/index-check/6de9fc0/planted.md
+  docs/VERIFICATION.md at this sha with exactly two cells rewritten:
+  launch: live-ui-verified (116 checks -> live-ui-verified (114 checks
+  files surface: live-ui-verified (54 checks -> live-ui-verified (53 checks
+  every other row, artifact and commit is the committed one.
+
+== planted mismatch ==
+$ bun packages/verify/scripts/index-check.ts --table packages/verify/artifacts/index-check/6de9fc0/planted.md
+exit 1
+index-check: packages/verify/artifacts/index-check/6de9fc0/planted.md
+PASS row "scaffold": artifact and commit agree — packages/verify/artifacts/scaffold/8ed2aa4/assert.txt
+UNVERIFIED row "pi-rpc-spike": artifact exists at the commit, but claimed 39 checks and the artifact carries no counted RESULT line — packages/verify/artifacts/pi-rpc/e203adf/assert.txt
+PASS row "pi-bridge": artifact and commit agree — packages/verify/artifacts/pi-bridge/a67bc72/assert.txt
+PASS row "containment spike": artifact and commit agree — packages/verify/artifacts/containment/57a229d/probes.txt
+PASS row "sandbox image pin + replay + key scan": artifact and commit agree — packages/verify/artifacts/sandbox-image/8d36ea7/assert.txt
+PASS row "review-grants": artifact and commit agree — packages/verify/artifacts/review-grants/c8efced/assert.txt
+PASS row "tunnel spike": 34/34 checks — packages/verify/artifacts/tunnel/bf0a4e6/assert.txt
+PASS row "browser containment spike": 7/7 checks — packages/verify/artifacts/containment-browser/27cf9de/probes.txt
+PASS row "forge test A": 91/91 checks — packages/verify/artifacts/forge-test-a/a46071c/assert.txt
+PASS row "web-stream spike": 59/59 checks — packages/verify/artifacts/web-stream/35bd852/assert.txt
+PASS row "mvp smoke dry run": 75/75 checks — packages/verify/artifacts/mvp-smoke/333323c/assert.txt
+PASS row "protocol": artifact and commit agree — packages/verify/artifacts/protocol/efa0211/assert.txt
+PASS row "core run model": 45/45 checks — packages/verify/artifacts/core-run-model/ba092ab/assert.txt
+PASS row "sandbox-provider": artifact and commit agree — packages/verify/artifacts/sandbox-provider/7032a72/assert.txt
+PASS row "providers": artifact and commit agree — packages/verify/artifacts/providers/7032a72/assert.txt
+PASS row "web chat surface": 76/76 checks — packages/verify/artifacts/web-shell/8d892fa/assert.txt
+UNVERIFIED row "run loop": artifact exists at the commit, but claimed 20 checks and the artifact carries no counted RESULT line — packages/verify/artifacts/run-loop/12730d2/assert.txt
+UNVERIFIED row "server-auth": artifact exists at the commit, but claimed 32 checks and the artifact carries no counted RESULT line — packages/verify/artifacts/server-auth/0b4cb7b/assert.txt
+PASS row "one run path": 54/54 checks — packages/verify/artifacts/one-run-path/b760edb/assert.txt
+PASS row "type gate": artifact and commit agree — packages/verify/artifacts/type-gate/8d892fa/probe.txt
+FAIL row "launch": claimed 114 checks, artifact says 116/116 — packages/verify/artifacts/launch/8d892fa/assert.txt
+FAIL row "files surface": claimed 53 checks, artifact says 54/54 — packages/verify/artifacts/files-surface/8d892fa/assert.txt
+PASS row "bots and threads": 77/77 checks — packages/verify/artifacts/bots-and-threads/8d892fa/assert.txt
+UNVERIFIED row "provider setup": artifact exists at the commit, but claimed 95 checks and the artifact carries no counted RESULT line — packages/verify/artifacts/provider-setup/8d892fa/assert.txt
+PASS row "design contract": 273/273 checks — packages/verify/artifacts/design-contract/513a592/assert.txt
+PASS row "first run": 113/113 checks — packages/verify/artifacts/first-run/8d892fa/assert.txt
+PASS row "connectors": 57/57 checks — packages/verify/artifacts/connectors/b760edb/assert.txt
+SKIP row "glossary": docs-only, no artifact path
+PASS row "sandbox conformance": artifact and commit agree — packages/verify/artifacts/sandbox-conformance/1763b71/assert.txt
+PASS row "connector credentials": 37/37 checks — packages/verify/artifacts/connector-credentials/615de58/assert.txt
+PASS row "the details pane, the notices and the reconnect banner": 111/111 checks — packages/verify/artifacts/aside/513a592/assert.txt
+PASS row "truth fix": artifact and commit agree — packages/verify/artifacts/truth-fix/ada90ad/assert.txt
+PASS row "the command palette, the Bot picker and the modal": 105/105 checks — packages/verify/artifacts/overlays/beae309/assert.txt
+PASS row "sandbox microsandbox": artifact and commit agree — packages/verify/artifacts/sandbox-microsandbox/f45eb69/assert.txt, packages/verify/artifacts/sandbox-conformance/f45eb69/assert.txt
+PASS row "composio adapter": 76/76 checks — packages/verify/artifacts/connectors/c7e5326/assert.txt
+
+checked rows: 34 (35 artifacts)
+skipped rows: 1 (docs-only: glossary)
+count unverified: 4 (pi-rpc-spike, run loop, server-auth, provider setup)
+RESULT: FAIL (86/88)
+
+== the committed index at this head ==
+$ bun packages/verify/scripts/index-check.ts
+exit 0
+index-check: docs/VERIFICATION.md
+PASS row "scaffold": artifact and commit agree — packages/verify/artifacts/scaffold/8ed2aa4/assert.txt
+UNVERIFIED row "pi-rpc-spike": artifact exists at the commit, but claimed 39 checks and the artifact carries no counted RESULT line — packages/verify/artifacts/pi-rpc/e203adf/assert.txt
+PASS row "pi-bridge": artifact and commit agree — packages/verify/artifacts/pi-bridge/a67bc72/assert.txt
+PASS row "containment spike": artifact and commit agree — packages/verify/artifacts/containment/57a229d/probes.txt
+PASS row "sandbox image pin + replay + key scan": artifact and commit agree — packages/verify/artifacts/sandbox-image/8d36ea7/assert.txt
+PASS row "review-grants": artifact and commit agree — packages/verify/artifacts/review-grants/c8efced/assert.txt
+PASS row "tunnel spike": 34/34 checks — packages/verify/artifacts/tunnel/bf0a4e6/assert.txt
+PASS row "browser containment spike": 7/7 checks — packages/verify/artifacts/containment-browser/27cf9de/probes.txt
+PASS row "forge test A": 91/91 checks — packages/verify/artifacts/forge-test-a/a46071c/assert.txt
+PASS row "web-stream spike": 59/59 checks — packages/verify/artifacts/web-stream/35bd852/assert.txt
+PASS row "mvp smoke dry run": 75/75 checks — packages/verify/artifacts/mvp-smoke/333323c/assert.txt
+PASS row "protocol": artifact and commit agree — packages/verify/artifacts/protocol/efa0211/assert.txt
+PASS row "core run model": 45/45 checks — packages/verify/artifacts/core-run-model/ba092ab/assert.txt
+PASS row "sandbox-provider": artifact and commit agree — packages/verify/artifacts/sandbox-provider/7032a72/assert.txt
+PASS row "providers": artifact and commit agree — packages/verify/artifacts/providers/7032a72/assert.txt
+PASS row "web chat surface": 76/76 checks — packages/verify/artifacts/web-shell/8d892fa/assert.txt
+UNVERIFIED row "run loop": artifact exists at the commit, but claimed 20 checks and the artifact carries no counted RESULT line — packages/verify/artifacts/run-loop/12730d2/assert.txt
+UNVERIFIED row "server-auth": artifact exists at the commit, but claimed 32 checks and the artifact carries no counted RESULT line — packages/verify/artifacts/server-auth/0b4cb7b/assert.txt
+PASS row "one run path": 54/54 checks — packages/verify/artifacts/one-run-path/b760edb/assert.txt
+PASS row "type gate": artifact and commit agree — packages/verify/artifacts/type-gate/8d892fa/probe.txt
+PASS row "launch": 116/116 checks — packages/verify/artifacts/launch/8d892fa/assert.txt
+PASS row "files surface": 54/54 checks — packages/verify/artifacts/files-surface/8d892fa/assert.txt
+PASS row "bots and threads": 77/77 checks — packages/verify/artifacts/bots-and-threads/8d892fa/assert.txt
+UNVERIFIED row "provider setup": artifact exists at the commit, but claimed 95 checks and the artifact carries no counted RESULT line — packages/verify/artifacts/provider-setup/8d892fa/assert.txt
+PASS row "design contract": 273/273 checks — packages/verify/artifacts/design-contract/513a592/assert.txt
+PASS row "first run": 113/113 checks — packages/verify/artifacts/first-run/8d892fa/assert.txt
+PASS row "connectors": 57/57 checks — packages/verify/artifacts/connectors/b760edb/assert.txt
+SKIP row "glossary": docs-only, no artifact path
+PASS row "sandbox conformance": artifact and commit agree — packages/verify/artifacts/sandbox-conformance/1763b71/assert.txt
+PASS row "connector credentials": 37/37 checks — packages/verify/artifacts/connector-credentials/615de58/assert.txt
+PASS row "the details pane, the notices and the reconnect banner": 111/111 checks — packages/verify/artifacts/aside/513a592/assert.txt
+PASS row "truth fix": artifact and commit agree — packages/verify/artifacts/truth-fix/ada90ad/assert.txt
+PASS row "the command palette, the Bot picker and the modal": 105/105 checks — packages/verify/artifacts/overlays/beae309/assert.txt
+PASS row "sandbox microsandbox": artifact and commit agree — packages/verify/artifacts/sandbox-microsandbox/f45eb69/assert.txt, packages/verify/artifacts/sandbox-conformance/f45eb69/assert.txt
+PASS row "composio adapter": 76/76 checks — packages/verify/artifacts/connectors/c7e5326/assert.txt
+
+checked rows: 34 (35 artifacts)
+skipped rows: 1 (docs-only: glossary)
+count unverified: 4 (pi-rpc-spike, run loop, server-auth, provider setup)
+RESULT: PASS (88/88)
+
+== summary ==
+PASS the planted mismatches fail, each named by its row
+PASS the committed index passes every checked row
+RESULT: PASS (2/2)
