@@ -7,7 +7,8 @@ import { artifactDir } from "./src/index";
 const root = fileURLToPath(new URL("../..", import.meta.url));
 const feature = "scaffold";
 
-type Outcome = { ok: boolean; output: string };
+/** `skipped` says the step had nothing to run, which is a named state rather than a pass. */
+type Outcome = { ok: boolean; output: string; skipped?: boolean };
 
 function shell(cmd: string[]): Outcome {
   const proc = Bun.spawnSync(cmd, { cwd: root, stdout: "pipe", stderr: "pipe" });
@@ -134,6 +135,42 @@ function truncate(text: string, max = 4000): string {
   return `${text.slice(0, head)}\n[...]\n${text.slice(-(max - head))}`;
 }
 
+/**
+ * Order 31's status capture needs a live instance someone started, so it is skipped by name when
+ * no URL is given. CI has no instance and a pass names one through `FREEBOT_STATUS_URL`.
+ */
+function statusCapture(): Outcome {
+  const url = process.env.FREEBOT_STATUS_URL ?? "";
+  if (url === "") {
+    return {
+      ok: true,
+      skipped: true,
+      output: "FREEBOT_STATUS_URL is not set, so there is no live instance to capture",
+    };
+  }
+  const out =
+    process.env.FREEBOT_STATUS_OUT ??
+    `packages/verify/artifacts/mvp-status-capture/${git(["rev-parse", "--short", "HEAD"])}`;
+  const proc = Bun.spawnSync(
+    [
+      "bun",
+      "packages/verify/scripts/status-capture.ts",
+      "--url",
+      url,
+      "--out",
+      out,
+      "--mode",
+      "both",
+    ],
+    { cwd: root, stdout: "pipe", stderr: "pipe" },
+  );
+  if (proc.exitCode === 0) return { ok: true, output: `captured into ${out}` };
+  return {
+    ok: false,
+    output: `${proc.stdout.toString()}${proc.stderr.toString()}`.trim(),
+  };
+}
+
 const steps: Array<[string, () => Outcome | Promise<Outcome>]> = [
   ["typecheck", () => shell(["bun", "run", "typecheck"])],
   ["tests", () => shell(["bun", "run", "test"])],
@@ -143,6 +180,7 @@ const steps: Array<[string, () => Outcome | Promise<Outcome>]> = [
   // chrome mismatch or an undeclared box delta, so this step is the arming.
   ["pixel-gate", () => shellStreaming(["bun", "packages/pixel-gate/src/cli.ts", "--no-write"])],
   ["healthz", healthz],
+  ["status-capture", statusCapture],
 ];
 
 const outcomes: Array<{ name: string; outcome: Outcome }> = [];
@@ -155,8 +193,15 @@ for (const [name, run] of steps) {
     outcome = { ok: false, output: error instanceof Error ? error.message : String(error) };
   }
   outcomes.push({ name, outcome });
+  const label = outcome.skipped === true ? "SKIP" : outcome.ok ? "PASS" : "FAIL";
   console.log(
-    `${outcome.ok ? "PASS" : "FAIL"} step ${name}${outcome.ok ? ` (${outcome.output.split("\n")[0]})` : ""}`,
+    `${label} step ${name}${
+      outcome.skipped === true
+        ? ` (${outcome.output})`
+        : outcome.ok
+          ? ` (${outcome.output.split("\n")[0]})`
+          : ""
+    }`,
   );
   if (!outcome.ok) {
     console.log(truncate(outcome.output));
@@ -177,7 +222,12 @@ const report = [
   `branch: ${branch}`,
   `runtime: bun ${Bun.version} on ${process.platform} ${process.arch}`,
   "",
-  ...outcomes.map((entry) => `step ${entry.name}: ${entry.outcome.ok ? "PASS" : "FAIL"}`),
+  ...outcomes.map((entry) => {
+    const outcome = entry.outcome;
+    const label =
+      outcome.skipped === true ? `SKIP (${outcome.output})` : outcome.ok ? "PASS" : "FAIL";
+    return `step ${entry.name}: ${label}`;
+  }),
   ...outcomes
     .filter((entry) => !entry.outcome.ok)
     .flatMap((entry) => ["", `--- failed step ${entry.name} ---`, truncate(entry.outcome.output)]),
