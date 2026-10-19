@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-19T17:10Z, against `origin/main` `84e57a3`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-19T17:36Z, against `origin/main` `300fdbe`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-56 units in the register: 48 done, 0 running, 7 pending, 1 parked.
+56 units in the register: 49 done, 0 running, 6 pending, 1 parked.
 
-The verification ledger holds 54 rows: 18 `live-ui-verified`, 30 `unit-test-verified`, 2 `type-check-only`, 4 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 56 rows: 19 `live-ui-verified`, 30 `unit-test-verified`, 2 `type-check-only`, 5 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -93,6 +93,7 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U10.7 | The `bots-and-threads` driver asserting the transcript that now survives a restart | [#54](https://github.com/yusufameri/free-bot/pull/54) |
 | U6.5 | The item components and the real Bot status dot, with the run state moved to the header | [#55](https://github.com/yusufameri/free-bot/pull/55) |
 | U6.7 | The fidelity pass armed in the build: the pixel gate inside `bun run verify` and CI | [#56](https://github.com/yusufameri/free-bot/pull/56) |
+| U10.8 | The sandbox pin repairs itself: an off-pin tag is re-pointed at a layer-matching image, and a build that cannot match the pin refuses and says so | [#58](https://github.com/yusufameri/free-bot/pull/58) |
 
 ## Not built yet
 
@@ -107,11 +108,10 @@ Queued, with no brief written except where named. U10.8 and U10.9 carry briefs.
 | U10.1 | The verification record as data plus a check that reads it. The checker half landed as U10.6; this carries what remains |
 | U10.2 | Artifact hygiene: a real prune script, an ignore rule for the Chrome profiles three throwaway capture scripts left behind, and one shared screenshot helper instead of the ten that hand-roll it |
 | U10.5 | A scheduled sweep that runs the live drivers against current main and files a unit when one fails |
-| U10.8 | The sandbox pin repairs itself: an off-pin tag with a layer-matching image present is re-pointed instead of refusing the run |
 | U10.9 | The landing page stops saying the spend cap is not consulted, which U10.3 made false |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
 
-Two notes on honesty that the surface carries. The verification index is per-unit history rather than coverage of main: the checker's own tally is 42 checked rows and 46 artifacts, `RESULT: PASS (142/142)`, and the rows that name a commit certify code between 7 and 371 commits behind head, which order 40 and U10.5 address. Four rows are listed by the checker as count-unverified rather than passing (pi-rpc-spike, run loop, server-auth, provider setup) because their artifacts carry a written claim and no counted `RESULT` line. And two gaps still have no unit at all: the details pane's mobile drawers are unowned, so a narrow screen has no way into the pane, and the `Media` tab has no capture source, since this app never records a screen.
+Three notes on honesty that the surface carries. The sandbox pin now repairs itself rather than refusing a run: when the tag is off-pin and a local image's layers match the pin, `ensurePinnedImage` re-points it in one line, and a build that cannot match the pin refuses and names the command instead of leaving the tag off-pin (U10.8). The verification index is per-unit history rather than coverage of main: the checker's own tally is 42 checked rows and 46 artifacts, `RESULT: PASS (142/142)`, and the rows that name a commit certify code between 7 and 371 commits behind head, which order 40 and U10.5 address. Four rows are listed by the checker as count-unverified rather than passing (pi-rpc-spike, run loop, server-auth, provider setup) because their artifacts carry a written claim and no counted `RESULT` line. And two gaps still have no unit at all: the details pane's mobile drawers are unowned, so a narrow screen has no way into the pane, and the `Media` tab has no capture source, since this app never records a screen.
 
 ## Where things live
 
