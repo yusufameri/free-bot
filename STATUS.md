@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-19T09:12Z, against `origin/main` `3e6b5a4`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-19T17:10Z, against `origin/main` `84e57a3`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -9,9 +9,9 @@ The plan's §9.1 states when this run ends. Each line needs its evidence, or a n
 | Predicate line | State |
 | --- | --- |
 | 1. Phase 0 exit, six checks green, artifact and ledger row each | Met. Eleven units in wave 0 carry ledger rows. One caveat: the artifacts live under their own feature directories rather than a single `verify/artifacts/phase0/` index. |
-| 2. Phase 1 MVP, every feature merged and verified `live-ui-verified` | Nearly. The wired feature list is Met end to end, and the two partial lines landed as U10.3. The transcript still dies with the server, and U10.4 (running) closes it. |
-| 3. Gates 1 to 8 hold | No open gates. G1 resolved with the vault key, G3 and G5 narrowed by the no-paid-dependency and no-account direction. |
-| 4. Phase 1.5, goldens deterministic across two CI runs | Partly. The harness exists: U6.7a landed the pixel gate, which renders the app and the export in one browser instance and diffs them against each other rather than against a stored golden, so the cross-run rasterization problem order 36 names is designed out. The gate is not yet armed: U6.7 is still queued, and its brief carries the calibration and the shell mask the export's own baseline needs. |
+| 2. Phase 1 MVP, every feature merged and verified `live-ui-verified` | Met. Every wired feature is merged with live-ui evidence: the stop control and the spend cap landed as U10.3, and the transcript now survives a server restart (U10.4), proven live on a fresh instance and by its driver. |
+| 3. Gates 1 to 8 hold | No open gates. G1 resolved with the vault key, G3 and G5 narrowed by the no-paid-dependency and no-account direction, G6 closed when the reviewer resumed, G7 closed when both scheduled hands landed again. |
+| 4. Phase 1.5, goldens deterministic across two CI runs | Met. The gate is armed rather than queued: `bun run verify` runs `packages/pixel-gate/src/cli.ts --no-write`, CI installs Chrome and pins `FREEBOT_CHROME`, and the app and the export render in one browser instance at each of the nine manifest viewports. A chrome pixel, an undeclared moved box or a horizontal scroll fails the build. U6.7's fix removed the hidden-tab condition that made a slow CI runner fail a run that was still producing viewports. |
 | 5. Phases 2 to 7 | Not started. The tracks that opened instead are T6 design parity, T7 documentation truth, T8 connectors and sandbox backends, and T9 for the parked paid backends. |
 | 6. Exclusions labeled | Met. `docs/VERIFICATION.md` states that arbitrary third-party MCP servers and arbitrary models sit outside the absolute bar. |
 
@@ -33,12 +33,13 @@ The list is fixed by the plan's §5.2 re-cut.
 | Replay stub for the provider | Met. A machine with no key replays a committed transcript, and the launch driver pins it. | U1.6, U2.5 |
 | Async run model, `start_run` and `cancel_run` | Met. `start_run` is wired end to end, and a run can be stopped from the page: the control disables when nothing is in flight, the stop wakes a parked approval, and the run settles at `cancelled` with what arrived before the stop kept. | U1.7, U10.3 |
 | Spend caps | Met. The run loop consults the cap before each provider turn, an over-cap total settles the run at `spend_cap` with the spend and the cap in the reason, and the launcher configures it through `FREEBOT_SPEND_CAP_USD` (default 5.00). | U1.4, U10.3 |
+| A conversation survives a restart | Met. Frames persist per thread as an append-only JSONL file, a restart hydrates the conversation from disk, and a run the dead process held returns as `server_restart`. | U10.4 |
 
 ## Units
 
-53 units in the register: 44 done, 1 running, 7 pending, 1 parked.
+56 units in the register: 48 done, 0 running, 7 pending, 1 parked.
 
-The verification ledger holds 49 rows: 14 `live-ui-verified`, 30 `unit-test-verified`, 2 `type-check-only`, 3 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 54 rows: 18 `live-ui-verified`, 30 `unit-test-verified`, 2 `type-check-only`, 4 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -88,32 +89,34 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U10.6 | The index checker: a row that disagrees with its artifact fails the build | [#46](https://github.com/yusufameri/free-bot/pull/46) |
 | U9.5 | The sandbox backend selector, and the sabotage-drill honesty fix | [#49](https://github.com/yusufameri/free-bot/pull/49) |
 | U10.3 | The stop control in the page, and the spend cap consulted by the run loop | [#51](https://github.com/yusufameri/free-bot/pull/51) |
+| U10.4 | The transcript across a restart: per-thread JSONL, hydrate on boot, `server_restart` | [#53](https://github.com/yusufameri/free-bot/pull/53) |
+| U10.7 | The `bots-and-threads` driver asserting the transcript that now survives a restart | [#54](https://github.com/yusufameri/free-bot/pull/54) |
+| U6.5 | The item components and the real Bot status dot, with the run state moved to the header | [#55](https://github.com/yusufameri/free-bot/pull/55) |
+| U6.7 | The fidelity pass armed in the build: the pixel gate inside `bun run verify` and CI | [#56](https://github.com/yusufameri/free-bot/pull/56) |
 
 ## Not built yet
 
-Running now, one unit, in its own worktree with its own brief. Liveness is read from a climbing turn count rather than from a status field, and file writes are the progress signal, a distinction order 41 records because a file-write read alone called three live workers idle.
+Nothing is running. The fleet is idle between coordinator turns, which is the state order 35 exists to shorten.
 
-| Unit | What it is | State |
-| --- | --- | --- |
-| U10.4 | Transcript persistence, so a restart brings back the conversation and not only the runs | running, branch `u10.4-transcript-persistence` |
-
-Queued, with no brief written yet, which is deliberate so a queued slice cannot go stale.
+Queued, with no brief written except where named. U10.8 and U10.9 carry briefs.
 
 | Unit | What it is |
 | --- | --- |
-| U6.5 | The item components and Bot status |
-| U6.7 | The fidelity pass: every screen diffed against the export across nine viewports, under order 36's pixel gate, with every delta fixed or written down. Its brief must carry the shell mask the gate needs, since the export's own baseline contradicts itself in two places |
 | U8.4 | The Connect apps surface: the export's own entry and its states, and the brief must name whether a Composio connector arrives as a preset that fills the url field or through a protocol change no unit owns |
 | U9.3 | The E2B Embed backend for Linux hosts and CI |
 | U10.1 | The verification record as data plus a check that reads it. The checker half landed as U10.6; this carries what remains |
 | U10.2 | Artifact hygiene: a real prune script, an ignore rule for the Chrome profiles three throwaway capture scripts left behind, and one shared screenshot helper instead of the ten that hand-roll it |
 | U10.5 | A scheduled sweep that runs the live drivers against current main and files a unit when one fails |
+| U10.8 | The sandbox pin repairs itself: an off-pin tag with a layer-matching image present is re-pointed instead of refusing the run |
+| U10.9 | The landing page stops saying the spend cap is not consulted, which U10.3 made false |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
 
-Two notes on honesty that the surface carries. The verification index is per-unit history rather than coverage of main: an artifact certifies the commit it was produced at, and the 39 checked rows (the checker's own tally) name commits between 2 and 322 commits behind head, which order 40 and U10.5 address. And the gaps below have no unit at all, named so they are not lost. The details pane's mobile drawers are unowned, so a narrow screen has no way into the pane. And the `Media` tab has no capture source, since this app never records a screen. Both are design work and belong with U6.5 and U6.7. Two other gaps closed since the last refresh and were MVP predicate lines rather than phase-later work: the stop control landed as U10.3, and the transcript is U10.4's, running. One honesty gap opened with U10.3: the static landing page still says the cap is not consulted, while `docs/landing.md` records the delta, and it is unfiled.
+Two notes on honesty that the surface carries. The verification index is per-unit history rather than coverage of main: the checker's own tally is 42 checked rows and 46 artifacts, `RESULT: PASS (142/142)`, and the rows that name a commit certify code between 7 and 371 commits behind head, which order 40 and U10.5 address. Four rows are listed by the checker as count-unverified rather than passing (pi-rpc-spike, run loop, server-auth, provider setup) because their artifacts carry a written claim and no counted `RESULT` line. And two gaps still have no unit at all: the details pane's mobile drawers are unowned, so a narrow screen has no way into the pane, and the `Media` tab has no capture source, since this app never records a screen.
 
 ## Where things live
 
 In the repository: `PLAN.md` (this plan), `STATUS.md` (this file), `README.md`, `UX.md` (the product specification), `VISION.md`, `GLOSSARY.md`, `docs/VERIFICATION.md` (one row per verified feature with its artifact and commit), `docs/DESIGN-CONTRACT.md` (the exported prototype's measured contract), and `design/prototype-84c6b185` (the export itself).
 
-Outside the repository, on this machine: the master plan at `/Users/yusufameri/.opencode/plan/freebot-plan.md`, the orchestration store at `/Users/yusufameri/.opencode/orchestrate/freebot`, and the provider vault at `/Users/yusufameri/.freebot/provider.env` with mode 600.
+Outside the repository, on this machine: the master plan at `/Users/yusufameri/.opencode/plan/freebot-plan.md`, the orchestration store at `/Users/yusufameri/.opencode/orchestrate/freebot`, and the provider vault at `~/.freebot/provider.env` with mode 600.
+
+One local note, because it affects what a person sees from this checkout: the main working tree carried nine uncommitted files of export-shell work from 09:09 to 09:14 today (`apps/server/src/router.ts`, `apps/web/host/index.html`, `packages/core/src/bot-store.ts`, `packages/protocol/src/api.ts`, `dto.ts`, `dto.test.ts`, `packages/ui/browser/icons.ts`, `shell.ts`, `packages/ui/src/bots.ts`). They blocked the fast-forward after #56, so they were stashed intact as `stash@{0}` rather than discarded. They are not on main and no unit owns them.
