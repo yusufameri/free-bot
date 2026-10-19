@@ -66,11 +66,17 @@ const EXPECTED: Array<{
     event: "run.failed",
     copy: "FreeBot hit an internal error and stopped this run.",
   },
+  {
+    code: "server_restart",
+    status: "failed",
+    event: "run.failed",
+    copy: "FreeBot stopped while this run was in flight.",
+  },
 ];
 
 describe("the failure taxonomy", () => {
-  test("nine codes, each with the status and copy it converges to", () => {
-    expect(RUN_FAILURE_CODES.length).toBe(9);
+  test("ten codes, each with the status and copy it converges to", () => {
+    expect(RUN_FAILURE_CODES.length).toBe(10);
 
     for (const expected of EXPECTED) {
       const entry = failureEntry(expected.code);
