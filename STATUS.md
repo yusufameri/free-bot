@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-19T23:30Z, against `origin/main` `60599ac`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-19T23:42Z, against `origin/main` `b975620`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-64 units in the register: 57 done, 1 running, 4 pending, 2 parked.
+64 units in the register: 58 done, 0 running, 4 pending, 2 parked.
 
-The verification ledger holds 70 rows: 24 `live-ui-verified`, 32 `unit-test-verified`, 2 `type-check-only`, 12 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 72 rows: 25 `live-ui-verified`, 32 `unit-test-verified`, 2 `type-check-only`, 13 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -102,12 +102,15 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U8.4 | The Connect apps surface inside the U6.8 shell: the install's connector records, detail pages, and the real routes | [#70](https://github.com/yusufameri/free-bot/pull/70) |
 | U10.14 | The landing's later-phases sentence drops Settings and in-page connectors, asserted from `#landing-later-phases` | [#71](https://github.com/yusufameri/free-bot/pull/71) |
 | U10.13 | The eight red drivers triaged: six stale claims fixed and re-run, two product defects filed, and a lost-tail socket write fixed | [#73](https://github.com/yusufameri/free-bot/pull/73) |
+| U10.16 | The restart run path: the driver scoped to the new run id, and a run whose setup throws settles instead of staying queued | [#74](https://github.com/yusufameri/free-bot/pull/74) |
 
 ## Not built yet
 
-U10.16, the restart run-queue fix, is running on `u10.16-restart-run-queue`. U10.13 finished the
-triage of the eight red drivers: six were stale claims, fixed and re-run green, and two are real defects,
-filed as U10.16 and U10.17. The sweep now enumerates 23 drivers.
+Nothing is running. U10.16 landed the restart run fix, whose brief's premise it refuted first (the
+driver was reading run 1's frames as run 2's) and whose real fix was scoping the driver to the new run id
+plus settling a run whose setup throws. U10.13 had taken the sweep's eight reds to two owned defects; one
+is now fixed and U10.17 remains. The sweep enumerates 23 drivers and the next scheduled run will say
+whether main is green.
 
 Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.17.
 
