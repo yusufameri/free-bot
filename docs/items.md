@@ -60,3 +60,14 @@ reads (`liveBotStatus`), and the override is cleared once the run's record is re
   (`:1112`); this page's sprite has no copy glyph, so the button reads `Copy` with an aria-label.
 - **The output summary counts lines.** The export's seeded card counts matches (`Output · 2
   matches`, `:1113`); a bash call's output has lines, not matches, so the card counts those.
+
+## A follow-up the evidence found
+
+A second run of the same command in one process is denied `grant_consumed` rather than parking
+again. The ledger is process-wide and a consumed grant is read as a refusal
+(`packages/review/src/policy.ts:143-144`), so a person who allowed `echo hi` once is not asked again
+for the same command until the process restarts. That is the landed gate's behavior, not this unit's
+decision. The evidence driver therefore runs the expired state under a second launch over the same
+bots root, which brings the Bots and the transcript back. Whether a consumed grant should re-park is
+a policy question for the unit that owns the ledger.
+

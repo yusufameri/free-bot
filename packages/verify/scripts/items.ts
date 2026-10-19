@@ -952,10 +952,11 @@ async function main(): Promise<number> {
   ];
   log.note("# items live-ui frames");
   log.note(
-    "DRIVER DISCLOSURE: `bun run up --no-open --replay` is spawned over a temporary FREEBOT_HOME and bots root, with a Pi transcript this driver writes. The three `bash` calls in that transcript are the scripted model turns; each executes in a real container from the pinned image. The vault file is a placeholder in the temporary home, and --replay means no request reads it. Both `allow` answers and the `deny` answer are clicked on the page's own approval card. The expired card is a real 120s approval window nobody answered, which fails the run at `approval_timeout`. No key value is read, printed or written to the artifact.",
+    "DRIVER DISCLOSURE: `bun run up --no-open --replay` is spawned over a temporary FREEBOT_HOME and bots root, with a Pi transcript this driver writes. The three `bash` calls in that transcript are the scripted model turns; each executes in a real container from the pinned image. The vault file is a placeholder in the temporary home, and --replay means no request reads it. Both `allow` answers and the `deny` answer are clicked on the page's own approval card. The expired card is a real 120s approval window nobody answered, which fails the run at `approval_timeout`. That state is run under a second launch over the same bots root, because the grant ledger is per process and a consumed grant refuses the same action hash as `grant_consumed` rather than parking it again; the first launch is SIGINTed and its Bots and transcript come back. No key value is read, printed or written to the artifact.",
   );
 
   const launched = await launch(home, transcript);
+  let activeLaunch = launched;
   log.note(`the printed URL, redacted: ${redacted(launched.url)}`);
   const botsLine = await waitForMatch(
     () => launched.stderr(),
@@ -1094,6 +1095,48 @@ async function main(): Promise<number> {
     await capture(cdp, page, "11-turn-waiting", launched, first.botId, "");
     await capture(cdp, page, "15-bot-idle", launched, first.botId, "");
 
+    log.section("a second launch: the same bots root, a fresh grant ledger");
+    // A grant is per process and a consumed grant refuses the same action hash with
+    // `grant_consumed` rather than parking again. The expired state therefore needs a fresh launch;
+    // the Bots, their threads and run-1's transcript come back from the same bots root.
+    launched.interrupt();
+    const firstCode = await launched.exited();
+    log.check("the first launch exits zero on SIGINT", firstCode, 0);
+    const second = await launch(home, transcript);
+    activeLaunch = second;
+    log.note(`the second printed URL, redacted: ${redacted(second.url)}`);
+    const secondBotsLine = await waitForMatch(
+      () => second.stderr(),
+      /^(freebot up: bots under .*)$/m,
+      30_000,
+    );
+    log.check(
+      "the second launch holds the same bots root",
+      secondBotsLine,
+      `freebot up: bots under ${join(home, "bots")}; each Bot's workspace is mounted at /workspace and kept across runs`,
+    );
+    page = await openPage(cdp, second.url);
+    await setViewport(cdp, page, 1440, 900);
+    await waitFor(
+      cdp,
+      page,
+      "the restarted shell hook",
+      `typeof window.__shellFacts === 'function'`,
+    );
+    await waitFor(
+      cdp,
+      page,
+      "the restarted page to read both Bots and connect",
+      `window.__shellFacts().bots.length === 2 && document.querySelector('#conn').textContent === 'connected'`,
+    );
+    log.check(
+      "the first run came back with the thread",
+      (await threadsOf(second, first.botId))
+        .flatMap((thread) => thread.runs)
+        .map((run) => [run.runId, run.status]),
+      [["run-1", "done"]],
+    );
+
     log.section("the second run: a real approval window nobody answers");
     await startRun(
       cdp,
@@ -1115,8 +1158,8 @@ async function main(): Promise<number> {
       `document.querySelector('#bot-list .sb-row[data-bot="${first.botId}"][data-state="failed"]') !== null`,
       30_000,
     );
-    await capture(cdp, page, "04-approval-expired", launched, first.botId, "");
-    await capture(cdp, page, "14-bot-failed", launched, first.botId, "");
+    await capture(cdp, page, "04-approval-expired", second, first.botId, "");
+    await capture(cdp, page, "14-bot-failed", second, first.botId, "");
 
     const final = await factsOf(cdp, page);
     log.check("every removed marker line is absent from the whole transcript", final.dom.markers, {
@@ -1139,18 +1182,16 @@ async function main(): Promise<number> {
     );
     log.check(
       "the status proof for the other Bot reads its own empty run set",
-      deriveBotStatus(
-        (await threadsOf(launched, secondBot.botId)).flatMap((thread) => thread.runs),
-      ),
+      deriveBotStatus((await threadsOf(second, secondBot.botId)).flatMap((thread) => thread.runs)),
       "idle",
     );
   } catch (error) {
     log.fail("the driver run", error);
     const failure = await factsOf(cdp, page).catch(() => null);
     log.note(`the page at failure: ${JSON.stringify(failure)}`);
-    log.note(`the launcher stderr tail: ${launched.stderr().slice(-3000)}`);
+    log.note(`the launcher stderr tail: ${activeLaunch.stderr().slice(-3000)}`);
     console.error(error);
-    console.error(`launcher stderr tail:\n${launched.stderr().slice(-3000)}`);
+    console.error(`launcher stderr tail:\n${activeLaunch.stderr().slice(-3000)}`);
   } finally {
     chrome.stop();
   }
