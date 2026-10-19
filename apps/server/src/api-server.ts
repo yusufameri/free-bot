@@ -205,6 +205,25 @@ export function startApiServer(options: ApiServerOptions = {}): ApiServer {
         });
       }
 
+      // The export's first font family, served from the host directory beside the page and the
+      // bundle. It is a static byte range with no state and no token: the page needs it before its
+      // first paint, and the licence travels beside it under the same route. Only these two exact
+      // paths are answered, so the route cannot be walked out of its directory.
+      if (path === "/fonts/geist-var.woff2") {
+        return new Response(readFileSync(join(hostDir, "fonts", "geist-var.woff2")), {
+          headers: {
+            "content-type": "font/woff2",
+            "cache-control": "public, max-age=31536000, immutable",
+          },
+        });
+      }
+
+      if (path === "/fonts/OFL.txt") {
+        return new Response(readFileSync(join(hostDir, "fonts", "OFL.txt"), "utf8"), {
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
+      }
+
       // The landing route (U6.6). Its own path, its own document and its own bundle; `/` above is
       // unchanged, so a first-run flow that never visits this path behaves exactly as it did.
       if (path === "/landing" || path === "/landing/") {

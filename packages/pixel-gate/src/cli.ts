@@ -86,6 +86,28 @@ function readReport(path: string): RunReport {
   return JSON.parse(readFileSync(path, "utf8")) as RunReport;
 }
 
+/**
+ * A stall is twelve minutes with no line of progress, not twelve minutes on a slow machine.
+ *
+ * A wall clock is the wrong quantity: the same commit's nine viewports measured 5m02s on one CI
+ * runner and longer than 12 minutes on another while still producing viewports, and the wall-clock
+ * version of this guard failed that run at viewport 7 of 9. Every line the run prints re-arms this
+ * timer, so a genuinely stuck browser call is still caught, and the call's own deadline in
+ * `page.ts` names it before it gets here.
+ */
+const PROGRESS_TIMEOUT_MS = 12 * 60_000;
+
+let progressTimer: ReturnType<typeof setTimeout> | undefined;
+
+function progress(): void {
+  clearTimeout(progressTimer);
+  progressTimer = setTimeout(() => {
+    console.error("pixel gate: 12 minutes without a line of progress, so the run fails");
+    process.exit(1);
+  }, PROGRESS_TIMEOUT_MS);
+  progressTimer.unref();
+}
+
 async function main(): Promise<number> {
   const args = parse(Bun.argv.slice(2));
 
@@ -112,7 +134,15 @@ async function main(): Promise<number> {
     repeat: args.repeat,
     write: args.write,
     dir: args.artifact,
-    log: args.json ? (line: string) => console.error(line) : (line: string) => console.log(line),
+    log: args.json
+      ? (line: string) => {
+          progress();
+          console.error(line);
+        }
+      : (line: string) => {
+          progress();
+          console.log(line);
+        },
   });
   if (args.json) console.log(renderJson(result.report));
   return result.exitCode;
@@ -128,7 +158,12 @@ export function matrix(): string {
 export { CHROME_TOLERANCE, chooseViewports };
 
 try {
-  process.exit(await main());
+  // Armed before the first line and re-armed by every line after it, so the bound is silence rather
+  // than elapsed time. A run that keeps printing viewports is making progress and is not stalled.
+  progress();
+  const code = await main();
+  clearTimeout(progressTimer);
+  process.exit(code);
 } catch (error) {
   console.error(`pixel gate crashed: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);

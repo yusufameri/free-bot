@@ -139,12 +139,12 @@ export const REGIONS: readonly RegionSpec[] = [
     kind: "content",
     source: "export",
     selector: ".composer-wrap",
-    counterpart: "#operator",
+    counterpart: "#composer-wrap",
     edge: "box",
     size: 0,
     variance:
-      "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input and one Start run button, placed under the header above the transcript. Control count, control labels and the band's own position differ by product, and the position is the larger difference: the export pins its composer to the bottom edge and this app does not. The box delta beside this region is the literal size of that difference.",
-    note: "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#operator` form (index.html:805, styled at :205).",
+      "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input, one Start run button and the live stream line, pinned to the same bottom edge. Control count, control labels and the band's own height differ by product; its top edge is the export's own padding once the bottom is pinned, so the height delta is the whole of the difference. The box delta beside this region is the literal size of that difference.",
+    note: "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#composer-wrap` (index.html:905, styled at :208), which holds the form and the export's `.chint` place beside it.",
   },
   {
     id: "content.aside-strip",
@@ -169,6 +169,90 @@ export const REGIONS: readonly RegionSpec[] = [
     variance:
       "the export's body is a mock computer panel with a screen, lifecycle and recovery blocks; this app's body reports the run, Bot, thread and provider records it really holds, and before any run it reports that it has none. Panel count, row count and the body's own scroll extent differ by data.",
     note: "The pane's scrolling body. Rectangle from the export's `#asideBody` (:1197), against the app's, which mounts the same id at packages/ui/browser/aside.ts:123.",
+  },
+  {
+    id: "content.sidebar-bot-row",
+    kind: "content",
+    source: "app",
+    selector: "#bot-list .sb-row",
+    counterpart: "#sbList .sb-row",
+    edge: "box",
+    size: 0,
+    variance:
+      "the export's row carries a group, initials, a role and a state read from its seed; this app's carries the Bot's name, its run-derived sub line and the same state dot. Row count, the sub line's text and the dot's state differ by data, and the export's Pinned/Primary/Unassigned headings have no record in this app.",
+    note: "The Bot row's own rectangle. Taken from the app's first `.sb-row` (packages/ui/browser/shell.ts:175, styled at index.html:124) against the export's `.sb-row` (freebot-prototype.html:962, styled at :227). The list's band is the region above; this one is the row the two pages both draw.",
+  },
+  {
+    id: "content.item-turn-marker",
+    kind: "content",
+    source: "app",
+    selector: ".tm",
+    counterpart: ".tm",
+    edge: "box",
+    size: 0,
+    variance:
+      "the export paints its seeded turn's marker with a scripted sentence; this app's marker text is the live turn's phase (thinking, working, waiting), so the copy differs by the run and is absent before one starts. The 13.5px row, its 9px gap and its pulse are the export's.",
+    note: "The turn marker. Taken from the app's `.tm` (packages/ui/browser/render.ts:281, styled at index.html:258) against the export's `.tm` (freebot-prototype.html:1104, styled at :310). Absent in the gate's idle shell, where no turn has started; the items driver measures the three phases under `packages/verify/artifacts/items/`.",
+  },
+  {
+    id: "content.item-tool-card",
+    kind: "content",
+    source: "app",
+    selector: ".tool-card",
+    counterpart: ".tcard:not(.gate)",
+    edge: "box",
+    size: 0,
+    variance:
+      "the export's tool card is a seeded build with a two-match output disclosure; this app's is the command the live run made, with its own state word and its own output. Command text, line count and the disclosure's own extent differ by the run, and both are absent before one starts.",
+    note: "The tool call's card. Taken from the app's `.tool-card` (packages/ui/browser/render.ts:300, styled at index.html:263) against the export's `.tcard:not(.gate)` (freebot-prototype.html:1106, styled at :312). Absent in the gate's idle shell; the items driver photographs it running, done, denied and failed.",
+  },
+  {
+    id: "content.item-approval-card",
+    kind: "content",
+    source: "app",
+    selector: ".approval-card",
+    counterpart: ".tcard.gate",
+    edge: "box",
+    size: 0,
+    variance:
+      "the export's gate is seeded pending at 62 of 90 seconds with its own proposal and scope; this app's is the request the live run parked, carrying the command's own proposal and its real expiry. Copy, the bar's width and the resolved state differ by the run, and both are absent before one starts.",
+    note: "The approval card. Taken from the app's `.approval-card` (packages/ui/browser/render.ts:369, styled at index.html:282) against the export's `.tcard.gate` (freebot-prototype.html:1116, styled at :354). Absent in the gate's idle shell; the items driver measures pending, allowed, denied and expired.",
+  },
+  {
+    id: "content.overlay-palette",
+    kind: "content",
+    source: "app",
+    selector: "#palette",
+    counterpart: ".palette",
+    edge: "box",
+    size: 0,
+    variance:
+      "the export's palette lists settings, routines and quoted-message search; this app's lists Bots, threads, pages and actions, and its field and no-results copy say so. Row count, group names and text differ by product; the panel's measured width and top are the export's `min(600px, 100vw - 28px)` at `12vh`.",
+    note: "The command palette's panel. Taken from the app's `#palette` (packages/ui/browser/overlays.ts:211, styled at index.html:492) against the export's `.palette` (freebot-prototype.html:2110, styled at :478). Absent in the gate's idle shell because no overlay is open; the overlays driver measures the open panel at every viewport.",
+  },
+  {
+    id: "content.overlay-picker",
+    kind: "content",
+    source: "app",
+    selector: "#picker",
+    counterpart: ".picker",
+    edge: "box",
+    size: 0,
+    variance:
+      "the export's picker searches its seeded Bots and offers to name a new one; this app's searches the Bots its store holds and offers the same. Row count and text differ by data; the panel's geometry is the same `min(600px, 100vw - 28px)` panel.",
+    note: "The Bot picker's panel. Taken from the app's `#picker` (packages/ui/browser/overlays.ts:314, styled at index.html:492) against the export's `.picker` (freebot-prototype.html:2091, styled at :478). Absent in the gate's idle shell; the overlays driver measures it open.",
+  },
+  {
+    id: "content.overlay-modal",
+    kind: "content",
+    source: "app",
+    selector: "#modal",
+    counterpart: ".modal",
+    edge: "box",
+    size: 0,
+    variance:
+      "the export's modal ends with Download and Copy the path and scrolls its whole panel; this app's carries the name, path, size and bytes and scrolls the file box instead. Button count and the file's own height differ by product; the panel's `min(720px, 100vw - 32px)` width and `12vh` top are the export's.",
+    note: "The file modal's panel. Taken from the app's `#modal` (packages/ui/browser/overlays.ts:400, styled at index.html:500) against the export's `.modal` (freebot-prototype.html:923, styled at :443). Absent in the gate's idle shell; the overlays driver measures the wide panel with a long file.",
   },
 ];
 

@@ -45,12 +45,46 @@ export const DETERMINISM_FLAGS: readonly string[] = [
   "--force-color-profile=srgb",
 ];
 
+/**
+ * The flags a Linux CI runner needs and a desktop does not. The runner's Chrome runs as a build user
+ * with a small `/dev/shm`, so the sandbox and the shared-memory path are the two things that stop it
+ * writing `DevToolsActivePort`; `--disable-gpu` keeps a headless VM from trying to open one. None of
+ * them affect the rasterized pixels the determinism flags pin.
+ */
+export const LINUX_FLAGS: readonly string[] = [
+  "--no-sandbox",
+  "--disable-dev-shm-usage",
+  "--disable-gpu",
+];
+
+/** Every flag this platform's run passes, in the order the report prints them. */
+export function launchFlags(platform = process.platform): string[] {
+  return [...DETERMINISM_FLAGS, ...(platform === "linux" ? LINUX_FLAGS : [])];
+}
+
 /** The stylesheet that stops both pages moving, injected before any capture. */
 export const FREEZE_CSS = `*, *::before, *::after {
   animation: none !important;
   transition: none !important;
   caret-color: transparent !important;
   scroll-behavior: auto !important;
+}`;
+
+/**
+ * The font the export assumes and this repo vendors: one Geist variable face, committed with its
+ * OFL licence at `apps/web/host/fonts/`. The app's own page declares the same `@font-face`; this
+ * injected copy is what makes the committed export use the same bytes, because the frozen export is
+ * never edited and its stylesheet only names the family. Both routes answer the same file, so the
+ * two pages resolve one face rather than two fallbacks that happen to measure alike.
+ */
+export const FONT_FILE = "apps/web/host/fonts/geist-var.woff2";
+export const FONT_ROUTE = "/fonts/geist-var.woff2";
+export const FONT_CSS = `@font-face {
+  font-family: 'Geist';
+  src: url('${FONT_ROUTE}') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: block;
 }`;
 
 export interface AppUnderTest {
@@ -214,12 +248,27 @@ async function rpc(
  */
 export function serveExport(root: string, file: string): ExportUnderTest {
   const source = readFileSync(join(root, file), "utf8");
+  const font = readFileSync(join(root, FONT_FILE));
+  const licence = readFileSync(join(root, "apps/web/host/fonts/OFL.txt"), "utf8");
   const replacements = source.split("screen: 'welcome',").length - 1;
   const html = source.replace("screen: 'welcome',", "screen: 'app',");
   const server = Bun.serve({
     port: 0,
     fetch(request) {
       const path = new URL(request.url).pathname;
+      if (path === FONT_ROUTE) {
+        return new Response(font, {
+          headers: {
+            "content-type": "font/woff2",
+            "cache-control": "public, max-age=31536000, immutable",
+          },
+        });
+      }
+      if (path === "/fonts/OFL.txt") {
+        return new Response(licence, {
+          headers: { "content-type": "text/plain; charset=utf-8" },
+        });
+      }
       if (path !== "/" && path !== "/index.html") {
         return new Response("not found", { status: 404 });
       }
@@ -243,14 +292,15 @@ export interface Browser {
 }
 
 export async function startBrowser(): Promise<Browser> {
+  const flags = launchFlags();
   const chrome = await launchChrome({
     windowSize: "1920,1080",
-    extraArgs: DETERMINISM_FLAGS,
+    extraArgs: flags,
   });
   return {
     cdp: chrome.cdp,
     version: chrome.cdp.version,
-    flags: DETERMINISM_FLAGS,
+    flags,
     stop: () => chrome.stop(),
   };
 }
@@ -281,7 +331,7 @@ export async function freeze(cdp: Cdp, sessionId: string): Promise<number> {
     `(() => {
       const style = document.createElement('style');
       style.id = 'freebot-pixel-gate-freeze';
-      style.textContent = ${JSON.stringify(FREEZE_CSS)};
+      style.textContent = ${JSON.stringify(`${FONT_CSS}\n${FREEZE_CSS}`)};
       document.head.appendChild(style);
       let stopped = 0;
       for (const animation of document.getAnimations()) {
@@ -466,10 +516,13 @@ export async function compareShots(
     readonly rect: Rect;
   }[],
 ): Promise<Comparison> {
-  const answer = await evaluate<Comparison>(
-    cdp,
-    diffSession,
-    `window.__pg.compare(${JSON.stringify(left)}, ${JSON.stringify(right)}, ${JSON.stringify(regions)})`,
+  const answer = await withDeadline(
+    evaluate<Comparison>(
+      cdp,
+      diffSession,
+      `window.__pg.compare(${JSON.stringify(left)}, ${JSON.stringify(right)}, ${JSON.stringify(regions)})`,
+    ),
+    `the diff page's comparison of ${left} against ${right}`,
   );
   // The page answers with its own reason rather than rejecting: a CDP exception's own text is empty
   // for a rejected promise, which turns a real cause into "Uncaught (in promise)".
@@ -505,9 +558,51 @@ export async function prepare(
 ): Promise<number> {
   await waitFor(cdp, sessionId, describe, ready, 60_000);
   const stopped = await freeze(cdp, sessionId);
+  // The face arrives over the page's own route; wait for it before the first probe, so a capture
+  // can never hold the fallback while the real font is still in flight. A timeout is a failure: the
+  // gate cannot say the pages render the committed face if the request never settled.
+  const fontReady = await Promise.race([
+    evaluate<boolean>(
+      cdp,
+      sessionId,
+      `(async () => { await document.fonts.ready; return document.fonts.check('16px Geist'); })()`,
+    ),
+    sleep(5_000).then(() => false),
+  ]);
+  if (fontReady !== true) {
+    throw new Error(
+      `${describe}: the Geist face did not settle within 5s (document.fonts.check false)`,
+    );
+  }
   await setViewport(cdp, sessionId, viewport.width, viewport.height);
   await settle(cdp, sessionId, 250);
   return stopped;
+}
+
+/**
+ * Dismiss both pages' notice stacks.
+ *
+ * The app raises its notices from the provider record and the export seeds two; their heights
+ * differ for a reason that is not the shell's. The gate measures the shell, so both stacks are
+ * cleared before the probe, the same way on both sides. The aside driver is where the notice
+ * surface itself is measured.
+ */
+export async function dismissNotices(cdp: Cdp, sessionId: string): Promise<number> {
+  return evaluate<number>(
+    cdp,
+    sessionId,
+    `(() => {
+      const all = [...document.querySelectorAll('button')].find(
+        (node) => (node.textContent ?? '').trim() === 'Dismiss all',
+      );
+      if (all === undefined) return 0;
+      all.click();
+      // The export answers a dismissal with a 2.6s toast. It is transient UI, not the shell, and a
+      // capture that catches it is not comparable to one that does not; remove it before the probe.
+      for (const node of document.querySelectorAll('.toast')) node.remove();
+      return 1;
+    })()`,
+  );
 }
 
 export interface Capture {
@@ -515,11 +610,54 @@ export interface Capture {
   readonly boxCount: number;
 }
 
-/** One page's screenshot, taken after the page is confirmed frozen and settled. */
+/**
+ * A browser call that does not answer is a failure that names itself.
+ *
+ * The CDP client has no per-request timeout, so a renderer that never produces a frame leaves the
+ * call pending until the process watchdog. Three minutes is far past the measured cost of any call
+ * here (a whole viewport is under a second on the build host, and the slowest CI viewport on record
+ * is 131s) and keeps a stall from being reported as a slow run.
+ */
+const CAPTURE_DEADLINE_MS = 180_000;
+
+async function withDeadline<T>(work: Promise<T>, describe: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${describe} did not answer within ${CAPTURE_DEADLINE_MS / 1000}s`)),
+      CAPTURE_DEADLINE_MS,
+    );
+  });
+  try {
+    return await Promise.race([work, deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * One page's screenshot, taken after the page is confirmed frozen, settled, and being drawn.
+ *
+ * `Page.bringToFront` is not cosmetic. The pages are targets of one browser, and only one target is
+ * the visible tab; a hidden one is painted on the browser's schedule, and its viewports measured 71
+ * to 131 seconds on a CI runner against under a second here, with one run stalling past twelve
+ * minutes on a single viewport. Capturing a hidden page is therefore refused by name rather than
+ * left to wait, and the caller captures the pages one at a time because one tab is visible.
+ */
 export async function capture(cdp: Cdp, sessionId: string, viewport: Viewport): Promise<Capture> {
+  await cdp.send("Page.bringToFront", {}, sessionId);
   await setViewport(cdp, sessionId, viewport.width, viewport.height);
   await settle(cdp, sessionId, 250);
-  const shot = await screenshot(cdp, sessionId);
+  const visibility = await evaluate<string>(cdp, sessionId, "document.visibilityState");
+  if (visibility !== "visible") {
+    throw new Error(
+      `capture at ${viewport.width}x${viewport.height}: the page is ${visibility}, so the browser is not painting it`,
+    );
+  }
+  const shot = await withDeadline(
+    screenshot(cdp, sessionId),
+    `Page.captureScreenshot at ${viewport.width}x${viewport.height}`,
+  );
   return { shot, boxCount: shot.byteLength };
 }
 

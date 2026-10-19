@@ -279,7 +279,7 @@ export function renderText(report: RunReport): string {
     `fonts: the app resolves to ${report.fonts.appStack}; the export resolves to ${report.fonts.exportStack}`,
   );
   lines.push(
-    `  the two stacks ${report.fonts.same ? "are the same" : "differ"}; a 'Geist' string measures ${report.fonts.appGeistWidth}px against an absent family's ${report.fonts.appAbsentWidth}px on the app and ${report.fonts.exportGeistWidth}px against ${report.fonts.exportAbsentWidth}px on the export, so Geist ${report.fonts.geistResolves ? "has a face of its own on this machine" : "has no face on this machine and both pages render the stack's fallback"}`,
+    `  the two stacks ${report.fonts.same ? "are the same" : "differ"}; a 'Geist' string measures ${report.fonts.appGeistWidth}px against an absent family's ${report.fonts.appAbsentWidth}px on the app and ${report.fonts.exportGeistWidth}px against ${report.fonts.exportAbsentWidth}px on the export, so ${report.fonts.geistResolves ? "the vendored Geist face is in use on both pages" : "Geist has no face on this machine and both pages render the stack's fallback"}`,
   );
   lines.push("");
   lines.push(

@@ -207,6 +207,13 @@ app with `bun run up --no-open --replay` over a temporary home and bots root of 
 touches no Bot, no run and no provider, and it needs no Docker and no key. The one thing it writes
 outside its artifact directory is that temporary directory, which it deletes on the way out.
 
+The pixel gate's own artifact is beside it at `packages/verify/artifacts/pixel-gate/<short-sha>/`:
+`assert.txt`, `run.json`, `summary.json`, one PNG per app and export shot under `shots/`, a crop per
+chrome region and a `stability/` pair for the two-run proof. Its `assert.txt` carries the literal
+per-viewport chrome statistic, the box delta beside every region, the font measurement, the nine
+overflow pairs and the verdict. `docs/pixel-gate.md` is the tool's contract; this document is the
+delta list.
+
 ## Follow-ups this unit leaves
 
 - Six drivers still carry their own copy of the CDP client this unit extracted into
@@ -214,8 +221,9 @@ outside its artifact directory is that temporary directory, which it deletes on 
   and `apps/web/scripts/{capture,one-run-path}.ts`. Their copies are untouched on purpose, so this
   diff stays reviewable; moving them onto the shared module is a follow-up, not a rewrite smuggled
   in with a visual change.
-- No route serves a font file, so Geist cannot be vendored without one. Either `apps/server` grows a
-  static route for `apps/web/host/fonts/`, or the family stays unresolved, per the delta above.
+- ~~No route serves a font file, so Geist cannot be vendored without one.~~ U6.7 added the route at
+  `apps/server/src/api-server.ts` and committed the face and its licence under
+  `apps/web/host/fonts/`; both pages now measure it.
 
 ## Surfaces the export has and the app does not yet
 
@@ -246,6 +254,236 @@ row. `DECLARED_DELTAS` in `packages/verify/scripts/design-contract.ts` is empty 
 where it used to list the entry, and the `--aside-w` token note now explains a write both pages make
 rather than a difference between them. A nonzero delta here means one side's boot write or drag
 default moved.
+
+## The pixel gate's declared deltas (U6.7)
+
+Order 36 makes the fidelity pass a hard pixel gate. `packages/pixel-gate/src/cli.ts --repeat` renders
+the app and the export in one browser instance, at the same viewport, in the same run, and prints a
+literal chrome statistic and a box delta per region. Chrome tolerance is zero and every nonzero
+chrome pixel fails the run. The entries below are the content-region deltas that remain, with the
+pixels that differ and the reason each stands. `packages/pixel-gate/src/deltas.ts` is the
+machine-readable copy; `DECLARED_DELTAS` in `packages/verify/scripts/design-contract.ts` re-exports
+it, and a test compares this block to that module character for character after parsing, so neither
+can drift.
+
+The five box deltas the U6.7a baseline named closed as follows. The middle column's order is the
+export's: the transcript is the composer's `flex: 1` sibling, starts on the header's bottom edge and
+ends on the composer's top edge, and the composer is the column's last child, pinned to the bottom.
+The export's header is 55.8px and this page's is 56px (a 0.2px delta inside the half-pixel box
+tolerance). The sidebar list's 2px start delta closed by adopting the export's 10px head padding and
+its 2px list inset. What remains is the app's shorter composer and its shorter sidebar foot, both
+recorded below.
+
+<!-- pixel-gate-deltas:begin -->
+```json
+[
+  {
+    "field": "pixel-gate content.sidebar-list",
+    "allow": [
+      78
+    ],
+    "reason": "The app's list ends 78px lower than the export's. The export's foot is 125px: Connect apps, the model row and the account row. This app's foot is 47px: the one provider row. The account and the apps surface have no record in this build, so the list takes the space they would occupy; the head's own 2px start delta was closed by adopting the export's 10px head padding and 2px list inset.",
+    "pixels": {
+      "tablet-landscape": {
+        "left": 0,
+        "top": 0,
+        "width": 0,
+        "height": 78
+      },
+      "laptop": {
+        "left": 0,
+        "top": 0,
+        "width": 0,
+        "height": 78
+      },
+      "desktop": {
+        "left": 0,
+        "top": 0,
+        "width": 0,
+        "height": 78
+      },
+      "wide": {
+        "left": 0,
+        "top": 0,
+        "width": 0,
+        "height": 78
+      }
+    }
+  },
+  {
+    "field": "pixel-gate content.sidebar-bot-row",
+    "allow": [
+      32.25
+    ],
+    "reason": "The app's first Bot row starts 32.25px higher. The export groups its rows under Pinned, Primary and Unassigned labels (freebot-prototype.html:984-993) and this app renders one Bots heading, because the Bot record holds no group, pinned or primary field; the row's own 34px height and 9px gap are the export's.",
+    "pixels": {
+      "tablet-landscape": {
+        "left": 0,
+        "top": -32.25,
+        "width": 0,
+        "height": 0
+      },
+      "laptop": {
+        "left": 0,
+        "top": -32.25,
+        "width": 0,
+        "height": 0
+      },
+      "desktop": {
+        "left": 0,
+        "top": -32.25,
+        "width": 0,
+        "height": 0
+      },
+      "wide": {
+        "left": 0,
+        "top": -32.25,
+        "width": 0,
+        "height": 0
+      }
+    }
+  },
+  {
+    "field": "pixel-gate content.center-transcript",
+    "allow": [
+      0.2,
+      70.3,
+      52.49,
+      56.49
+    ],
+    "reason": "Both transcripts start on the header's bottom edge (the 0.2px top is the export's 55.8px header against this page's 56px) and end on the composer's top edge. This app's transcript is taller by the amount its composer is shorter, because the export's composer carries a growing textarea, a five-control tools row and a hint row while this app's carries one input, two buttons and the live stream line. The `flex: 1` transcript and the bottom-pinned composer are the export's own order.",
+    "pixels": {
+      "mobile-compact": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 70.3
+      },
+      "mobile-standard": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 70.3
+      },
+      "mobile-large": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 52.49
+      },
+      "foldable-small-tablet": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 52.49
+      },
+      "tablet-portrait": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 52.49
+      },
+      "tablet-landscape": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 56.49
+      },
+      "laptop": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 56.49
+      },
+      "desktop": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 56.49
+      },
+      "wide": {
+        "left": 0,
+        "top": 0.2,
+        "width": 0,
+        "height": 56.49
+      }
+    }
+  },
+  {
+    "field": "pixel-gate content.center-composer",
+    "allow": [
+      70.5,
+      52.69,
+      56.69,
+      52.68,
+      56.68
+    ],
+    "reason": "The composer band is pinned to the bottom edge on both pages, so the app's top edge sits lower and its height is smaller by the same amount. The export's band is 146.06px at 1920 and 159.88px at 360; this app's is 89.38px at 1920 and 89.38px at 360, because the product's composer is one input, a Start and a Stop control and the stream's own meta line against the export's textarea, five tool controls and hint. Control count and copy are named in `docs/DESIGN-CONTRACT.md`; the bottom edge is identical.",
+    "pixels": {
+      "mobile-compact": {
+        "left": 0,
+        "top": 70.5,
+        "width": 0,
+        "height": -70.5
+      },
+      "mobile-standard": {
+        "left": 0,
+        "top": 70.5,
+        "width": 0,
+        "height": -70.5
+      },
+      "mobile-large": {
+        "left": 0,
+        "top": 52.69,
+        "width": 0,
+        "height": -52.68
+      },
+      "foldable-small-tablet": {
+        "left": 0,
+        "top": 52.69,
+        "width": 0,
+        "height": -52.68
+      },
+      "tablet-portrait": {
+        "left": 0,
+        "top": 52.69,
+        "width": 0,
+        "height": -52.68
+      },
+      "tablet-landscape": {
+        "left": 0,
+        "top": 56.69,
+        "width": 0,
+        "height": -56.68
+      },
+      "laptop": {
+        "left": 0,
+        "top": 56.69,
+        "width": 0,
+        "height": -56.68
+      },
+      "desktop": {
+        "left": 0,
+        "top": 56.69,
+        "width": 0,
+        "height": -56.68
+      },
+      "wide": {
+        "left": 0,
+        "top": 56.69,
+        "width": 0,
+        "height": -56.68
+      }
+    }
+  }
+]
+```
+<!-- pixel-gate-deltas:end -->
+
+Each `pixels` object is the app-minus-export delta at that viewport, the same sign the gate prints.
+A region not in the list must agree with the export's box to within half a pixel; a new delta is a
+failure until it is either fixed or written here. The numeric box deltas are `docs/pixel-gate.md`'s
+subject and are reproduced with the artifact's own rows there.
 
 ## Deltas this frame cannot close
 
@@ -322,17 +560,18 @@ page 1's provider surface; `Dismiss` and `Dismiss all` are the export's controls
 persist in `localStorage` under `freebot.notices.dismissed`, which the export's in-memory state does
 not do.
 
-**Geist is not vendored, and it does not resolve on the build host.** The three stacks name
-`'Geist'` first, exactly as the export's do, and the font binary is neither in the repo nor fetched:
-the host serves `/` and `/main.js` and nothing else (`apps/server/src/api-server.ts`), so a vendored
-woff2 would need a route in `apps/server`, which this unit must not write. The harness measures
-rather than asks, because `document.fonts.check('16px Geist')` answers `true` on a machine that has
-no Geist at all. It compares the advance width of a Geist-family string against an absent family's
-fallback and against `system-ui`. At this head all three numbers are in `assert.txt`; Geist measures
-the same as the absent family on both pages, so the family resolves through the stack's fallback and
-the rendered metrics are the system's, not Geist's. The type scale is unaffected, because font sizes
-are tokens and the harness measures them; the glyph shapes are not, and a reviewer comparing the PNGs
-against the export's is comparing two different typefaces until a route serves the font.
+**Geist is vendored and resolves on both pages.** The three stacks name `'Geist'` first, exactly as
+the export's do, and the face now travels with the app: one variable woff2 at
+`apps/web/host/fonts/geist-var.woff2` (SIL OFL 1.1, `OFL.txt` beside it), served by
+`apps/server/src/api-server.ts` at `/fonts/geist-var.woff2` and answered by the export's own run
+server at the same path. The app's page declares the `@font-face`; the pixel gate injects the same
+declaration into the frozen export before capture, because the export is a frozen artifact whose
+stylesheet only names the family. The harness measures rather than asks, because
+`document.fonts.check('16px Geist')` answers `true` on a machine with no Geist at all: at this head a
+Geist-family string measures 243.62px against the absent family's 215.98px on the app, and the export
+measures the same pair, so both pages use the vendored face rather than the stack's fallback. The
+run waits on `document.fonts.ready` before its first probe, so a capture cannot hold the fallback
+while the face is still in flight. The pixel gate's artifact prints the literal pair.
 
 **The provider row's label is cut rather than allowed to widen the sidebar.** Recorded in the
 geometry section above as the one overflow this unit's own harness found.

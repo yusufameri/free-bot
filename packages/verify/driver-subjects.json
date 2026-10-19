@@ -1,0 +1,28 @@
+{
+  "$comment": "Order 40's per-driver subject manifest. A driver listed here must be re-run at a PR's head when any of its subjects changes. The pixel gate is the first entry; later drivers add their own blocks additively rather than editing this one.",
+  "drivers": [
+    {
+      "id": "pixel-gate",
+      "command": "bun packages/pixel-gate/src/cli.ts --repeat",
+      "artifact": "packages/verify/artifacts/pixel-gate",
+      "subjects": [
+        "packages/pixel-gate/**",
+        "packages/verify/src/cdp.ts",
+        "packages/verify/src/index.ts",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "apps/web/host/index.html",
+        "apps/web/host/main.ts",
+        "apps/web/host/fonts/**",
+        "apps/server/src/api-server.ts",
+        "packages/ui/browser/**",
+        "packages/ui/src/tokens.ts",
+        "design/prototype-84c6b185/freebot-prototype.html",
+        "design/prototype-84c6b185/DESIGN-MANIFEST.json",
+        "packages/verify/scripts/design-contract.ts",
+        "docs/DESIGN-CONTRACT.md",
+        "docs/pixel-gate.md"
+      ]
+    }
+  ]
+}

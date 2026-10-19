@@ -2,8 +2,9 @@
 
 Order 36 makes the fidelity pass a hard pixel gate. The app and the export are rendered in the same
 browser instance, at the same viewport, in the same run, and diffed against each other. This document
-describes the harness U6.7 will use to arm that gate. It is the tool, not the gate: the command is not
-in `bun run verify` and not in CI, and the section below says exactly what U6.7 must do to arm it.
+describes the harness and the pass U6.7 armed. It is the tool's contract: the command is a step of
+`bun run verify` and of CI, and it exits non-zero on a chrome mismatch or on a box delta that is not
+written into `docs/DESIGN-CONTRACT.md`.
 
 The harness lives in `packages/pixel-gate/`, a workspace package with its own `package.json` (order
 27). It depends on `@freebot/verify` for the shared CDP client and the artifact path helper, and on
@@ -34,6 +35,32 @@ The artifact directory is `packages/verify/artifacts/pixel-gate/<short-sha>/`, h
 `run.json`, `summary.json` and `shots/`. The short sha is the commit the run's pixels belong to,
 computed with `git rev-parse --short HEAD`, not the commit the artifact was committed at.
 
+## Arming it, and the proof it can fail
+
+`bun run verify` runs `bun packages/pixel-gate/src/cli.ts --no-write` as its `pixel-gate` step, and
+`.github/workflows/ci.yml` installs Chrome and sets `FREEBOT_CHROME` before that step, so the gate
+runs on the build host and in CI. The command's exit code is `exitCodeFor(verdictFailures(...))`:
+zero only when every carried chrome region's differing-pixel count is at or under the tolerance, every
+desktop chrome region above its breakpoint is present, every moved box is either zero or matched by a
+declared delta, no viewport scrolls horizontally, and both pages measure the vendored Geist face. A
+font that times out or falls back is a failure, not a note. The CLI also arms a twelve-minute stall
+watchdog: every line the run prints re-arms it, so a run that keeps producing viewports is making
+progress, and a run that goes twelve minutes without a line exits non-zero.
+
+The bound has to be silence rather than elapsed time, because the same commit's nine viewports
+measured 5m02s on one CI runner and were still producing viewports when a wall-clock version of the
+guard killed them at viewport 7 of 9. A browser call that never answers is caught earlier and by
+name: `Page.captureScreenshot` and the diff page's comparison each carry a three-minute deadline, and
+the error names the call and its viewport.
+
+The failure path has its own proof, and it does not wreck a page. `packages/pixel-gate/src/gate.test.ts`
+builds the report shapes the run produces and shifts one number: one differing chrome pixel fails the
+run by name (`09-wide-1920x1080 chrome.aside-edge: 1 differing pixel(s) over a tolerance of 0`), a
+declared region moved off its declared pixels fails, an undeclared moved region fails with the
+contract's path in the message, and a chrome box delta fails even when the pixels inside it happen to
+match. A report with every delta declared and every chrome pixel at zero exits 0. The tests never
+open a browser, so their result cannot depend on a screenshot looking right.
+
 ## Same instance, same run
 
 The unit's central claim is that the two pages are rendered in one browser, and a claim about code is
@@ -63,6 +90,14 @@ and evaluates the in-page runtime into it. Both screenshots travel to that page 
 and are drawn into canvases there, and `getImageData` gives back the RGBA buffers the arithmetic runs
 over. No file on disk is ever a comparison source, which is order 36c: the committed PNGs under
 `shots/` are for a human to look at and are never read back.
+
+One target of a browser is the visible tab, and the diff page created last held it, so both captured
+pages were `visibilityState: hidden` for the whole run. A hidden page is painted on the browser's
+schedule: on a CI runner its viewports measured 71 to 131 seconds against under a second on the
+build host, and one run stalled past twelve minutes on a single viewport. `capture()` therefore calls
+`Page.bringToFront`, reads `document.visibilityState` back, and refuses a shot of a page that is not
+`visible` by name. The two pages are captured one at a time, because only one tab is visible, and the
+freeze is what keeps nothing moving between the two shots.
 
 ## No golden images
 
@@ -116,21 +151,42 @@ right than the export's, and a reader can say which page moved without reading t
 | `content.sidebar-list` | content | export `#sbList` | app `.sb-scroll` | Lists seven seeded prototype Bots against the one real Bot this run creates. |
 | `content.center-header` | content | export `.chead` | app `header` | Different controls and copy; the app adds a tab strip the export has no element for. |
 | `content.center-transcript` | content | export `#transcript` | app `#thread` | A seeded conversation against the frames of a thread that has not run. |
-| `content.center-composer` | content | export `.composer-wrap` | app `#operator` | A growing textarea pinned to the bottom against a one-line input above the transcript. |
+| `content.center-composer` | content | export `.composer-wrap` | app `#composer-wrap` | A growing textarea with tools against one input, two buttons and the live meta line; both are pinned to the bottom edge. |
 | `content.aside-strip` | content | export `.aside-tabs` | app `#aside .aside-tabs` | Seven tabs against four. |
 | `content.aside-body` | content | export `#asideBody` | app `#asideBody` | A mock computer panel against the records this app really holds. |
+| `content.sidebar-bot-row` | content | app `#bot-list .sb-row` | export `#sbList .sb-row` | U6.5's Bot row: a real Bot's run-derived dot against the export's seeded seven. |
+| `content.item-turn-marker` | content | app `.tm` | export `.tm` | U6.5's one turn marker. Absent in the idle shell; the items driver measures its three phases. |
+| `content.item-tool-card` | content | app `.tool-card` | export `.tcard:not(.gate)` | U6.5's tool card. Absent before a run; the items driver measures running, done, denied and failed. |
+| `content.item-approval-card` | content | app `.approval-card` | export `.tcard.gate` | U6.5's approval card. Absent before a run; the items driver measures pending, allowed, denied and expired. |
+| `content.overlay-palette` | content | app `#palette` | export `.palette` | U6.4's command palette. Absent until opened; the overlays driver measures the open panel. |
+| `content.overlay-picker` | content | app `#picker` | export `.picker` | U6.4's Bot picker. Absent until opened; the overlays driver measures the open panel. |
+| `content.overlay-modal` | content | app `#modal` | export `.modal` | U6.4's file modal. Absent until opened; the overlays driver measures the wide panel. |
 
-Four chrome regions and six content regions. Every entry's own comment names the line its rectangle
-comes from on both sides, so U6.7 can extend the map without reading the whole source. A region with
-no geometric counterpart on the other page is not carried, because its number would have no cause;
-`content.center-tabs` was written and then removed for exactly that reason, the app's Conversation /
-Library pill strip having no export element at any width. Structural differences of that kind are
-named in the summary below and in `docs/DESIGN-CONTRACT.md` instead.
+Four chrome regions and thirteen content regions. Every entry's own comment names the line its
+rectangle comes from on both sides. A region with no geometric counterpart on the other page is not
+carried, because its number would have no cause; `content.center-tabs` was written and then removed
+for exactly that reason. The four item and three overlay entries are taken from the app's side, so a
+viewport where the app has not rendered the surface reports `absent` rather than measuring the
+export's box over whatever happens to sit under it. Structural differences of that kind are named in
+the summary below and in `docs/DESIGN-CONTRACT.md` instead.
+
+The two mobile drawers are not in the map: the export's `.aside.open` and `.sidebar.open` have no
+counterpart selector in this app at all, because this frame ships no trigger and no drawer
+(`docs/DESIGN-CONTRACT.md` names that as an open surface). They stay out rather than being measured
+against nothing.
+
+**Notices are dismissed before the probe.** Both pages raise notices from data (this app from the
+provider record, the export from its seed), and their heights differ for a reason that is not the
+shell's. The run clears both stacks once per visit, so the band between the header and the composer
+is the shell's own. The notice surface is `packages/verify/scripts/aside.ts`'s subject, not this
+tool's.
 
 **A region is absent, not zero, when its column is not on screen.** Below 1120px both stylesheets
 stand the pane and the resizer down, and below 860px they stand the sidebar down. An absent region
 prints `absent` and no statistic. It is not a pass and not a failure; it is a region this viewport
-does not carry.
+does not carry. Above its own breakpoint, however, a chrome region that goes absent is a missing
+selector, and the verdict fails by name: the run expects all four above 1120px, the sidebar edge
+alone above 860px, and none at 860px and below.
 
 **A zero over zero is an empty set, not a pass.** At 360x800 there are no chrome regions at all, so
 the transcript prints that sentence where a `0/0` would read as a perfect score. The shell's evidence
@@ -149,16 +205,26 @@ Three mechanisms, and the run's own artifact carries the proof of each.
 of `assert.txt`. Three flags are set on that one instance so both sides are rendered identically and
 neither is favoured: `--disable-lcd-text` removes the monitor's subpixel order from grayscale
 antialiasing, `--font-render-hinting=none` removes the rasterizer's stem-snapping, and
-`--force-color-profile=srgb` removes the display's colour transform. `--hide-scrollbars` comes from
-the shared CDP client.
+`--force-color-profile=srgb` removes the display's colour transform. A Linux CI runner also gets
+`--no-sandbox`, `--disable-dev-shm-usage` and `--disable-gpu`, because its Chrome otherwise exits
+before writing `DevToolsActivePort`; none of the three changes a rasterized pixel.
+`--hide-scrollbars` comes from the shared CDP client. The run's `dirty` flag excludes
+`packages/verify/artifacts` as a whole, because the verify step writes evidence there; a tracked
+source change still makes it true.
 
-**Fonts.** The two pages resolve the same stack, and `assert.txt` prints both, with the advance width
-of a `'Geist'`-family string against a family that cannot exist and against `system-ui`. On this build
-host the three numbers are equal, so Geist has no face here and both pages render the stack's
-fallback. Two pages using the same fallback are comparable to each other; the glyph shapes are the
-host's rather than Geist's, which is recorded in `docs/DESIGN-CONTRACT.md` as the vendoring gap. This
-is measured rather than asked, because `document.fonts.check('16px Geist')` answers `true` on a
-machine with no Geist at all.
+**Fonts.** Both pages resolve the same stack, and `assert.txt` prints both, with the advance width
+of a `'Geist'`-family string against a family that cannot exist. Geist is vendored: one variable
+woff2 at `apps/web/host/fonts/geist-var.woff2` with its SIL OFL 1.1 licence beside it, served by
+`apps/server` at `/fonts/geist-var.woff2` and by the export's own run server at the same path. The
+app's page declares the `@font-face`; the harness injects the same declaration into the frozen export
+before any capture, because the export is a frozen artifact whose stylesheet only names the family.
+On the build host the Geist string measures 243.62px against the absent family's 215.98px, so the
+face is in use on both sides rather than the stack's fallback. `assert.txt` prints that pair, and a
+run where the two numbers are equal reports the fallback instead. This is measured rather than asked,
+because `document.fonts.check('16px Geist')` answers `true` on a machine with no Geist at all; the
+run also waits on `document.fonts.ready` before its first probe, with a five-second bound that fails
+the run rather than capturing a fallback, and the verdict carries a font failure when either page's
+Geist string measures the absent family's width.
 
 **A freeze, injected before any capture.** `packages/pixel-gate/src/page.ts`'s `FREEZE_CSS` removes
 animations and transitions and hides the caret, and every running animation is cancelled through
@@ -197,7 +263,7 @@ same pixels. The committed pair is under the baseline's `stability/`.
 
 ## The baseline
 
-The committed baseline is `packages/verify/artifacts/pixel-gate/df87bca/`, produced by
+The U6.7a baseline is `packages/verify/artifacts/pixel-gate/df87bca/`, produced by
 `bun packages/pixel-gate/src/cli.ts --repeat` at commit `df87bca`, against the app as it stands. The app state
 is stated in `assert.txt`: booted as `bun run up --no-open --replay` over a fresh temporary
 `FREEBOT_HOME` and bots root, one Bot and one thread created over `/rpc` before the page opens, the
@@ -254,44 +320,91 @@ a run in progress; the app paints one real Bot and an idle thread. Two pages who
 render different pixels whatever their styling, which is why the content regions carry a named reason
 each and the exit code reads only the chrome regions.
 
-## What U6.7 must add or calibrate before arming the gate
+## The U6.7 pass, at the head it armed
 
-1. **Decide the region map's final shape.** Four chrome regions cover the separators and tracks that
-   exist today. U6.4's overlays, U6.5's cards and the mobile drawers of the export's `.aside.open` and
-   `.sidebar.open` will each want a rectangle, and each needs a counterpart selector on the app's side
-   to be carryable. The map's own rule is that a region without a counterpart is not a region.
-2. **Calibrate the tolerance, or keep it at zero.** `CHROME_TOLERANCE_DEFAULT` in `regions.ts` is the
-   one named place, and the report prints the value it used beside every verdict. Zero is the current
-   answer and the baseline passes it, so raising it needs a reason from the delta list rather than a
-   flaky pixel. If a font change or a Chrome update moves a separator by one pixel, that is a decision
-   for `docs/DESIGN-CONTRACT.md`, not a quiet epsilon.
-3. **Fix the middle column's order, or declare it.** The box deltas above are the four numbers U6.7's
-   pass has to close on the desktop widths. Each one is either the app moving to the export's order or
-   a delta with its reason and its pixels in the contract's delta list.
-4. **Add the delta list's pixels.** The contract's `DECLARED_DELTAS` is empty and a new delta fails
-   `design-contract.ts`. Every delta this harness reports that U6.7 decides to keep needs its entry
-   there with the pixels that differ and the reason, per order 36's last sentence.
-5. **Vendor Geist, or state that the glyphs are the host's.** A route for a woff2 in `apps/server` is
-   the mechanism; until then both pages render the host's fallback and the type is compared by size
-   rather than by shape. `/pixel-gate`'s font line reports which of the two states the run is in.
-6. **Arm it.** Add the command to `bun run verify` or to CI, which is a one-line change this unit
-   deliberately did not make. The command already exits non-zero on a chrome failure, so arming is
-   wiring, not construction. The cost to weigh is the run's wall time: nine viewports is about a
-   minute and a half on the build host, and `--repeat` roughly doubles it.
-7. **Add a driver-subject entry if someone else's change can break it.** Order 40's per-driver subject
-   manifest wants a driver that a file change can invalidate to be named by the file. This tool reads
-   `apps/web/host/index.html`, `apps/web/host/main.ts`, `packages/ui/browser/**` and the export, so a
-   change to any of them is a reason to re-run it at that PR's head.
+The armed artifact is `packages/verify/artifacts/pixel-gate/50c5e27/`, produced by
+`bun packages/pixel-gate/src/cli.ts --repeat` at commit `50c5e27`. The chrome statistic is unchanged
+from the U6.7a baseline, and that is the point: the shell already landed on the same device pixels.
+What moved is the middle column's structure and the font, and the box deltas below are the literal
+record of it.
+
+| # | Viewport | Chrome regions | Chrome differing | Content regions | Content share | Whole share | Boxes differing |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 360x800 | 0 | 0/0 (none on screen) | 3 | 51.8724% | 52.0021% | 2 |
+| 2 | 390x844 | 0 | 0/0 | 3 | 48.2724% | 48.3868% | 2 |
+| 3 | 430x932 | 0 | 0/0 | 3 | 48.3096% | 48.4133% | 2 |
+| 4 | 600x960 | 0 | 0/0 | 3 | 46.4645% | 46.5613% | 2 |
+| 5 | 820x1180 | 0 | 0/0 | 3 | 37.8127% | 37.8768% | 2 |
+| 6 | 1024x768 | 1 | 0/768 | 5 | 33.9611% | 31.8707% | 4 |
+| 7 | 1366x768 | 4 | 0/6118 | 7 | 31.6888% | 30.0735% | 4 |
+| 8 | 1440x900 | 4 | 0/7042 | 7 | 31.2501% | 29.8829% | 4 |
+| 9 | 1920x1080 | 4 | 0/8302 | 7 | 24.0461% | 23.3717% | 4 |
+
+**Chrome is still zero everywhere it exists: 0 differing pixels over 22,230 chrome pixels**, summed
+across every viewport that carries a chrome region, with the tolerance at 0. Every viewport's two
+captures are pixel-identical (`--repeat`), and two runs at this commit are `RESULT: STABLE` across 36
+chrome region comparisons and nine totals. The whole-frame share fell from 25.8039% to 23.3717% at
+1920x1080 and from 49.9521% to 52.0021% at 360x800; it is information, not the verdict.
+
+The five box deltas U6.7a named, before and after:
+
+| Region and axis | U6.7a baseline (df87bca) | U6.7 head (50c5e27) | How it closed or why it stands |
+| --- | --- | --- | --- |
+| `content.center-header` height, 1920 | +62.43 | +0.2 | Closed. The header is one 56px row on the export's `min-height: 53px` and 10px padding; the 0.2px is the export's 55.8px and is inside the half-pixel box tolerance. |
+| `content.center-transcript` top, 1920 | +97.43 | +0.2 | Closed. Both notices are dismissed before the probe and both transcripts start on the header's bottom edge. |
+| `content.center-transcript` height, 1920 | +48.63 | +56.49 | Declared. The transcript is the composer's `flex: 1` sibling, so it is taller by the amount the app's shorter composer gives back. |
+| `content.center-composer` top, 1920 | -689.71 | +56.69 | Closed as a structural defect: the composer is the column's last child and pinned to the bottom. The remaining top is the height difference below. |
+| `content.center-composer` height, 1920 | -98.06 | -56.68 | Declared. One input, a Start and a Stop control and the live meta line against the export's growing textarea, five tool controls and hint. |
+| `content.sidebar-list` top, 1920 | -2 | 0 | Closed. The head is the export's 10px padding and the list its 2px inset. |
+| `content.sidebar-list` height, 1920 | +80 | +78 | Declared. The export's foot carries Connect apps, the model row and the account row (125px); this app's foot is the one provider row (47px). |
+
+At 360x800 the same rows read: header +0.2, transcript top +0.2 and height +70.3, composer top
++70.5 and height -70.5. The four declarations, with every viewport's literal pixels, are in
+`docs/DESIGN-CONTRACT.md`'s pixel-gate block and in `packages/pixel-gate/src/deltas.ts`.
+
+## What U6.7 changed
+
+1. **The region map is final.** Four chrome regions and thirteen content regions: the six shell and
+   pane regions, U6.5's Bot row and three conversation items, and U6.4's three overlay panels. The
+   item and overlay entries come from the app's side so their idle state is `absent` rather than a
+   measurement of the export's box; the items and overlays drivers measure their open states. The
+   two mobile drawers are not carried because this app has no counterpart selector for either, and
+   `docs/DESIGN-CONTRACT.md` names that as an open surface.
+2. **Tolerance stays zero.** `CHROME_TOLERANCE_DEFAULT` is still `0`, and the report prints
+   `chrome tolerance: 0 differing pixel(s) per chrome region` in the artifact and beside every
+   verdict. No entry in the delta list justifies a number, because no chrome pixel differs.
+3. **The middle column is the export's order.** The transcript is the composer's `flex: 1` sibling,
+   the composer is the column's last child and pinned to the bottom edge, and the transcript carries
+   the export's bottom pinning: a first-row auto margin for a short conversation, and a scroll to
+   the end when a frame lands, which is the export's own `scrollTop = scrollHeight` without
+   `justify-content: flex-end`'s clipping of a long transcript's first rows. The header is one 56px
+   row, the export's `min-height: 53px` plus its 10px padding: `h1`, the copy that holds in both
+   provider modes, the Bot-and-thread title, the Conversation/Library strip and the Details control,
+   all truncating rather than wrapping. The export's header measures 55.8px, so the header delta is
+   0.2px, inside the half-pixel box tolerance.
+4. **The delta list has its pixels.** Four content-region entries remain, in
+   `docs/DESIGN-CONTRACT.md` and in `packages/pixel-gate/src/deltas.ts`, re-exported as
+   `DECLARED_DELTAS` in `packages/verify/scripts/design-contract.ts`. A moved box that is not in the
+   list fails the run, and a declared box that moves off its recorded pixels fails it too.
+5. **Geist is vendored.** One variable woff2 and its OFL licence at `apps/web/host/fonts/`, served by
+   `apps/server` at `/fonts/geist-var.woff2`; the export's run server serves the same bytes and the
+   harness injects the `@font-face` into the frozen export. Both pages measure the face, not the
+   fallback.
+6. **It is armed.** `bun run verify` has the `pixel-gate` step, CI installs Chrome and pins
+   `FREEBOT_CHROME`, and the gate tests prove the failure by name without a browser.
+7. **Order 40's subject entry exists.** `packages/verify/driver-subjects.json` lists `pixel-gate`
+   with every file whose change invalidates it: the host page and bundle, the vendored font, the
+   server route, `packages/ui/browser/**`, the tokens, the export, the manifest and this tool.
 
 ## What this unit did not do, on purpose
 
-- **No CI wiring and no `bun run verify` entry.** Acceptance 6: the command is usable as a gate and is
-  not one yet.
-- **No edits under `apps/**` or `packages/ui/**`.** The harness is read-only against the app. Nothing
-  in this unit fixes a delta it found; the deltas are the baseline U6.7 works from.
-- **No edits to `docs/DESIGN-CONTRACT.md`.** Calibration and exceptions are U6.7's.
-- **No dependency beyond `@freebot/verify`.** The diff runs in the browser precisely so that no image
-  library enters the lockfile.
+- **No new dependency.** The diff still runs in the browser, so no image library enters the
+  lockfile; the font is a committed asset, not a package.
+- **No edit to the frozen export.** Its `@font-face` arrives by injection into the browser at run
+  time, never into `design/prototype-84c6b185/`.
+- **No drawer.** The mobile drawers stay out of the map and out of the app; they need a trigger and
+  a record this build does not have, and `docs/DESIGN-CONTRACT.md` records that rather than
+  approximating it.
 
 ## Running it yourself
 

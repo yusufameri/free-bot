@@ -57,14 +57,16 @@ describe("the map itself", () => {
     }
   });
 
-  test("the map carries all four chrome regions and the six content regions", () => {
+  test("the map carries all four chrome regions and the thirteen content regions", () => {
     expect(REGIONS.filter((region) => region.kind === "chrome").length).toBe(4);
-    expect(REGIONS.filter((region) => region.kind === "content").length).toBe(6);
+    expect(REGIONS.filter((region) => region.kind === "content").length).toBe(13);
   });
 
   test("every region's note names where its rectangle comes from", () => {
     for (const region of REGIONS) {
-      expect(region.note).toMatch(/freebot-prototype\.html:|index\.html:|aside\.ts:/);
+      expect(region.note).toMatch(
+        /freebot-prototype\.html:|index\.html:|aside\.ts:|render\.ts:|overlays\.ts:|shell\.ts:/,
+      );
     }
   });
 

@@ -22,6 +22,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { join } from "node:path";
 import { artifactDir } from "@freebot/verify";
 import { settle, setViewport } from "@freebot/verify/cdp";
+import { declaredBoxDelta } from "./deltas.ts";
 import type { Comparison, RegionDiff } from "./diff.ts";
 import {
   APP_READY,
@@ -30,6 +31,7 @@ import {
   capture,
   compareShots,
   crop,
+  dismissNotices,
   EXPORT_READY,
   type ExportUnderTest,
   OVERFLOW_SELECTORS,
@@ -45,6 +47,7 @@ import {
   targets,
 } from "./page.ts";
 import {
+  BOX_TOLERANCE,
   type BoxMap,
   CHROME_TOLERANCE_DEFAULT,
   REGIONS,
@@ -241,7 +244,10 @@ export async function run(options: RunOptions): Promise<RunResult> {
       "--porcelain",
       "--",
       ".",
-      `:(exclude)packages/verify/artifacts/${FEATURE}`,
+      // Every evidence directory is written by the verify step itself (the gate, the scaffold
+      // summary, the test suites' artifacts), so a run's own output must not make the code it just
+      // measured look dirty. A tracked source change still does.
+      ":(exclude)packages/verify/artifacts",
     ]) !== "";
   const conventional = artifactDir(root, FEATURE, shortSha);
   const dir = options.write ? (options.dir ?? conventional) : null;
@@ -312,7 +318,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
     log(`  export resolves to ${fonts.exportStack}`);
     log(`  the two stacks ${fonts.same ? "are the same" : "differ"}`);
     log(
-      `  a 'Geist' string measures ${fonts.appGeistWidth}px against an absent family's ${fonts.appAbsentWidth}px, so Geist ${fonts.geistResolves ? "has a face of its own here" : "has no face here and both pages render the stack's fallback"}`,
+      `  a 'Geist' string measures ${fonts.appGeistWidth}px against an absent family's ${fonts.appAbsentWidth}px, so ${fonts.geistResolves ? "the vendored Geist face is in use on both pages" : "Geist has no face here and both pages render the stack's fallback"}`,
     );
 
     for (const [index, viewport] of viewports.entries()) {
@@ -375,20 +381,8 @@ export async function run(options: RunOptions): Promise<RunResult> {
   if (exported === null) throw new Error("the run finished without its export");
   if (chromeVersion === "") throw new Error("the run finished without its browser");
 
-  for (const report of reports) {
-    for (const region of report.regions) {
-      if (region.kind !== "chrome" || region.status === "absent") continue;
-      if (region.stat === null) {
-        failures.push(`${report.label} ${region.id}: measured with no statistic`);
-        continue;
-      }
-      if (region.stat.differing > CHROME_TOLERANCE) {
-        failures.push(
-          `${report.label} ${region.id}: ${region.stat.differing} differing pixel(s) over a tolerance of ${CHROME_TOLERANCE} (max channel ${region.stat.maxChannel})`,
-        );
-      }
-    }
-  }
+  failures.push(...verdictFailures(reports, CHROME_TOLERANCE));
+  failures.push(...fontFailures(fonts));
 
   const chromeTotal = sumDiffs(
     reports.flatMap((report) =>
@@ -457,7 +451,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
   );
   log(`RESULT: ${runReport.verdict}`);
 
-  return { report: runReport, dir, exitCode: failures.length === 0 ? 0 : 1 };
+  return { report: runReport, dir, exitCode: exitCodeFor(failures) };
 }
 
 async function openPageFor(
@@ -517,6 +511,7 @@ interface Visit {
  */
 async function visit(input: VisitInput): Promise<Visit> {
   const { browser, appSession, exportSession, diffSession, viewport, label, dir } = input;
+  const startedAt = performance.now();
   await Promise.all([
     setViewport(browser.cdp, appSession, viewport.width, viewport.height),
     setViewport(browser.cdp, exportSession, viewport.width, viewport.height),
@@ -525,7 +520,19 @@ async function visit(input: VisitInput): Promise<Visit> {
     settle(browser.cdp, appSession, 250),
     settle(browser.cdp, exportSession, 250),
   ]);
-
+  // Both pages may paint a notice after the ready predicate; clear both stacks before the probe so
+  // the shell's band is the shell's, not the notice surface's.
+  const dismissed = await Promise.all([
+    dismissNotices(browser.cdp, appSession),
+    dismissNotices(browser.cdp, exportSession),
+  ]);
+  if (dismissed[0] + dismissed[1] > 0) {
+    input.log(`  notices dismissed: ${dismissed[0]} app, ${dismissed[1]} export`);
+  }
+  await Promise.all([
+    settle(browser.cdp, appSession, 100),
+    settle(browser.cdp, exportSession, 100),
+  ]);
   const appProbe = await probe(browser.cdp, appSession, input.appSelectors, OVERFLOW_SELECTORS);
   const exportProbe = await probe(browser.cdp, exportSession, input.exportSelectors, []);
   for (const [side, probed] of [
@@ -544,10 +551,11 @@ async function visit(input: VisitInput): Promise<Visit> {
     (region): region is ResolvedRegion & { rect: Rect } => region.rect !== null,
   );
 
-  const [appShot, exportShot] = await Promise.all([
-    capture(browser.cdp, appSession, viewport),
-    capture(browser.cdp, exportSession, viewport),
-  ]);
+  // Sequential, not parallel: one tab of a browser is the visible one, and a hidden page is painted
+  // on the browser's schedule. Each side is brought to the front and captured while it is the page
+  // on screen; the freeze means nothing moves between the two shots.
+  const appShot = await capture(browser.cdp, appSession, viewport);
+  const exportShot = await capture(browser.cdp, exportSession, viewport);
 
   await beginShots(browser.cdp, diffSession);
   await putShot(browser.cdp, diffSession, APP_SHOT, appShot.shot);
@@ -630,6 +638,9 @@ async function visit(input: VisitInput): Promise<Visit> {
   }
   const overflowing = overflowOf(appProbe).overflowing;
   input.log(`  overflow (app): ${overflowing.length === 0 ? "none" : overflowing.join(", ")}`);
+  // A gate that fails on time has to say where the time went: the log is the only window into a CI
+  // run, and the buffered output of a killed run otherwise shows whole viewports with no duration.
+  input.log(`  visited in ${Math.round(performance.now() - startedAt)}ms`);
 
   return {
     comparison,
@@ -740,4 +751,168 @@ export interface StabilityRequest {
 /** The two-run proof, exposed so the CLI can print it and a test can drive it. */
 export function stability(request: StabilityRequest): ReturnType<typeof compareRuns> {
   return compareRuns(request.first, request.second, request.epsilon);
+}
+
+/**
+ * The chrome regions each viewport must carry, read from the two breakpoints the stylesheets share:
+ * the aside and resizer leave below 1120px, the sidebar below 860px. A region that is `absent`
+ * above its breakpoint is a missing selector, not a viewport that does not carry it.
+ */
+export function expectedChromeAt(width: number): string[] {
+  const expected: string[] = [];
+  if (width > 860) expected.push("chrome.sidebar-edge");
+  if (width > 1120) {
+    expected.push("chrome.resizer", "chrome.aside-edge", "chrome.aside-strip-rule");
+  }
+  return expected;
+}
+
+/**
+ * Every chrome region whose differing-pixel count is over the tolerance, by name, plus any desktop
+ * chrome region that is absent above its own breakpoint.
+ *
+ * Exposed so the failure path is driven by a test with a fake report rather than by damaging a real
+ * page. The run's exit code is a function of this list, and `exitCodeFor` is that function.
+ */
+export function chromeFailures(
+  reports: readonly ViewportReport[],
+  tolerance = CHROME_TOLERANCE,
+): string[] {
+  const failures: string[] = [];
+  for (const report of reports) {
+    const present = new Set(
+      report.regions
+        .filter((region) => region.kind === "chrome" && region.status !== "absent")
+        .map((region) => region.id),
+    );
+    for (const id of expectedChromeAt(report.width)) {
+      if (!present.has(id)) {
+        failures.push(
+          `${report.label} ${id}: chrome region is absent at ${report.width}px, above its breakpoint`,
+        );
+      }
+    }
+    for (const region of report.regions) {
+      if (region.kind !== "chrome" || region.status === "absent") continue;
+      if (region.stat === null) {
+        failures.push(`${report.label} ${region.id}: measured with no statistic`);
+        continue;
+      }
+      if (region.stat.differing > tolerance) {
+        failures.push(
+          `${report.label} ${region.id}: ${region.stat.differing} differing pixel(s) over a tolerance of ${tolerance} (max channel ${region.stat.maxChannel})`,
+        );
+      }
+    }
+  }
+  return failures;
+}
+
+/**
+ * A run whose vendored face did not resolve is not a fidelity pass, even if every pixel it picked
+ * happened to agree. `document.fonts.check` is not used here; the measurement is the advance width
+ * of a Geist-family string against a family that cannot exist, on each page.
+ */
+export function fontFailures(fonts: FontFacts): string[] {
+  const failures: string[] = [];
+  if (!fonts.same) {
+    failures.push(
+      `the two pages resolve different font stacks: app ${fonts.appStack}; export ${fonts.exportStack}`,
+    );
+  }
+  if (fonts.appGeistWidth === fonts.appAbsentWidth) {
+    failures.push(
+      `the app's 'Geist' string measures ${fonts.appGeistWidth}px, the same as the absent family's ${fonts.appAbsentWidth}px, so the vendored face did not resolve`,
+    );
+  }
+  if (fonts.exportGeistWidth === fonts.exportAbsentWidth) {
+    failures.push(
+      `the export's 'Geist' string measures ${fonts.exportGeistWidth}px, the same as the absent family's ${fonts.exportAbsentWidth}px, so the vendored face did not resolve`,
+    );
+  }
+  return failures;
+}
+
+/**
+ * Every box that moved without a matching declaration.
+ *
+ * A box that moved is a finding even when the pixels inside the chosen rectangle happen to match,
+ * which is exactly why `resolveRegions` prints the delta beside every region. The chrome regions
+ * must agree outright. A content region is allowed to differ only through an entry in the
+ * contract's list, and only by the pixels that entry records.
+ */
+export function boxFailures(
+  reports: readonly ViewportReport[],
+  tolerance = BOX_TOLERANCE,
+): string[] {
+  const failures: string[] = [];
+  for (const report of reports) {
+    for (const region of report.regions) {
+      const delta = region.boxDelta;
+      if (delta === null || delta.agree) continue;
+      const shown = `left ${delta.left}, top ${delta.top}, width ${delta.width}, height ${delta.height}`;
+      if (region.kind === "chrome") {
+        failures.push(`${report.label} ${region.id}: chrome box delta (${shown}) is not zero`);
+        continue;
+      }
+      const declared = declaredBoxDelta(region.id);
+      if (declared === undefined) {
+        failures.push(
+          `${report.label} ${region.id}: box delta (${shown}) is not declared in docs/DESIGN-CONTRACT.md`,
+        );
+        continue;
+      }
+      const expected = declared.pixels[report.name];
+      if (expected === undefined) {
+        failures.push(
+          `${report.label} ${region.id}: the declaration has no pixels for viewport ${report.name}`,
+        );
+        continue;
+      }
+      const moved = (["left", "top", "width", "height"] as const).filter(
+        (axis) => Math.abs(delta[axis] - expected[axis]) > tolerance,
+      );
+      if (moved.length > 0) {
+        failures.push(
+          `${report.label} ${region.id}: box delta (${shown}) moved from the declared (left ${expected.left}, top ${expected.top}, width ${expected.width}, height ${expected.height}) on ${moved.join(", ")}`,
+        );
+      }
+    }
+  }
+  return failures;
+}
+
+/** The one place a failure list becomes a process exit code. */
+export function exitCodeFor(failures: readonly string[]): number {
+  return failures.length === 0 ? 0 : 1;
+}
+
+/** A viewport that scrolls horizontally is a failure, not a note, per the manifest's flag. */
+export function overflowFailures(reports: readonly ViewportReport[]): string[] {
+  const failures: string[] = [];
+  for (const report of reports) {
+    const [scrollWidth, innerWidth] = report.overflow.document;
+    if (scrollWidth > innerWidth) {
+      failures.push(
+        `${report.label}: documentElement.scrollWidth ${scrollWidth} > window.innerWidth ${innerWidth}`,
+      );
+    }
+    for (const selector of report.overflow.overflowing) {
+      failures.push(`${report.label}: ${selector} has content wider than its box`);
+    }
+  }
+  return failures;
+}
+
+/** Both checks in the order the run reports them. */
+export function verdictFailures(
+  reports: readonly ViewportReport[],
+  chromeTolerance = CHROME_TOLERANCE,
+  boxTolerance = BOX_TOLERANCE,
+): string[] {
+  return [
+    ...chromeFailures(reports, chromeTolerance),
+    ...boxFailures(reports, boxTolerance),
+    ...overflowFailures(reports),
+  ];
 }
