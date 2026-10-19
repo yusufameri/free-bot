@@ -38,6 +38,7 @@ import {
   waitFor,
 } from "../src/cdp.ts";
 import { artifactDir } from "../src/index.ts";
+import { openRelay } from "./tcp-relay.ts";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url)).replace(/\/$/, "");
 const feature = "overlays";
@@ -68,7 +69,9 @@ const ESCAPE_NAME = "escape.txt";
 /**
  * The export's chrome and its prototype data, which must not ship. The first four are the export's
  * own instructions to an implementer and its two input placeholders; the rest is the data its
- * prototype printed and this app has no record for.
+ * prototype printed and this app has no record for. Two strings that used to sit in the data list
+ * are gone on purpose: `Teach a task` and `Connect apps` are the export's own Workspace copy, which
+ * U6.8 ships and `workspace-pages.ts` asserts.
  */
 const EXPORT_CHROME = [
   "data-od-id",
@@ -80,12 +83,12 @@ const EXPORT_CHROME = [
 
 const EXPORT_DATA = [
   "pre-run-4f3a",
-  "Teach a task",
-  "waiting on approval",
+  // `Launch room` is the export's sample room name and the group modal prefills it, so it is data
+  // the app still carries and stays asserted here.
   "Launch room",
+  "waiting on approval",
   '"secrets audit"',
   '"changelog"',
-  "Connect apps",
   "Export the transcript",
   "Simulate a dropped stream",
   "Reconnect the stream",
@@ -280,122 +283,6 @@ async function rpc(
   return answer.json;
 }
 
-interface Relay {
-  readonly port: number;
-  readonly url: string;
-  /** Hold the next request carrying this text back by `ms`, which is a slow server, not a timer. */
-  hold(pattern: string, ms: number): void;
-  stop(): void;
-}
-
-/**
- * A raw TCP relay in front of the app: the page's own origin, and the way this driver makes one
- * request slow.
- *
- * HTTP and the WebSocket upgrade are bytes, so one splice carries both. With a pattern armed, the
- * first connection whose request bytes carry it is held for the delay: the page sees a server that
- * has not answered yet, which is the only honest way to reach a creating state.
- */
-function openRelay(upstreamPort: number): Relay {
-  interface Pair {
-    readonly client: Bun.Socket;
-    upstream: Bun.Socket | null;
-    readonly queue: Uint8Array[];
-    sent: string;
-    held: boolean;
-    timer: ReturnType<typeof setTimeout> | null;
-    closed: boolean;
-  }
-  const pairs = new Map<unknown, Pair>();
-  let pattern: string | null = null;
-  let delay = 0;
-  const server = Bun.listen({
-    hostname: "127.0.0.1",
-    port: 0,
-    socket: {
-      async open(client) {
-        const pair: Pair = {
-          client,
-          upstream: null,
-          queue: [],
-          sent: "",
-          held: false,
-          timer: null,
-          closed: false,
-        };
-        pairs.set(client, pair);
-        const remote = await Bun.connect({
-          hostname: "127.0.0.1",
-          port: upstreamPort,
-          socket: {
-            data(_socket, chunk) {
-              if (!pair.closed) client.write(chunk);
-            },
-            close() {
-              pair.closed = true;
-              pairs.delete(client);
-              client.end();
-            },
-          },
-        });
-        if (pair.closed) {
-          remote.end();
-          pairs.delete(client);
-          return;
-        }
-        pair.upstream = remote;
-        for (const chunk of pair.queue) remote.write(chunk);
-        pair.queue.length = 0;
-      },
-      data(client, chunk) {
-        const pair = pairs.get(client);
-        if (pair === undefined) return;
-        if (!pair.held && pattern !== null) {
-          pair.sent = `${pair.sent}${new TextDecoder().decode(chunk)}`.slice(-8192);
-          if (pair.sent.includes(pattern)) {
-            pair.held = true;
-            pattern = null;
-            const ms = delay;
-            pair.timer = setTimeout(() => {
-              pair.timer = null;
-              for (const queued of pair.queue.splice(0)) pair.upstream?.write(queued);
-            }, ms);
-          }
-        }
-        if (pair.held) pair.queue.push(chunk);
-        else if (pair.upstream === null) pair.queue.push(chunk);
-        else pair.upstream.write(chunk);
-      },
-      close(client) {
-        const pair = pairs.get(client);
-        pairs.delete(client);
-        if (pair !== undefined) {
-          pair.closed = true;
-          if (pair.timer !== null) clearTimeout(pair.timer);
-          pair.upstream?.end();
-        }
-      },
-    },
-  });
-  return {
-    port: server.port,
-    url: `http://127.0.0.1:${server.port}`,
-    hold(next, ms) {
-      pattern = next;
-      delay = ms;
-    },
-    stop() {
-      for (const [, pair] of pairs) {
-        if (pair.timer !== null) clearTimeout(pair.timer);
-        pair.upstream?.terminate();
-        pair.client.terminate();
-      }
-      pairs.clear();
-      server.stop(true);
-    },
-  };
-}
-
 // ---------------------------------------------------------------------------
 // The page's own facts
 // ---------------------------------------------------------------------------
@@ -546,6 +433,16 @@ async function explain(cdp: Cdp, session: string): Promise<string> {
         withSidebarSearch: document.querySelector('#sidebar-search') !== null,
         conn: document.querySelector('#conn')?.dataset.connection ?? null,
         error: document.querySelector('#error')?.textContent ?? null,
+        href: location.href.replace(/#token=.*/, '#token=<redacted>'),
+        title: document.title,
+        ready: document.readyState,
+        htmlBytes: document.documentElement.outerHTML.length,
+        scripts: [...document.scripts].map((node) => node.src),
+        resources: [...performance.getEntriesByType('resource')].map((entry) => [
+          entry.name.replace(/#token=.*/, ''),
+          Math.round(entry.duration),
+          entry.transferSize ?? -1,
+        ]),
       });
     })()`,
   );
@@ -890,7 +787,9 @@ async function main(): Promise<number> {
       );
     } catch (error) {
       const why = error instanceof Error ? error.message : String(error);
-      throw new Error(`${why}; the page's own state: ${await explain(chrome.cdp, session)}`);
+      throw new Error(
+        `${why}; the page's own state: ${await explain(chrome.cdp, session)}; console: ${chrome.cdp.console.slice(-12).join(" | ")}`,
+      );
     }
     await settle(chrome.cdp, session);
     await setViewport(chrome.cdp, session, 1440, 900);
@@ -901,7 +800,7 @@ async function main(): Promise<number> {
     const boot = await facts(chrome.cdp, session);
     note(`the shell's own title line: ${JSON.stringify(boot.shell.title)}`);
     check(
-      "the sidebar's head is the export's own two controls: a search button carrying the shortcut it answers, and a `New chat` control",
+      "the sidebar's head is the export's search control and `New chat` control, with the group-chat control the sidebar gained beside them",
       [
         ...(await evaluate<unknown[]>(
           chrome.cdp,
@@ -918,6 +817,7 @@ async function main(): Promise<number> {
       ],
       [
         ["button", "sidebar-search", null, SEARCH_LABEL, SEARCH_HINT, "#i-search"],
+        ["button", "sidebar-new-group", "New group chat", null, null, "#i-people"],
         ["button", "sidebar-new-chat", NEW_CHAT_LABEL, null, null, "#i-plus"],
       ],
     );

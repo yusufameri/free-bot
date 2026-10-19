@@ -49,9 +49,6 @@ const SECOND_PROMPT = "run one gated command, on the second launch";
 const THIRD_PROMPT = "run one gated command, on the third launch";
 const COMMAND = 'bash {"command":"echo native-should-not-run"}';
 const OUTPUT = "native-should-not-run\n";
-/** The header subtitle, asserted as rendered text so the claim cannot drift from the copy. */
-const SUBTITLE =
-  "One thread. Local run. A real model when the vault holds a key, the committed replay when it does not.";
 
 let artifactsDir = "";
 
@@ -737,9 +734,28 @@ async function openArmed(cdp: Cdp, log: Log, launch: Launched, label: string): P
     "connected",
   );
   log.check(
-    `${label}: the header's subtitle is the copy that holds in both provider modes`,
-    await evalJson(cdp, sessionId, "document.querySelector('header p').textContent"),
-    SUBTITLE,
+    `${label}: the header is the export's own row: the Bot's name as its button, its role, and the three controls`,
+    await evalJson(
+      cdp,
+      sessionId,
+      `({
+        title: document.querySelector('#bot-title').textContent,
+        role: document.querySelector('#bot-role').textContent,
+        share: document.querySelector('#share-button').getAttribute('aria-label'),
+        computer: document.querySelector('#computer-open').textContent.trim(),
+        details: [
+          document.querySelector('#aside-toggle').textContent.trim(),
+          document.querySelector('#aside-toggle').getAttribute('aria-label'),
+        ],
+      })`,
+    ),
+    {
+      title: "Stream Check · New conversation",
+      role: "",
+      share: "Share menu",
+      computer: "Computer",
+      details: ["Details", "Collapse the pane"],
+    },
   );
   return sessionId;
 }

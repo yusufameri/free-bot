@@ -443,6 +443,80 @@
       }
     },
     {
+      "id": "items",
+      "command": "bun packages/verify/scripts/items.ts",
+      "artifact": "packages/verify/artifacts/items",
+      "subjects": [
+        "packages/verify/scripts/items.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "docs/items.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/items.ts"],
+        "subject": "the conversation's items, their states, and the Bot row's derived status",
+        "needs": [["docker"], ["chrome"]]
+      }
+    },
+    {
+      "id": "transcript-restart",
+      "command": "bun packages/verify/scripts/transcript-restart.ts",
+      "artifact": "packages/verify/artifacts/transcript-restart",
+      "subjects": [
+        "packages/verify/scripts/transcript-restart.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "docs/transcript.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/transcript-restart.ts"],
+        "subject": "a thread's conversation across a stop and start, with the torn line repaired",
+        "needs": [["docker"], ["chrome"]]
+      }
+    },
+    {
+      "id": "workspace-pages",
+      "command": "bun packages/verify/scripts/workspace-pages.ts",
+      "artifact": "packages/verify/artifacts/workspace-pages",
+      "subjects": [
+        "packages/verify/scripts/workspace-pages.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "docs/web-shell.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/protocol/**",
+        "packages/core/**",
+        "design/prototype-84c6b185/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/workspace-pages.ts"],
+        "subject": "the sidebar's sections, the seven Workspace pages and the group header",
+        "needs": [["chrome"]]
+      }
+    },
+    {
       "id": "type-gate",
       "command": "bun packages/verify/scripts/type-gate.ts",
       "artifact": "packages/verify/artifacts/type-gate",

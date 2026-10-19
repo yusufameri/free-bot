@@ -111,6 +111,7 @@ const blind = [
   "packages/ui/browser/provider.ts",
   "packages/ui/browser/render.ts",
   "packages/ui/browser/shell.ts",
+  "packages/ui/browser/workspace.ts",
 ];
 
 type Outcome = { code: number; ok: boolean; output: string };
