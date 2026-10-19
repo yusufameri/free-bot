@@ -370,9 +370,11 @@ document.querySelector<HTMLButtonElement>("#bot-name-button")?.addEventListener(
   void aside.show("details");
 });
 document.querySelector<HTMLButtonElement>("#share-button")?.addEventListener("click", () => {
+  // The operator token is installation-wide authority. A conversation link carries the path, never
+  // the fragment, so pasting it elsewhere cannot hand over the API.
   void navigator.clipboard
-    ?.writeText(location.href)
-    .then(() => toast("Link copied. The operator token rides in the fragment."))
+    ?.writeText(`${location.origin}${location.pathname}`)
+    .then(() => toast("Link copied without the operator token."))
     .catch(() => toast("This browser did not allow the copy."));
 });
 document.querySelector<HTMLButtonElement>("#connect-apps")?.addEventListener("click", () => {
@@ -388,7 +390,7 @@ document.querySelector<HTMLButtonElement>("#account-row")?.addEventListener("cli
   for (const [label, run] of [
     ["Settings", () => openWorkspace("settings")],
     ["Provider", () => providerPage.show()],
-    ["Sign out", () => toast("FreeBot local. The vault key is kept.")],
+    ["Sign out of this page", () => location.replace(`${location.origin}${location.pathname}`)],
   ] as const) {
     const button = document.createElement("button");
     button.type = "button";

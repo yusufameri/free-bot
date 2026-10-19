@@ -348,6 +348,49 @@ async function main(): Promise<void> {
   check("the header names the room", group.header.includes("Launch room"), group.header);
   writeFileSync(join(out, "08-group.png"), await screenshot(cdp, page));
 
+  // The Share control copies the page, never the operator fragment. Drive the real button with a
+  // clipboard shim so the captured string is the one the page would have written.
+  const shared = await evaluate<string>(
+    cdp,
+    page,
+    `(async () => {
+      let copied = "no-clipboard";
+      const clipboard = navigator.clipboard;
+      if (clipboard) {
+        const original = clipboard.writeText.bind(clipboard);
+        clipboard.writeText = async (text) => {
+          copied = text;
+          try { await original(text); } catch {}
+        };
+      }
+      document.querySelector('#share-button').click();
+      await new Promise((resolve) => setTimeout(resolve, 80));
+      return copied;
+    })()`,
+  );
+  const origin = new URL(url).origin;
+  check(
+    "Share copies the path without the operator token",
+    shared === `${origin}/` && !shared.includes("token"),
+    shared,
+  );
+
+  const accountMenu = await evaluate<string>(
+    cdp,
+    page,
+    `(() => {
+      document.querySelector('#account-row').click();
+      const labels = [...document.querySelectorAll('.menu button')].map((n) => n.textContent ?? '');
+      document.querySelector('.menu')?.remove();
+      return labels.join(' | ');
+    })()`,
+  );
+  check(
+    "the account menu signs out of the page",
+    accountMenu.includes("Sign out of this page"),
+    accountMenu,
+  );
+
   // The same page at a phone width: no horizontal scroll, and the sidebar stands down.
   await setViewport(cdp, page, 390, 844);
   await sleep(150);
