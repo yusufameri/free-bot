@@ -21,6 +21,7 @@ import {
   botRows,
   conversationTitle,
   deriveBotStatus,
+  mergeBotStatus,
   NEW_BOT_LABEL,
   NEW_BOT_PLACEHOLDER,
   NEW_THREAD_LABEL,
@@ -131,17 +132,15 @@ export function mountShell(config: {
     return threads.find((thread) => thread.threadId === selectedThreadId);
   }
 
-  /** The status each row shows: the live stream's word, or the runs the Bot's threads carry. */
+  /** The status each row shows: always derived from the Bot's runs, then merged with its live word. */
   function statuses(): Map<string, BotStatus> {
     const found = new Map<string, BotStatus>();
     for (const bot of bots) {
-      const live = liveStatuses.get(bot.botId);
-      if (live !== undefined) {
-        found.set(bot.botId, live);
-        continue;
-      }
       const runs = (threadsByBot.get(bot.botId) ?? []).flatMap((thread) => thread.runs);
-      found.set(bot.botId, deriveBotStatus(runs));
+      found.set(
+        bot.botId,
+        mergeBotStatus(deriveBotStatus(runs), liveStatuses.get(bot.botId) ?? null),
+      );
     }
     return found;
   }

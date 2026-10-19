@@ -14,6 +14,7 @@ import {
   deriveBotStatus,
   latestRun,
   liveBotStatus,
+  mergeBotStatus,
   runCountLabel,
   runDetail,
   threadCountLabel,
@@ -194,6 +195,25 @@ describe("the Bot's status, from its runs", () => {
       ["failed", "dot ring", "failed"],
       ["idle", "dot", "Chief"],
     ]);
+  });
+});
+
+describe("the row's status when the record and the stream disagree", () => {
+  test("a park in any thread outranks a live run that is still working", () => {
+    expect(mergeBotStatus("attention", "working")).toBe("attention");
+  });
+
+  test("a live idle wins over a record that still says working", () => {
+    expect(mergeBotStatus("working", "idle")).toBe("idle");
+  });
+
+  test("a live idle wins over a record that still says failed", () => {
+    expect(mergeBotStatus("failed", "idle")).toBe("idle");
+  });
+
+  test("with no live word the record's derivation stands", () => {
+    expect(mergeBotStatus("attention", null)).toBe("attention");
+    expect(mergeBotStatus("failed", null)).toBe("failed");
   });
 });
 

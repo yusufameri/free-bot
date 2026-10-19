@@ -130,6 +130,19 @@ export function liveBotStatus(state: ThreadState): BotStatus | null {
   return "idle";
 }
 
+/**
+ * The row's status when both the Bot's runs and its live stream have an answer.
+ *
+ * A park in any of the Bot's threads outranks a live frame from the selected one, so another
+ * thread's `working` cannot hide a `needs you`. Otherwise the stream is the fresher reading and
+ * wins, including a live idle over a record that still says working or failed. With no live word
+ * the derivation from the runs stands.
+ */
+export function mergeBotStatus(derived: BotStatus, live: BotStatus | null): BotStatus {
+  if (derived === "attention") return "attention";
+  return live ?? derived;
+}
+
 /** One thread as the list renders it. */
 export interface ThreadRow {
   readonly threadId: string;

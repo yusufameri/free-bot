@@ -511,6 +511,8 @@ const SPECS: readonly CaptureSpec[] = [
     thread: "approval-expired",
     checks: (dom) => {
       const card = dom.approvals.find((entry) => entry.state === "expired");
+      // The second run replays the same call id, so its card is the last one with that id.
+      const governed = dom.tools.filter((entry) => entry.call === "items-call-1").at(-1);
       return [
         ["head", card?.head, "Expired"],
         ["tag", card?.tag, "expired"],
@@ -519,6 +521,15 @@ const SPECS: readonly CaptureSpec[] = [
         ["no answers remain", card?.buttons, []],
         ["the window ran out", card?.expiry, "run ended unanswered"],
         ["the run failed as the timeout", dom.runEnd?.startsWith("run failed:"), true],
+        ["the governed tool card is denied", governed?.status, "denied"],
+        ["its tag says denied, not pending", governed?.tag, "denied"],
+        ["its dot is a ring, not a pulse", governed?.dot, "dot ring"],
+        ["the card is closed", governed?.finished, "denied"],
+        [
+          "the end-of-run hint replaces the gate copy",
+          governed?.hint,
+          "The run ended before this call was answered.",
+        ],
       ];
     },
   },

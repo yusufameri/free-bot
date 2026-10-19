@@ -604,9 +604,9 @@ async function main(): Promise<void> {
       beforeStop.prompts,
     );
     check(
-      "and so is the tool card that arrived before the stop",
+      "and so is the tool card that arrived before the stop, now closed as denied",
       stopped.toolCards,
-      beforeStop.toolCards,
+      beforeStop.toolCards.map(([call]) => [call, "denied"]),
     );
     check(
       // Old: the approval card's data-decision read 'cancelled'. New: it closes as data-state 'expired' with .approval-result 'run stopped'.

@@ -223,10 +223,14 @@ export function mountThread(config: {
         end === "cancelled" ? "the run stopped" : "run ended unanswered",
       );
       const governed = toolRefs.get(refs.toolCallId);
-      if (governed !== undefined && governed.card.dataset.status !== "done") {
-        governed.hint.hidden = false;
-        governed.details.hidden = true;
-        governed.hint.textContent = "The run ended before this call was answered.";
+      if (governed !== undefined) {
+        const status = governed.card.dataset.status;
+        if (status === "awaiting approval" || status === "running") {
+          setToolState(governed, "denied");
+          governed.hint.hidden = false;
+          governed.details.hidden = true;
+          governed.hint.textContent = "The run ended before this call was answered.";
+        }
       }
     }
   }

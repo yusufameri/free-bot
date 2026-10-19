@@ -391,6 +391,10 @@ export const ITEM_SPECS: readonly FrameSpec[] = [
         label: "no approval is still pending",
         holds: (f) => !f.approvalStates.includes("pending"),
       },
+      {
+        label: "no tool card is still running",
+        holds: (f) => !f.toolStates.includes("running"),
+      },
       { label: "no duplicate marker line", holds: noMarkerLines },
     ],
     visible: '#thread .approval-card[data-state="expired"]',
