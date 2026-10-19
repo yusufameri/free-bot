@@ -10,7 +10,9 @@
 
 import {
   closeSync,
+  fstatSync,
   fsyncSync,
+  ftruncateSync,
   mkdirSync,
   openSync,
   readFileSync,
@@ -66,6 +68,8 @@ function rewriteAtomically(path: string, content: string): void {
 export class JsonlFile {
   readonly #path: string | undefined;
   #fd: number | null = null;
+  /** Why this instance cannot append any more: a write whose bytes could not be taken back. */
+  #broken: string | null = null;
 
   /** A file path, or undefined for a journal that persists nothing. */
   constructor(path: string | undefined) {
@@ -103,16 +107,39 @@ export class JsonlFile {
     };
   }
 
-  /** Append one line and wait for the disk to have it. Creates the directory on first use. */
+  /**
+   * Append one line and wait for the disk to have it. Creates the directory on first use.
+   *
+   * A write this call cannot vouch for is taken back out of the file before the error is thrown:
+   * the caller keeps its seq, so a record nobody was told about must not be left where the next
+   * append can put a second one beside it. If even that cannot be done the file's tail is unknown,
+   * and this instance refuses every later append rather than writing a record the caller may
+   * already have used.
+   */
   append(line: string): void {
     const path = this.#path;
     if (path === undefined) return;
+    if (this.#broken !== null) {
+      throw new Error(`this journal cannot be appended to: ${this.#broken}`);
+    }
     if (this.#fd === null) {
       mkdirSync(dirname(path), { recursive: true });
       this.#fd = openSync(path, "a");
     }
-    writeSync(this.#fd, `${line}\n`);
-    fsyncSync(this.#fd);
+    const fd = this.#fd;
+    const before = fstatSync(fd).size;
+    try {
+      writeSync(fd, `${line}\n`);
+      fsyncSync(fd);
+    } catch (error) {
+      try {
+        ftruncateSync(fd, before);
+        fsyncSync(fd);
+      } catch {
+        this.#broken = error instanceof Error ? error.message : String(error);
+      }
+      throw error;
+    }
   }
 
   /**
