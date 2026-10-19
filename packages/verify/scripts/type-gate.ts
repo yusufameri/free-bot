@@ -107,6 +107,7 @@ const blind = [
   "packages/ui/browser/icons.ts",
   "packages/ui/browser/library.ts",
   "packages/ui/browser/notices.ts",
+  "packages/ui/browser/overlays.ts",
   "packages/ui/browser/provider.ts",
   "packages/ui/browser/render.ts",
   "packages/ui/browser/shell.ts",
