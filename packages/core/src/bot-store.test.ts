@@ -45,6 +45,11 @@ describe("bots and threads as records", () => {
       purpose: "",
       createdAt: 1_000,
       updatedAt: 1_000,
+      pinned: false,
+      section: "Work",
+      hidden: false,
+      group: false,
+      members: [],
     });
     expect(store.bots()).toEqual([made.record]);
   });
@@ -68,6 +73,11 @@ describe("bots and threads as records", () => {
       purpose: "Release pipeline, changelog, dependency sweeps",
       createdAt: 1_000,
       updatedAt: 2_000,
+      pinned: false,
+      section: "Work",
+      hidden: false,
+      group: false,
+      members: [],
     });
     const again = store.updateBot({
       id: "bot-local",
@@ -302,6 +312,11 @@ describe("the journal", () => {
       purpose: "",
       createdAt: 1,
       updatedAt: 1,
+      pinned: false,
+      section: "Work",
+      hidden: false,
+      group: false,
+      members: [],
     });
     expect(store.loadReport).toEqual({ commands: 2, refused: [], tornTrailingLine: false });
   });

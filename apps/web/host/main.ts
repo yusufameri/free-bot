@@ -58,6 +58,11 @@ import {
   mountShell,
   type ShellSelection,
 } from "../../../packages/ui/browser/shell.ts";
+import {
+  mountWorkspace,
+  WORKSPACE_VIEWS,
+  type WorkspaceView,
+} from "../../../packages/ui/browser/workspace.ts";
 import { latestCommand, latestRun, liveRunStatus } from "../../../packages/ui/src/aside.ts";
 import { liveBotStatus } from "../../../packages/ui/src/bots.ts";
 import type { OverlayCommand } from "../../../packages/ui/src/overlays.ts";
@@ -75,7 +80,7 @@ const auto = params.get("auto");
 const autoAnswer = auto === "allow" || auto === "deny" ? auto : null;
 
 const operator = document.querySelector<HTMLFormElement>("#operator");
-const promptInput = document.querySelector<HTMLInputElement>("#prompt");
+const promptInput = document.querySelector<HTMLTextAreaElement>("#prompt");
 const startButton = document.querySelector<HTMLButtonElement>("#start");
 const sidebar = document.querySelector<HTMLElement>("#sidebar");
 const shellEl = document.querySelector<HTMLElement>(".shell");
@@ -202,6 +207,13 @@ const shell = mountShell({
     listThreads: async (botId) => (await client().list_threads({ botId })).threads,
     createThread: async (botId, title) =>
       await client().create_thread(title === undefined ? { botId } : { botId, title }),
+    arrangeBot: async (patch) => {
+      const { botId, ...rest } = patch;
+      return await client().arrange_bot({ botId, ...rest });
+    },
+  },
+  onRecords: () => {
+    paintGroupbar();
   },
   onChange: (next) => {
     const previousBot = selection.botId;
@@ -216,10 +228,305 @@ const shell = mountShell({
     }
     // A different thread is a different latest run, which is what the notice stack reads.
     paintNotices();
+    paintGroupbar();
+    if (workspace.current() !== null) {
+      workspace.hide();
+      void library.show("conversation");
+    }
     if (next.botId !== null) shell.setLiveStatus(next.botId, liveBotStatus(handle.state()));
   },
 });
 exposeShellFacts(shell);
+
+/** A short-lived line under the page, the export's toast (`freebot-prototype.html:495-501`). */
+function toast(message: string): void {
+  for (const node of document.querySelectorAll(".toast")) node.remove();
+  const node = document.createElement("div");
+  node.className = "toast";
+  node.textContent = message;
+  document.body.append(node);
+  setTimeout(() => node.remove(), 2500);
+}
+
+/**
+ * The group's header: the members and which of them holds the turn. A group is a Bot record whose
+ * `group` flag is set; its members are other Bot ids. This build does not run a turn per member yet,
+ * so each row reports the member's own derived status and the shared volume is named as the export
+ * names it.
+ */
+function paintGroupbar(): void {
+  const bar = document.querySelector<HTMLElement>("#groupbar");
+  if (bar === null) return;
+  const { bot } = shell.records();
+  if (bot === null || !bot.group) {
+    bar.hidden = true;
+    bar.replaceChildren();
+    return;
+  }
+  const bots = shell.lists().bots;
+  const head = document.createElement("span");
+  head.className = "cap";
+  head.textContent = "Members";
+  const nodes: Node[] = [head];
+  if (bot.members.length === 0) {
+    const empty = document.createElement("span");
+    empty.className = "hint";
+    empty.textContent = "No members yet.";
+    nodes.push(empty);
+  }
+  for (const memberId of bot.members) {
+    const member = bots.find((candidate) => candidate.botId === memberId);
+    if (member === undefined) continue;
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "gm";
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    chip.append(dot, document.createTextNode(member.name));
+    const state = document.createElement("span");
+    state.className = "s";
+    state.textContent = "waiting";
+    chip.append(state);
+    chip.addEventListener("click", () => void shell.selectBot(member.botId));
+    nodes.push(chip);
+  }
+  const volume = document.createElement("span");
+  volume.className = "tag";
+  volume.textContent = "/shared volume";
+  nodes.push(volume);
+  bar.replaceChildren(...nodes);
+  bar.hidden = false;
+}
+
+function workspaceRecords() {
+  return {
+    bots: shell.lists().bots,
+    selectedBot: shell.records().bot,
+    threads: shell.lists().threads,
+    provider: providerRecord,
+    runs: shell.runs(),
+  };
+}
+
+const workspace = mountWorkspace({
+  read: workspaceRecords,
+  calls: {
+    listConnectors: async () => {
+      if (api === null) return [];
+      return (await api.list_connectors({})).connectors;
+    },
+  },
+  onOpenProvider: () => providerPage.show(),
+  onSelectBot: async (botId) => {
+    workspace.hide();
+    await shell.selectBot(botId);
+  },
+  onLeave: () => {
+    workspace.hide();
+    void library.show("conversation");
+  },
+});
+
+/** Open a Workspace page, and put the conversation chrome down while it is on screen. */
+function openWorkspace(view: WorkspaceView): void {
+  showOperator(false);
+  void workspace.show(view);
+  if (view === "apps" && api !== null) {
+    void api
+      .list_connectors({})
+      .then(({ connectors }) => {
+        const count = document.querySelector<HTMLElement>("#connect-apps-count");
+        if (count !== null) {
+          const on = connectors.filter((connector) => connector.state === "connected").length;
+          count.textContent = `${on} on`;
+        }
+      })
+      .catch(() => undefined);
+  }
+}
+
+for (const button of document.querySelectorAll<HTMLButtonElement>("#nav-list [data-view]")) {
+  button.addEventListener("click", () => {
+    const view = button.dataset.view;
+    if (view !== undefined && (WORKSPACE_VIEWS as readonly string[]).includes(view)) {
+      openWorkspace(view as WorkspaceView);
+    }
+  });
+}
+
+/** Leaving a page for either conversation tab is the same move as the page's own Back. */
+for (const id of ["#tab-conversation", "#tab-library"]) {
+  document.querySelector<HTMLButtonElement>(id)?.addEventListener("click", () => {
+    workspace.hide();
+  });
+}
+
+document.querySelector<HTMLButtonElement>("#computer-open")?.addEventListener("click", () => {
+  if (aside.collapsed()) aside.toggle();
+  void aside.show("computer");
+});
+document.querySelector<HTMLButtonElement>("#bot-name-button")?.addEventListener("click", () => {
+  if (aside.collapsed()) aside.toggle();
+  void aside.show("details");
+});
+document.querySelector<HTMLButtonElement>("#share-button")?.addEventListener("click", () => {
+  // The operator token is installation-wide authority. A conversation link carries the path, never
+  // the fragment, so pasting it elsewhere cannot hand over the API.
+  void navigator.clipboard
+    ?.writeText(`${location.origin}${location.pathname}`)
+    .then(() => toast("Link copied without the operator token."))
+    .catch(() => toast("This browser did not allow the copy."));
+});
+document.querySelector<HTMLButtonElement>("#connect-apps")?.addEventListener("click", () => {
+  openWorkspace("apps");
+});
+document.querySelector<HTMLButtonElement>("#account-row")?.addEventListener("click", (event) => {
+  document.querySelector(".menu")?.remove();
+  const menu = document.createElement("div");
+  menu.className = "menu";
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+  menu.style.left = `${Math.min(rect.left, window.innerWidth - 240)}px`;
+  menu.style.top = `${Math.max(8, rect.top - 8)}px`;
+  for (const [label, run] of [
+    ["Settings", () => openWorkspace("settings")],
+    ["Provider", () => providerPage.show()],
+    ["Sign out of this page", () => location.replace(`${location.origin}${location.pathname}`)],
+  ] as const) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      menu.remove();
+      run();
+    });
+    menu.append(button);
+  }
+  document.body.append(menu);
+  setTimeout(() => {
+    const close = (click: MouseEvent): void => {
+      if (menu.contains(click.target as Node)) return;
+      menu.remove();
+      document.removeEventListener("mousedown", close, true);
+    };
+    document.addEventListener("mousedown", close, true);
+  }, 0);
+});
+
+/** Start a group chat: a Bot record with `group` set and the selected Bots as its members. */
+function openGroupDialog(): void {
+  if (api === null) {
+    toast("A group chat needs the operator token.");
+    return;
+  }
+  const scrim = document.createElement("div");
+  scrim.className = "scrim";
+  const modal = document.createElement("div");
+  modal.className = "modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-label", "Start a group chat");
+  const close = (): void => {
+    scrim.remove();
+    modal.remove();
+  };
+  scrim.addEventListener("click", close);
+
+  const head = document.createElement("div");
+  head.className = "modal-head";
+  const title = document.createElement("h3");
+  title.textContent = "Start a group chat";
+  head.append(title);
+
+  const field = document.createElement("div");
+  field.className = "field";
+  const label = document.createElement("label");
+  label.textContent = "Room name";
+  const nameInput = document.createElement("input");
+  nameInput.className = "input";
+  nameInput.value = "Launch room";
+  nameInput.autocomplete = "off";
+  field.append(label, nameInput);
+
+  const membersLabel = document.createElement("span");
+  membersLabel.className = "cap";
+  membersLabel.style.marginTop = "16px";
+  membersLabel.textContent = "Members";
+  const members = document.createElement("div");
+  members.className = "stack";
+  const candidates = shell.lists().bots.filter((bot) => !bot.group);
+  if (candidates.length === 0) {
+    const hint = document.createElement("p");
+    hint.className = "hint";
+    hint.textContent = "Make another Bot first. A group needs at least one member.";
+    members.append(hint);
+  }
+  for (const bot of candidates) {
+    const row = document.createElement("label");
+    row.className = "row";
+    row.style.padding = "7px 0";
+    row.style.cursor = "pointer";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.value = bot.botId;
+    const copy = document.createElement("span");
+    copy.textContent = bot.name;
+    const role = document.createElement("span");
+    role.className = "hint";
+    role.textContent = bot.role;
+    role.style.marginLeft = "8px";
+    copy.append(role);
+    row.append(box, copy);
+    members.append(row);
+  }
+
+  const foot = document.createElement("div");
+  foot.className = "row";
+  foot.style.justifyContent = "flex-end";
+  foot.style.marginTop = "18px";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn btn-ghost btn-sm";
+  cancel.textContent = "Cancel";
+  cancel.addEventListener("click", close);
+  const create = document.createElement("button");
+  create.type = "button";
+  create.className = "btn btn-primary btn-sm";
+  create.textContent = "Create the room";
+  create.addEventListener("click", () => {
+    const name = nameInput.value.trim();
+    const chosen = [
+      ...members.querySelectorAll<HTMLInputElement>("input[type=checkbox]:checked"),
+    ].map((box) => box.value);
+    if (name === "" || chosen.length === 0) {
+      toast("A room needs a name and at least one member.");
+      return;
+    }
+    create.disabled = true;
+    void (async () => {
+      try {
+        const bot = await client().create_bot({ name });
+        await client().arrange_bot({ botId: bot.botId, group: true, members: chosen });
+        await client().create_thread({ botId: bot.botId });
+        await shell.refresh();
+        await shell.selectBot(bot.botId);
+        close();
+        toast(`${name} created with ${chosen.length} members.`);
+      } catch (error) {
+        create.disabled = false;
+        toast(error instanceof Error ? error.message : String(error));
+      }
+    })();
+  });
+  foot.append(cancel, create);
+
+  modal.append(head, field, membersLabel, members, foot);
+  document.body.append(scrim, modal);
+  nameInput.focus();
+  nameInput.select();
+}
+
+document
+  .querySelector<HTMLButtonElement>("#sidebar-new-group")
+  ?.addEventListener("click", openGroupDialog);
 
 /**
  * The details pane, rebuilt from the records the page already holds: the shell's selection, the
@@ -327,6 +634,13 @@ function flushQueued(): void {
   sendStart(prompt);
 }
 
+/** Clear the box and put its height back, the way the export's send does. */
+function clearPrompt(): void {
+  if (promptInput === null) return;
+  promptInput.value = "";
+  promptInput.style.height = "auto";
+}
+
 /** The prompt box is the page's way to begin a run, and it lands on the server's one run path. */
 operator?.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -336,13 +650,29 @@ operator?.addEventListener("submit", (event) => {
     // The dev peer holds one committed thread and no Bot list, so it takes the bare message.
     post({ type: "start", prompt });
     if (startButton !== null) startButton.disabled = true;
+    clearPrompt();
     return;
   }
   if (selection.threadId === null) {
     queued = prompt;
+    clearPrompt();
     return;
   }
   sendStart(prompt);
+  clearPrompt();
+});
+
+/** Enter sends; Shift+Enter keeps the newline the export's hint promises. */
+promptInput?.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+    event.preventDefault();
+    operator?.requestSubmit();
+  }
+});
+
+promptInput?.addEventListener("input", () => {
+  promptInput.style.height = "auto";
+  promptInput.style.height = `${Math.min(180, promptInput.scrollHeight)}px`;
 });
 
 /** Follow the selected thread's log, from where this thread's display left off. */
@@ -453,6 +783,8 @@ function paintProviderButton(record: ProviderConnection | null): void {
     providerOpen.textContent = providerRowLabel(record);
     providerOpen.dataset.providerStatus = record?.status ?? "none";
   }
+  const model = document.querySelector<HTMLElement>("#composer-model");
+  if (model !== null) model.textContent = record?.model ?? "replay";
   // The connection is what the pane's Details tab and the notice stack read, so both repaint here.
   paintNotices();
   paintAside();
@@ -466,6 +798,7 @@ async function enterApp(): Promise<void> {
   if (shellEl !== null) shellEl.dataset.operator = "true";
   await shell.load();
   paintAside();
+  paintGroupbar();
   if (shell.facts().bots.length === 0) {
     // Reachable only through Skip: a person who left the first-run screen without naming a Bot still
     // needs a conversation to type into, and `Local Bot` is the answer this page always gave.

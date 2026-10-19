@@ -103,12 +103,12 @@ export const REGIONS: readonly RegionSpec[] = [
     kind: "content",
     source: "export",
     selector: "#sbList",
-    counterpart: ".sb-scroll",
+    counterpart: ".sb-list",
     edge: "box",
     size: 0,
     variance:
-      "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds, which at this run's start is the one Bot the run created, and the thread list under them. Row count, row text and the list's own scroll extent differ by data.",
-    note: "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-scroll` (index.html:675), which holds the Bot list and the thread list in the same band.",
+      "the export lists seven seeded prototype Bots under its Pinned, Primary, Unassigned and Hidden Bots headings, one of them mid-run with a pulsing status dot; this app lists the Bots its store really holds under Pinned, Work and Hidden Bots, plus the selected Bot's thread list and the Workspace nav. Row count, row text and the list's own scroll extent differ by data.",
+    note: "The sidebar's scrolling list. Rectangle from the export's own `#sbList` (freebot-prototype.html:981, styled at :220) so the band is the contract's; the app's counterpart is its own scroll area `.sb-list` (index.html), which holds the grouped Bot list, the thread list and the Workspace nav in the same band.",
   },
   {
     id: "content.center-header",
@@ -119,8 +119,8 @@ export const REGIONS: readonly RegionSpec[] = [
     edge: "box",
     size: 0,
     variance:
-      "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is an `h1`, a one-line subtitle, the Bot title, a meta row and one Details control. Copy, control count and control order differ by product, and the app's own tab strip (Conversation, Library) sits directly under this band with no export counterpart.",
-    note: "The thread column's header. Rectangle from the export's `.chead` (:1029, styled at :251, `min-height: 53px`), against the app's `header` (index.html:692, styled at :181). The two boxes are not expected to be the same height, so the box delta printed beside this region is a finding rather than a failure.",
+      "the export's header is a Bot name with a status dot and a chevron, a role hint, a share control, a Computer button and a Details button; this app's is the same Bot name, role hint, share, Computer and Details controls. The app's Conversation and Library strip floats inside the same band rather than taking a row of its own, so the band keeps the export's height.",
+    note: "The thread column's header. Rectangle from the export's `.chead` (freebot-prototype.html:1029, styled at :251, `min-height: 53px`), against the app's `header.chead` (index.html, 56px). The two boxes sit within the half-pixel tolerance.",
   },
   {
     id: "content.center-transcript",
@@ -131,7 +131,7 @@ export const REGIONS: readonly RegionSpec[] = [
     edge: "box",
     size: 0,
     variance:
-      "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band's vertical start also differs by structure: the export's transcript begins under its 53px header, while this app's thread begins under its header, its tab strip and its composer row, so the box delta is expected to be large here until U6.7 reconciles the middle column's order.",
+      "the export renders a seeded conversation with a run in progress, a tool call, a parked approval gate and an image attachment; this app renders the frames of the thread it really holds, which before a run is the idle note alone. Message text, message count and the band's own extent differ by data. The band starts on the header's bottom edge on both pages; the remaining height difference is the composer band's own box.",
     note: "The conversation transcript. Rectangle from the export's own `#transcript` (:1063), against the app's `#thread` (index.html:814, styled at :220).",
   },
   {
@@ -139,12 +139,12 @@ export const REGIONS: readonly RegionSpec[] = [
     kind: "content",
     source: "export",
     selector: ".composer-wrap",
-    counterpart: "#composer-wrap",
+    counterpart: "#operator",
     edge: "box",
     size: 0,
     variance:
-      "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's is a single-line text input, one Start run button and the live stream line, pinned to the same bottom edge. Control count, control labels and the band's own height differ by product; its top edge is the export's own padding once the bottom is pinned, so the height delta is the whole of the difference. The box delta beside this region is the literal size of that difference.",
-    note: "The thread column's composer band. Rectangle from the export's `.composer-wrap` (:1070, styled at :364), against the app's `#composer-wrap` (index.html:905, styled at :208), which holds the form and the export's `.chint` place beside it.",
+      "the export's composer is a growing textarea with attach, skills, mentions, dictate, voice, a conditional Stop now and a send button, pinned to the bottom of the column; this app's carries the same textarea, five tool controls, Stop run and send, and the hint row, pinned to the same bottom edge. The hint's model line is the app's own and the control labels differ by product; the band's height difference is the whole of the remaining delta.",
+    note: "The thread column's composer band. Rectangle from the export's `.composer-wrap` (freebot-prototype.html:1070, styled at :364), against the app's `#operator` (index.html), which holds the form's `.composer-wrap`, box and hint row.",
   },
   {
     id: "content.aside-strip",
@@ -179,8 +179,8 @@ export const REGIONS: readonly RegionSpec[] = [
     edge: "box",
     size: 0,
     variance:
-      "the export's row carries a group, initials, a role and a state read from its seed; this app's carries the Bot's name, its run-derived sub line and the same state dot. Row count, the sub line's text and the dot's state differ by data, and the export's Pinned/Primary/Unassigned headings have no record in this app.",
-    note: "The Bot row's own rectangle. Taken from the app's first `.sb-row` (packages/ui/browser/shell.ts:175, styled at index.html:124) against the export's `.sb-row` (freebot-prototype.html:962, styled at :227). The list's band is the region above; this one is the row the two pages both draw.",
+      "the export's row carries a group, initials, a role and a state read from its seed; this app's carries the Bot's name, its run-derived sub line, the same state dot, and an avatar for a group room. Row count, the sub line's text and the dot's state differ by data. Both pages now carry Pinned and Work headings before the first row.",
+    note: "The Bot row's own rectangle. Taken from the app's first `.sb-row` against the export's `.sb-row` (freebot-prototype.html:962, styled at :227). The list's band is the region above; this one is the row the two pages both draw.",
   },
   {
     id: "content.item-turn-marker",

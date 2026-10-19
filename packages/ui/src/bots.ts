@@ -58,6 +58,13 @@ export interface BotRow {
   readonly status: BotStatus;
   /** The export's one-word line under the name: the status, or the first word of the role. */
   readonly sub: string;
+  /** The record's own placement, which decides the heading the row sits under. */
+  readonly pinned: boolean;
+  readonly section: string;
+  readonly hidden: boolean;
+  /** A group chat row, whose sub line names the room rather than a role. */
+  readonly group: boolean;
+  readonly members: readonly string[];
 }
 
 /** The class list of the row's status dot, exactly the export's three dot shapes plus idle. */
@@ -170,6 +177,10 @@ export interface ShellFacts {
     sub: string;
     /** The row's status dot class list, read back from the DOM. */
     dot: string;
+    pinned: boolean;
+    section: string;
+    hidden: boolean;
+    group: boolean;
   }>;
   readonly selectedBotId: string | null;
   readonly threads: Array<{ threadId: string; title: string; runs: number; selected: boolean }>;
@@ -197,7 +208,14 @@ export function botRows(
       threadCount: bot.threadCount,
       selected: bot.botId === selectedBotId,
       status,
-      sub: botSubLabel(status, bot.role),
+      sub: bot.group
+        ? `${bot.members.length} ${bot.members.length === 1 ? "member" : "members"}`
+        : botSubLabel(status, bot.role),
+      pinned: bot.pinned,
+      section: bot.section,
+      hidden: bot.hidden,
+      group: bot.group,
+      members: bot.members,
     };
   });
 }

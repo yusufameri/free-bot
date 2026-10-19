@@ -6,8 +6,8 @@
   "include": [
     "host/**/*.ts",
     "landing/**/*.ts",
-    "../packages/ui/browser/**/*.ts",
-    "../packages/ui/src/**/*.ts"
+    "../../packages/ui/browser/**/*.ts",
+    "../../packages/ui/src/**/*.ts"
   ],
   "exclude": ["**/*.test.ts"]
 }

@@ -287,6 +287,14 @@ drives the click, launches a second and a third instance at the same time, provo
 refusal, and SIGINTs a launch while a run still holds a live container. It writes
 `packages/verify/artifacts/launch/<short sha>/`. `docs/VERIFICATION.md` carries both rows.
 
+## Downgrading
+
+A Bot registry is an append-only journal, and a command it does not know is refused rather than
+skipped. A build older than the one that wrote a `bot.arrange` line cannot construct the registry,
+so a downgrade is a restore rather than a swap. Put back the registry from before the downgrade, or
+run a build that understands the command. There is no in-place converter, because a converter would
+have to guess what a newer placement meant.
+
 ## What is not live today
 
 - **Per-token streaming.** The loop's provider port returns a whole turn, so the model's text arrives

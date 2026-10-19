@@ -152,6 +152,11 @@ export const botSchema = z.object({
   purpose: z.string(),
   createdAt: tsSchema,
   threadCount: z.number().int().nonnegative(),
+  pinned: z.boolean().default(false),
+  section: z.string().default("Work"),
+  hidden: z.boolean().default(false),
+  group: z.boolean().default(false),
+  members: z.array(botIdSchema).default([]),
 });
 
 export type Bot = z.infer<typeof botSchema>;
@@ -213,6 +218,23 @@ export const updateBotInput = z.strictObject({
 });
 
 export const updateBotOutput = botSchema;
+
+/**
+ * Arrange a Bot in the sidebar. Pinning, hiding, the section it sits in and the members of a group
+ * chat are presentation facts about a Bot record, so they are written through one arm rather than a
+ * second record. Every field is optional: a caller sends the change it means, and the server keeps
+ * the rest, which makes a patch idempotent.
+ */
+export const arrangeBotInput = z.strictObject({
+  botId: botIdSchema,
+  pinned: z.boolean().optional(),
+  section: z.string().max(BOT_ROLE_MAX).optional(),
+  hidden: z.boolean().optional(),
+  group: z.boolean().optional(),
+  members: z.array(botIdSchema).max(50).optional(),
+});
+
+export const arrangeBotOutput = botSchema;
 
 export const listThreadsInput = z.strictObject({
   botId: botIdSchema,
@@ -569,6 +591,7 @@ export const API_OPERATIONS = {
   list_bots: { input: listBotsInput, output: listBotsOutput },
   create_bot: { input: createBotInput, output: createBotOutput },
   update_bot: { input: updateBotInput, output: updateBotOutput },
+  arrange_bot: { input: arrangeBotInput, output: arrangeBotOutput },
   list_threads: { input: listThreadsInput, output: listThreadsOutput },
   create_thread: { input: createThreadInput, output: createThreadOutput },
   get_events: { input: getEventsInput, output: getEventsOutput },

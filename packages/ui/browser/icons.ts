@@ -6,7 +6,7 @@
  * name is the sprite's own set rather than a free string.
  */
 
-const SPRITE = ["x"] as const;
+const SPRITE = ["x", "pin"] as const;
 
 export type IconName = (typeof SPRITE)[number];
 
