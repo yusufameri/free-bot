@@ -904,6 +904,9 @@ async function main(): Promise<number> {
       `${FIRST_RUN}.shown === false && document.querySelector('.shell').dataset.operator === 'true'`,
       30_000,
     );
+    note(
+      "the composer's 46px is the export's own `min-height` for `#prompt` (freebot-prototype.html:373); U6.8 moved it from the 36 this driver was written against",
+    );
     check(
       "the wizard is gone, the sidebar shows the Bot a person named, and the job is the first prompt",
       await evaluate<Record<string, unknown>>(
@@ -927,7 +930,7 @@ async function main(): Promise<number> {
         title: "Atlas · New conversation",
         prompt: CHOSEN_TASK,
         promptDisabled: false,
-        promptHeight: 36,
+        promptHeight: 46,
         providerHidden: true,
         bodyPage: "app",
         wizardHidden: true,

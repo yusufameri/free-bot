@@ -1,0 +1,46 @@
+sweep-main: every driver the subject manifest names, once, against one commit (origin/main by default)
+command: bun packages/verify/scripts/sweep-main.ts
+timestamp: 2026-10-19T23:23:55.749Z
+commit: 74186eda855f041ee72bbca86386babcca75def9
+commit short: 74186ed
+base: HEAD (74186ed)
+checkout: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-KpTCOA/checkout (detached at the commit, bun install from its own lockfile)
+runtime: bun 1.2.5 on darwin arm64
+host docker: docker 28.3.2
+host microsandbox: msb 0.7.8, freebot-sandbox:u0.6 ready
+host chrome: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+host vaultKey: a model key is present in the vault the drivers boot with
+host liveInstance: absent, FREEBOT_STATUS_URL is not set
+
+PASS pixel-gate: RESULT: PASS (46s)
+PASS sandbox-pin-repair: RESULT: PASS (13/13) (22s)
+SKIP mvp-status-capture: needs a live instance named by FREEBOT_STATUS_URL (FREEBOT_STATUS_URL is not set)
+PASS launch: RESULT: PASS (116/116) (7s)
+PASS landing: RESULT: PASS (51/51) (3s)
+PASS first-run: RESULT: PASS (113/113) (8s)
+FAIL overlays: RESULT: FAIL (103/105) (115s)
+  proof: packages/verify/artifacts/sweep-main/74186ed/overlays.log
+  file a unit: "sweep-main: overlays is red against 74186ed". The overlays driver (`bun packages/verify/scripts/overlays.ts`, the command palette, the Bot picker and the modal) exited 1 with "RESULT: FAIL (103/105)" at 74186ed. Proof packages/verify/artifacts/sweep-main/74186ed/overlays.log.
+PASS bots-and-threads: RESULT: PASS (81/81) (16s)
+PASS aside: RESULT: PASS (111/111) (13s)
+PASS files-surface: RESULT: PASS (54/54) (6s)
+PASS provider-setup: RESULT: PASS (95/95) (28s)
+FAIL connectors: RESULT: FAIL (68/76) (34s)
+  proof: packages/verify/artifacts/sweep-main/74186ed/connectors.log
+  file a unit: "sweep-main: connectors is red against 74186ed". The connectors driver (`bun packages/verify/scripts/connectors.ts`, the connector seam over an emulated service, with the bash arm beside it) exited 1 with "RESULT: FAIL (68/76)" at 74186ed. Proof packages/verify/artifacts/sweep-main/74186ed/connectors.log.
+PASS connector-credentials: RESULT: PASS (37/37) (1s)
+PASS cancel-run: RESULT: PASS (50/50) (23s)
+PASS spend-cap: RESULT: PASS (21/21) (0s)
+PASS design-contract: RESULT: PASS (264/264) (5s)
+PASS sandbox-conformance: PASS sandbox-conformance (37s)
+PASS sandbox-microsandbox: PASS sandbox-microsandbox (26s)
+PASS keyed-run: RESULT: PASS (69/69) (11s)
+PASS items: RESULT: PASS (203/203) (153s)
+PASS transcript-restart: RESULT: PASS (77/77) (7s)
+PASS workspace-pages: RESULT: PASS (36/36) (3s)
+PASS type-gate: PASS type-gate (30s)
+
+artifact: packages/verify/artifacts/sweep-main/74186ed/sweep.txt
+runnable 22, passed 20, failed 2, skipped 1
+arithmetic: 22 = 20 + 2 (passed + failed), 23 = 22 + 1 (runnable + skipped)
+RESULT: FAIL (20/22)

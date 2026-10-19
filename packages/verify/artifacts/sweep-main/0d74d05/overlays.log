@@ -1,0 +1,95 @@
+driver: overlays
+subject: the command palette, the Bot picker and the modal
+command: bun packages/verify/scripts/overlays.ts
+commit: 0d74d05c60786dde84f94b444ea8c89ec845ddc7 (0d74d05)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout
+exit: 1
+verdict: RESULT: FAIL (104/105)
+seconds: 125
+
+--- the driver's own artifact: packages/verify/artifacts/overlays/0d74d05/assert.txt ---
+
+
+## what this driver runs
+artifact directory: packages/verify/artifacts/overlays/0d74d05/
+launch: `bun run up --no-open --replay` over a fresh FREEBOT_HOME and bots root, its own placeholder vault at mode 600, two Bots the driver makes over /rpc, and a workspace holding a note, a 400-line file and a symlink out of the tree
+the page is opened through this driver's own TCP relay. The relay is armed once to hold a single `POST /rpc/create_bot` back for 900 ms: the picker's `Creating…` state is a row waiting on a slow server
+the real vault at ~/.freebot/provider.env is never read, printed or copied by this driver; the only vault file it opens is its own, under the temporary directory named below
+mobile-compact 360x800 mobile mustAvoidHorizontalScroll=true
+mobile-standard 390x844 mobile mustAvoidHorizontalScroll=true
+mobile-large 430x932 mobile mustAvoidHorizontalScroll=true
+foldable-small-tablet 600x960 foldable-tablet mustAvoidHorizontalScroll=true
+tablet-portrait 820x1180 tablet mustAvoidHorizontalScroll=true
+tablet-landscape 1024x768 tablet mustAvoidHorizontalScroll=true
+laptop 1366x768 desktop mustAvoidHorizontalScroll=true
+desktop 1440x900 desktop mustAvoidHorizontalScroll=true
+wide 1920x1080 wide mustAvoidHorizontalScroll=true
+containers before this driver runs anything (label freebot.unit=u1.7): 0
+home: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-overlays-HR2Cjy
+workspace: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-overlays-HR2Cjy/bots/bot-local/workspace
+url, redacted: http://127.0.0.1:55007/#token=<redacted>
+Bots the driver made: Overlay One (bot-local), Overlay Two (bot-2)
+relay: 127.0.0.1:55009 -> 127.0.0.1:55007; the page is opened at the relay, so its own origin is the relay
+chrome Chrome/155.0.8059.85 over CDP
+
+## the three primitives, and the entry point the export opens each from
+the shell's own title line: "Overlay One · First conversation"
+ok   the sidebar's head is the export's search control and `New chat` control, with the group-chat control the sidebar gained beside them: [["button","sidebar-search",null,"Search","⌘K","#i-search"],["button","sidebar-new-group","New group chat",null,null,"#i-people"],["button","sidebar-new-chat","New chat",null,null,"#i-plus"]]
+ok   the palette is reached from three doors (Cmd+K, Cmd+Shift+F, the search button), the picker from two (Cmd+N, `New chat`), and the modal from the pane's Library row: {"search":true,"chat":true,"paneFiles":0}
+the pane's Library rows are built when that tab is shown, so the modal's own door is asserted where it really is: a `.aside-file` row, which is the export's `data-act=file:open` (`freebot-prototype.html:1364`)
+
+## the palette, from Cmd/Ctrl+K
+ok   Cmd/Ctrl+K opens the palette and nothing else: ["palette"]
+ok   the input is the element that holds the focus, read from document.activeElement: "palette-input"
+ok   the field says what this app's palette holds, and the export's own placeholder is not it: "Bots, threads and actions"
+ok   the mode Cmd/Ctrl+K asks for is the export's own `all`: "all"
+ok   the query starts empty: ""
+ok   the groups are Bots, Threads, Pages and Actions, in that order, each header drawn once: ["Bots","Threads","Pages","Actions"]
+ok   the rows are the two Bots the app holds, the selected Bot's own thread, the pages it has, and the actions it offers: ["Overlay One","Overlay Two","First conversation","Conversation","Library","Connect a provider","New Bot","New thread"]
+ok   every row names what it is, in the export's own lowercase vocabulary: ["bot","bot","thread","page","page","page","action","action"]
+ok   an empty query marks nothing: []
+ok   the first row is the active one before an arrow moves it: [0,["true","false","false","false","false","false","false","false"]]
+ok   the dialog role and the scrim are the modal's own furniture, and the palette carries one scrim: [1,0]
+artifact 01-palette-empty.png (94151 bytes)
+ok   a query leaves the rows that carry it, and the matched term is split out of th
+[...]
+mall-tablet 600x960 modal: documentElement 600 <= 600 ok; regions over: 0; panel 16..584 of 600 (568px) inside; panel content 566 <= 566
+tablet-portrait 820x1180 modal: documentElement 820 <= 820 ok; regions over: 0; panel 50..770 of 820 (720px) inside; panel content 718 <= 718
+tablet-landscape 1024x768 modal: documentElement 1024 <= 1024 ok; regions over: 0; panel 152..872 of 1024 (720px) inside; panel content 718 <= 718
+laptop 1366x768 modal: documentElement 1366 <= 1366 ok; regions over: 0; panel 323..1043 of 1366 (720px) inside; panel content 718 <= 718
+desktop 1440x900 modal: documentElement 1440 <= 1440 ok; regions over: 0; panel 360..1080 of 1440 (720px) inside; panel content 718 <= 718
+wide 1920x1080 modal: documentElement 1920 <= 1920 ok; regions over: 0; panel 600..1320 of 1920 (720px) inside; panel content 718 <= 718
+mobile-compact 360x800 palette: documentElement 360 <= 360 ok; regions over: 0; panel 14..346 of 360 (332px) inside; panel content 330 <= 330
+mobile-compact 360x800 picker: documentElement 360 <= 360 ok; regions over: 0; panel 14..346 of 360 (332px) inside; panel content 330 <= 330
+mobile-standard 390x844 palette: documentElement 390 <= 390 ok; regions over: 0; panel 14..376 of 390 (362px) inside; panel content 360 <= 360
+mobile-standard 390x844 picker: documentElement 390 <= 390 ok; regions over: 0; panel 14..376 of 390 (362px) inside; panel content 360 <= 360
+mobile-large 430x932 palette: documentElement 430 <= 430 ok; regions over: 0; panel 14..416 of 430 (402px) inside; panel content 400 <= 400
+mobile-large 430x932 picker: documentElement 430 <= 430 ok; regions over: 0; panel 14..416 of 430 (402px) inside; panel content 400 <= 400
+foldable-small-tablet 600x960 palette: documentElement 600 <= 600 ok; regions over: 0; panel 14..586 of 600 (572px) inside; panel content 570 <= 570
+foldable-small-tablet 600x960 picker: documentElement 600 <= 600 ok; regions over: 0; panel 14..586 of 600 (572px) inside; panel content 570 <= 570
+tablet-portrait 820x1180 palette: documentElement 820 <= 820 ok; regions over: 0; panel 110..710 of 820 (600px) inside; panel content 598 <= 598
+tablet-portrait 820x1180 picker: documentElement 820 <= 820 ok; regions over: 0; panel 110..710 of 820 (600px) inside; panel content 598 <= 598
+tablet-landscape 1024x768 palette: documentElement 1024 <= 1024 ok; regions over: 0; panel 212..812 of 1024 (600px) inside; panel content 598 <= 598
+tablet-landscape 1024x768 picker: documentElement 1024 <= 1024 ok; regions over: 0; panel 212..812 of 1024 (600px) inside; panel content 598 <= 598
+laptop 1366x768 palette: documentElement 1366 <= 1366 ok; regions over: 0; panel 383..983 of 1366 (600px) inside; panel content 598 <= 598
+laptop 1366x768 picker: documentElement 1366 <= 1366 ok; regions over: 0; panel 383..983 of 1366 (600px) inside; panel content 598 <= 598
+desktop 1440x900 palette: documentElement 1440 <= 1440 ok; regions over: 0; panel 420..1020 of 1440 (600px) inside; panel content 598 <= 598
+desktop 1440x900 picker: documentElement 1440 <= 1440 ok; regions over: 0; panel 420..1020 of 1440 (600px) inside; panel content 598 <= 598
+wide 1920x1080 palette: documentElement 1920 <= 1920 ok; regions over: 0; panel 660..1260 of 1920 (600px) inside; panel content 598 <= 598
+wide 1920x1080 picker: documentElement 1920 <= 1920 ok; regions over: 0; panel 660..1260 of 1920 (600px) inside; panel content 598 <= 598
+
+## containment: what this driver left behind
+the launch's home is removed with its process. This driver starts no run, so it can make no container; the label's own set is what says so below
+ok   the label's own container set is back where it started: []
+ok   no overlay and no scrim is left on the page: [[],0]
+artifact 30-shell-after.png (86007 bytes)
+
+chrome Chrome/155.0.8059.85; one real launch (`bun run up --no-open --replay`) over a home of this driver's own, one relay that held one create back, one page driven entirely by real key events and real pointer moves
+RESULT: FAIL (104/105)
+
+
+--- captured output (stdout and stderr) ---
+
+FAIL the export's prototype data is absent from each overlay's own rendered text, from the document and from the bundle: ["Launch room"] != []
+RESULT: FAIL (104/105)
+artifact: packages/verify/artifacts/overlays/0d74d05/assert.txt

@@ -38,7 +38,9 @@
  *   `bun packages/verify/scripts/sweep-main.ts`; read its `runnable N, passed P, failed F, skipped
  *   S` line, and file the unit each `file a unit:` line proposes when F is not 0.
  *
- * Run from the repo root: `bun packages/verify/scripts/sweep-main.ts [--keep]`.
+ * Run from the repo root: `bun packages/verify/scripts/sweep-main.ts [--keep] [--base <ref>]`. The
+ * base defaults to `origin/main`; `--base HEAD` sweeps the branch in the caller's worktree, which is
+ * what a unit that changed a driver runs before it opens its PR.
  */
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -241,6 +243,13 @@ export function resolveArgv(argv: readonly string[], values: Record<string, stri
   );
 }
 
+/** The ref the sweep checks out: `--base <ref>`, defaulting to `origin/main`. */
+export function resolveBase(argv: readonly string[]): string {
+  const index = argv.indexOf("--base");
+  const ref = index >= 0 ? argv[index + 1] : undefined;
+  return ref === undefined || ref === "" ? "origin/main" : ref;
+}
+
 export function resolveSubject(plan: PlannedDriver, values: Record<string, string>): Subject {
   return {
     driver: plan.driver,
@@ -437,8 +446,8 @@ export async function probeHost(
       ? { present: true, detail: CHROME }
       : { present: false, detail: `${CHROME} absent` },
     vaultKey: existsSync(vault)
-      ? { present: true, detail: `${vault} present` }
-      : { present: false, detail: `${vault} absent` },
+      ? { present: true, detail: "a model key is present in the vault the drivers boot with" }
+      : { present: false, detail: "the vault the drivers boot with is absent" },
     liveInstance:
       statusUrl === ""
         ? { present: false, detail: "FREEBOT_STATUS_URL is not set" }
@@ -464,7 +473,7 @@ export function proposeUnit(
   const ran = failed.code === 124 ? "timed out" : `exited ${failed.code}`;
   const said = failed.verdict === null ? "and printed no verdict line" : `with "${failed.verdict}"`;
   return [
-    `file a unit: "sweep-main: ${subject.driver} is red against main".`,
+    `file a unit: "sweep-main: ${subject.driver} is red against ${swept}".`,
     `The ${subject.driver} driver (\`${subject.argv.join(" ")}\`, ${subject.subject})`,
     `${ran} ${said} at ${swept}.`,
     `Proof ${failed.proof}.`,
@@ -473,12 +482,14 @@ export function proposeUnit(
 
 export function formatSweep(sweep: Sweep, artifactLabel: string): string {
   const lines: string[] = [];
-  lines.push(`${FEATURE}: every driver the subject manifest names, once, against a commit of main`);
+  lines.push(
+    `${FEATURE}: every driver the subject manifest names, once, against one commit (origin/main by default)`,
+  );
   lines.push("command: bun packages/verify/scripts/sweep-main.ts");
   lines.push(`timestamp: ${sweep.ranAt}`);
   lines.push(`commit: ${sweep.commit}`);
   lines.push(`commit short: ${sweep.shortSha}`);
-  lines.push(`main was at: ${sweep.branch}`);
+  lines.push(`base: ${sweep.branch}`);
   lines.push(
     `checkout: ${sweep.checkout} (detached at the commit, bun install from its own lockfile)`,
   );
@@ -682,45 +693,29 @@ async function discard(checkout: string, temporary: string): Promise<void> {
   }
 }
 
-function manifestPath(): string {
-  return fileURLToPath(new URL("../driver-subjects.json", import.meta.url));
-}
-
 async function main(): Promise<number> {
   const keep = Bun.argv.slice(2).includes("--keep");
+  const base = resolveBase(Bun.argv.slice(2));
 
-  const fetched = await run(["git", "fetch", "origin", "main"], repoRoot, 120_000);
-  if (fetched.code !== 0) {
-    console.log("note: git fetch origin main failed, sweeping the origin/main already here");
+  if (base === "origin/main") {
+    const fetched = await run(["git", "fetch", "origin", "main"], repoRoot, 120_000);
+    if (fetched.code !== 0) {
+      console.log("note: git fetch origin main failed, sweeping the origin/main already here");
+    }
   }
-  const resolved = await run(["git", "rev-parse", "origin/main"], repoRoot, 30_000);
+  const resolved = await run(
+    ["git", "rev-parse", "--verify", `${base}^{commit}`],
+    repoRoot,
+    30_000,
+  );
   if (resolved.code !== 0) {
-    console.error(`cannot resolve origin/main: ${resolved.text}`);
+    console.error(`cannot resolve ${base} to a commit: ${resolved.text}`);
     return 1;
   }
   const commit = resolved.text;
   const shortSha = commit.slice(0, 7);
   const artifactLabel = `packages/verify/artifacts/${FEATURE}/${shortSha}`;
   const artifactDir = join(repoRoot, "packages", "verify", "artifacts", FEATURE, shortSha);
-
-  let entries: ManifestEntry[];
-  try {
-    entries = parseManifest(readFileSync(manifestPath(), "utf8"));
-  } catch (error) {
-    console.error(error instanceof Error ? error.message : String(error));
-    return 1;
-  }
-  const plans = planDrivers(entries);
-  if (plans.length === 0) {
-    console.error(`${manifestPath()} names no drivers, so there is nothing to sweep`);
-    return 1;
-  }
-
-  const host = await probeHost(repoRoot);
-  for (const capability of CAPABILITIES) {
-    const fact = host[capability];
-    console.log(`host ${capability}: ${fact.present ? fact.detail : `absent, ${fact.detail}`}`);
-  }
 
   let isolated: { checkout: string; temporary: string };
   try {
@@ -730,6 +725,29 @@ async function main(): Promise<number> {
     return 1;
   }
   console.log(`sweeping ${commit} in ${isolated.checkout}`);
+
+  // The manifest belongs to the commit being swept, not to the caller: `--base` may name an older
+  // head whose driver inventory differs, and running the caller's list against it would misreport
+  // both the set of drivers and their commands.
+  const manifest = join(isolated.checkout, "packages", "verify", "driver-subjects.json");
+  let entries: ManifestEntry[];
+  try {
+    entries = parseManifest(readFileSync(manifest, "utf8"));
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    return 1;
+  }
+  const plans = planDrivers(entries);
+  if (plans.length === 0) {
+    console.error(`${manifest} names no drivers, so there is nothing to sweep`);
+    return 1;
+  }
+
+  const host = await probeHost(repoRoot);
+  for (const capability of CAPABILITIES) {
+    const fact = host[capability];
+    console.log(`host ${capability}: ${fact.present ? fact.detail : `absent, ${fact.detail}`}`);
+  }
 
   try {
     const values = {
@@ -743,7 +761,7 @@ async function main(): Promise<number> {
       checkout: isolated.checkout,
       commit,
       shortSha,
-      branch: `origin/main (${commit.slice(0, 7)})`,
+      branch: `${base} (${commit.slice(0, 7)})`,
       host,
       subjects,
       artifactDir,

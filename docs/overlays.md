@@ -6,7 +6,9 @@ either asserted by a driver or written down here as a delta.
 
 The export governs the pixels. `.palette` and `.picker` are its rules at
 `freebot-prototype.html:441-493`, the modal is its `.modal` at `:441-450` with the opener at
-`:918-931`, the sidebar head's two controls are at `:978-980`, and the action table's own entries are
+`:918-931`, the sidebar head's search and `New chat` controls are at `:978-980` (U6.8 added a
+`New group chat` control between them, which the driver asserts as a third head row), and the action
+table's own entries are
 at `:1794-1802` (`palette:open`, `palette:item`, `picker:open`, `picker:create`, `picker:row`) and
 `:1831` (`file:open`). `UX.md:87` and `UX.md:330` govern the behaviour and the copy. Where they
 disagree on a visual question the export wins.

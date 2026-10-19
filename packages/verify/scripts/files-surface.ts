@@ -33,7 +33,7 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
@@ -626,7 +626,7 @@ const made: string[] = [];
 
 /** Write the artifact, refusing one that carries an operator token or a key-shaped literal. */
 function writeArtifact(): string | null {
-  const text = [...headerLines, ...log.lines, ""].join("\n");
+  const text = [...headerLines, ...log.lines, ""].join("\n").replaceAll(homedir(), "~");
   for (const launched of live) {
     if (launched.token !== "" && text.includes(launched.token)) {
       console.error("refusing to write an artifact that contains the operator token");
@@ -849,26 +849,48 @@ async function main(): Promise<number> {
     })()`,
   );
   await waitTrue(cdp, page, "the parked approval", `${WAITING}.length >= 1`);
-  const parked = await evalJson<{ command: string; buttons: string[] }>(
+  const parked = await evalJson<{
+    command: string;
+    buttons: string[];
+    disclosure: [string | null, string | null, boolean | null];
+  }>(
     cdp,
     page,
     `(() => {
       const card = ${WAITING}[0];
       const callId = card.dataset.approval.replace(/^.*:/, '');
       const tool = document.querySelector('#thread .tool-card[data-tool-call="' + callId + '"]');
+      const disc = card.querySelector('.disc');
+      const full = card.querySelector('.codeblock');
       return {
         command: tool.querySelector('.cmd').textContent,
-        buttons: [...card.querySelectorAll('button')].map((button) => button.textContent),
+        buttons: [...card.querySelectorAll('.approval-actions button')].map((button) => button.textContent),
+        disclosure: [disc?.textContent ?? null, disc?.getAttribute('aria-expanded') ?? null, full?.hidden ?? null],
       };
     })()`,
   );
   log.note(`the parked call, read off the page: ${parked.command}`);
-  log.check(
-    "the page's prompt reached the run's own box",
-    await evalJson(cdp, page, "document.querySelector('#prompt').value"),
-    prompt,
+  const promptInRun = await evalJson<[string | null, string]>(
+    cdp,
+    page,
+    `[
+       [...document.querySelectorAll('#thread .message.user .prompt')].at(-1)?.textContent ?? null,
+       document.querySelector('#prompt').value,
+     ]`,
   );
-  log.check("the buttons are the two real answers", parked.buttons, ["Allow once", "Deny"]);
+  log.check(
+    "the prompt the page took is the run's own user row, and the composer cleared as the run took it",
+    promptInRun,
+    [prompt, ""],
+  );
+  log.check(
+    "the answers are the two real ones, behind the export's disclosure of the full request",
+    [parked.buttons, parked.disclosure],
+    [
+      ["Allow once", "Deny"],
+      ["›View the full request", "false", true],
+    ],
+  );
   log.check("the parked call is a bash call", parked.command.startsWith("bash "), true);
   const parkedSet = runContainers();
   const parkedLive = added(baseline, parkedSet);

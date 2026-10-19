@@ -1,0 +1,101 @@
+driver: spend-cap
+subject: the landed run loop refusing a provider turn over the spend cap
+command: bun packages/verify/scripts/spend-cap.ts
+commit: 74186eda855f041ee72bbca86386babcca75def9 (74186ed)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-KpTCOA/checkout
+exit: 0
+verdict: RESULT: PASS (21/21)
+seconds: 0
+
+--- the driver's own artifact: packages/verify/artifacts/spend-cap/74186ed/assert.txt ---
+
+feature: spend-cap
+command: bun packages/verify/scripts/spend-cap.ts
+git sha: 74186eda855f041ee72bbca86386babcca75def9
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+the loop is the landed one; the provider reports one call's tokens and cost; no model, no container, no network
+
+== the prices every scenario uses
+  input 3.00 USD/Mtok, output 15.00 USD/Mtok
+  deterministic: 1,000 input tokens cost 0.003 USD (3000000 nano-USD)
+
+== settled usage over the cap
+PASS the run settled at failed, not done: "failed"
+PASS the provider was called exactly once; the crossing turn's successor never happened: 1
+PASS the status trail names the one turn and the cap settlement: ["running","failed"]
+PASS the taxonomy code is spend_cap and its detail carries both the spend and the cap: {"code":"spend_cap","detail":"settled spend 0.003 USD exceeded the cap 0.0025 USD by 0.0005 USD"}
+PASS the run.failed frame carries the same reason: "settled spend 0.003 USD exceeded the cap 0.0025 USD by 0.0005 USD"
+PASS the settled total is the one call's cost: 3000000
+PASS the sandbox was destroyed on the cap path: 1
+PASS the pre-call compare the loop consulted says over: false
+
+== settled usage under the cap
+PASS the under-cap run finished: "done"
+PASS both provider turns were made: 2
+PASS the two turns' usage is the run's total: 6000000
+PASS the usage ids are per turn, so a replay cannot count one twice: ["run-under:turn-1","run-under:turn-2"]
+PASS no run.failed frame is in an under-cap run: false
+PASS the sandbox was destroyed on the done path: 1
+
+== settled usage exactly at the cap
+PASS spending exactly the cap still allows the next turn: "done"
+PASS the boundary run made both calls: 2
+PASS its total is exactly the cap: 3000000
+PASS the compare agrees: not over at equality: true
+
+== no cap configured
+PASS an uncapped run with the same spend finishes: "done"
+PASS and both turns were made: 2
+PASS with the same total the capped run would have stopped at: 6000000
+
+checks: 21/21 PASS
+
+RESULT: PASS (21/21)
+
+
+--- captured output (stdout and stderr) ---
+
+feature: spend-cap
+command: bun packages/verify/scripts/spend-cap.ts
+git sha: 74186eda855f041ee72bbca86386babcca75def9
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+the loop is the landed one; the provider reports one call's tokens and cost; no model, no container, no network
+
+== the prices every scenario uses
+  input 3.00 USD/Mtok, output 15.00 USD/Mtok
+  deterministic: 1,000 input tokens cost 0.003 USD (3000000 nano-USD)
+
+== settled usage over the cap
+PASS the run settled at failed, not done: "failed"
+PASS the provider was called exactly once; the crossing turn's successor never happened: 1
+PASS the status trail names the one turn and the cap settlement: ["running","failed"]
+PASS the taxonomy code is spend_cap and its detail carries both the spend and the cap: {"code":"spend_cap","detail":"settled spend 0.003 USD exceeded the cap 0.0025 USD by 0.0005 USD"}
+PASS the run.failed frame carries the same reason: "settled spend 0.003 USD exceeded the cap 0.0025 USD by 0.0005 USD"
+PASS the settled total is the one call's cost: 3000000
+PASS the sandbox was destroyed on the cap path: 1
+PASS the pre-call compare the loop consulted says over: false
+
+== settled usage under the cap
+PASS the under-cap run finished: "done"
+PASS both provider turns were made: 2
+PASS the two turns' usage is the run's total: 6000000
+PASS the usage ids are per turn, so a replay cannot count one twice: ["run-under:turn-1","run-under:turn-2"]
+PASS no run.failed frame is in an under-cap run: false
+PASS the sandbox was destroyed on the done path: 1
+
+== settled usage exactly at the cap
+PASS spending exactly the cap still allows the next turn: "done"
+PASS the boundary run made both calls: 2
+PASS its total is exactly the cap: 3000000
+PASS the compare agrees: not over at equality: true
+
+== no cap configured
+PASS an uncapped run with the same spend finishes: "done"
+PASS and both turns were made: 2
+PASS with the same total the capped run would have stopped at: 6000000
+
+checks: 21/21 PASS
+artifact: packages/verify/artifacts/spend-cap/74186ed/assert.txt
+RESULT: PASS (21/21)

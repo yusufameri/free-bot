@@ -27,10 +27,19 @@ already read.
 
 Every row is a value some record really holds. `packages/ui/src/aside.ts` names what the app cannot
 fill rather than approximating it: no Bot selected, no thread selected, no runs, and — on the
-Computer tab — the sentence saying the sandbox is the run's, not the Bot's. The export's placeholder
-strings (`pre-run-4f3a`, `Teach a task`, `waiting on approval`) appear nowhere in the app, and the
-driver asserts that over each tab's own rendered text, over the document, and over the bundle the
-server serves.
+Computer tab — the sentence saying the sandbox is the run's, not the Bot's. The export's data strings
+(`pre-run-4f3a`, `waiting on approval`) appear nowhere in the app, and the driver asserts that over
+each tab's own rendered text, over the document, and over the bundle the server serves. `Teach a
+task` left that list when U6.8 shipped it as the Skills page's own action copy; the workspace driver
+asserts it there, and this one no longer calls chrome copy prototype data.
+
+The transcript check follows the renderer's row contract. Seven message types get a row of their own
+(`run.started`, `turn.started`, `message.text.delta`, `tool_call.requested`, `approval.requested`,
+`run.finished`, `run.failed`), and every one of those must appear once in wire order. Decisions,
+results, resolved approvals and status frames update the card or the counter they belong to instead
+of adding a row, so the driver compares the page's rendered seqs to that set rather than to every seq
+the log holds. The page's own `lastSeq` still has to equal the log's tail, so a folded frame is
+proven received even when it has no row.
 
 Two things only the host can do leave the pane through callbacks: opening a Library row asks the
 Library surface to show the file in its own viewer, and opening the Library tab asks it to re-read

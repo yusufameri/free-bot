@@ -44,6 +44,7 @@ import {
   waitFor,
 } from "../src/cdp.ts";
 import { artifactDir } from "../src/index.ts";
+import { openRelay } from "./tcp-relay.ts";
 
 const root = fileURLToPath(new URL("../../..", import.meta.url)).replace(/\/$/, "");
 const feature = "aside";
@@ -62,8 +63,27 @@ const TABS = [
   { id: "library", label: "Library" },
 ] as const;
 
-/** The export's data strings this app must not carry, from the export's own placeholder bots. */
-const PLACEHOLDERS = ["pre-run-4f3a", "Teach a task", "waiting on approval"];
+/**
+ * The export's data strings this app must not carry, from the export's own placeholder bots.
+ * `Teach a task` is not here: U6.8 ships it as the Skills page's own action copy, and the workspace
+ * driver asserts that page. This list is data, not chrome.
+ */
+const PLACEHOLDERS = ["pre-run-4f3a", "waiting on approval"];
+
+/**
+ * The message types the thread renderer gives a row of their own. Decisions, results, resolved
+ * approvals and status frames update the card or the counters they belong to, so the rendered row
+ * set is this set and not the wire's full sequence.
+ */
+const ROW_TYPES = new Set([
+  "run.started",
+  "turn.started",
+  "message.text.delta",
+  "tool_call.requested",
+  "approval.requested",
+  "run.finished",
+  "run.failed",
+]);
 
 /** The export's own copy and labels, asserted as literals. */
 const COLLAPSE_LABEL = "Collapse the pane";
@@ -204,6 +224,11 @@ class Witness {
 
   seqs(): number[] {
     return this.frames.map((frame) => frame.seq);
+  }
+
+  /** The seqs the page renders as a row, which is this driver's own contract with the renderer. */
+  rowSeqs(): number[] {
+    return this.frames.flatMap((frame) => (ROW_TYPES.has(frame.type) ? [frame.seq] : []));
   }
 
   /** The first frame of one kind after `seq`, or null. */
@@ -381,6 +406,12 @@ async function explain(cdp: Cdp, session: string): Promise<string> {
         provider: call('__providerFacts', () => window.__providerFacts().connection),
         errorText: document.querySelector('#error')?.textContent ?? null,
         tabs: document.querySelectorAll('.aside-tab').length,
+        href: location.href.replace(/#token=.*/, '#token=<redacted>'),
+        title: document.title,
+        ready: document.readyState,
+        htmlBytes: document.documentElement.outerHTML.length,
+        shellPresent: document.querySelector('.shell') !== null,
+        errorPresent: document.querySelector('#error') !== null,
       });
     })()`,
   );
@@ -607,13 +638,35 @@ async function reload(cdp: Cdp, session: string, url: string): Promise<void> {
   );
   await cdp.send("Page.reload", {}, session);
   await loaded;
-  await waitFor(
-    cdp,
-    session,
-    "the page's own hooks after a reload",
-    `typeof window.__asideFacts === 'function' && typeof window.__noticeFacts === 'function'`,
-    30_000,
-  );
+  try {
+    await waitFor(
+      cdp,
+      session,
+      "the page's own hooks after a reload",
+      `typeof window.__asideFacts === 'function' && typeof window.__noticeFacts === 'function'`,
+      30_000,
+    );
+  } catch (error) {
+    const why = error instanceof Error ? error.message : String(error);
+    const state = await evaluate<string>(
+      cdp,
+      session,
+      `JSON.stringify({
+         href: location.href.replace(/#token=.*/, '#token=<redacted>'),
+         ready: document.readyState,
+         htmlBytes: document.documentElement.outerHTML.length,
+         scripts: [...document.scripts].map((node) => node.src),
+         hooks: ['__asideFacts','__noticeFacts','__providerFacts','__threadFacts','__shellFacts']
+           .map((name) => name + '=' + (typeof window[name])),
+         resources: [...performance.getEntriesByType('resource')].map((entry) => [
+           entry.name.replace(/#token=.*/, ''), Math.round(entry.duration), entry.transferSize ?? -1,
+         ]),
+       })`,
+    );
+    throw new Error(
+      `${why}; after reload: ${state}; console: ${cdp.console.slice(-12).join(" | ")}`,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -738,107 +791,6 @@ async function rpc(app: App, procedure: string, input: Record<string, unknown>):
   if (answer.error !== undefined)
     throw new Error(`${procedure} refused: ${JSON.stringify(answer.error)}`);
   return answer.json;
-}
-
-interface Relay {
-  readonly port: number;
-  readonly url: string;
-  sever(): void;
-  restore(): void;
-  stop(): void;
-}
-
-/**
- * A raw TCP relay in front of the app: the page's own origin, and the switch the banner test throws.
- *
- * HTTP and the WebSocket upgrade are bytes, so one splice carries both. `sever()` destroys every
- * relayed pair and ends new ones on sight, which is a transport that really went away; `restore()`
- * lets the page's own retry loop through again.
- */
-function openRelay(upstreamPort: number): Relay {
-  interface Pair {
-    readonly client: Bun.Socket;
-    upstream: Bun.Socket | null;
-    readonly queue: Uint8Array[];
-    closed: boolean;
-  }
-  const pairs = new Map<unknown, Pair>();
-  let severed = false;
-  const server = Bun.listen({
-    hostname: "127.0.0.1",
-    port: 0,
-    socket: {
-      async open(client) {
-        const pair: Pair = { client, upstream: null, queue: [], closed: false };
-        pairs.set(client, pair);
-        if (severed) {
-          client.end();
-          return;
-        }
-        const remote = await Bun.connect({
-          hostname: "127.0.0.1",
-          port: upstreamPort,
-          socket: {
-            data(_socket, chunk) {
-              if (!pair.closed) client.write(chunk);
-            },
-            close() {
-              pair.closed = true;
-              pairs.delete(client);
-              client.end();
-            },
-          },
-        });
-        if (severed || pair.closed) {
-          remote.end();
-          pairs.delete(client);
-          return;
-        }
-        pair.upstream = remote;
-        for (const chunk of pair.queue) remote.write(chunk);
-        pair.queue.length = 0;
-      },
-      data(client, chunk) {
-        const pair = pairs.get(client);
-        if (pair === undefined) return;
-        if (pair.upstream === null) pair.queue.push(chunk);
-        else pair.upstream.write(chunk);
-      },
-      close(client) {
-        const pair = pairs.get(client);
-        pairs.delete(client);
-        if (pair !== undefined) {
-          pair.closed = true;
-          pair.upstream?.end();
-        }
-      },
-    },
-  });
-  return {
-    port: server.port,
-    url: `http://127.0.0.1:${server.port}`,
-    sever() {
-      severed = true;
-      for (const [, pair] of pairs) {
-        pair.closed = true;
-        pair.upstream?.terminate();
-        pair.client.terminate();
-      }
-      pairs.clear();
-    },
-    restore() {
-      severed = false;
-    },
-    stop() {
-      severed = true;
-      for (const [, pair] of pairs) {
-        pair.upstream?.terminate();
-        pair.client.terminate();
-      }
-      pairs.clear();
-      server.stop(true);
-    },
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -966,7 +918,9 @@ async function main(): Promise<number> {
       );
     } catch (error) {
       const why = error instanceof Error ? error.message : String(error);
-      throw new Error(`${why}; the page's own state: ${await explain(chrome.cdp, session)}`);
+      throw new Error(
+        `${why}; the page's own state: ${await explain(chrome.cdp, session)}; console: ${chrome.cdp.console.slice(-12).join(" | ")}`,
+      );
     }
     await settle(chrome.cdp, session);
     await setViewport(chrome.cdp, session, 1440, 900);
@@ -1271,9 +1225,9 @@ async function main(): Promise<number> {
       "done",
     );
     check(
-      "the transcript the page rendered holds one frame per seq the server's log holds, and no gaps",
-      [(await facts(chrome.cdp, session)).seqs, witness.seqs()],
-      [witness.seqs(), witness.seqs()],
+      "the transcript the page rendered holds one row per row-bearing frame the server's log holds, in order and with no gaps",
+      [(await facts(chrome.cdp, session)).seqs, witness.rowSeqs()],
+      [witness.rowSeqs(), witness.rowSeqs()],
     );
     const commandFrame =
       witness.frames.find((frame) => frame.type === "tool_call.requested") ?? null;
@@ -1628,14 +1582,9 @@ async function main(): Promise<number> {
       [false, true, "connected"],
     );
     check(
-      "the transcript refilled from the store with no gap: every seq the page missed is rendered, and nothing else was lost",
-      [
-        resumed.seqs.filter((seq) => seq >= cursorBefore + 1 && seq <= tail).length,
-        tail - cursorBefore,
-        resumed.thread.lastSeq,
-        resumed.seqs.includes(tail),
-      ],
-      [tail - cursorBefore, tail - cursorBefore, tail, true],
+      "the transcript refilled from the store with no gap: every row the page missed is rendered in wire order, and nothing else was lost",
+      [resumed.seqs, resumed.thread.lastSeq, new Set(resumed.seqs).size],
+      [witness.rowSeqs(), tail, witness.rowSeqs().length],
     );
     check(
       "and the page resumed from exactly where its own cursor had stopped",

@@ -1,0 +1,177 @@
+driver: sandbox-conformance
+subject: the eight SandboxProvider operations on Docker, plus the sabotage drill
+command: bun packages/verify/scripts/sandbox-conformance.ts
+commit: 0d74d05c60786dde84f94b444ea8c89ec845ddc7 (0d74d05)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout
+exit: 0
+verdict: PASS sandbox-conformance
+seconds: 36
+
+--- the driver's own artifact: packages/verify/artifacts/sandbox-conformance/0d74d05/assert.txt ---
+
+feature: sandbox-conformance
+command: bun packages/verify/scripts/sandbox-conformance.ts
+timestamp: 2026-10-19T22:24:56.672Z
+git sha: 0d74d05c60786dde84f94b444ea8c89ec845ddc7
+git sha short: 0d74d05
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+docker server: 28.3.2
+run token: 1cu5-60b40e (this run owns freebot.unit=u1.2-run-1cu5-60b40e; the launched app owns u1.7)
+
+
+## the app, launched the way a person launches it
+launcher line: http://127.0.0.1:55905/#token=<redacted>
+launcher said: freebot up: page and run on 127.0.0.1:55905, tunnel on 127.0.0.1:55904
+launcher said: freebot up: sandbox backend docker (chosen by auto: the Docker daemon answered)
+launcher said: freebot up: model mode replay, keyless, replaying /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+launcher said: freebot up: vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1cu5-60b40e-eQBdiP/provider.env absent
+launcher said: freebot up: bots under /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-bots-1cu5-60b40e-szdLOo; each Bot's workspace is mounted at /workspace and kept across runs
+launcher said: freebot up: spend cap 5.00 USD per run; no token prices configured, so a keyed run reports no cost
+launcher said: freebot up: connectors none; records /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1cu5-60b40e-eQBdiP/connectors.json, credential vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1cu5-60b40e-eQBdiP/connectors.env at mode 600
+launcher said: freebot up: the operator token rides the URL's fragment and is printed nowhere else
+launcher said: freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (docker)
+GET http://127.0.0.1:55905/#token=<redacted> -> 200 text/html; charset=utf-8
+PASS the launched app serves its own printed URL: 200
+
+## the app's own run, so the sweep meets containers it does not own
+PASS create_bot -> 200 {"json":{"botId":"bot-local","name":"Conformance Bot","role":"","purpose":"","createdAt":1792448662580,"threadCount":0,"pinned":false,"section":"Work","hidden":false,"group":false,"members":[]}}
+PASS create_thread -> 200 {"json":{"threadId":"thread-1","botId":"bot-local","title":"New conversation","createdAt":1792448662593,"runs":[]}}
+PASS start_run -> 200 {"json":{"runId":"run-1"}}
+the app's own container: freebot-sbx-run-1-7rtfazrw=1c7215f7f84aa585197289a2dd493532dd42e8aeb06cda646e615eaed4a04832 running
+PASS the launched app's run holds a container under u1.7
+
+## the conformance suite, against Docker
+check create: handle={"provider":"docker","id":"u91-main-1cu5-60b40e"} engine=bf80e24ecfec running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1cu5-60b40e","freebot.unit":"u1.2-run-1cu5-60b40e","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=43b6b0de5577a66c380eebbfe4b77e160c0f92752cedd3bca5c2400b1f19077e the sandbox's sha256sum=43b6b0de5577a66c380eebbfe4b77e160c0f92752cedd3bca5c2400b1f19077e path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=43b6b0de5577a66c380eebbfe4b77e160c0f92752cedd3bca5c2400b1f19077e
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-1cu5-60b40e: /var/freebot/supervisor.port is not readable (star
+[...]
+f441e73b1594b1a99d2366ffe2011bb71d9a0c256d616c34c3"
+check create: handle={"provider":"docker","id":"u91-main-1cu5-60b40es"} engine=a120287ea949 running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1cu5-60b40es","freebot.unit":"u1.2-run-1cu5-60b40es","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=5e6fb50671669263a1ef3ed661f213220789c8deb31c31eb6f225c752f2ab636 the sandbox's sha256sum=5e6fb50671669263a1ef3ed661f213220789c8deb31c31eb6f225c752f2ab636 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=5e6fb50671669263a1ef3ed661f213220789c8deb31c31eb6f225c752f2ab636
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-1cu5-60b40es: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1cu5-60b40es is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1cu5-60b40es:u91-round-trip ref=sha256:bdd0cb491543c710b7e09b403a7c396b5743e89394753be7236c8511d138f696 createdAt=2026-10-19T22:24:45.573491466Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1cu5-60b40es booted from sha256:bdd0cb491543c710b7e09b403a7c396b5743e89394753be7236c8511d138f696 reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1cu5-60b40es is gone from the engine
+check idle-kill: u91-idle-1cu5-60b40es (idleTtlMs=3000) stopped after 5167ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u91-decoy-foreign-unit-1cu5-60b40es=80370a52ca6248b90ec0f544a2b0d6a8b14822d3c54dc05db468d0d838a69e16 running
+census before sweep, decoy (a sibling run of this suite): u91-decoy-sibling-run-1cu5-60b40es=a2055ddb9d49725d485788edcfe89b8d979306b990a062b654d2ff34fddf422c running
+census before sweep, decoy (no labels at all): u91-decoy-bare-1cu5-60b40es=b9ae00f724be65654bb489a32c27bc2afddbc1cfee78b4fd09f6cfa6d68e1e4f running
+census before sweep, this run: u91-main-1cu5-60b40es=a120287ea949
+census before sweep, this run: u91-no-link-1cu5-60b40es=gone
+census before sweep, this run: u91-restored-1cu5-60b40es=gone
+census before sweep, this run: u91-idle-1cu5-60b40es=fbf72ae61e3c
+check sweep: removed 2 of 2 live sandboxes: fbf72ae61e3c, a120287ea949
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+sabotaged sweep: create:true exec:true upload:true download:true tunnel:true snapshot-resume:true idle-kill:true sweep:false
+PASS the suite reports the sabotaged sweep: sweep failed
+PASS every operation before the sabotaged sweep passed: 7 of 7
+sabotaged sweep, literal: the decoy another unit's label: expected "u91-decoy-foreign-unit-1cu5-60b40es=80370a52ca6248b90ec0f544a2b0d6a8b14822d3c54dc05db468d0d838a69e16 running", got "u91-decoy-foreign-unit-1cu5-60b40es=gone"
+
+## cleanup: the launched app, stopped the way a person stops it
+launcher exited with 0
+PASS the launched app reaped its own containers on SIGINT
+PASS nothing answers the printed URL after the app stopped
+PASS nothing survives under the suite's label u1.2-run-1cu5-60b40e
+this driver left no container behind
+
+PASS sandbox-conformance
+
+
+--- captured output (stdout and stderr) ---
+
+## the app, launched the way a person launches it
+launcher line: http://127.0.0.1:55905/#token=<redacted>
+launcher said: freebot up: page and run on 127.0.0.1:55905, tunnel on 127.0.0.1:55904
+launcher said: freebot up: sandbox backend docker (chosen by auto: the Docker daemon answered)
+launcher said: freebot up: model mode replay, keyless, replaying /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+launcher said: freebot up: vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1cu5-60b40e-eQBdiP/provider.env absent
+launcher said: freebot up: bots under /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-bots-1cu5-60b40e-szdLOo; each Bot's workspace is mounted at /workspace and kept across runs
+launcher said: freebot up: spend cap 5.00 USD per run; no token prices configured, so a keyed run reports no cost
+launcher said: freebot up: connectors none; records /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1cu5-60b40e-eQBdiP/connectors.json, credential vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-u91-home-1cu5-60b40e-eQBdiP/connectors.env at mode 600
+launcher said: freebot up: the operator token rides the URL's fragment and is printed nowhere else
+launcher said: freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (docker)
+GET http://127.0.0.1:55905/#token=<redacted> -> 200 text/html; charset=utf-8
+PASS the launched app serves its own printed URL: 200
+
+## the app's own run, so the sweep meets containers it does not own
+PASS create_bot -> 200 {"json":{"botId":"bot-local","name":"Conformance Bot","role":"","purpose":"","createdAt":1792448662580,"threadCount":0,"pinned":false,"section":"Work","hidden":false,"group":false,"members":[]}}
+PASS create_thread -> 200 {"json":{"threadId":"thread-1","botId":"bot-local","title":"New conversation","createdAt":1792448662593,"runs":[]}}
+PASS start_run -> 200 {"json":{"runId":"run-1"}}
+the app's own container: freebot-sbx-run-1-7rtfazrw=1c7215f7f84aa585197289a2dd493532dd42e8aeb06cda646e615eaed4a04832 running
+PASS the launched app's run holds a container under u1.7
+
+## the conformance suite, against Docker
+check create: handle={"provider":"docker","id":"u91-main-1cu5-60b40e"} engine=bf80e24ecfec running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1cu5-60b40e","freebot.unit":"u1.2-run-1cu5-60b40e","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=43b6b0de5577a66c380eebbfe4b77e160c0f92752cedd3bca5c2400b1f19077e the sandbox's sha256sum=43b6b0de5577a66c380eebbfe4b77e160c0f92752cedd3bca5c2400b1f19077e path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=43b6b0de5577a66c380eebbfe4b77e160c0f92752cedd3bca5c2400b1f19077e
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-1cu5-60b40e: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1cu5-60b40e is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1cu5-60b40e:u91-round-trip ref=sha256:67ee2e186b86383daeaf9340cfa2308395865607312eb87b41a8ccf6333472da createdAt=202
+[...]
+{"provider":"docker","id":"u91-main-1cu5-60b40es"} engine=a120287ea949 running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1cu5-60b40es","freebot.unit":"u1.2-run-1cu5-60b40es","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=5e6fb50671669263a1ef3ed661f213220789c8deb31c31eb6f225c752f2ab636 the sandbox's sha256sum=5e6fb50671669263a1ef3ed661f213220789c8deb31c31eb6f225c752f2ab636 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=5e6fb50671669263a1ef3ed661f213220789c8deb31c31eb6f225c752f2ab636
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-1cu5-60b40es: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1cu5-60b40es is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1cu5-60b40es:u91-round-trip ref=sha256:bdd0cb491543c710b7e09b403a7c396b5743e89394753be7236c8511d138f696 createdAt=2026-10-19T22:24:45.573491466Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1cu5-60b40es booted from sha256:bdd0cb491543c710b7e09b403a7c396b5743e89394753be7236c8511d138f696 reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1cu5-60b40es is gone from the engine
+check idle-kill: u91-idle-1cu5-60b40es (idleTtlMs=3000) stopped after 5167ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u91-decoy-foreign-unit-1cu5-60b40es=80370a52ca6248b90ec0f544a2b0d6a8b14822d3c54dc05db468d0d838a69e16 running
+census before sweep, decoy (a sibling run of this suite): u91-decoy-sibling-run-1cu5-60b40es=a2055ddb9d49725d485788edcfe89b8d979306b990a062b654d2ff34fddf422c running
+census before sweep, decoy (no labels at all): u91-decoy-bare-1cu5-60b40es=b9ae00f724be65654bb489a32c27bc2afddbc1cfee78b4fd09f6cfa6d68e1e4f running
+census before sweep, this run: u91-main-1cu5-60b40es=a120287ea949
+census before sweep, this run: u91-no-link-1cu5-60b40es=gone
+census before sweep, this run: u91-restored-1cu5-60b40es=gone
+census before sweep, this run: u91-idle-1cu5-60b40es=fbf72ae61e3c
+check sweep: removed 2 of 2 live sandboxes: fbf72ae61e3c, a120287ea949
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+sabotaged sweep: create:true exec:true upload:true download:true tunnel:true snapshot-resume:true idle-kill:true sweep:false
+PASS the suite reports the sabotaged sweep: sweep failed
+PASS every operation before the sabotaged sweep passed: 7 of 7
+sabotaged sweep, literal: the decoy another unit's label: expected "u91-decoy-foreign-unit-1cu5-60b40es=80370a52ca6248b90ec0f544a2b0d6a8b14822d3c54dc05db468d0d838a69e16 running", got "u91-decoy-foreign-unit-1cu5-60b40es=gone"
+
+## cleanup: the launched app, stopped the way a person stops it
+launcher exited with 0
+PASS the launched app reaped its own containers on SIGINT
+PASS nothing answers the printed URL after the app stopped
+PASS nothing survives under the suite's label u1.2-run-1cu5-60b40e
+this driver left no container behind
+artifact: packages/verify/artifacts/sandbox-conformance/0d74d05/assert.txt
+PASS sandbox-conformance

@@ -1,0 +1,97 @@
+driver: workspace-pages
+subject: the sidebar's sections, the seven Workspace pages and the group header
+command: bun packages/verify/scripts/workspace-pages.ts
+commit: 0d74d05c60786dde84f94b444ea8c89ec845ddc7 (0d74d05)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout
+exit: 0
+verdict: RESULT: PASS (36/36)
+seconds: 3
+
+--- the driver's own artifact: packages/verify/artifacts/workspace-pages/0d74d05/assert.txt ---
+
+feature: workspace-pages
+command: bun packages/verify/scripts/workspace-pages.ts
+timestamp: 2026-10-19T22:28:16.982Z
+git short sha: 0d74d05
+launcher: http://127.0.0.1:56591/#token=<redacted>
+screenshots: 01-skills .. 07-mobile at 1440x900, 08-group, 09-group-390
+
+ok   the sidebar carries Pinned :: Pinned | Work
+ok   the sidebar carries Work :: Pinned | Work
+ok   the main list holds the three visible Bots :: 3
+ok   Hidden Bots is present with a count of one :: 1
+ok   the Workspace nav carries seven entries :: 7
+ok   the header names the selected Bot :: Atlas · New conversation
+ok   the header carries the Bot's role :: Chief of staff
+ok   an ordinary Bot shows no group bar :: true
+ok   skills page title :: Skills
+ok   skills page has no horizontal overflow :: false
+ok   apps page title :: Apps and connectors
+ok   apps page has no horizontal overflow :: false
+ok   rules page title :: Rules and the approvals ledger
+ok   rules page has no horizontal overflow :: false
+ok   activity page title :: Activity log
+ok   activity page has no horizontal overflow :: false
+ok   teams page title :: Teams
+ok   teams page has no horizontal overflow :: false
+ok   settings page title :: Settings
+ok   settings page has no horizontal overflow :: false
+ok   mobile page title :: Mobile and the second surface
+ok   mobile page has no horizontal overflow :: false
+ok   Settings reports the install's model :: Modelworkspace-pages-placeholder
+ok   Settings carries its Provider card :: true
+ok   Settings carries its seven panes :: 7
+ok   Activity starts with an empty state :: Page 17 · every run this install holdsActivity logBack to the conversationAll Botsallqueuedrunningawaiting_approvalpause
+ok   Skills says the library is empty :: Library · page 9SkillsWrite a skillTeach a taskBack to the conversationNo skills yetA skill is a reusable procedure any 
+ok   Teams says there is no team :: Page 18 · phase 5 and 7TeamsBack to the conversationNo team on this installEvery Bot and every rule already carries an o
+ok   Apps says no connector is connected :: Gallery · page 12Apps and connectorsAdd a connectionConnect appsNo apps connectedA connector is added through the connec
+ok   the group bar names both members :: Atlaswaiting | Scoutwaiting
+ok   the group bar names the shared volume :: /shared volume
+ok   the header names the room :: Launch room · New conversation
+ok   Share copies the path without the operator token :: http://127.0.0.1:56591/
+ok   the account menu signs out of the page :: Settings | Provider | Sign out of this page
+ok   the sidebar stands down at 390 :: true
+ok   the page does not scroll sideways at 390 :: false
+
+RESULT: PASS (36/36)
+
+--- captured output (stdout and stderr) ---
+
+ok   the sidebar carries Pinned :: Pinned | Work
+ok   the sidebar carries Work :: Pinned | Work
+ok   the main list holds the three visible Bots :: 3
+ok   Hidden Bots is present with a count of one :: 1
+ok   the Workspace nav carries seven entries :: 7
+ok   the header names the selected Bot :: Atlas · New conversation
+ok   the header carries the Bot's role :: Chief of staff
+ok   an ordinary Bot shows no group bar :: true
+ok   skills page title :: Skills
+ok   skills page has no horizontal overflow :: false
+ok   apps page title :: Apps and connectors
+ok   apps page has no horizontal overflow :: false
+ok   rules page title :: Rules and the approvals ledger
+ok   rules page has no horizontal overflow :: false
+ok   activity page title :: Activity log
+ok   activity page has no horizontal overflow :: false
+ok   teams page title :: Teams
+ok   teams page has no horizontal overflow :: false
+ok   settings page title :: Settings
+ok   settings page has no horizontal overflow :: false
+ok   mobile page title :: Mobile and the second surface
+ok   mobile page has no horizontal overflow :: false
+ok   Settings reports the install's model :: Modelworkspace-pages-placeholder
+ok   Settings carries its Provider card :: true
+ok   Settings carries its seven panes :: 7
+ok   Activity starts with an empty state :: Page 17 · every run this install holdsActivity logBack to the conversationAll Botsallqueuedrunningawaiting_approvalpause
+ok   Skills says the library is empty :: Library · page 9SkillsWrite a skillTeach a taskBack to the conversationNo skills yetA skill is a reusable procedure any 
+ok   Teams says there is no team :: Page 18 · phase 5 and 7TeamsBack to the conversationNo team on this installEvery Bot and every rule already carries an o
+ok   Apps says no connector is connected :: Gallery · page 12Apps and connectorsAdd a connectionConnect appsNo apps connectedA connector is added through the connec
+ok   the group bar names both members :: Atlaswaiting | Scoutwaiting
+ok   the group bar names the shared volume :: /shared volume
+ok   the header names the room :: Launch room · New conversation
+ok   Share copies the path without the operator token :: http://127.0.0.1:56591/
+ok   the account menu signs out of the page :: Settings | Provider | Sign out of this page
+ok   the sidebar stands down at 390 :: true
+ok   the page does not scroll sideways at 390 :: false
+RESULT: PASS (36/36)
+artifact: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout/packages/verify/artifacts/workspace-pages/0d74d05

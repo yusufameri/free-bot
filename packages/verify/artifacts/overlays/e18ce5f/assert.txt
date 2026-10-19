@@ -1,0 +1,222 @@
+
+## what this driver runs
+artifact directory: packages/verify/artifacts/overlays/e18ce5f/
+launch: `bun run up --no-open --replay` over a fresh FREEBOT_HOME and bots root, its own placeholder vault at mode 600, two Bots the driver makes over /rpc, and a workspace holding a note, a 400-line file and a symlink out of the tree
+the page is opened through this driver's own TCP relay. The relay is armed once to hold a single `POST /rpc/create_bot` back for 900 ms: the picker's `Creating…` state is a row waiting on a slow server
+the real vault at ~/.freebot/provider.env is never read, printed or copied by this driver; the only vault file it opens is its own, under the temporary directory named below
+mobile-compact 360x800 mobile mustAvoidHorizontalScroll=true
+mobile-standard 390x844 mobile mustAvoidHorizontalScroll=true
+mobile-large 430x932 mobile mustAvoidHorizontalScroll=true
+foldable-small-tablet 600x960 foldable-tablet mustAvoidHorizontalScroll=true
+tablet-portrait 820x1180 tablet mustAvoidHorizontalScroll=true
+tablet-landscape 1024x768 tablet mustAvoidHorizontalScroll=true
+laptop 1366x768 desktop mustAvoidHorizontalScroll=true
+desktop 1440x900 desktop mustAvoidHorizontalScroll=true
+wide 1920x1080 wide mustAvoidHorizontalScroll=true
+containers before this driver runs anything (label freebot.unit=u1.7): 0
+home: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-overlays-lHYXYl
+workspace: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-overlays-lHYXYl/bots/bot-local/workspace
+url, redacted: http://127.0.0.1:61459/#token=<redacted>
+Bots the driver made: Overlay One (bot-local), Overlay Two (bot-2)
+relay: 127.0.0.1:61461 -> 127.0.0.1:61459; the page is opened at the relay, so its own origin is the relay
+chrome Chrome/155.0.8059.85 over CDP
+
+## the three primitives, and the entry point the export opens each from
+the shell's own title line: "Overlay One · First conversation"
+ok   the sidebar's head is the export's search control and `New chat` control, with the group-chat control the sidebar gained beside them: [["button","sidebar-search",null,"Search","⌘K","#i-search"],["button","sidebar-new-group","New group chat",null,null,"#i-people"],["button","sidebar-new-chat","New chat",null,null,"#i-plus"]]
+ok   the palette is reached from three doors (Cmd+K, Cmd+Shift+F, the search button), the picker from two (Cmd+N, `New chat`), and the modal from the pane's Library row: {"search":true,"chat":true,"paneFiles":0}
+the pane's Library rows are built when that tab is shown, so the modal's own door is asserted where it really is: a `.aside-file` row, which is the export's `data-act=file:open` (`freebot-prototype.html:1364`)
+
+## the palette, from Cmd/Ctrl+K
+ok   Cmd/Ctrl+K opens the palette and nothing else: ["palette"]
+ok   the input is the element that holds the focus, read from document.activeElement: "palette-input"
+ok   the field says what this app's palette holds, and the export's own placeholder is not it: "Bots, threads and actions"
+ok   the mode Cmd/Ctrl+K asks for is the export's own `all`: "all"
+ok   the query starts empty: ""
+ok   the groups are Bots, Threads, Pages and Actions, in that order, each header drawn once: ["Bots","Threads","Pages","Actions"]
+ok   the rows are the two Bots the app holds, the selected Bot's own thread, the pages it has, and the actions it offers: ["Overlay One","Overlay Two","First conversation","Conversation","Library","Connect a provider","New Bot","New thread"]
+ok   every row names what it is, in the export's own lowercase vocabulary: ["bot","bot","thread","page","page","page","action","action"]
+ok   an empty query marks nothing: []
+ok   the first row is the active one before an arrow moves it: [0,["true","false","false","false","false","false","false","false"]]
+ok   the dialog role and the scrim are the modal's own furniture, and the palette carries one scrim: [1,0]
+artifact 01-palette-empty.png (94151 bytes)
+ok   a query leaves the rows that carry it, and the matched term is split out of the label: [["Overlay Two"],["Overlay Two"]]
+the marked element's own text is the label's own casing: a query of "overlay two" marks "Overlay Two", which is what the export's `new RegExp('(' + lq + ')', 'ig')` marks too (`freebot-prototype.html:2134`)
+artifact 02-palette-marked.png (82735 bytes)
+ok   a query nothing matches is the no-results state, and it says what a quoted term would need: [[],"Nothing matched. Message search is not in this build."]
+artifact 03-palette-none.png (83187 bytes)
+ok   a quoted term answers nothing, because this app has no message search to route it to: [[],"Nothing matched. Message search is not in this build."]
+ok   Cmd/Ctrl+Shift+F opens the palette in the export's own `bots` mode: [["palette"],"bots"]
+ok   the Bots mode is the Bots group alone, which is what the export's own mode filters to: [["Bots"],["Overlay One","Overlay Two"]]
+artifact 04-palette-bots-mode.png (84871 bytes)
+ok   one ArrowDown moves the selection to the second row, and the state is on the row and on the input: [1,"Overlay Two",["false","true"]]
+ok   the active row wears a wash the idle row does not: [true,true]
+the active wash: "oklch(0.999994 0.0000497986 none / 0.12)"; the idle row: "rgba(0, 0, 0, 0)"
+ok   ArrowUp walks back and wraps past the first row to the last: [1,"Overlay Two"]
+ok   the active row is the state the arrows move, and it is the row Enter would choose: [0,"Overlay One",["true","false"]]
+artifact 05-palette-active.png (84871 bytes)
+the same row under the pointer: active 1, wash "oklch(0.999994 0.0000497986 none / 0.12)"
+ok   a pointer over a row moves the same selection, and the wash it wears is the active row's own: [1,true,true]
+artifact 06-palette-hover.png (84913 bytes)
+ok   focus starts inside the palette: ["palette-input"]
+ok   Tab from the field lands on the first row, and it is still inside the palette: {"inside":true,"row":"0"}
+ok   the next Tab walks to the second row, which is where the focus order really goes: {"inside":true,"row":"1"}
+ok   Tab off the last row wraps to the field, so focus never leaves an open overlay: {"inside":true,"id":"palette-input"}
+ok   Shift+Tab off the field wraps back to the last row: {"inside":true,"row":"1"}
+ok   typing in the field leaves the one Bot the query names: ["Overlay Two"]
+ok   Enter on the focused row chooses the same command the active row would: the second Bot is selected, which the sidebar's own row does too: [[],"bot-2","bot-2"]
+ok   Escape closes an overlay, takes its scrim with it, and changes nothing else on the page: [[],0,"bot-2","thread-2","conversation","true"]
+ok   opened by key over the composer, Escape hands focus back to the composer's own box: "prompt"
+ok   the sidebar's own search button opens the same palette, in `all` mode: [["palette"],"all"]
+ok   and Escape from that door hands focus back to the button that opened it: [[],"sidebar-search"]
+ok   Escape with nothing open is a keypress nothing answers: no overlay, no scrim, and the page untouched: [[],0,"bot-2","sidebar-search"]
+
+## the picker, from the sidebar's own `New chat` control
+ok   the sidebar's `New chat` control opens the picker: ["picker"]
+ok   the search field holds the focus, read from document.activeElement: "picker-input"
+ok   the field says what this app's picker does: "Find a Bot, or name a new one"
+ok   an empty field offers the create row first and then every Bot, and no hint: [["Create new Bot","Overlay One","Overlay Two"],[false,false,false],null]
+artifact 07-picker-default.png (89175 bytes)
+ok   one character needs two more, and the field still filters nothing: [3,true,"Type 2 more characters to search Bots."]
+ok   below three characters the field filters nothing and says how many more it needs: [["Create “Ov” Bot","Overlay One","Overlay Two"],"Type 1 more character to search Bots."]
+artifact 08-picker-hint.png (89969 bytes)
+ok   one more character is the threshold, and the hint goes: [["Create “Ove” Bot","Overlay One","Overlay Two"],null]
+ok   three characters or more filter the Bot rows by name, and the create row carries what was typed: [["Create “Overlay two” Bot","Overlay Two"],null]
+artifact 09-picker-filtered.png (87562 bytes)
+ok   Tab from the picker's field lands on the first row, inside the panel: {"inside":true,"row":"0"}
+ok   and the next Tab walks to the last row of the panel: {"inside":true,"row":"1"}
+ok   Tab off the last row wraps to the field, so focus never leaves the picker: {"inside":true,"id":"picker-input","row":null}
+ok   with the create in flight the row is disabled and says so, which is a loading state of the row rather than of the page: ["Creating…",true,["picker"]]
+artifact 10-picker-creating.png (83994 bytes)
+ok   the create goes through the same arm the sidebar's own control uses: the Bot exists, it is selected, and it holds the one thread every new Bot starts with: [["Overlay One","Overlay Two","Overlay Three"],1,true,"bot-3","bot-3"]
+ok   the picker closed itself when the create landed, so a person lands in the new Bot's conversation: [[],0]
+ok   and focus went back to the control that opened it: "sidebar-new-chat"
+ok   Escape closes the picker and hands focus to `New chat`: [[],"sidebar-new-chat"]
+
+## the modal, from the pane's own Library row
+ok   the pane's Library tab lists the workspace the Library surface reads, which is the modal's source: ["escape.txt","long.txt","notes.md"]
+the keyboard walk into the pane: after 4 Tab press(es)
+ok   the row the modal opens from is focusable and reached by Tab from the pane's own strip: ["notes.md","button"]
+ok   Enter on the row opens the export's wide modal, with the dialog role and one scrim: [["modal"],"dialog","true",true,1]
+ok   the title is the file's own name and the line under it carries the path the read answered: ["notes.md","notes.md"]
+ok   the size tag is the byte count the read answered, and the body is the file's own bytes: ["14 B","Overlay notes\n"]
+ok   a file that reads is not a refusal: [null,false]
+ok   the close control is the export's own: a labelled icon button drawing the sprite's x, and it holds the focus: ["Close","#i-x","button"]
+artifact 11-modal-file.png (72301 bytes)
+ok   the close control's hover state is the export's own wash, which is a state the pointer reaches: true
+ok   Tab inside the modal cycles its own focusables, so focus cannot leave it: ["button",true]
+ok   Escape closes the modal, takes the scrim, and hands focus back to the row that opened it: [[],0,"notes.md"]
+ok   the scrim itself closes the overlay, which is the export's own `ui:close` on it: [[],0]
+the walk to the refused file: after 41 Tab press(es)
+ok   a path that resolves outside the workspace reads as the named refusal the server put on the wire, and no bytes: ["Could not open escape.txt: symlink_escape",null]
+artifact 12-modal-refused.png (74051 bytes)
+the walk to the long file: after 3 Tab press(es)
+ok   a file longer than the modal scrolls inside it rather than pushing the page: [true,22800]
+artifact 13-modal-scroll.png (146463 bytes)
+
+## the palette's action is the same door as the button it names
+the sidebar row for Overlay Two: selectedBotId bot-2, threads ["Second conversation","Third conversation"], title "Overlay Two · Second conversation"
+ok   the palette leaves the Bot the query names: ["Overlay Two"]
+ok   choosing that row lands the page exactly where its sidebar row lands it: ["bot-2",["Second conversation","Third conversation"],"Overlay Two · Second conversation",[]]
+ok   which is a state the record agrees with: one selected row, and the title carries the Bot and its first thread: [["Overlay Two"],true,true]
+ok   a thread row comes from the selected Bot's own thread record: ["Third conversation"]
+ok   choosing a thread row moves the selection to that thread, which is the thread list's own door: ["Third conversation","thread-3",true]
+ok   the Library page row lands on the Library tab and loads its listing, which is what that tab does: ["library","library","loaded"]
+ok   the `New thread` action makes one, exactly as the sidebar's own button does: [3,"New conversation",[]]
+ok   the `New Bot` action opens the picker, which is the control the export's sidebar `+` is: [["picker"],"picker-input"]
+ok   and that picker's Escape leaves the pane's own rows on the record they follow: ["library",true,[]]
+
+## where the export's chrome was looked for
+scanned: the whole rendered document (91220 bytes of outerHTML, 868 bytes of innerText), the text of the three overlays as they were open (363 bytes), and the served bundle GET /main.js (887709 bytes, 200)
+ok   the export's own implementer chrome is absent from the document and from the bundle: []
+FAIL the export's prototype data is absent from each overlay's own rendered text, from the document and from the bundle: ["Launch room"] != []
+ok   and no node wears the export's `hidden` class, which is how its own panels come and go: [0,0]
+"data-od-id": absent from all three
+"class=\"lbl\"": absent from all three
+"className = \"lbl\"": absent from all three
+"Bots, settings, actions, routines — or \"a quoted phrase\" for messages": absent from all three
+"Search Bots, or type a name to create one": absent from all three
+"pre-run-4f3a": absent from all three
+"Launch room": FOUND in the bundle
+"waiting on approval": absent from all three
+"\"secrets audit\"": absent from all three
+"\"changelog\"": absent from all three
+"Export the transcript": absent from all three
+"Simulate a dropped stream": absent from all three
+"Reconnect the stream": absent from all three
+"Add a secret": absent from all three
+"infra/secrets.old.yml": absent from all three
+"apps/web/.env.local is tracked and should not be": absent from all three
+
+## the nine viewports, with each overlay open
+ok   mobile-compact: modal overflows neither the document nor its own box: [true,0,true,true]
+artifact 20-viewport-mobile-compact-modal.png (28233 bytes)
+ok   mobile-standard: modal overflows neither the document nor its own box: [true,0,true,true]
+ok   mobile-large: modal overflows neither the document nor its own box: [true,0,true,true]
+ok   foldable-small-tablet: modal overflows neither the document nor its own box: [true,0,true,true]
+ok   tablet-portrait: modal overflows neither the document nor its own box: [true,0,true,true]
+ok   tablet-landscape: modal overflows neither the document nor its own box: [true,0,true,true]
+ok   laptop: modal overflows neither the document nor its own box: [true,0,true,true]
+ok   desktop: modal overflows neither the document nor its own box: [true,0,true,true]
+ok   wide: modal overflows neither the document nor its own box: [true,0,true,true]
+artifact 20-viewport-wide-modal.png (86089 bytes)
+ok   mobile-compact: palette overflows neither the document nor its own box: [true,0,true,true]
+artifact 20-viewport-mobile-compact-palette.png (39195 bytes)
+ok   mobile-compact: picker overflows neither the document nor its own box: [true,0,true,true]
+artifact 20-viewport-mobile-compact-picker.png (33080 bytes)
+ok   mobile-standard: palette overflows neither the document nor its own box: [true,0,true,true]
+ok   mobile-standard: picker overflows neither the document nor its own box: [true,0,true,true]
+ok   mobile-large: palette overflows neither the document nor its own box: [true,0,true,true]
+ok   mobile-large: picker overflows neither the document nor its own box: [true,0,true,true]
+ok   foldable-small-tablet: palette overflows neither the document nor its own box: [true,0,true,true]
+ok   foldable-small-tablet: picker overflows neither the document nor its own box: [true,0,true,true]
+ok   tablet-portrait: palette overflows neither the document nor its own box: [true,0,true,true]
+ok   tablet-portrait: picker overflows neither the document nor its own box: [true,0,true,true]
+ok   tablet-landscape: palette overflows neither the document nor its own box: [true,0,true,true]
+ok   tablet-landscape: picker overflows neither the document nor its own box: [true,0,true,true]
+ok   laptop: palette overflows neither the document nor its own box: [true,0,true,true]
+ok   laptop: picker overflows neither the document nor its own box: [true,0,true,true]
+ok   desktop: palette overflows neither the document nor its own box: [true,0,true,true]
+ok   desktop: picker overflows neither the document nor its own box: [true,0,true,true]
+ok   wide: palette overflows neither the document nor its own box: [true,0,true,true]
+artifact 20-viewport-wide-palette.png (100505 bytes)
+ok   wide: picker overflows neither the document nor its own box: [true,0,true,true]
+artifact 20-viewport-wide-picker.png (91816 bytes)
+
+## the nine viewports, one line each
+mobile-compact 360x800 modal: documentElement 360 <= 360 ok; regions over: 0; panel 16..344 of 360 (328px) inside; panel content 326 <= 326
+mobile-standard 390x844 modal: documentElement 390 <= 390 ok; regions over: 0; panel 16..374 of 390 (358px) inside; panel content 356 <= 356
+mobile-large 430x932 modal: documentElement 430 <= 430 ok; regions over: 0; panel 16..414 of 430 (398px) inside; panel content 396 <= 396
+foldable-small-tablet 600x960 modal: documentElement 600 <= 600 ok; regions over: 0; panel 16..584 of 600 (568px) inside; panel content 566 <= 566
+tablet-portrait 820x1180 modal: documentElement 820 <= 820 ok; regions over: 0; panel 50..770 of 820 (720px) inside; panel content 718 <= 718
+tablet-landscape 1024x768 modal: documentElement 1024 <= 1024 ok; regions over: 0; panel 152..872 of 1024 (720px) inside; panel content 718 <= 718
+laptop 1366x768 modal: documentElement 1366 <= 1366 ok; regions over: 0; panel 323..1043 of 1366 (720px) inside; panel content 718 <= 718
+desktop 1440x900 modal: documentElement 1440 <= 1440 ok; regions over: 0; panel 360..1080 of 1440 (720px) inside; panel content 718 <= 718
+wide 1920x1080 modal: documentElement 1920 <= 1920 ok; regions over: 0; panel 600..1320 of 1920 (720px) inside; panel content 718 <= 718
+mobile-compact 360x800 palette: documentElement 360 <= 360 ok; regions over: 0; panel 14..346 of 360 (332px) inside; panel content 330 <= 330
+mobile-compact 360x800 picker: documentElement 360 <= 360 ok; regions over: 0; panel 14..346 of 360 (332px) inside; panel content 330 <= 330
+mobile-standard 390x844 palette: documentElement 390 <= 390 ok; regions over: 0; panel 14..376 of 390 (362px) inside; panel content 360 <= 360
+mobile-standard 390x844 picker: documentElement 390 <= 390 ok; regions over: 0; panel 14..376 of 390 (362px) inside; panel content 360 <= 360
+mobile-large 430x932 palette: documentElement 430 <= 430 ok; regions over: 0; panel 14..416 of 430 (402px) inside; panel content 400 <= 400
+mobile-large 430x932 picker: documentElement 430 <= 430 ok; regions over: 0; panel 14..416 of 430 (402px) inside; panel content 400 <= 400
+foldable-small-tablet 600x960 palette: documentElement 600 <= 600 ok; regions over: 0; panel 14..586 of 600 (572px) inside; panel content 570 <= 570
+foldable-small-tablet 600x960 picker: documentElement 600 <= 600 ok; regions over: 0; panel 14..586 of 600 (572px) inside; panel content 570 <= 570
+tablet-portrait 820x1180 palette: documentElement 820 <= 820 ok; regions over: 0; panel 110..710 of 820 (600px) inside; panel content 598 <= 598
+tablet-portrait 820x1180 picker: documentElement 820 <= 820 ok; regions over: 0; panel 110..710 of 820 (600px) inside; panel content 598 <= 598
+tablet-landscape 1024x768 palette: documentElement 1024 <= 1024 ok; regions over: 0; panel 212..812 of 1024 (600px) inside; panel content 598 <= 598
+tablet-landscape 1024x768 picker: documentElement 1024 <= 1024 ok; regions over: 0; panel 212..812 of 1024 (600px) inside; panel content 598 <= 598
+laptop 1366x768 palette: documentElement 1366 <= 1366 ok; regions over: 0; panel 383..983 of 1366 (600px) inside; panel content 598 <= 598
+laptop 1366x768 picker: documentElement 1366 <= 1366 ok; regions over: 0; panel 383..983 of 1366 (600px) inside; panel content 598 <= 598
+desktop 1440x900 palette: documentElement 1440 <= 1440 ok; regions over: 0; panel 420..1020 of 1440 (600px) inside; panel content 598 <= 598
+desktop 1440x900 picker: documentElement 1440 <= 1440 ok; regions over: 0; panel 420..1020 of 1440 (600px) inside; panel content 598 <= 598
+wide 1920x1080 palette: documentElement 1920 <= 1920 ok; regions over: 0; panel 660..1260 of 1920 (600px) inside; panel content 598 <= 598
+wide 1920x1080 picker: documentElement 1920 <= 1920 ok; regions over: 0; panel 660..1260 of 1920 (600px) inside; panel content 598 <= 598
+
+## containment: what this driver left behind
+the launch's home is removed with its process. This driver starts no run, so it can make no container; the label's own set is what says so below
+ok   the label's own container set is back where it started: []
+ok   no overlay and no scrim is left on the page: [[],0]
+artifact 30-shell-after.png (86007 bytes)
+
+chrome Chrome/155.0.8059.85; one real launch (`bun run up --no-open --replay`) over a home of this driver's own, one relay that held one create back, one page driven entirely by real key events and real pointer moves
+RESULT: FAIL (104/105)

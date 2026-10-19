@@ -27,7 +27,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describeVault, readVault } from "../../../apps/server/src/vault.ts";
@@ -958,7 +958,9 @@ const made: string[] = [];
 
 /** Write the artifact, refusing one that carries the key, the operator token, or a key-shaped literal. */
 function writeArtifact(): string | null {
-  const text = [...headerLines, ...log.lines, ""].join("\n");
+  const text = [...headerLines, ...log.lines, "", log.result(), ""]
+    .join("\n")
+    .replaceAll(homedir(), "~");
   for (const launched of live) {
     if (launched.token !== "" && text.includes(launched.token)) {
       console.error("refusing to write an artifact that contains the operator token");
@@ -1125,6 +1127,15 @@ async function main(): Promise<void> {
   const madeFirst = await makeFirstBot(first, "Page One Check");
   log.note(`the Bot this driver made before page 1 opened: ${JSON.stringify(madeFirst)}`);
   const page = await openPage(cdp, first.url);
+  // Page 1 is shown by the host's boot after it reads the provider record and the Bot list, so the
+  // first frame waits for that screen rather than for the page's load event.
+  await waitTrue(
+    cdp,
+    page,
+    "page 1 to own the center column",
+    `${PROVIDER}.shown === true`,
+    30_000,
+  );
   const empty = await capture(cdp, page, "01-no-provider", log);
   capturedNames.push("01-no-provider");
   log.check(

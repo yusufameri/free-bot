@@ -19,6 +19,7 @@ import {
   planDrivers,
   probeHost,
   resolveArgv,
+  resolveBase,
   runSweep,
   type Subject,
   summaryLine,
@@ -212,7 +213,7 @@ describe("the failure path", () => {
     expect(outcome.verdict).toBe("RESULT: FAIL (1/2)");
     expect(outcome.proof).toBe(`${artifactLabel}/fake-red.log`);
     expect(outcome.proposed).toBe(
-      `file a unit: "sweep-main: fake-red is red against main". The fake-red driver (\`bun ${red}\`, the fake surface) exited 1 with "RESULT: FAIL (1/2)" at ${shortSha}. Proof ${artifactLabel}/fake-red.log.`,
+      `file a unit: "sweep-main: fake-red is red against ${shortSha}". The fake-red driver (\`bun ${red}\`, the fake surface) exited 1 with "RESULT: FAIL (1/2)" at ${shortSha}. Proof ${artifactLabel}/fake-red.log.`,
     );
 
     const log = readFileSync(join(checkout, artifactLabel, "fake-red.log"), "utf8");
@@ -306,6 +307,13 @@ describe("the manifest boundary", () => {
     expect(
       resolveArgv(["bun", "live.ts", "{statusUrl}"], { statusUrl: "http://127.0.0.1:9" }),
     ).toEqual(["bun", "live.ts", "http://127.0.0.1:9"]);
+  });
+
+  test("the base defaults to origin/main and takes --base", () => {
+    expect(resolveBase([])).toBe("origin/main");
+    expect(resolveBase(["--keep"])).toBe("origin/main");
+    expect(resolveBase(["--base", "HEAD"])).toBe("HEAD");
+    expect(resolveBase(["--base"])).toBe("origin/main");
   });
 
   test("the vault scanner reads key-shaped names only", () => {

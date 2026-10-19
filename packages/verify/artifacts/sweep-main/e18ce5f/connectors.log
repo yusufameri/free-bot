@@ -1,0 +1,114 @@
+driver: connectors
+subject: the connector seam over an emulated service, with the bash arm beside it
+command: bun packages/verify/scripts/connectors.ts
+commit: e18ce5f996768d56942b65324dabf0cbf3bc2ff2 (e18ce5f)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-pEEuvU/checkout
+exit: 1
+verdict: RESULT: FAIL (68/76)
+seconds: 36
+
+--- the driver's own artifact: packages/verify/artifacts/connectors/e18ce5f/assert.txt ---
+
+feature: connectors
+command: bun packages/verify/scripts/connectors.ts
+timestamp: 2026-10-19T22:53:13.749Z
+git sha: e18ce5f996768d56942b65324dabf0cbf3bc2ff2
+git sha short: e18ce5f
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+the run's nonce: u8.1-g2y9kmi7
+the freebot home this driver made: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-connectors-home-vHqDok
+the bots root this driver made: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-connectors-bots-NFTw6g
+the connector turn template: packages/verify/fixtures/connector-turn.jsonl
+
+# connectors evidence: one seam, one emulated service, one container
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open --replay --transcript <this run's turn> --connectors <this run's record>` with FREEBOT_HOME and FREEBOT_WORKSPACE pointing at fresh directories. No account, no provider key and no third-party credential is involved: the service is a GitHub emulator this process serves, seeded with a token this run minted, and the model is the recorded turn this driver rendered. The credential the connector uses lives in a mode-600 vault under the driver's own home and reaches one request header.
+
+## the emulated service, on every interface, seeded with a repository and a token
+the service is at http://127.0.0.1:59454 (port 59454)
+the listening socket: ["bun *:59454"] (a 0.0.0.0 bind shows as a *: port, which is what lets a container reach it and be refused)
+ok - the service listens on every interface, so reachability cannot be confused with authorization: true
+a write with no credential: 401 {"message":"Requires authentication","documentation_url":"https://emulate.dev/github"}
+ok - the service refuses a write that carries no credential: [401,true]
+ok - and its state is still empty, read from the service: []
+
+## the connector's far side: a real MCP server whose two tools act on the service
+the MCP server is at http://127.0.0.1:59456/mcp
+the listening socket: ["bun 127.0.0.1:59456"]
+ok - the MCP server refuses a handshake with no credential: [401,"no credential"]
+
+## the seam itself, over the wire, in this process
+ok - the tools the seam sees are the server's own list, under the connector's own names: ["create_issue","list_issues"]
+ok - the credential is a reference and the health row carries no value: ["connector:emulate-github",false,true]
+the health row: {"ok":true,"detail":"freebot-fixture-connector 1.0.0, protocol 2025-06-18, 2 tools"}
+ok - a call the server refuses fails, and the failure carries no credential: "refused, and the message names no value"
+ok - the service still holds no issue, so the refused call created nothing: []
+
+## the second vendor, emulated: the session route, and the endpoint it names
+the vendor's API base is http://127.0.0.1:59458, answering /api/v3.1/tool_router/session for a request carrying its own project key in the x-api-key header
+the listening socket: ["bun 127.0.0.1:59458"]
+ok - the adapter's own constants are the vendor's documented base, session route and key header: ["https://backend.composio.dev","/api/v3.1/tool_router/session","x-api-key"]
+ok - the session route was asked once, over the documented path, with the person's own key and user id: [1,true,"{\"user_id\":\"freebot-fixture-person\"}"]
+ok - the tools the seam sees are the endpoint's own list, discovered through the session it minted: ["create_note","list_notes"]
+ok - the vendor's account holds nothing before the call, read over its own REST surface: []
+the call's answer: {"ok":true,"output":"{\"number\":1,\"text\":\"through-composio\"}"}
+ok - the call reached the endpoint's tool and answered with the account's own report: [true,"{\"number\":1,\"text\":\"through-composio\"}"]
+ok - the vendor's account now holds exactly that note: the call changed the service's own state: [{"number":1,"text":"through-composio"}]
+ok - the endpoint's own server served exactly the one call, and this connector's object minted one session: [["create_note {\"text\":\"through-composio\"}"
+[...]
+212,"runs":[{"runId":"run-1","prompt":"Open an issue on the fixture repository titled connector-seam u8.1-g2y9kmi7 run 1.","status":"done","startedAt":1792450427214},{"runId":"run-2","prompt":"Open an issue on the fixture repository titled connector-seam u8.1-g2y9kmi7 run 2.","status":"queued","startedAt":1792450428104}]}]}}
+FAIL - the thread's record holds both runs, both done: a connector call is a run like any other: [["done","queued"]] (expected [["done","done"]])
+
+## the sandbox, in its own words
+the probe container's output: {"probe":[401,"{\"message\":\"Requires authentication\",\"documentation_url\":\"https://emulate.dev/github\"}"],"carries":[],"checked":["env","init","workspace"],"workspaceListing":[]}
+ok - a container of the pinned image can reach the service and is refused a write, holding no credential of the service's: [401,true]
+ok - neither credential is in the container's environment, its init's environment, or the Bot's workspace: []
+ok - the probe read all three places, so an empty answer is a fact about each: ["env","init","workspace"]
+the probe container's view of the Bot's workspace: []
+FAIL - the service still holds only the second run's issue: the container created nothing: [] (expected ["connector-seam u8.1-g2y9kmi7 run 2"])
+ok - the probe container is gone by name, and this driver's own label holds nothing: [[],[]]
+
+## the sandbox arm, in the same home, with the same connectors file
+the third printed URL, redacted: http://127.0.0.1:59691/#token=<redacted>
+ok - the third launch read the same connectors file, so the connector arm is offered beside the landed sandbox arm: true
+the model's call: {"toolCallId":"call_stub_11","toolName":"bash","command":"bash {\"command\":\"echo native-should-not-run\"}","destructive":true}
+the parked approval: {"approvalId":"run-1:call_connector_1","toolCallId":"call_connector_1","command":"emulate-github__create_issue {\"title\":\"connector-seam u8.1-g2y9kmi7 run 1\"}","actionHash":"v1:sha256:15aeaee4a0b62081783c10e4a689661719f76c6f5b176d8b53be4bb3bcdff2d0","expiresAt":1792450547524}
+answered with allow
+the run ended at seq 17
+the bash call's result: undefined
+FAIL - the landed transcript's bash call ran in a container of the pinned image and reached the sandbox: [null,false] (expected [true,true])
+FAIL - and the service's state is untouched by it: the two arms coexist, and only the connector touches the service: [] (expected ["connector-seam u8.1-g2y9kmi7 run 2"])
+
+## shutdown
+ok - the third launch exits zero on SIGINT: 0
+ok - the second launch exits zero on SIGINT: 0
+ok - nothing listens on the third launch's page port: []
+ok - no run container survives any of the three launches: true
+
+## the credential is in no file of this repository
+ok - no file of the worktree carries the operator token: []
+ok - no file of the worktree carries the service's token: []
+ok - no file of the worktree carries the connector's credential: []
+ok - no file of the worktree carries the second vendor's project key or its session token: []
+ok - no line of this artifact carries the operator token: false
+ok - no line of this artifact carries the service's token: false
+ok - no line of this artifact carries the connector's credential: false
+ok - no line of this artifact carries the second vendor's project key or its session token: [false,false]
+ok - no line of this artifact carries a key-shaped literal: false
+
+three really launched `bun run up` processes over one home and one bots root; the service is the emulate GitHub fixture on 0.0.0.0, its state read over its own REST surface; the connector is packages/connectors' MCP client against its own MCP server; the sandbox is a container of freebot-sandbox:u0.6, driven by hand for the reachability probe and by the run path for the landed bash turn; the second vendor is the Composio adapter against a session route and an MCP endpoint this process serves, and gate 8 ran the real typecheck and the real suite with the adapter moved aside
+RESULT: FAIL (68/76)
+
+
+--- captured output (stdout and stderr) ---
+
+FAIL - the second launch's call was parked the same way, on a ledger of its own: this process is new, so its only parkable verdict is no_grant: [[],"undefined",[],false] (expected [["tool_call.requested","approval.requested","approval.resolved","tool_call.decision","tool_call.result"],"run-2:call_connector_1",[[true,null]],false])
+FAIL - the second run's frames name the second launch's own run id: [] (expected ["run-2"])
+FAIL - the service holds exactly the second run's issue: one, numbered from the reset, titled by the second turn: [] (expected [[1,"connector-seam u8.1-g2y9kmi7 run 2","freebot-fixture"]])
+FAIL - and the connector's own server saw the second run's call, with the second turn's title: ["create_issue {\"title\":\"connector-seam u8.1-g2y9kmi7 run 1\"}"] (expected ["create_issue {\"title\":\"connector-seam u8.1-g2y9kmi7 run 2\"}"])
+FAIL - the thread's record holds both runs, both done: a connector call is a run like any other: [["done","queued"]] (expected [["done","done"]])
+FAIL - the service still holds only the second run's issue: the container created nothing: [] (expected ["connector-seam u8.1-g2y9kmi7 run 2"])
+FAIL - the landed transcript's bash call ran in a container of the pinned image and reached the sandbox: [null,false] (expected [true,true])
+FAIL - and the service's state is untouched by it: the two arms coexist, and only the connector touches the service: [] (expected ["connector-seam u8.1-g2y9kmi7 run 2"])
+RESULT: FAIL (68/76)
+assert.txt: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-pEEuvU/checkout/packages/verify/artifacts/connectors/e18ce5f/assert.txt
