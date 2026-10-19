@@ -191,6 +191,8 @@ interface LiveEntry {
   timer: ReturnType<typeof setTimeout> | null;
   /** Open tunnels and port forwards. Non-empty holds the sandbox awake at TTL expiry. */
   readonly resources: Set<() => void>;
+  /** Calls awaited right now. Non-zero holds the sandbox awake at TTL expiry. */
+  inFlight: number;
   /** Set by stop/delete; clears the intent to re-arm the TTL. */
   disarmed: boolean;
 }
@@ -268,6 +270,7 @@ export class MicrosandboxAdapter implements SandboxProvider {
       idleTtlMs: spec.idleTtlMs ?? null,
       timer: null,
       resources: new Set(),
+      inFlight: 0,
       disarmed: false,
     });
     this.#touch(handle);
@@ -296,7 +299,7 @@ export class MicrosandboxAdapter implements SandboxProvider {
   ): Promise<ExecResult | ExecStream | DetachedExec> {
     this.#require(handle);
     if (cmd.length === 0) throw new SandboxError("invalid_command", "exec needs a command");
-    this.#touch(handle);
+    this.#begin(handle);
     const shared = [
       ...(options.cwd === undefined ? [] : ["-w", options.cwd]),
       ...envFlags(options.env),
@@ -306,36 +309,50 @@ export class MicrosandboxAdapter implements SandboxProvider {
     ];
     if (options.stream === true) {
       const child = spawnMsb(["exec", "--stream", ...shared]);
-      return { stdout: child.stdout, stderr: child.stderr, result: collect(child) };
+      const stream = { stdout: child.stdout, stderr: child.stderr, result: collect(child) };
+      void stream.result.catch(() => {}).finally(() => this.#end(handle));
+      return stream;
     }
-    if (options.detached === true) {
+    try {
+      if (options.detached === true) {
+        const outcome = await collectMsbOutcome(
+          spawnMsb(["exec", "-d", ...shared]),
+          MSB_CLI_TIMEOUT_MS,
+        );
+        if (outcome.exitCode !== 0) throw execFailure("exec -d", outcome);
+        return { started: true };
+      }
       const outcome = await collectMsbOutcome(
-        spawnMsb(["exec", "-d", ...shared]),
+        spawnMsb(["exec", "--no-tty", "--no-stdin", ...shared]),
         MSB_CLI_TIMEOUT_MS,
       );
-      if (outcome.exitCode !== 0) throw execFailure("exec -d", outcome);
-      return { started: true };
+      if (outcome.timedOut) throw execFailure("exec", outcome);
+      return { exitCode: outcome.exitCode, stdout: outcome.stdout, stderr: outcome.stderr };
+    } finally {
+      this.#end(handle);
     }
-    const outcome = await collectMsbOutcome(
-      spawnMsb(["exec", "--no-tty", "--no-stdin", ...shared]),
-      MSB_CLI_TIMEOUT_MS,
-    );
-    if (outcome.timedOut) throw execFailure("exec", outcome);
-    return { exitCode: outcome.exitCode, stdout: outcome.stdout, stderr: outcome.stderr };
   }
 
   async upload(handle: SandboxHandle, localPath: string, remotePath: string): Promise<void> {
     this.#require(handle);
     requireAbsoluteRemote(remotePath, "upload");
-    this.#touch(handle);
-    await msbCli(["copy", localPath, `${handle.id}:${remotePath}`], MSB_CLI_TIMEOUT_MS);
+    this.#begin(handle);
+    try {
+      await msbCli(["copy", localPath, `${handle.id}:${remotePath}`], MSB_CLI_TIMEOUT_MS);
+    } finally {
+      this.#end(handle);
+    }
   }
 
   async download(handle: SandboxHandle, remotePath: string, localPath: string): Promise<void> {
     this.#require(handle);
     requireAbsoluteRemote(remotePath, "download");
-    this.#touch(handle);
-    await msbCli(["copy", `${handle.id}:${remotePath}`, localPath], MSB_CLI_TIMEOUT_MS);
+    this.#begin(handle);
+    try {
+      await msbCli(["copy", `${handle.id}:${remotePath}`, localPath], MSB_CLI_TIMEOUT_MS);
+    } finally {
+      this.#end(handle);
+    }
   }
 
   /** Disk-only snapshot; memory is not captured (see capabilities()). */
@@ -344,22 +361,26 @@ export class MicrosandboxAdapter implements SandboxProvider {
     if (name !== undefined && !MSB_SNAPSHOT_NAME.test(name)) {
       throw new SandboxError("invalid_spec", `invalid snapshot name: ${JSON.stringify(name)}`);
     }
-    this.#touch(handle);
-    const member = name ?? timestampTag();
-    const group = `${SNAPSHOT_GROUP_PREFIX}${handle.id}`;
-    const ref = `${group}:${member}`;
-    await msbCli(
-      ["snap", "create", "--sandbox", handle.id, "--group", group, "-n", member],
-      MSB_SANDBOX_TIMEOUT_MS,
-    );
-    return {
-      provider: this.id,
-      handleId: handle.id,
-      name: name ?? null,
-      ref,
-      tag: `${SNAPSHOT_TAG_PREFIX}${handle.id}:${member}`,
-      createdAt: await this.#snapshotCreatedAt(ref),
-    };
+    this.#begin(handle);
+    try {
+      const member = name ?? timestampTag();
+      const group = `${SNAPSHOT_GROUP_PREFIX}${handle.id}`;
+      const ref = `${group}:${member}`;
+      await msbCli(
+        ["snap", "create", "--sandbox", handle.id, "--group", group, "-n", member],
+        MSB_SANDBOX_TIMEOUT_MS,
+      );
+      return {
+        provider: this.id,
+        handleId: handle.id,
+        name: name ?? null,
+        ref,
+        tag: `${SNAPSHOT_TAG_PREFIX}${handle.id}:${member}`,
+        createdAt: await this.#snapshotCreatedAt(ref),
+      };
+    } finally {
+      this.#end(handle);
+    }
   }
 
   /** A live CoW fork of a running sandbox; microsandbox's own `fork`, with an adapter-made name. */
@@ -374,6 +395,7 @@ export class MicrosandboxAdapter implements SandboxProvider {
       idleTtlMs: null,
       timer: null,
       resources: new Set(),
+      inFlight: 0,
       disarmed: false,
     });
     return handle;
@@ -402,6 +424,7 @@ export class MicrosandboxAdapter implements SandboxProvider {
         idleTtlMs: null,
         timer: null,
         resources: new Set(),
+        inFlight: 0,
         disarmed: false,
       });
     } else {
@@ -657,12 +680,33 @@ export class MicrosandboxAdapter implements SandboxProvider {
     if (entry.timer !== null) clearTimeout(entry.timer);
     entry.timer = setTimeout(() => {
       entry.timer = null;
-      // A live tunnel or forward holds the sandbox awake; its release re-arms this timer.
+      // A call in flight is activity, and so is a live tunnel or forward. Re-arm rather than stop a
+      // sandbox that is working; a tunnel's release re-arms this timer too (see `#release`).
+      if (entry.inFlight > 0) {
+        this.#touch(handle);
+        return;
+      }
       if (entry.resources.size > 0) return;
       void this.stop(handle).catch(() => {
         // The sandbox was swept or removed elsewhere; the TTL is already spent.
       });
     }, entry.idleTtlMs);
+  }
+
+  /** One operation starting: a call being awaited is not idleness. */
+  #begin(handle: SandboxHandle): void {
+    const entry = this.#live.get(liveKey(handle));
+    if (entry === undefined) return;
+    entry.inFlight += 1;
+    this.#touch(handle);
+  }
+
+  /** One operation finished: the idle clock starts from here. */
+  #end(handle: SandboxHandle): void {
+    const entry = this.#live.get(liveKey(handle));
+    if (entry === undefined) return;
+    entry.inFlight = Math.max(0, entry.inFlight - 1);
+    this.#touch(handle);
   }
 
   #disarm(handle: SandboxHandle): void {
