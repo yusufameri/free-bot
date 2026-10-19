@@ -27,6 +27,7 @@ import {
   refusedLine,
   statusLine,
 } from "../src/library.ts";
+import { refusalCode } from "../src/overlays.ts";
 
 export interface WorkspaceListing {
   readonly path: string;
@@ -81,12 +82,6 @@ function span(className: string, text: string): HTMLSpanElement {
   node.className = className;
   node.textContent = text;
   return node;
-}
-
-/** The refusal name a failed call carries, or `unknown` for a failure that names nothing. */
-function codeOf(error: unknown): string {
-  const code = (error as { code?: unknown }).code;
-  return typeof code === "string" ? code : "unknown";
 }
 
 export function mountLibrary(config: {
@@ -213,7 +208,7 @@ export function mountLibrary(config: {
     } catch (error) {
       entries = [];
       listPath = path;
-      refused = codeOf(error);
+      refused = refusalCode(error);
       paintList();
       setState("refused", statusLine("refused", path, refused));
     }
@@ -230,7 +225,7 @@ export function mountLibrary(config: {
     } catch (error) {
       openPath = path;
       openText = null;
-      refused = codeOf(error);
+      refused = refusalCode(error);
       showView(path, null, refused);
     }
     config.onChange?.();
