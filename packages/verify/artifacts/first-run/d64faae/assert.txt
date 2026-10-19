@@ -1,0 +1,397 @@
+
+## the launch
+the launcher's own line: freebot up: model mode auto, keyless, replaying /Users/yusufameri/projects/free-bot-u10.13/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open` with FREEBOT_HOME and FREEBOT_WORKSPACE pointing at fresh directories this driver made, so the store starts with no Bot at all. The vault starts empty, so no key is read anywhere and the machine runs keyless. The three connections this driver saves are local stubs it starts itself; the vault those stubs wrote is removed before the last step, so the run at the end replays the committed transcript. No key material exists in this run, and nothing a person made is touched.
+ok   the launcher says it is keyless, so every run here replays
+       actual   true
+       expected true
+ok   the store this driver made starts with no Bot in it
+       actual   {"bots":[]}
+       expected {"bots":[]}
+the run path's containers before any run: []
+
+## the empty root: the first-run screen, not the shell
+ok   the empty root opens the first-run screen on its first pane
+       actual   [true,1,"01 / 03 — NAME","Who is this Bot?"]
+       expected [true,1,"01 / 03 — NAME","Who is this Bot?"]
+ok   and the shell is not the screen: no Bot list, no operator frame, no conversation
+       actual   {"bots":0,"operator":"false","sidebar":true,"provider":true,"thread":0}
+       expected {"bots":0,"operator":"false","sidebar":true,"provider":true,"thread":0}
+ok   the pane's standing copy is the export's, read off the DOM
+       actual   {"hint":"A name is the whole requirement. It becomes the sidebar row and the label on its computer.","label":"Bot name","placeholder":"Atlas"}
+       expected {"hint":"A name is the whole requirement. It becomes the sidebar row and the label on its computer.","label":"Bot name","placeholder":"Atlas"}
+ok   the primary is held down until the pane's question is answered, and Skip is the way out
+       actual   ["Continue",true,"Skip"]
+       expected ["Continue",true,"Skip"]
+artifact 01-empty-root.png (24344 bytes)
+
+## pane one: a name makes a real Bot, and nothing is made before it
+ok   typing a name arms the primary
+       actual   [false,"Atlas"]
+       expected [false,"Atlas"]
+artifact 02-pane-name.png (24500 bytes)
+ok   no Bot exists before the person asks for one
+       actual   0
+       expected 0
+ok   Continue on pane one made exactly one Bot, with the name the person typed
+       actual   [1,"bot-local","Atlas"]
+       expected [1,"bot-local","Atlas"]
+ok   it carries a first thread to run in, and no purpose yet
+       actual   [1,"New conversation"]
+       expected [1,"New conversation"]
+
+## pane two: the purpose is kept
+ok   pane two asks the export's two questions, with the primary held down
+       actual   {"title":"What is it for?","hint":"One line. This seeds the soul — the system prompt this Bot runs on — and you can rewrite it later.","roleLabel":"Label","purposeLabel":"What should it handle?","rolePlaceholder":"Chief of staff","purposePlaceholder":"Release pipeline, changelog, dependency sweeps","primaryDisabled":"true"}
+       expected {"title":"What is it for?","hint":"One line. This seeds the soul — the system prompt this Bot runs on — and you can rewrite it later.","roleLabel":"Label","purposeLabel":"What should it handle?","rolePlaceholder":"Chief of staff","purposePlaceholder":"Release pipeline, changelog, dependency sweeps","primaryDisabled":"true"}
+artifact 03-pane-purpose.png (32085 bytes)
+ok   the record now carries both fields, over the wire the page wrote them with
+       actual   [1,"Chief of staff","Release pipeline, changelog, dependency sweeps"]
+       expected [1,"Chief of staff","Release pipeline, changelog, dependency sweeps"]
+the journal as the server wrote it: [{"op":"bot.create","id":"bot-local","name":"Atlas","at":1792447156907},{"op":"thread.create","id":"thread-1","botId":"bot-local","title":"New conversation","at":1792447156912},{"op":"bot.update","id":"bot-local","role":"Chief of staff","purpose":"Release pipeline, changelog, dependency sweeps","at":1792447157114}]
+ok   and the journal holds the Bot, its thread and one update, the update carrying the purpose
+       actual   [3,["bot.create","thread.create","bot.update"],"Chief of staff","Release pipeline, changelog, dependency sweeps"]
+       expected [3,["bot.create","thread.create","bot.update"],"Chief of staff","Release pipeline, changelog, dependency sweeps"]
+ok   replaying that journal comes back to the same Bot, with the purpose intact
+       actual   [1,"Atlas","Release pipeline, changelog, dependency sweeps",true,[]]
+       expected [1,"Atlas","Release pipeline, changelog, dependency sweeps",true,[]]
+
+## pane three: the starting job
+ok   pane three is the export's, and its primary is the last pane's
+       actual   {"title":"Start with a job.","hint":"Pick one to prefill the composer, or skip and type your own.","primary":"Start working"}
+       expected {"title":"Start with a job.","hint":"Pick one to prefill the composer, or skip and type your own.","primary":"Start working"}
+ok   the four chips are the export's, each carrying the prompt it prefills
+       actual   [["Audit for committed secrets","Audit the repo for committed secrets and draft the cleanup."],["Draft this week's changelog","Draft this week's changelog from merged PRs."],["Sweep dependencies","Sweep dependencies and report what is stale, with a plan."],["Summarise since last release","Summarise what changed in main since the last release."]]
+       expected [["Audit for committed secrets","Audit the repo for committed secrets and draft the cleanup."],["Draft this week's changelog","Draft this week's changelog from merged PRs."],["Sweep dependencies","Sweep dependencies and report what is stale, with a plan."],["Summarise since last release","Summarise what changed in main since the last release."]]
+
+## the fourth moment: the provider pane, through page 1's own route
+ok   the pane's empty state is the export's own ask, before anything is saved
+       actual   {"state":"empty","shown":true,"headline":"Test a real tool call before we save it.","intro":"The smoke test sends one request with a tool definition. What comes back sets this connection's capability flags.","eyebrow":"Connect a provider","save":"Save and test","vault":false,"keyKept":"Key goes to the vault, never the process env.","endpoint":""}
+       expected {"state":"empty","shown":true,"headline":"Test a real tool call before we save it.","intro":"The smoke test sends one request with a tool definition. What comes back sets this connection's capability flags.","eyebrow":"Connect a provider","save":"Save and test","vault":false,"keyKept":"Key goes to the vault, never the process env.","endpoint":""}
+artifact 04-pane-job-and-provider-empty.png (69508 bytes)
+ok   a stub that calls the tool makes the connection capable, with its own reply and flags
+       actual   ["capable","This connection is capable","save-time-smoke",["tool calling: strong","streaming: true","structured output: unknown","context window: unknown"],true,"POST http://127.0.0.1:50964/v1/chat/completions  model stub-capable"]
+       expected ["capable","This connection is capable","save-time-smoke",["tool calling: strong","streaming: true","structured output: unknown","context window: unknown"],true,"POST http://127.0.0.1:50964/v1/chat/completions  model stub-capable"]
+the capable stub's own requests: [{"tools":["freebot_smoke_echo"],"toolChoice":"auto","stream":true,"responseFormat":null,"roles":["user"]},{"tools":["freebot_smoke_echo"],"toolChoice":"auto","stream":true,"responseFormat":null,"roles":["user","assistant","tool"]}]
+ok   the request carried the smoke tool and asked for a call, and the closing turn followed
+       actual   [2,["freebot_smoke_echo"],"auto",true,["user","assistant","tool"]]
+       expected [2,["freebot_smoke_echo"],"auto",true,["user","assistant","tool"]]
+artifact 05-provider-capable.png (79436 bytes)
+ok   a stub that never calls a tool is limited, and says which fallback earned it
+       actual   ["limited","This connection answers, without a tool call",null,["tool calling: weak","streaming: unknown","structured output: true","context window: unknown"]]
+       expected ["limited","This connection answers, without a tool call",null,["tool calling: weak","streaming: unknown","structured output: true","context window: unknown"]]
+the limited stub's own requests: [{"tools":["freebot_smoke_echo"],"toolChoice":"auto","stream":true,"responseFormat":null,"roles":["user"]},{"tools":["freebot_smoke_echo"],"toolChoice":"auto","stream":false,"responseFormat":null,"roles":["user"]},{"tools":[],"toolChoice":null,"stream":false,"responseFormat":{"type":"json_object"},"roles":["system","user"]}]
+ok   and the fallback asked for a JSON object, which is what the weak flag rests on
+       actual   [3,{"type":"json_object"},1]
+       expected [3,{"type":"json_object"},1]
+artifact 06-provider-limited.png (85462 bytes)
+ok   an endpoint that refuses is untested, with the provider's own status and message
+       actual   ["untested","The connection did not pass its test",{"status":401,"message":"auth rejected (401): Invalid 'Authorization' header or token."},null,[]]
+       expected ["untested","The connection did not pass its test",{"status":401,"message":"auth rejected (401): Invalid 'Authorization' header or token."},null,[]]
+artifact 07-provider-untested.png (84006 bytes)
+
+## the job, and the app after the wizard
+ok   the chip the person picked is the one the screen marks chosen
+       actual   [["Audit for committed secrets",false],["Draft this week's changelog",true],["Sweep dependencies",false],["Summarise since last release",false]]
+       expected [["Audit for committed secrets",false],["Draft this week's changelog",true],["Sweep dependencies",false],["Summarise since last release",false]]
+removed the driver's own vault and record under /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-first-run-l6kMRe, so the run at the end replays
+the composer's 46px is the export's own `min-height` for `#prompt` (freebot-prototype.html:373); U6.8 moved it from the 36 this driver was written against
+ok   the wizard is gone, the sidebar shows the Bot a person named, and the job is the first prompt
+       actual   {"bots":[["bot-local","Atlas",true]],"threads":1,"title":"Atlas · New conversation","prompt":"Draft this week's changelog from merged PRs.","promptDisabled":false,"promptHeight":46,"providerHidden":true,"bodyPage":"app","wizardHidden":true}
+       expected {"bots":[["bot-local","Atlas",true]],"threads":1,"title":"Atlas · New conversation","prompt":"Draft this week's changelog from merged PRs.","promptDisabled":false,"promptHeight":46,"providerHidden":true,"bodyPage":"app","wizardHidden":true}
+ok   and the composer takes focus when it is asked
+       actual   "prompt"
+       expected "prompt"
+the active element before the driver asked: ; the app's own call is asynchronous, so which of the two won is a race the browser decides
+the focus note: this driver turns CDP's focus emulation on, and Chrome answers a focus call on the page with the element it last held, which is the wizard's key field it has since hidden. That field is display:none, so a real browser has already blurred it; `main.ts`'s own focus call is the export's behaviour at `freebot-prototype.html:2240`, and the check above is what a driver can observe: the composer is displayed, enabled and takes the focus when it is asked.
+artifact 08-app-after-wizard.png (93491 bytes)
+
+## the first prompt runs, in the Bot's own thread
+ok   the first run landed in the Bot's own thread and finished
+       actual   [1,0,"Draft this week's changelog from merged PRs.",1,1,1,"Draft this week's changelog from merged PRs."]
+       expected [1,0,"Draft this week's changelog from merged PRs.",1,1,1,"Draft this week's changelog from merged PRs."]
+the launcher's own line about the mode: freebot up: model mode auto, keyless, replaying /Users/yusufameri/projects/free-bot-u10.13/packages/pi-bridge/fixtures/rpc-handshake.jsonl
+artifact 09-first-run-in-the-bot-thread.png (136123 bytes)
+
+## the next boot: a Bot exists, so the wizard does not come back
+ok   a second boot over the same bots root opens the app, not the first-run screen
+       actual   {"wizardHidden":true,"wizardShown":false,"bots":[["bot-local","Atlas"]],"threads":1}
+       expected {"wizardHidden":true,"wizardShown":false,"bots":[["bot-local","Atlas"]],"threads":1}
+artifact 10-second-boot.png (136157 bytes)
+
+## the containers the run path left behind
+ok   the label-scoped container set is back where this driver found it
+       actual   []
+       expected []
+
+## the geometry pass: the screen's frame at the nine viewports
+ok   the export's initial screen was replaced exactly once
+       actual   1
+       expected 1
+ok   mobile-compact 360x800 — inner width (width)
+       actual   "304px"
+       expected "304px"
+ok   mobile-compact 360x800 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   mobile-compact 360x800 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   mobile-compact 360x800 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   mobile-compact 360x800 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   mobile-compact 360x800 — inner box (box)
+       actual   "304 x 28"
+       expected "304 x 28"
+ok   mobile-compact 360x800 — title box (box)
+       actual   "304 x 28"
+       expected "304 x 28"
+ok   mobile-compact 360x800 — the frame has no horizontal overflow
+       actual   [360,360]
+       expected [360,360]
+ok   mobile-compact 360x800 — the export shows the same pair
+       actual   [360,360]
+       expected [360,360]
+RESULT: PASS — viewport mobile-compact 360x800
+ok   mobile-standard 390x844 — inner width (width)
+       actual   "334px"
+       expected "334px"
+ok   mobile-standard 390x844 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   mobile-standard 390x844 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   mobile-standard 390x844 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   mobile-standard 390x844 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   mobile-standard 390x844 — inner box (box)
+       actual   "334 x 28"
+       expected "334 x 28"
+ok   mobile-standard 390x844 — title box (box)
+       actual   "334 x 28"
+       expected "334 x 28"
+ok   mobile-standard 390x844 — the frame has no horizontal overflow
+       actual   [390,390]
+       expected [390,390]
+ok   mobile-standard 390x844 — the export shows the same pair
+       actual   [390,390]
+       expected [390,390]
+RESULT: PASS — viewport mobile-standard 390x844
+ok   mobile-large 430x932 — inner width (width)
+       actual   "374px"
+       expected "374px"
+ok   mobile-large 430x932 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   mobile-large 430x932 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   mobile-large 430x932 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   mobile-large 430x932 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   mobile-large 430x932 — inner box (box)
+       actual   "374 x 28"
+       expected "374 x 28"
+ok   mobile-large 430x932 — title box (box)
+       actual   "374 x 28"
+       expected "374 x 28"
+ok   mobile-large 430x932 — the frame has no horizontal overflow
+       actual   [430,430]
+       expected [430,430]
+ok   mobile-large 430x932 — the export shows the same pair
+       actual   [430,430]
+       expected [430,430]
+RESULT: PASS — viewport mobile-large 430x932
+ok   foldable-small-tablet 600x960 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   foldable-small-tablet 600x960 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   foldable-small-tablet 600x960 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   foldable-small-tablet 600x960 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   foldable-small-tablet 600x960 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   foldable-small-tablet 600x960 — inner box (box)
+       actual   "520 x 40"
+       expected "520 x 40"
+ok   foldable-small-tablet 600x960 — title box (box)
+       actual   "520 x 40"
+       expected "520 x 40"
+ok   foldable-small-tablet 600x960 — the frame has no horizontal overflow
+       actual   [600,600]
+       expected [600,600]
+ok   foldable-small-tablet 600x960 — the export shows the same pair
+       actual   [600,600]
+       expected [600,600]
+RESULT: PASS — viewport foldable-small-tablet 600x960
+ok   tablet-portrait 820x1180 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   tablet-portrait 820x1180 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   tablet-portrait 820x1180 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   tablet-portrait 820x1180 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   tablet-portrait 820x1180 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   tablet-portrait 820x1180 — inner box (box)
+       actual   "520 x 150"
+       expected "520 x 150"
+ok   tablet-portrait 820x1180 — title box (box)
+       actual   "520 x 150"
+       expected "520 x 150"
+ok   tablet-portrait 820x1180 — the frame has no horizontal overflow
+       actual   [820,820]
+       expected [820,820]
+ok   tablet-portrait 820x1180 — the export shows the same pair
+       actual   [820,820]
+       expected [820,820]
+RESULT: PASS — viewport tablet-portrait 820x1180
+ok   tablet-landscape 1024x768 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   tablet-landscape 1024x768 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   tablet-landscape 1024x768 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   tablet-landscape 1024x768 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   tablet-landscape 1024x768 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   tablet-landscape 1024x768 — inner box (box)
+       actual   "520 x 252"
+       expected "520 x 252"
+ok   tablet-landscape 1024x768 — title box (box)
+       actual   "520 x 252"
+       expected "520 x 252"
+ok   tablet-landscape 1024x768 — the frame has no horizontal overflow
+       actual   [1024,1024]
+       expected [1024,1024]
+ok   tablet-landscape 1024x768 — the export shows the same pair
+       actual   [1024,1024]
+       expected [1024,1024]
+RESULT: PASS — viewport tablet-landscape 1024x768
+ok   laptop 1366x768 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   laptop 1366x768 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   laptop 1366x768 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   laptop 1366x768 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   laptop 1366x768 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   laptop 1366x768 — inner box (box)
+       actual   "520 x 423"
+       expected "520 x 423"
+ok   laptop 1366x768 — title box (box)
+       actual   "520 x 423"
+       expected "520 x 423"
+ok   laptop 1366x768 — the frame has no horizontal overflow
+       actual   [1366,1366]
+       expected [1366,1366]
+ok   laptop 1366x768 — the export shows the same pair
+       actual   [1366,1366]
+       expected [1366,1366]
+RESULT: PASS — viewport laptop 1366x768
+ok   desktop 1440x900 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   desktop 1440x900 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   desktop 1440x900 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   desktop 1440x900 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   desktop 1440x900 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   desktop 1440x900 — inner box (box)
+       actual   "520 x 460"
+       expected "520 x 460"
+ok   desktop 1440x900 — title box (box)
+       actual   "520 x 460"
+       expected "520 x 460"
+ok   desktop 1440x900 — the frame has no horizontal overflow
+       actual   [1440,1440]
+       expected [1440,1440]
+ok   desktop 1440x900 — the export shows the same pair
+       actual   [1440,1440]
+       expected [1440,1440]
+RESULT: PASS — viewport desktop 1440x900
+ok   wide 1920x1080 — inner width (width)
+       actual   "520px"
+       expected "520px"
+ok   wide 1920x1080 — title size (font-size)
+       actual   "24px"
+       expected "24px"
+ok   wide 1920x1080 — hint size (font-size)
+       actual   "12.5px"
+       expected "12.5px"
+ok   wide 1920x1080 — brandmark gap (gap)
+       actual   "9px"
+       expected "9px"
+ok   wide 1920x1080 — caption size (font-size)
+       actual   "11px"
+       expected "11px"
+ok   wide 1920x1080 — inner box (box)
+       actual   "520 x 700"
+       expected "520 x 700"
+ok   wide 1920x1080 — title box (box)
+       actual   "520 x 700"
+       expected "520 x 700"
+ok   wide 1920x1080 — the frame has no horizontal overflow
+       actual   [1920,1920]
+       expected [1920,1920]
+ok   wide 1920x1080 — the export shows the same pair
+       actual   [1920,1920]
+       expected [1920,1920]
+RESULT: PASS — viewport wide 1920x1080
+
+## the panes themselves, at both ends of the matrix
+ok   pane 1 (#frPane1) fits the viewport at 360x800 and 1440x900
+       actual   [[360,360],[1440,1440]]
+       expected [[360,360],[1440,1440]]
+ok   pane 2 (#frPane2) fits the viewport at 360x800 and 1440x900
+       actual   [[360,360],[1440,1440]]
+       expected [[360,360],[1440,1440]]
+ok   pane 3 (#frPane3) fits the viewport at 360x800 and 1440x900
+       actual   [[360,360],[1440,1440]]
+       expected [[360,360],[1440,1440]]
+RESULT: PASS — the three panes
+
+chrome Chrome/155.0.8059.85; a really launched `bun run up --no-open` over a fresh FREEBOT_HOME and bots root, the machine's own vault never read; the capable, limited and untested connections are local stubs this driver started and then removed; the export is the committed copy with its initial screen changed to its first-run screen
+RESULT: PASS (113/113)
