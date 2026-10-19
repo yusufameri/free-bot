@@ -23,6 +23,8 @@
 import { eventIterator, oc } from "@orpc/contract";
 import { z } from "zod";
 import {
+  arrangeBotInput,
+  arrangeBotOutput,
   cancelRunInput,
   cancelRunOutput,
   connectConnectorInput,
@@ -188,6 +190,8 @@ const createBotProcedure = oc.input(createBotInput).output(createBotOutput).erro
 
 const updateBotProcedure = oc.input(updateBotInput).output(updateBotOutput).errors(BOT_ERRORS);
 
+const arrangeBotProcedure = oc.input(arrangeBotInput).output(arrangeBotOutput).errors(BOT_ERRORS);
+
 const listThreadsProcedure = oc
   .input(listThreadsInput)
   .output(listThreadsOutput)
@@ -271,6 +275,7 @@ export const apiContract = {
   list_bots: listBotsProcedure,
   create_bot: createBotProcedure,
   update_bot: updateBotProcedure,
+  arrange_bot: arrangeBotProcedure,
   list_threads: listThreadsProcedure,
   create_thread: createThreadProcedure,
   list_files: listFilesProcedure,
@@ -294,6 +299,7 @@ export const API_PROCEDURES = [
   "list_bots",
   "create_bot",
   "update_bot",
+  "arrange_bot",
   "list_threads",
   "create_thread",
   "list_files",

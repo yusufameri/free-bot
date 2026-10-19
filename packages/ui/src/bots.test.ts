@@ -25,7 +25,19 @@ import { applyMessage, initialState } from "./thread.ts";
 const TS = 1_792_221_550_000;
 
 function bot(botId: string, name: string, threadCount: number): Bot {
-  return { botId, name, role: "", purpose: "", createdAt: TS, threadCount };
+  return {
+    botId,
+    name,
+    role: "",
+    purpose: "",
+    createdAt: TS,
+    threadCount,
+    pinned: false,
+    section: "Work",
+    hidden: false,
+    group: false,
+    members: [],
+  };
 }
 
 function thread(threadId: string, prompts: readonly string[]): Thread {
@@ -55,6 +67,11 @@ describe("the Bot list", () => {
         selected: false,
         status: "idle",
         sub: "",
+        pinned: false,
+        section: "Work",
+        hidden: false,
+        group: false,
+        members: [],
       },
       {
         botId: "bot-2",
@@ -63,6 +80,11 @@ describe("the Bot list", () => {
         selected: true,
         status: "idle",
         sub: "",
+        pinned: false,
+        section: "Work",
+        hidden: false,
+        group: false,
+        members: [],
       },
     ]);
   });

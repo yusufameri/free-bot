@@ -200,7 +200,7 @@ describe("the box verdict", () => {
     const good = region({
       id: "content.center-composer",
       kind: "content",
-      boxDelta: { ...AGREE, agree: false, top: 56.69, height: -56.68 },
+      boxDelta: { ...AGREE, agree: false, top: 6.25, height: -6.25 },
     });
     const failures = verdictFailures([report([good])]);
     expect(failures).toEqual([]);

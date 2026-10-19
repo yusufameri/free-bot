@@ -53,6 +53,16 @@ export interface BotRecord {
   purpose: string;
   createdAt: number;
   updatedAt: number;
+  /** A Pinned row sits above the sections. */
+  pinned: boolean;
+  /** The sidebar section this Bot belongs to. The empty string is the unassigned group. */
+  section: string;
+  /** Hidden Bots leave the main list and appear under the Hidden Bots disclosure. */
+  hidden: boolean;
+  /** A group chat: its members are other Bots, and its row reads as a room rather than an agent. */
+  group: boolean;
+  /** The Bots that take part in a group chat. Empty for every ordinary Bot. */
+  members: string[];
 }
 
 /** One conversation with one Bot. Runs append to it; it is not recreated per run. */
@@ -67,9 +77,24 @@ export interface ThreadRecord {
 export type BotCommand =
   | { op: "bot.create"; id: string; name: string; at: number }
   | { op: "bot.update"; id: string; role: string; purpose: string; at: number }
+  | {
+      op: "bot.arrange";
+      id: string;
+      pinned: boolean;
+      section: string;
+      hidden: boolean;
+      group: boolean;
+      members: string[];
+      at: number;
+    }
   | { op: "thread.create"; id: string; botId: string; title: string; at: number };
 
-export const BOT_COMMAND_OPS = ["bot.create", "bot.update", "thread.create"] as const;
+export const BOT_COMMAND_OPS = [
+  "bot.create",
+  "bot.update",
+  "bot.arrange",
+  "thread.create",
+] as const;
 
 export interface BotLoadReport {
   /** Lines the journal held and replay accepted as commands. */
@@ -99,6 +124,15 @@ export interface UpdateBotInput {
   /** The short label beside the name; the empty string is allowed and means "not given yet". */
   role: string;
   purpose: string;
+}
+
+export interface ArrangeBotInput {
+  id: string;
+  pinned: boolean;
+  section: string;
+  hidden: boolean;
+  group: boolean;
+  members: string[];
 }
 
 export interface CreateThreadInput {
@@ -143,6 +177,15 @@ export function isBotCommand(value: unknown): value is BotCommand {
       return typeof value.name === "string" && value.name.length > 0;
     case "bot.update":
       return typeof value.role === "string" && typeof value.purpose === "string";
+    case "bot.arrange":
+      return (
+        typeof value.pinned === "boolean" &&
+        typeof value.section === "string" &&
+        typeof value.hidden === "boolean" &&
+        typeof value.group === "boolean" &&
+        Array.isArray(value.members) &&
+        value.members.every((member) => typeof member === "string")
+      );
     case "thread.create":
       return (
         typeof value.botId === "string" &&
@@ -197,6 +240,22 @@ export class BotStore {
       id: input.id,
       role: input.role,
       purpose: input.purpose,
+      at: this.#now(),
+    };
+    this.#commit(command);
+    return view(this.#requireBot(input.id));
+  }
+
+  /** Place a Bot in the sidebar. Applying the same placement twice converges on one record. */
+  arrangeBot(input: ArrangeBotInput): BotRecord {
+    const command: BotCommand = {
+      op: "bot.arrange",
+      id: input.id,
+      pinned: input.pinned,
+      section: input.section,
+      hidden: input.hidden,
+      group: input.group,
+      members: input.members,
       at: this.#now(),
     };
     this.#commit(command);
@@ -319,6 +378,11 @@ export class BotStore {
           purpose: "",
           createdAt: command.at,
           updatedAt: command.at,
+          pinned: false,
+          section: "Work",
+          hidden: false,
+          group: false,
+          members: [],
         });
         return;
       }
@@ -326,6 +390,16 @@ export class BotStore {
         const bot = this.#requireBot(command.id);
         bot.role = command.role;
         bot.purpose = command.purpose;
+        bot.updatedAt = command.at;
+        return;
+      }
+      case "bot.arrange": {
+        const bot = this.#requireBot(command.id);
+        bot.pinned = command.pinned;
+        bot.section = command.section;
+        bot.hidden = command.hidden;
+        bot.group = command.group;
+        bot.members = [...command.members];
         bot.updatedAt = command.at;
         return;
       }

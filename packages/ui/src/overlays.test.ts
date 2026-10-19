@@ -20,7 +20,19 @@ import {
 const TS = 1_792_221_550_000;
 
 function bot(botId: string, name: string, role = ""): Bot {
-  return { botId, name, role, purpose: "", createdAt: TS, threadCount: 1 };
+  return {
+    botId,
+    name,
+    role,
+    purpose: "",
+    createdAt: TS,
+    threadCount: 1,
+    pinned: false,
+    section: "Work",
+    hidden: false,
+    group: false,
+    members: [],
+  };
 }
 
 function thread(threadId: string, title: string): Thread {

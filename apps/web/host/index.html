@@ -803,6 +803,270 @@
   body[data-page="first-run"] .meta,
   body[data-page="first-run"] #bot-title,
   body[data-tab="library"] #composer-wrap { display: none; }
+
+  /* ── the export's shell, brought in whole ────────────────────────────────
+     The sidebar's brand row, Pinned/Work/Hidden headings, the Workspace nav, and the footer are
+     the export's own (`freebot-prototype.html:212-247`). The chat column is its `.main`
+     (`:250-380`), and the page bodies follow `:403-439`. */
+  .sb-list { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding: 2px 10px 10px; }
+  .sb-brand { display: flex; align-items: center; gap: 9px; padding: 6px 8px 2px; }
+  .sb-brand .name {
+    flex: 1; min-width: 0; font-family: var(--font-display); font-weight: 600; font-size: 15px;
+  }
+  .avatar {
+    width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border);
+    display: grid; place-items: center; font-family: var(--font-mono); font-size: 10px;
+    flex: none; background: var(--surface); color: var(--fg);
+  }
+  .avatar i { display: block; width: 9px; height: 9px; background: var(--fg); border-radius: 2px; }
+  .rule { border: 0; border-top: 1px solid var(--border); margin: 0; }
+  .sb-rule { margin: 12px 8px; }
+  #sidebar-title, #threads-title {
+    display: flex; align-items: center; gap: 7px; width: 100%; margin: 0;
+    padding: 12px 8px 5px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  }
+  #sidebar-title { display: none; }
+  #hidden-toggle { cursor: pointer; }
+  #hidden-toggle .chev { display: inline-block; transition: transform var(--dur) var(--ease); }
+  #hidden-toggle[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  #hidden-count { margin-left: auto; }
+  .nav-row { width: 100%; }
+  .sb-row.is-active, .thread-row.is-active { background: var(--accent-2); }
+  #threads-bot { padding: 0 8px 4px; }
+  #new-thread { margin-top: 4px; }
+  .sb-foot { display: flex; flex-direction: column; gap: 2px; }
+  .sb-foot .tag { margin-left: auto; }
+  .sb-acct {
+    display: flex; align-items: center; gap: 9px; width: 100%; height: 40px; padding: 0 8px;
+    border-radius: var(--radius); transition: background var(--dur-fast) var(--ease);
+  }
+  .sb-acct:hover { background: var(--hover); }
+  .sb-acct .grow { min-width: 0; }
+  .acct-name { display: block; font-size: 13.5px; }
+  .acct-sub { display: block; }
+  .sb-hidden-controls { display: none; }
+  #provider-open { width: 100%; }
+
+  #center { position: relative; }
+  .chead {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    border-bottom: 1px solid var(--border); flex: none; min-height: 56px; overflow: hidden;
+  }
+  .botname {
+    display: flex; align-items: center; gap: 8px; padding: 5px 9px 5px 6px;
+    min-width: 0; border-radius: var(--radius); transition: background var(--dur);
+  }
+  .botname .nm {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .botname:hover { background: var(--hover); }
+  .botname .nm {
+    font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .chead .hint { max-width: 220px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  /* The export's header has no tab strip. The app's two surfaces still need a door, so the strip
+     floats in the header row instead of taking a row of its own; the transcript below keeps the
+     export's geometry. */
+  #tabs {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; margin: 0; padding: 0; z-index: 6;
+  }
+  #thread {
+    flex: 1; overflow-y: auto; overflow-x: hidden; min-width: 0; min-height: 0;
+    padding: 22px max(22px, calc((100% - 760px) / 2)) 8px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  #thread > :first-child { margin-top: auto; }
+  .message.user { margin: 0; }
+  .turn { margin: 0; }
+  #operator { display: block; flex: none; }
+  .composer-wrap { flex: none; padding: 10px 22px 16px; }
+  .composer { max-width: 760px; margin: 0 auto; }
+  .composer-box {
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    transition: border-color var(--dur) var(--ease);
+  }
+  .composer-box:focus-within { border-color: var(--muted); }
+  #prompt {
+    display: block; width: 100%; border: 0; background: none; resize: none;
+    padding: 12px 13px 4px; min-height: 46px; max-height: 180px; font-size: 15px;
+    line-height: 1.55; outline: none; color: var(--fg);
+  }
+  #prompt::placeholder { color: var(--muted); }
+  .composer-tools { display: flex; align-items: center; gap: 2px; padding: 4px 7px 7px; }
+  .composer-tools .spacer { flex: 1; }
+  .composer-tools .iconbtn { width: 28px; height: 28px; }
+  .composer-send { height: 30px; width: 30px; padding: 0; }
+  .chint {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 7px 3px 0; font-size: 11.5px; color: var(--muted);
+  }
+
+  .groupbar {
+    display: flex; align-items: center; gap: 7px; padding: 8px 14px;
+    border-bottom: 1px solid var(--border); flex: none; flex-wrap: wrap;
+  }
+  .groupbar[hidden] { display: none; }
+  .groupbar .cap { margin: 0; }
+  .gm {
+    display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px;
+    border: 1px solid var(--border); border-radius: 999px; font-size: 12.5px;
+    transition: border-color var(--dur), color var(--dur);
+  }
+  .gm:hover { border-color: var(--fg); }
+  .gm .s { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .groupbar .tag { margin-left: auto; }
+
+  #page { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; min-width: 0; }
+  #page[hidden] { display: none; }
+  body[data-page-open="true"] #thread,
+  body[data-page-open="true"] #operator,
+  body[data-page-open="true"] #tabs,
+  body[data-page-open="true"] #groupbar,
+  body[data-page-open="true"] #library { display: none; }
+  .page { min-height: 0; }
+  .page-inner { max-width: 1040px; margin: 0 auto; padding: 26px 26px 64px; }
+  .page-inner.narrow { max-width: 720px; }
+  .page-title {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 18px;
+    flex-wrap: wrap; margin-bottom: 22px;
+  }
+  .page-title h1 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.15; }
+  .cap {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 10px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); display: block;
+  }
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 12px; }
+  .card {
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    padding: 15px; transition: border-color var(--dur) var(--ease);
+  }
+  .card.interactive { text-align: left; width: 100%; }
+  .card.interactive:hover { border-color: var(--fg); }
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .listcard {
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    overflow: hidden;
+  }
+  .listrow {
+    display: flex; align-items: center; gap: 12px; padding: 13px 15px; width: 100%;
+    border-bottom: 1px solid var(--border); transition: background var(--dur-fast) var(--ease);
+    text-align: left;
+  }
+  .listrow:last-child { border-bottom: 0; }
+  .listrow:hover { background: var(--hover); }
+  .monogram {
+    width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border);
+    display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px;
+    flex: none; background: var(--bg); letter-spacing: 0.02em;
+  }
+  .monogram.lg { width: 46px; height: 46px; font-size: 17px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .grid-side { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
+  .stack { display: flex; flex-direction: column; }
+  .stack > * + * { margin-top: 12px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .grow { flex: 1; min-width: 0; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mono { font-family: var(--font-mono); }
+  .muted { color: var(--muted); }
+  .fs-meta { font-size: var(--fs-meta); }
+  .hint { color: var(--muted); font-size: var(--fs-meta); line-height: 1.5; }
+  .meta-row { display: flex; align-items: center; gap: 8px; font-size: var(--fs-meta); color: var(--muted); }
+  .kv { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 6px 0; font-size: 14px; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-family: var(--font-mono); font-size: 12.5px; text-align: right; overflow-wrap: anywhere; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .seg button {
+    padding: 6px 12px; font-size: 13px; color: var(--muted);
+    border-right: 1px solid var(--border); transition: background var(--dur), color var(--dur);
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button:hover { color: var(--fg); background: var(--hover); }
+  .seg button.is-active { background: var(--fg); color: var(--bg); }
+  .tag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .tag.solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .tag.dim { border-style: dashed; }
+  .chip {
+    padding: 7px 12px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px;
+    color: var(--muted); transition: border-color var(--dur), color var(--dur);
+  }
+  .chip:hover, .chips .chip.on { border-color: var(--fg); color: var(--fg); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .input {
+    display: block; width: 100%; min-width: 0; height: 34px; padding: 0 11px;
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+    color: var(--fg); font-size: 14px; outline: none;
+  }
+  .input:focus { border-color: var(--fg); }
+  .sw {
+    width: 34px; height: 19px; border-radius: 999px; border: 1px solid var(--border);
+    position: relative; flex: none; cursor: pointer;
+  }
+  .sw i {
+    position: absolute; top: 3px; left: 3px; width: 11px; height: 11px;
+    border-radius: 50%; background: var(--muted); transition: left var(--dur), background var(--dur);
+  }
+  .sw.on { border-color: var(--fg); }
+  .sw.on i { left: 18px; background: var(--fg); }
+  .bar { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--fg); }
+  .opt {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
+  }
+  .opt.on { border-color: var(--fg); }
+  .opt .t { font-size: 14px; }
+  .opt .d { color: var(--muted); font-size: var(--fs-meta); margin-top: 2px; }
+  .phones { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; }
+  .phone {
+    width: 300px; border: 1px solid var(--border); border-radius: 26px; padding: 9px;
+    background: var(--surface); flex: none;
+  }
+  .phone .screen {
+    border: 1px solid var(--border); border-radius: 18px; height: 560px;
+    overflow: hidden; display: flex; flex-direction: column; background: var(--bg);
+  }
+  .pbar {
+    display: flex; align-items: center; justify-content: space-between; padding: 9px 14px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+    border-bottom: 1px solid var(--border); flex: none;
+  }
+  .pbody { padding: 12px; overflow-y: auto; min-height: 0; }
+  .empty-state { padding: 34px 24px; text-align: center; }
+  .empty-state h3 { font-family: var(--font-display); font-size: var(--fs-h3); }
+  .empty-state p { max-width: 52ch; margin: 10px auto 0; }
+  .menu {
+    position: fixed; z-index: 80; min-width: 226px; max-width: 300px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px;
+  }
+  .menu button {
+    display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 9px;
+    border-radius: 6px; font-size: 13.5px; color: var(--fg); transition: background var(--dur-fast);
+  }
+  .menu button:hover { background: var(--hover-2); }
+  .toast {
+    position: fixed; z-index: 90; left: 50%; bottom: 26px; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 9px 14px; font-size: 13.5px; max-width: calc(100vw - 32px);
+    display: flex; align-items: center; gap: 9px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field > label { font-size: var(--fs-meta); color: var(--muted); }
+  @media (max-width: 1120px) {
+    .grid-side { grid-template-columns: minmax(0, 1fr); }
+    .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  }
 </style>
 </head>
 <body>
@@ -810,7 +1074,41 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
   <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M16 16l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 3h6l-1 6 4 4H6l4-4-1-6Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 13v8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-eyeoff" viewBox="0 0 24 24"><path d="M4 5l16 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M9.5 7.2A9.7 9.7 0 0 1 12 6c6.4 0 10 6 10 6a17 17 0 0 1-3.3 3.6M6.3 8.4A16.8 16.8 0 0 0 2 12s3.6 6 10 6a9.9 9.9 0 0 0 3.2-.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24"><path d="M18 9l-7.6 7.6a4 4 0 0 1-5.7-5.7L12 3.6a2.8 2.8 0 1 1 4 4l-7.5 7.5a1.4 1.4 0 0 1-2-2l7-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-wave" viewBox="0 0 24 24"><path d="M4 12h1.5M8 8v8M12 4v16M16 8v8M20 12h-1.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="currentColor"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M15 6.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h.5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h3.6l1.8 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h7l5 5v13H6V3Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M13 3v5h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 3v3M14 3v3M10 18v3M14 18v3M3 10h3M3 14h3M18 10h3M18 14h3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5 20c1.2-3.6 3.9-5.4 7-5.4s5.8 1.8 7 5.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24"><path d="M19 12H5m6-7-7 7 7 7" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-13.7-4.7L4 8.5M4 13a8 8 0 0 0 13.7 4.7L20 15.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4 5v3.5h3.5M20 19v-3.5h-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5l11 6.5-11 6.5v-13Z" fill="currentColor"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8.5 10V8a3.5 3.5 0 0 1 7 0v2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-term" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M7.5 10l2.5 2-2.5 2M12.5 14h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-browser" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 9h18" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="6.8" r=".8" fill="currentColor"/><circle cx="8.6" cy="6.8" r=".8" fill="currentColor"/></symbol>
+  <symbol id="i-apps" viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-desktop" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M9 20h6M12 16.5V20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13.5a3.5 3.5 0 0 0 5 0l3-3a3.5 3.5 0 0 0-5-5l-1 1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M14 10.5a3.5 3.5 0 0 0-5 0l-3 3a3.5 3.5 0 0 0 5 5l1-1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2.5h-15L6 16Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10.5 20.5a1.8 1.8 0 0 0 3 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5 21 19H3l9-15.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 9.5V14M12 16.6v.1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 2.5V12c0 4.3-3 7.6-7 9-4-1.4-7-4.7-7-9V5.5L12 3Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 12l2.2 2.2L15.5 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5.5A2 2 0 0 1 6 3.5h13V19H6a2 2 0 0 0-2 2V5.5Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M4 19a2 2 0 0 1 2-2h13" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12L16 12h5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3.5v2.2M12 18.3v2.2M20.5 12h-2.2M5.7 12H3.5M18 6l-1.5 1.6M7.5 16.5 6 18M18 18l-1.5-1.6M7.5 7.5 6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="9" r="3.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 19.5c1-3.2 3.4-4.8 6-4.8s5 1.6 6 4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M16 6.2a3 3 0 0 1 0 5.6M17.5 14.9c2 .4 3.4 1.9 4 4.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="3" width="10" height="18" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.8 18h2.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="18" cy="12" r="1.4" fill="currentColor"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3.5 13.6 9 19 10.6 13.6 12.2 12 17.7 10.4 12.2 5 10.6 10.4 9 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M18.5 16.5l.7 2.1 2.1.7-2.1.7-.7 2.1" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
 </defs></svg>
 <div class="shell" data-operator="false">
   <aside id="sidebar" hidden>
@@ -822,37 +1120,96 @@
         <span class="sb-search-label">Search</span>
         <span class="kbd">⌘K</span>
       </button>
+      <button id="sidebar-new-group" class="iconbtn" type="button" aria-label="New group chat">
+        <svg class="ic" aria-hidden="true"><use href="#i-people"/></svg>
+      </button>
       <button id="sidebar-new-chat" class="iconbtn" type="button" aria-label="New chat">
         <svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg>
       </button>
     </div>
-    <div class="sb-scroll">
-      <h2 id="sidebar-title">Bots</h2>
+    <div class="sb-list">
+      <div class="sb-brand">
+        <span class="avatar"><i></i></span>
+        <span class="name">FreeBot</span>
+        <span class="tag">local</span>
+      </div>
+      <h2 id="sidebar-title" class="sb-label">Bots</h2>
       <div id="bot-list"></div>
-      <input id="new-bot-name" type="text" autocomplete="off">
-      <button id="new-bot" type="button"></button>
+      <div id="hidden-bots" hidden>
+        <button id="hidden-toggle" class="sb-label" type="button" aria-expanded="false">
+          <span class="chev" aria-hidden="true"><svg class="ic-sm" aria-hidden="true"><use href="#i-chev"/></svg></span>
+          Hidden Bots
+          <span class="mono" id="hidden-count">0</span>
+        </button>
+        <div id="hidden-group" hidden></div>
+      </div>
       <section id="threads">
-        <h2 id="threads-title">Threads</h2>
+        <h2 id="threads-title" class="sb-label">Threads</h2>
         <p id="threads-bot"></p>
         <div id="thread-list"></div>
         <button id="new-thread" type="button"></button>
       </section>
+      <hr class="rule sb-rule">
+      <div class="sb-label">Workspace</div>
+      <nav id="nav-list" aria-label="Workspace">
+        <button class="sb-row nav-row" type="button" data-view="skills"><svg class="ic-sm" aria-hidden="true"><use href="#i-book"/></svg><span class="name">Skills</span></button>
+        <button class="sb-row nav-row" type="button" data-view="apps"><svg class="ic-sm" aria-hidden="true"><use href="#i-apps"/></svg><span class="name">Apps</span></button>
+        <button class="sb-row nav-row" type="button" data-view="rules"><svg class="ic-sm" aria-hidden="true"><use href="#i-shield"/></svg><span class="name">Rules</span></button>
+        <button class="sb-row nav-row" type="button" data-view="activity"><svg class="ic-sm" aria-hidden="true"><use href="#i-activity"/></svg><span class="name">Activity</span></button>
+        <button class="sb-row nav-row" type="button" data-view="teams"><svg class="ic-sm" aria-hidden="true"><use href="#i-people"/></svg><span class="name">Teams</span></button>
+        <button class="sb-row nav-row" type="button" data-view="settings"><svg class="ic-sm" aria-hidden="true"><use href="#i-settings"/></svg><span class="name">Settings</span></button>
+        <button class="sb-row nav-row" type="button" data-view="mobile"><svg class="ic-sm" aria-hidden="true"><use href="#i-phone"/></svg><span class="name">Mobile surface</span></button>
+      </nav>
     </div>
     <footer class="sb-foot">
-      <button id="provider-open" type="button" data-provider-status=""></button>
+      <button id="connect-apps" class="sb-row" type="button">
+        <svg class="ic-sm" aria-hidden="true"><use href="#i-grid"/></svg>
+        <span class="name">Connect apps</span>
+        <span class="tag" id="connect-apps-count">0 on</span>
+      </button>
+      <button id="provider-open" class="sb-row" type="button" data-provider-status=""></button>
+      <button id="account-row" class="sb-acct" type="button">
+        <span class="avatar">AL</span>
+        <span class="grow"><span class="acct-name">Alex</span><span class="mono fs-meta muted acct-sub">FreeBot local</span></span>
+        <svg class="ic-sm" aria-hidden="true"><use href="#i-chev"/></svg>
+      </button>
     </footer>
+    <!-- The app's own create controls, kept out of the export's chrome: the picker and the palette
+         are the visible doors, and these are the elements the existing drivers click. -->
+    <div class="sb-hidden-controls" hidden>
+      <input id="new-bot-name" type="text" autocomplete="off">
+      <button id="new-bot" type="button"></button>
+    </div>
   </aside>
   <section id="center">
-  <header>
-    <h1>freebot</h1>
-    <p>One thread. Local run. A real model when the vault holds a key, the committed replay when it does not.</p>
-    <p id="bot-title"></p>
-    <nav id="tabs">
-      <button id="tab-conversation" class="tab" type="button" data-tab="conversation" data-active="true" aria-current="true">Conversation</button>
-      <button id="tab-library" class="tab" type="button" data-tab="library" data-active="false" aria-current="false">Library</button>
-    </nav>
+  <header class="chead">
+    <button id="bot-name-button" class="botname" type="button" aria-label="Open details">
+      <span id="bot-dot" class="dot" aria-hidden="true"></span>
+      <span class="nm" id="bot-title"></span>
+      <svg class="ic-sm" aria-hidden="true"><use href="#i-chev"/></svg>
+    </button>
+    <span id="bot-role" class="hint truncate"></span>
+    <div class="grow"></div>
+    <button id="share-button" class="iconbtn" type="button" aria-label="Share menu">
+      <svg class="ic" aria-hidden="true"><use href="#i-link"/></svg>
+    </button>
+    <button id="computer-open" class="btn btn-secondary btn-sm" type="button">
+      <svg class="ic-sm" aria-hidden="true"><use href="#i-desktop"/></svg>Computer
+    </button>
     <button id="aside-toggle" class="btn btn-secondary btn-sm" type="button" aria-pressed="true" aria-label="Collapse the pane">Details</button>
   </header>
+  <nav id="tabs">
+    <button id="tab-conversation" class="tab" type="button" data-tab="conversation" data-active="true" aria-current="true">Conversation</button>
+    <button id="tab-library" class="tab" type="button" data-tab="library" data-active="false" aria-current="false">Library</button>
+  </nav>
+  <!-- The stream's counters, read by the evidence drivers. The export's header carries the
+       conversation, not its diagnostics, so this row is off the visual surface. -->
+  <div class="sr-only" aria-hidden="true">
+    <span id="conn" data-connection="connecting">connecting</span>
+    <span id="run"></span>
+    <span id="lastseq" data-last-seq="0">last seq 0</span>
+    <span id="dups" data-duplicates-ignored="0">duplicates ignored: 0</span>
+  </div>
   <div id="resume" hidden></div>
   <div id="error" hidden></div>
   <!-- The two lines the stream itself raises, above the transcript: the export's banner
@@ -947,20 +1304,33 @@
     <button id="provider-replay" type="button"></button>
     <p id="provider-replay-note"></p>
   </section>
+  <!-- The export's group bar (freebot-prototype.html:1054-1065): the room's members and which of
+       them holds the turn. It is empty for an ordinary Bot and renders nothing at all. -->
+  <div id="groupbar" class="groupbar" hidden></div>
+  <!-- The Workspace pages. Each one is a full column body, so the transcript and the composer stand
+       down while it is open. -->
+  <section id="page" hidden></section>
   <main id="thread"><p class="idle" id="idle-note">Waiting for the run to start.</p></main>
-  <div id="composer-wrap">
-    <div class="meta">
-      <span id="conn" data-connection="connecting">connecting</span>
-      <span id="run"></span>
-      <span id="lastseq" data-last-seq="0">last seq 0</span>
-      <span id="dups" data-duplicates-ignored="0">duplicates ignored: 0</span>
+  <form id="operator" hidden>
+    <div class="composer-wrap">
+      <div class="composer">
+        <div class="composer-box">
+          <textarea id="prompt" rows="1" placeholder="Ask FreeBot to do something…" autocomplete="off"></textarea>
+          <div class="composer-tools">
+            <button class="iconbtn" type="button" aria-label="Attach a file"><svg class="ic" aria-hidden="true"><use href="#i-clip"/></svg></button>
+            <button class="iconbtn" type="button" aria-label="Skills"><span class="mono" style="font-size:14px">/</span></button>
+            <button class="iconbtn" type="button" aria-label="Mentions"><span class="mono" style="font-size:14px">@</span></button>
+            <button class="iconbtn" type="button" aria-label="Dictate"><svg class="ic" aria-hidden="true"><use href="#i-mic"/></svg></button>
+            <button class="iconbtn" type="button" aria-label="Voice chat"><svg class="ic" aria-hidden="true"><use href="#i-wave"/></svg></button>
+            <span class="spacer"></span>
+            <button id="stop" class="btn btn-ghost btn-sm" type="button" disabled data-in-flight="false" data-stopping="false">Stop run</button>
+            <button id="start" class="btn btn-primary composer-send" type="submit" aria-label="Send"><svg class="ic-sm" aria-hidden="true"><use href="#i-send"/></svg></button>
+          </div>
+        </div>
+        <div class="chint"><span>Enter to send · Shift+Enter for a new line</span><span class="mono" id="composer-model"></span></div>
+      </div>
     </div>
-    <form id="operator" hidden>
-      <input id="prompt" class="composer-input" type="text" placeholder="what should the bot do?" autocomplete="off">
-      <button id="start" class="composer-submit" type="submit">Start run</button>
-      <button id="stop" class="composer-stop" type="button" disabled data-in-flight="false" data-stopping="false">Stop run</button>
-    </form>
-  </div>
+  </form>
   <section id="library" hidden data-library-state="idle">
     <p id="library-note"></p>
     <p id="library-status" data-library-status="idle"></p>

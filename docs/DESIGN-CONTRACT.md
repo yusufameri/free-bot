@@ -266,78 +266,47 @@ machine-readable copy; `DECLARED_DELTAS` in `packages/verify/scripts/design-cont
 it, and a test compares this block to that module character for character after parsing, so neither
 can drift.
 
-The five box deltas the U6.7a baseline named closed as follows. The middle column's order is the
-export's: the transcript is the composer's `flex: 1` sibling, starts on the header's bottom edge and
-ends on the composer's top edge, and the composer is the column's last child, pinned to the bottom.
-The export's header is 55.8px and this page's is 56px (a 0.2px delta inside the half-pixel box
-tolerance). The sidebar list's 2px start delta closed by adopting the export's 10px head padding and
-its 2px list inset. What remains is the app's shorter composer and its shorter sidebar foot, both
-recorded below.
+The five box deltas the U6.7a baseline named have closed except the ones below. The middle column's
+order is the export's: the transcript is the composer's `flex: 1` sibling, starts on the header's
+bottom edge and ends on the composer's top edge, and the composer is the column's last child, pinned
+to the bottom. The export's header is 55.8px and this page's is 56px, a 0.2px delta inside the
+half-pixel box tolerance. The sidebar now carries the export's Pinned, Work and Hidden Bots
+headings, its Connect apps row and its account row, so the list's own box agrees; the first row still
+starts 8.02px higher. The composer now carries the export's textarea, five tool controls and hint
+row, which leaves the transcript's 2.05px to 15.76px height difference and the composer's matching
+delta. Those three entries are the whole of the remaining list.
 
 <!-- pixel-gate-deltas:begin -->
 ```json
 [
   {
-    "field": "pixel-gate content.sidebar-list",
-    "allow": [
-      78
-    ],
-    "reason": "The app's list ends 78px lower than the export's. The export's foot is 125px: Connect apps, the model row and the account row. This app's foot is 47px: the one provider row. The account and the apps surface have no record in this build, so the list takes the space they would occupy; the head's own 2px start delta was closed by adopting the export's 10px head padding and 2px list inset.",
-    "pixels": {
-      "tablet-landscape": {
-        "left": 0,
-        "top": 0,
-        "width": 0,
-        "height": 78
-      },
-      "laptop": {
-        "left": 0,
-        "top": 0,
-        "width": 0,
-        "height": 78
-      },
-      "desktop": {
-        "left": 0,
-        "top": 0,
-        "width": 0,
-        "height": 78
-      },
-      "wide": {
-        "left": 0,
-        "top": 0,
-        "width": 0,
-        "height": 78
-      }
-    }
-  },
-  {
     "field": "pixel-gate content.sidebar-bot-row",
     "allow": [
-      32.25
+      8.02
     ],
-    "reason": "The app's first Bot row starts 32.25px higher. The export groups its rows under Pinned, Primary and Unassigned labels (freebot-prototype.html:984-993) and this app renders one Bots heading, because the Bot record holds no group, pinned or primary field; the row's own 34px height and 9px gap are the export's.",
+    "reason": "The app's first Bot row starts 8.02px higher. Both pages now group their rows under Pinned and Work headings; the remaining difference is the export's 6px brand-row padding and 12px label top against this app's 2px brand padding and 12px label. The row's own 34px height and 9px gap are the export's.",
     "pixels": {
       "tablet-landscape": {
         "left": 0,
-        "top": -32.25,
+        "top": -8.02,
         "width": 0,
         "height": 0
       },
       "laptop": {
         "left": 0,
-        "top": -32.25,
+        "top": -8.02,
         "width": 0,
         "height": 0
       },
       "desktop": {
         "left": 0,
-        "top": -32.25,
+        "top": -8.02,
         "width": 0,
         "height": 0
       },
       "wide": {
         "left": 0,
-        "top": -32.25,
+        "top": -8.02,
         "width": 0,
         "height": 0
       }
@@ -347,132 +316,131 @@ recorded below.
     "field": "pixel-gate content.center-transcript",
     "allow": [
       0.2,
-      70.3,
-      52.49,
-      56.49
+      2.05,
+      15.76,
+      6.05
     ],
-    "reason": "Both transcripts start on the header's bottom edge (the 0.2px top is the export's 55.8px header against this page's 56px) and end on the composer's top edge. This app's transcript is taller by the amount its composer is shorter, because the export's composer carries a growing textarea, a five-control tools row and a hint row while this app's carries one input, two buttons and the live stream line. The `flex: 1` transcript and the bottom-pinned composer are the export's own order.",
+    "reason": "Both transcripts start on the header's bottom edge, and the 0.2px top is the export's 55.8px header against this page's 56px. The remaining height difference is the composer band's own box: the app now carries the export's growing textarea, five tool controls and hint row, so the gap is 2.05px at most widths, 6.05px on the desktop viewports and -15.76px at 430, where the export's textarea wraps a line the app's placeholder does not.",
     "pixels": {
       "mobile-compact": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 70.3
+        "height": 2.05
       },
       "mobile-standard": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 70.3
+        "height": 2.05
       },
       "mobile-large": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 52.49
+        "height": -15.76
       },
       "foldable-small-tablet": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 52.49
+        "height": 2.05
       },
       "tablet-portrait": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 52.49
+        "height": 2.05
       },
       "tablet-landscape": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 56.49
+        "height": 6.05
       },
       "laptop": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 56.49
+        "height": 6.05
       },
       "desktop": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 56.49
+        "height": 6.05
       },
       "wide": {
         "left": 0,
         "top": 0.2,
         "width": 0,
-        "height": 56.49
+        "height": 6.05
       }
     }
   },
   {
     "field": "pixel-gate content.center-composer",
     "allow": [
-      70.5,
-      52.69,
-      56.69,
-      52.68,
-      56.68
+      2.25,
+      15.56,
+      15.57,
+      6.25
     ],
-    "reason": "The composer band is pinned to the bottom edge on both pages, so the app's top edge sits lower and its height is smaller by the same amount. The export's band is 146.06px at 1920 and 159.88px at 360; this app's is 89.38px at 1920 and 89.38px at 360, because the product's composer is one input, a Start and a Stop control and the stream's own meta line against the export's textarea, five tool controls and hint. Control count and copy are named in `docs/DESIGN-CONTRACT.md`; the bottom edge is identical.",
+    "reason": "The composer band is pinned to the bottom edge on both pages. The app now carries the export's textarea, five tool controls, Stop run and send, and hint row; the remaining delta is the hint row's line box and the placeholder's own wrap, 2.25px at most widths, 6.25px on the desktop viewports and -15.56px at 430.",
     "pixels": {
       "mobile-compact": {
         "left": 0,
-        "top": 70.5,
+        "top": 2.25,
         "width": 0,
-        "height": -70.5
+        "height": -2.25
       },
       "mobile-standard": {
         "left": 0,
-        "top": 70.5,
+        "top": 2.25,
         "width": 0,
-        "height": -70.5
+        "height": -2.25
       },
       "mobile-large": {
         "left": 0,
-        "top": 52.69,
+        "top": -15.56,
         "width": 0,
-        "height": -52.68
+        "height": 15.57
       },
       "foldable-small-tablet": {
         "left": 0,
-        "top": 52.69,
+        "top": 2.25,
         "width": 0,
-        "height": -52.68
+        "height": -2.25
       },
       "tablet-portrait": {
         "left": 0,
-        "top": 52.69,
+        "top": 2.25,
         "width": 0,
-        "height": -52.68
+        "height": -2.25
       },
       "tablet-landscape": {
         "left": 0,
-        "top": 56.69,
+        "top": 6.25,
         "width": 0,
-        "height": -56.68
+        "height": -6.25
       },
       "laptop": {
         "left": 0,
-        "top": 56.69,
+        "top": 6.25,
         "width": 0,
-        "height": -56.68
+        "height": -6.25
       },
       "desktop": {
         "left": 0,
-        "top": 56.69,
+        "top": 6.25,
         "width": 0,
-        "height": -56.68
+        "height": -6.25
       },
       "wide": {
         "left": 0,
-        "top": 56.69,
+        "top": 6.25,
         "width": 0,
-        "height": -56.68
+        "height": -6.25
       }
     }
   }

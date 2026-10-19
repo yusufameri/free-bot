@@ -45,6 +45,37 @@ import { WorkspaceReadError } from "./workspace-files.ts";
 
 const api = implement(apiContract).$context<ApiContext>();
 
+/** One Bot record as the contract reports it, in one place so every arm agrees. */
+function botDto(
+  bot: {
+    id: string;
+    name: string;
+    role: string;
+    purpose: string;
+    createdAt: number;
+    pinned: boolean;
+    section: string;
+    hidden: boolean;
+    group: boolean;
+    members: string[];
+  },
+  threadCount: number,
+) {
+  return {
+    botId: bot.id,
+    name: bot.name,
+    role: bot.role,
+    purpose: bot.purpose,
+    createdAt: bot.createdAt,
+    threadCount,
+    pinned: bot.pinned,
+    section: bot.section,
+    hidden: bot.hidden,
+    group: bot.group,
+    members: bot.members,
+  };
+}
+
 /**
  * A refusal raised as the wire's own error. The refusal's name IS the code, so a surface branches on
  * `error.code`, and its status comes from the one table the contract declares it with. A code oRPC
@@ -150,27 +181,10 @@ export function createApiRouter(
     ),
 
     list_bots: api.list_bots.handler(() => ({
-      bots: service.listBots().map(({ bot, threadCount }) => ({
-        botId: bot.id,
-        name: bot.name,
-        role: bot.role,
-        purpose: bot.purpose,
-        createdAt: bot.createdAt,
-        threadCount,
-      })),
+      bots: service.listBots().map(({ bot, threadCount }) => botDto(bot, threadCount)),
     })),
 
-    create_bot: api.create_bot.handler(({ input }) => {
-      const bot = service.createBot(input.name);
-      return {
-        botId: bot.id,
-        name: bot.name,
-        role: bot.role,
-        purpose: bot.purpose,
-        createdAt: bot.createdAt,
-        threadCount: 0,
-      };
-    }),
+    create_bot: api.create_bot.handler(({ input }) => botDto(service.createBot(input.name), 0)),
 
     /**
      * The Bot record's own arm, read straight off the registry this service exposes: a Bot's role
@@ -188,14 +202,31 @@ export function createApiRouter(
         role: input.role,
         purpose: input.purpose,
       });
-      return {
-        botId: bot.id,
-        name: bot.name,
-        role: bot.role,
-        purpose: bot.purpose,
-        createdAt: bot.createdAt,
-        threadCount: service.registry.threads(bot.id).length,
-      };
+      return botDto(bot, service.registry.threads(bot.id).length);
+    }),
+
+    /**
+     * The sidebar's own write: pin, hide, section and a group's members are fields on the record, so
+     * a partial patch reads the current values and writes all of them back. A record this server does
+     * not hold is refused by name, the same way `update_bot` refuses one.
+     */
+    arrange_bot: api.arrange_bot.handler(({ input }) => {
+      const current = service.registry.bot(input.botId);
+      if (current === undefined) {
+        throw new ORPCError("bot_not_found", {
+          message: BOT_ERRORS.bot_not_found.message,
+          status: BOT_ERRORS.bot_not_found.status,
+        });
+      }
+      const bot = service.registry.arrangeBot({
+        id: current.id,
+        pinned: input.pinned ?? current.pinned,
+        section: input.section ?? current.section,
+        hidden: input.hidden ?? current.hidden,
+        group: input.group ?? current.group,
+        members: input.members ?? current.members,
+      });
+      return botDto(bot, service.registry.threads(bot.id).length);
     }),
 
     list_threads: api.list_threads.handler(({ input }) => {

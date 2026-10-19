@@ -32,13 +32,25 @@ import {
   type ThreadRow,
   threadRows,
 } from "../src/bots.ts";
+import { icon } from "./icons.ts";
 
-/** The four records the shell reads, with the token already applied. */
+/** One patch of a Bot's placement. The server keeps whatever the caller leaves out. */
+export interface ArrangeBotPatch {
+  readonly botId: string;
+  readonly pinned?: boolean;
+  readonly section?: string;
+  readonly hidden?: boolean;
+  readonly group?: boolean;
+  readonly members?: string[];
+}
+
+/** The records and the one write the shell reads, with the token already applied. */
 export interface ShellCalls {
   readonly listBots: () => Promise<readonly Bot[]>;
   readonly createBot: (name: string) => Promise<Bot>;
   readonly listThreads: (botId: string) => Promise<readonly Thread[]>;
   readonly createThread: (botId: string, title?: string) => Promise<Thread>;
+  readonly arrangeBot: (patch: ArrangeBotPatch) => Promise<Bot>;
 }
 
 export interface ShellSelection {
@@ -57,6 +69,17 @@ export interface ShellHandle {
   createThread(): Promise<void>;
   /** Re-read the Bots and the selected Bot's threads, without moving the selection. */
   refresh(): Promise<void>;
+  /** Pin, hide, or move a Bot. The record comes back and the list repaints from it. */
+  arrange(patch: ArrangeBotPatch): Promise<void>;
+  /** Every run of every Bot, newest first, for the Activity page. */
+  runs(): Array<{
+    botName: string;
+    threadTitle: string;
+    runId: string;
+    prompt: string;
+    status: string;
+    startedAt: number;
+  }>;
   /**
    * The live status of the Bot whose stream is on screen. It outranks the record between frames,
    * because the run store is written when a run changes and the page sees the change first. Null
@@ -104,6 +127,12 @@ export function mountShell(config: {
   const newThreadEl = must<HTMLButtonElement>("#new-thread");
   const titleEl = must<HTMLElement>("#bot-title");
   const threadsBotEl = must<HTMLElement>("#threads-bot");
+  const roleEl = document.querySelector<HTMLElement>("#bot-role");
+  const botDotEl = document.querySelector<HTMLElement>("#bot-dot");
+  const hiddenEl = document.querySelector<HTMLElement>("#hidden-bots");
+  const hiddenGroupEl = document.querySelector<HTMLElement>("#hidden-group");
+  const hiddenToggleEl = document.querySelector<HTMLButtonElement>("#hidden-toggle");
+  const hiddenCountEl = document.querySelector<HTMLElement>("#hidden-count");
 
   newBotEl.textContent = NEW_BOT_LABEL;
   newThreadEl.textContent = NEW_THREAD_LABEL;
@@ -123,6 +152,8 @@ export function mountShell(config: {
   let selectedThreadId: string | null = null;
   /** Set while a create is in flight, so a second click cannot mint a second record. */
   let busy = false;
+  /** Whether the Hidden Bots disclosure is open. The export starts it closed. */
+  let hiddenOpen = false;
 
   function selectedBot(): Bot | undefined {
     return bots.find((bot) => bot.botId === selectedBotId);
@@ -145,23 +176,90 @@ export function mountShell(config: {
     return found;
   }
 
+  /** One `.sb-label` heading: the export's uppercase mono caption with an optional icon. */
+  function sectionLabel(text: string, iconName?: "pin"): HTMLElement {
+    const label = div("sb-label");
+    if (iconName !== undefined) label.append(icon(iconName, "ic-sm"));
+    label.append(document.createTextNode(text));
+    return label;
+  }
+
   function paint(): void {
     const rows = botRows(bots, selectedBotId, statuses());
-    listEl.replaceChildren(...rows.map(botRowNode));
-    if (rows.length === 0) listEl.append(div("shell-empty", BOTS_EMPTY));
+    const visible = rows.filter((row) => !row.hidden);
+    const hidden = rows.filter((row) => row.hidden);
+    const pinned = visible.filter((row) => row.pinned);
+    const rest = visible.filter((row) => !row.pinned);
+    const sections = [...new Set(rest.map((row) => row.section).filter((name) => name !== ""))];
+    const unassigned = rest.filter((row) => row.section === "");
+
+    const parts: Node[] = [];
+    if (pinned.length > 0) parts.push(sectionLabel("Pinned", "pin"), ...pinned.map(botRowNode));
+    for (const section of sections) {
+      parts.push(
+        sectionLabel(section),
+        ...rest.filter((row) => row.section === section).map(botRowNode),
+      );
+    }
+    if (unassigned.length > 0) {
+      parts.push(sectionLabel("Unassigned"), ...unassigned.map(botRowNode));
+    }
+    if (visible.length === 0) parts.push(div("shell-empty", BOTS_EMPTY));
+    listEl.replaceChildren(...parts);
+
+    if (hiddenEl !== null) hiddenEl.hidden = hidden.length === 0;
+    if (hiddenCountEl !== null) hiddenCountEl.textContent = String(hidden.length);
+    if (hiddenGroupEl !== null) {
+      hiddenGroupEl.replaceChildren(...hidden.map(botRowNode));
+      hiddenGroupEl.hidden = !hiddenOpen;
+    }
+    if (hiddenToggleEl !== null) hiddenToggleEl.setAttribute("aria-expanded", String(hiddenOpen));
 
     const threadRowsList = threadRows(threads, selectedThreadId);
     threadListEl.replaceChildren(...threadRowsList.map(threadRowNode));
     if (threadRowsList.length === 0) threadListEl.append(div("shell-empty", THREADS_EMPTY));
 
-    threadsBotEl.textContent = selectedBot()?.name ?? "";
-    titleEl.textContent = conversationTitle(
-      selectedBot()?.name ?? null,
-      selectedThread()?.title ?? null,
-    );
+    const bot = selectedBot();
+    threadsBotEl.textContent = bot?.name ?? "";
+    titleEl.textContent = conversationTitle(bot?.name ?? null, selectedThread()?.title ?? null);
+    if (roleEl !== null) roleEl.textContent = bot?.role ?? "";
+    if (botDotEl !== null) {
+      const status = bot === undefined ? undefined : statuses().get(bot.botId);
+      botDotEl.className = status === undefined ? "dot" : botDotClass(status);
+    }
     newThreadEl.disabled = selectedBotId === null || busy;
     newBotEl.disabled = busy;
     sidebarEl.dataset.shellState = bots.length === 0 ? "empty" : "loaded";
+  }
+
+  /** The row's own menu: pin, and hide or show. The export's `menu` (`:452-470`). */
+  function openRowMenu(row: BotRow, x: number, y: number): void {
+    document.querySelector(".menu")?.remove();
+    const menu = div("menu");
+    menu.style.left = `${Math.min(x, window.innerWidth - 240)}px`;
+    menu.style.top = `${Math.min(y, window.innerHeight - 120)}px`;
+    const pin = document.createElement("button");
+    pin.type = "button";
+    pin.textContent = row.pinned ? "Unpin" : "Pin";
+    pin.addEventListener("click", () => {
+      menu.remove();
+      void handle.arrange({ botId: row.botId, pinned: !row.pinned }).catch(() => undefined);
+    });
+    const hide = document.createElement("button");
+    hide.type = "button";
+    hide.textContent = row.hidden ? "Show in sidebar" : "Hide from sidebar";
+    hide.addEventListener("click", () => {
+      menu.remove();
+      void handle.arrange({ botId: row.botId, hidden: !row.hidden }).catch(() => undefined);
+    });
+    menu.append(pin, hide);
+    document.body.append(menu);
+    const close = (event: MouseEvent): void => {
+      if (menu.contains(event.target as Node)) return;
+      menu.remove();
+      document.removeEventListener("mousedown", close, true);
+    };
+    setTimeout(() => document.addEventListener("mousedown", close, true), 0);
   }
 
   /**
@@ -172,19 +270,32 @@ export function mountShell(config: {
   function botRowNode(row: BotRow): HTMLElement {
     const node = document.createElement("button");
     node.type = "button";
-    node.className = "sb-row bot-row";
+    node.className = `sb-row bot-row${row.selected ? " is-active" : ""}`;
     node.dataset.bot = row.botId;
     node.dataset.selected = String(row.selected);
     node.dataset.state = row.status;
     node.dataset.threads = String(row.threadCount);
+    node.dataset.pinned = String(row.pinned);
+    node.dataset.section = row.section;
+    node.dataset.hidden = String(row.hidden);
+    node.dataset.group = String(row.group);
     node.title = row.name;
     node.setAttribute("aria-current", String(row.selected));
     const dot = div(botDotClass(row.status));
     dot.setAttribute("aria-hidden", "true");
     node.append(dot);
-    node.append(div("name", row.name));
+    if (row.group) {
+      const avatar = div("avatar", String(row.members.length));
+      avatar.setAttribute("aria-hidden", "true");
+      node.append(avatar);
+    }
+    node.append(div("name bot-name", row.name));
     node.append(div("sub", row.sub));
     node.addEventListener("click", () => void handle.selectBot(row.botId));
+    node.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      openRowMenu(row, event.clientX, event.clientY);
+    });
     return node;
   }
 
@@ -292,6 +403,39 @@ export function mountShell(config: {
       }
     },
 
+    async arrange(patch) {
+      const updated = await config.calls.arrangeBot(patch);
+      bots = bots.map((bot) => (bot.botId === updated.botId ? updated : bot));
+      paint();
+      config.onChange?.(handle.selection());
+    },
+
+    runs() {
+      const rows: Array<{
+        botName: string;
+        threadTitle: string;
+        runId: string;
+        prompt: string;
+        status: string;
+        startedAt: number;
+      }> = [];
+      for (const bot of bots) {
+        for (const thread of threadsByBot.get(bot.botId) ?? []) {
+          for (const run of thread.runs) {
+            rows.push({
+              botName: bot.name,
+              threadTitle: thread.title,
+              runId: run.runId,
+              prompt: run.prompt,
+              status: run.status,
+              startedAt: run.startedAt,
+            });
+          }
+        }
+      }
+      return rows.sort((a, b) => b.startedAt - a.startedAt);
+    },
+
     setLiveStatus(botId, status) {
       const before = liveStatuses.get(botId) ?? null;
       if (status === null) liveStatuses.delete(botId);
@@ -326,6 +470,10 @@ export function mountShell(config: {
             status: row.status,
             sub: node?.querySelector<HTMLElement>(".sub")?.textContent ?? row.sub,
             dot: dot?.className ?? botDotClass(row.status),
+            pinned: row.pinned,
+            section: row.section,
+            hidden: row.hidden,
+            group: row.group,
           };
         }),
         selectedBotId,
@@ -341,6 +489,10 @@ export function mountShell(config: {
     },
   };
 
+  hiddenToggleEl?.addEventListener("click", () => {
+    hiddenOpen = !hiddenOpen;
+    paint();
+  });
   newBotEl.addEventListener("click", () => void handle.createBot(newBotNameEl.value));
   newBotNameEl.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {

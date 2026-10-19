@@ -36,6 +36,11 @@ const BOT: Bot = {
   purpose: "Release pipeline",
   createdAt: NOW,
   threadCount: 2,
+  pinned: false,
+  section: "Work",
+  hidden: false,
+  group: false,
+  members: [],
 };
 
 const THREAD: Thread = {
