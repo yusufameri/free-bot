@@ -38,6 +38,7 @@ import {
   isTerminal,
   type LogPort,
   type ProviderPort,
+  ProviderTurnError,
   type RunRecord,
   RunStore,
   runRunLoop,
@@ -337,8 +338,9 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
    * `start` creates the record and returns, and the work that prepares the loop (tool discovery, the
    * provider's construction) runs after that. An error there used to leave the run `queued` with no
    * frame and no owner, which the page can only render as a run that never starts. The record is
-   * failed at the taxonomy's own internal error, with the frames the page reads written first, and a
-   * run that already reached a terminal state is left exactly as it is.
+   * failed at the taxonomy entry the error carries, or at the internal error when it carries none,
+   * with the frames the page reads written first, and a run that already reached a terminal state is
+   * left exactly as it is.
    */
   function settleSetupFailure(
     runtime: ThreadRuntime,
@@ -349,7 +351,8 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     const record = runtime.store.get(runId);
     if (record === undefined || isTerminal(record.status)) return;
     const detail = error instanceof Error ? error.message : String(error);
-    runtime.store.fail(runId, "internal_invariant", detail);
+    const code = error instanceof ProviderTurnError ? error.code : "internal_invariant";
+    runtime.store.fail(runId, code, detail);
     logPort.append("run.failed", { reason: detail });
     logPort.append("run.status", { runId, status: "failed" });
   }
