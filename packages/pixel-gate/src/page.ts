@@ -567,6 +567,9 @@ export async function dismissNotices(cdp: Cdp, sessionId: string): Promise<numbe
       );
       if (all === undefined) return 0;
       all.click();
+      // The export answers a dismissal with a 2.6s toast. It is transient UI, not the shell, and a
+      // capture that catches it is not comparable to one that does not; remove it before the probe.
+      for (const node of document.querySelectorAll('.toast')) node.remove();
       return 1;
     })()`,
   );
