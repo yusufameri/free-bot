@@ -464,6 +464,7 @@ async function main(): Promise<number> {
     const exportEyebrow = exportTextFor('class="eyebrow"');
     const exportHero = exportTextFor('class="h1"');
     const exportConnect = exportTextFor('data-od-id="cta-connect-provider"');
+    const exportReplay = exportTextFor('data-od-id="cta-replay"');
     const exportStatement = exportTextBetween('class="hint"', "</p>");
     const exportBrandmark = exportTextFor('class="word"');
     checkThat(
@@ -471,12 +472,14 @@ async function main(): Promise<number> {
       exportEyebrow !== null &&
         exportHero !== null &&
         exportConnect !== null &&
+        exportReplay !== null &&
         exportStatement !== "" &&
         exportBrandmark !== null,
       {
         eyebrow: exportEyebrow,
         hero: exportHero,
         connect: exportConnect,
+        replay: exportReplay,
         statement: exportStatement,
         brandmark: exportBrandmark,
       },
@@ -485,6 +488,11 @@ async function main(): Promise<number> {
       "the primary control carries the export's own label",
       opening.controls[0]?.text,
       exportConnect,
+    );
+    check(
+      "the replay control carries the export's own label too, so the launch rule lives in the note rather than in new copy",
+      opening.controls[1]?.text,
+      exportReplay,
     );
 
     section("the controls do something real");
@@ -589,7 +597,14 @@ async function main(): Promise<number> {
       const regionFailures: string[] = [];
       for (const selector of REGIONS) {
         const pair = probe.regions[selector];
-        if (pair === null || pair === undefined) continue;
+        if (pair === null || pair === undefined) {
+          // A region that is not in the page is a viewport with something missing, not one with
+          // nothing to measure: a renamed selector would otherwise pass with no measurement at all.
+          regionFailures.push(`${selector} (not found)`);
+          failed += 1;
+          log.push(`FAIL viewport ${label}: region ${selector} was not found, so nothing was measured`);
+          continue;
+        }
         const [scrollWidth, clientWidth] = pair;
         if (scrollWidth <= clientWidth) continue;
         regionFailures.push(`${selector} ${scrollWidth}>${clientWidth}`);
