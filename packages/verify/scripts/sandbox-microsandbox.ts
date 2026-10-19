@@ -218,19 +218,22 @@ async function cleanUp(token: string, decoys: readonly ConformanceDecoy[]): Prom
 }
 
 /**
- * A `PATH` with no `docker` on it, and the proof that it has none.
+ * A `PATH` with no executable of that name on it, and the directories that were removed.
  *
  * Criterion 2 asks for Docker's absence to be shown rather than assumed, and hiding it by naming a
  * fixed short `PATH` would be an assumption about where this machine keeps its tools. This removes
- * every directory that actually resolves a `docker` executable and then re-resolves, so the fact
- * the artifact records is the result of the same lookup the launcher would do.
+ * every directory that actually resolves the executable and then re-resolves, so the fact the
+ * artifact records is the result of the same lookup the launcher would do. The refusal paths use
+ * the same helper for `msb`.
  */
-function dockerFreePath(): { readonly path: string; readonly removed: readonly string[] } {
+function pathWithout(
+  binary: string,
+  base: string = process.env.PATH ?? "",
+): { readonly path: string; readonly removed: readonly string[] } {
   const removed: string[] = [];
-  const kept = (process.env.PATH ?? "").split(":").filter((dir) => {
+  const kept = base.split(":").filter((dir) => {
     if (dir === "") return false;
-    const candidate = join(dir, "docker");
-    if (!existsSync(candidate)) return true;
+    if (!existsSync(join(dir, binary))) return true;
     removed.push(dir);
     return false;
   });
@@ -301,6 +304,32 @@ async function launchApp(home: string, bots: string, path: string): Promise<App>
   };
 }
 
+/**
+ * One `bun run up` that must refuse to boot, over a PATH and environment this driver controls.
+ * The refusal is the evidence: the launcher's own exit code and diagnostic, never a thrown error.
+ */
+function refusedLauncher(
+  path: string,
+  sandbox: "docker" | "microsandbox" | "auto",
+  env: Record<string, string> = {},
+): { readonly code: number; readonly stderr: string } {
+  const proc = Bun.spawnSync(["bun", "run", "up", "--no-open", "--sandbox", sandbox], {
+    cwd: root,
+    env: {
+      ...process.env,
+      PATH: path,
+      FREEBOT_PROVIDER: "replay",
+      FREEBOT_HOME: home,
+      FREEBOT_WORKSPACE: botsRoot,
+      ...env,
+    },
+    stdout: "pipe",
+    stderr: "pipe",
+    timeout: 60_000,
+  });
+  return { code: proc.exitCode ?? -1, stderr: proc.stderr.toString().trim() };
+}
+
 const home = mkdtempSync(join(tmpdir(), `freebot-u95-home-${TOKEN}-`));
 const botsRoot = mkdtempSync(join(tmpdir(), `freebot-u95-bots-${TOKEN}-`));
 const scratch = mkdtempSync(join(tmpdir(), `freebot-u95-scratch-${TOKEN}-`));
@@ -327,7 +356,7 @@ try {
   expect(doctor.code === 0, "msb doctor reports a ready host");
   const hostDocker = shell(["sh", "-c", "command -v docker || true"]).out;
   record(`docker on this driver's own PATH: ${hostDocker === "" ? "(absent)" : hostDocker}`);
-  const { path: sandboxPath, removed } = dockerFreePath();
+  const { path: sandboxPath, removed } = pathWithout("docker");
   record(
     `PATH directories dropped because they resolve a docker executable: ${removed.length === 0 ? "(none)" : removed.join(", ")}`,
   );
@@ -342,6 +371,52 @@ try {
   expect(
     stillThere === "",
     "the PATH the launched app gets resolves no docker executable, so its backend cannot be Docker",
+  );
+
+  section("the selector's refusals, run literal: each exits 2 and names the way out");
+  const dockerDown = refusedLauncher(process.env.PATH ?? "", "docker", {
+    DOCKER_HOST: "unix:///nonexistent/freebot-u95-docker.sock",
+  });
+  record(`forced docker with the daemon down: exit ${dockerDown.code}`);
+  record(`forced docker said: ${dockerDown.stderr.split("\n").join(" | ")}`);
+  expect(
+    dockerDown.code === 2 &&
+      dockerDown.stderr.includes(
+        "asked for docker by --sandbox=docker, but the Docker daemon did not answer",
+      ) &&
+      dockerDown.stderr.includes("docs/RUNNING.md"),
+    "forcing docker with the daemon down exits 2 and names the daemon and RUNNING.md",
+  );
+
+  const noMsb = pathWithout("msb");
+  record(
+    `PATH directories dropped because they resolve an msb executable: ${noMsb.removed.length === 0 ? "(none)" : noMsb.removed.join(", ")}`,
+  );
+  const msbGone = refusedLauncher(noMsb.path, "microsandbox");
+  record(`forced microsandbox with msb absent: exit ${msbGone.code}`);
+  record(`forced microsandbox said: ${msbGone.stderr.split("\n").join(" | ")}`);
+  expect(
+    msbGone.code === 2 &&
+      msbGone.stderr.includes(
+        "asked for microsandbox by --sandbox=microsandbox, but msb doctor did not answer",
+      ) &&
+      msbGone.stderr.includes("install microsandbox"),
+    "forcing microsandbox with msb absent exits 2 and names its install path",
+  );
+
+  const neither = pathWithout("msb", pathWithout("docker").path).path;
+  const autoGone = refusedLauncher(neither, "auto", {
+    DOCKER_HOST: "unix:///nonexistent/freebot-u95-docker.sock",
+  });
+  record(`auto with neither backend: exit ${autoGone.code}`);
+  record(`auto with neither backend said: ${autoGone.stderr.split("\n").join(" | ")}`);
+  expect(
+    autoGone.code === 2 &&
+      autoGone.stderr.includes("no sandbox backend") &&
+      autoGone.stderr.includes("the Docker daemon did not answer") &&
+      autoGone.stderr.includes("msb doctor did not answer") &&
+      autoGone.stderr.includes("docs/microsandbox.md"),
+    "auto with neither backend exits 2 and names both install paths",
   );
 
   section("the app, launched by `bun run up --sandbox microsandbox` on that PATH");
