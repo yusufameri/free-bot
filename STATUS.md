@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-19T20:12Z, against `origin/main` `58bcb21`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-19T20:56Z, against `origin/main` `2ab7a8f`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-58 units in the register: 52 done, 0 running, 5 pending, 1 parked.
+59 units in the register: 53 done, 1 running, 5 pending, 1 parked.
 
-The verification ledger holds 62 rows: 21 `live-ui-verified`, 31 `unit-test-verified`, 2 `type-check-only`, 8 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 66 rows: 22 `live-ui-verified`, 32 `unit-test-verified`, 2 `type-check-only`, 10 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -97,10 +97,11 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U10.9 | The landing page's spend-cap sentence now states what the run loop does, asserted from the DOM | [#60](https://github.com/yusufameri/free-bot/pull/60) |
 | U10.10 | The landing page's cancel row now says a run can be stopped from the page, asserted from the DOM | [#62](https://github.com/yusufameri/free-bot/pull/62) |
 | U10.11 | The status capture as a committed driver: probe and state tables, a selector that fails by name, and a subject manifest | [#64](https://github.com/yusufameri/free-bot/pull/64) |
+| U6.8 | The export's sidebar and Workspace pages on real records: `arrange_bot`, group rooms, seven pages, the chat column order | [#65](https://github.com/yusufameri/free-bot/pull/65) |
 
 ## Not built yet
 
-Nothing is running. The fleet is idle between coordinator turns, which is the state order 35 exists to shorten.
+U10.5, the main-line sweep, is running on `u10.5-sweep`.
 
 Queued, and every one of the five carries a brief at `briefs/<id>.md`: U8.4, U9.3, U10.1, U10.2, U10.5. That is read from the register and the briefs directory, not from prose.
 
