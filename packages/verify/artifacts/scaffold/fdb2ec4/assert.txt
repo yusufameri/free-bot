@@ -1,8 +1,8 @@
 feature: scaffold
 command: bun run verify
-timestamp: 2026-10-19T06:46:15.313Z
-git sha: ea8323c7d4ee182a2285e47e40fcafe97395f547
-git sha short: ea8323c
+timestamp: 2026-10-19T06:52:53.788Z
+git sha: fdb2ec4534288540d2e69135b57d26d822f29418
+git sha short: fdb2ec4
 branch: u9.5-sandbox-selector
 runtime: bun 1.2.5 on darwin arm64
 

@@ -1,0 +1,50 @@
+feature: sandbox-provider
+command: bun test packages/sandbox/src/docker.test.ts
+timestamp: 2026-10-19T06:53:54.660Z
+git short sha: fdb2ec4 (branch u9.5-sandbox-selector)
+runtime: bun 1.2.5 on darwin arm64
+docker server: 28.3.2
+run token: 1ywv-4760c8 (this run owns freebot.unit=u1.2-run-1ywv-4760c8)
+check pinned image: tag=freebot-sandbox:u0.6 id=sha256:5b66f96eea3b31a7dbbe485dc983e7daf1faea05f74bfb124d75dfc0f9d55a51 layers=7/7 matching docs/sandbox-image.md
+check pre-suite sweep (this run's unit label u1.2-run-1ywv-4760c8 only, a fresh token finds nothing): removed=0
+check create: handle={"provider":"docker","id":"u91-main-1ywv-4760c8"} engine=81b96a81f7da running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1ywv-4760c8","freebot.unit":"u1.2-run-1ywv-4760c8","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=036fbcb50bd6da89424e43a7fdd6d6c3e5ea9079ba7932d610df418270891d74 the sandbox's sha256sum=036fbcb50bd6da89424e43a7fdd6d6c3e5ea9079ba7932d610df418270891d74 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=036fbcb50bd6da89424e43a7fdd6d6c3e5ea9079ba7932d610df418270891d74
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-1ywv-4760c8: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1ywv-4760c8 is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1ywv-4760c8:u91-round-trip ref=sha256:561d89016363bb1552807199fdd9acd5320a7fef91c7334ab1cb7ce31493d6a9 createdAt=2026-10-19T06:53:58.962321087Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1ywv-4760c8 booted from sha256:561d89016363bb1552807199fdd9acd5320a7fef91c7334ab1cb7ce31493d6a9 reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1ywv-4760c8 is gone from the engine
+check idle-kill: u91-idle-1ywv-4760c8 (idleTtlMs=3000) stopped after 5140ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u91-decoy-foreign-unit-1ywv-4760c8=bf5ef92f4033a61c8a9d920f55c06401b3f35177af910a5bd00c1491f3e00b10 running
+census before sweep, decoy (a sibling run of this suite): u91-decoy-sibling-run-1ywv-4760c8=dd7a903b96657dd0ad83fd414dcda7369795a54aa1820070ff6eb489367bf032 running
+census before sweep, decoy (no labels at all): u91-decoy-bare-1ywv-4760c8=dd86e5a30629c8a33de4ac8b3916e8654b54b342b7812c8b8d017abbb68bd3c2 running
+census before sweep, this run: u91-main-1ywv-4760c8=81b96a81f7da
+census before sweep, this run: u91-no-link-1ywv-4760c8=gone
+census before sweep, this run: u91-restored-1ywv-4760c8=gone
+census before sweep, this run: u91-idle-1ywv-4760c8=ceb608c96a82
+check sweep: removed 2 of 2 live sandboxes: ceb608c96a82, 81b96a81f7da
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+census after sweep, decoy unchanged: u91-decoy-foreign-unit-1ywv-4760c8=bf5ef92f4033a61c8a9d920f55c06401b3f35177af910a5bd00c1491f3e00b10 running
+census after sweep, decoy unchanged: u91-decoy-sibling-run-1ywv-4760c8=dd7a903b96657dd0ad83fd414dcda7369795a54aa1820070ff6eb489367bf032 running
+census after sweep, decoy unchanged: u91-decoy-bare-1ywv-4760c8=dd86e5a30629c8a33de4ac8b3916e8654b54b342b7812c8b8d017abbb68bd3c2 running
+PASS operation create
+PASS operation exec
+PASS operation upload
+PASS operation download
+PASS operation tunnel
+PASS operation snapshot-resume
+PASS operation idle-kill
+PASS operation sweep
+conformance suite: 8/8 operations passed, ok=true
+check exposePort: http://127.0.0.1:61814 -> "exposed-body"
+check exposePort delete: u91-expose-1ywv-4760c8 is gone from the engine
