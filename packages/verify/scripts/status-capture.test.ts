@@ -4,7 +4,85 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { PROBES, parseArgs, readFacts } from "./status-capture.ts";
+import { type Cdp, evaluate } from "../src/cdp.ts";
+import { PROBES, parseArgs, readFacts, writeComposer } from "./status-capture.ts";
+
+/** A page that reports one tag name for the composer, and records what the driver sends it. */
+function composerPage(tagName: string | null): {
+  readonly expressions: string[];
+  readonly run: (expression: string) => Promise<unknown>;
+} {
+  const expressions: string[] = [];
+  return {
+    expressions,
+    run: async (expression: string) => {
+      expressions.push(expression);
+      return expression.includes("tagName") ? tagName : undefined;
+    },
+  };
+}
+
+describe("the status capture's composer", () => {
+  test("an input composer is written through the input prototype", async () => {
+    const page = composerPage("INPUT");
+
+    await writeComposer(page.run, "hello");
+
+    expect(page.expressions[0]).toContain('.querySelector("#prompt")');
+    expect(page.expressions[1]).toContain(
+      "Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call",
+    );
+    expect(page.expressions[1]).not.toContain("HTMLTextAreaElement.prototype");
+  });
+
+  test("a textarea composer is written through the textarea prototype", async () => {
+    const page = composerPage("TEXTAREA");
+
+    await writeComposer(page.run, "hello");
+
+    expect(page.expressions[1]).toContain(
+      "Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value').set.call",
+    );
+    expect(page.expressions[1]).not.toContain("HTMLInputElement.prototype");
+  });
+
+  test("a composer that is neither an input nor a textarea fails by selector and tag", async () => {
+    const page = composerPage("DIV");
+
+    await expect(writeComposer(page.run, "hello")).rejects.toThrow(
+      'the composer "#prompt" must be an <input> or a <textarea>, not <div>',
+    );
+  });
+
+  test("a composer the page does not render fails by selector", async () => {
+    const page = composerPage(null);
+
+    await expect(writeComposer(page.run, "hello")).rejects.toThrow(
+      'missing selector "#prompt" (the composer input)',
+    );
+  });
+});
+
+describe("the status capture's page errors", () => {
+  test("a page exception's own message reaches the driver's error", async () => {
+    const cdp = {
+      send: async () => ({
+        exceptionDetails: {
+          text: "Uncaught",
+          exception: {
+            description: "Error: Illegal invocation\n    at <anonymous>:1:37\n    at <anonymous>:1:1",
+          },
+        },
+      }),
+    } as unknown as Cdp;
+
+    const error = await evaluate(cdp, "session-1", "setComposerValue()").catch(
+      (caught: unknown) => caught,
+    );
+
+    expect((error as Error).message).toBe("evaluate failed: Error: Illegal invocation");
+  });
+});
 
 describe("the status capture's selector guard", () => {
   test("a selector that matches nothing fails by name, with no empty facts", async () => {
