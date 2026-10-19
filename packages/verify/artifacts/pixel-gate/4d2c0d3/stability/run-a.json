@@ -1,11 +1,11 @@
 {
   "feature": "pixel-gate",
-  "command": "bun packages/pixel-gate/src/cli.ts --artifact /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/opencode/u6.7a-followup-run-b",
-  "commit": "de64c3d38bfa7eb15ded3c2b6575211866cbb503",
-  "shortSha": "de64c3d",
+  "command": "bun packages/pixel-gate/src/cli.ts --repeat",
+  "commit": "4d2c0d35acc9af322184bbce544561d2be990a0c",
+  "shortSha": "4d2c0d3",
   "branch": "u6.7a-coderabbit-followup",
   "dirty": false,
-  "startedAt": "2026-10-19T06:35:22.183Z",
+  "startedAt": "2026-10-19T06:46:41.755Z",
   "runtime": "bun 1.2.5 on darwin arm64",
   "chrome": "chrome Chrome/155.0.8059.85",
   "fonts": {
@@ -19,17 +19,17 @@
     "geistResolves": false
   },
   "app": {
-    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-ZeWiQe",
-    "url": "http://127.0.0.1:57873/#token=<redacted>",
+    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc",
+    "url": "http://127.0.0.1:60450/#token=<redacted>",
     "botId": "bot-local",
     "threadId": "thread-1",
     "provider": "replay",
-    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-ZeWiQe/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-ZeWiQe)"
+    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc)"
   },
   "exportSource": {
     "file": "design/prototype-84c6b185/freebot-prototype.html",
     "initialScreenReplacements": 1,
-    "servedAt": "http://127.0.0.1:57875/"
+    "servedAt": "http://127.0.0.1:60452/"
   },
   "viewports": [
     {
@@ -422,7 +422,25 @@
         "app": "1798cf84fde1aa7e",
         "export": "3aa736b7af47acc7"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 288000,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 288000,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": ["01-mobile-compact-360x800.app.png", "01-mobile-compact-360x800.export.png"]
     },
     {
@@ -815,7 +833,25 @@
         "app": "7270fb296c9c36ff",
         "export": "345328a625f3eb9c"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 329160,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 329160,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": ["02-mobile-standard-390x844.app.png", "02-mobile-standard-390x844.export.png"]
     },
     {
@@ -1208,7 +1244,25 @@
         "app": "a4689a246f00defa",
         "export": "44139b363ae1a73a"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 400760,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 400760,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": ["03-mobile-large-430x932.app.png", "03-mobile-large-430x932.export.png"]
     },
     {
@@ -1601,7 +1655,25 @@
         "app": "31cff8e7ec329e71",
         "export": "ebdac6f6ac9ca948"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 576000,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 576000,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": [
         "04-foldable-small-tablet-600x960.app.png",
         "04-foldable-small-tablet-600x960.export.png"
@@ -1997,7 +2069,25 @@
         "app": "13c9b330463ad208",
         "export": "fa55aa213b604255"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 967600,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 967600,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": ["05-tablet-portrait-820x1180.app.png", "05-tablet-portrait-820x1180.export.png"]
     },
     {
@@ -2414,7 +2504,25 @@
         "app": "78596bc0ecb2eaaa",
         "export": "ddf701cd321d1f33"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 786432,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 786432,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": [
         "06-tablet-landscape-1024x768.chrome.sidebar-edge.png",
         "06-tablet-landscape-1024x768.app.png",
@@ -2895,7 +3003,25 @@
         "app": "d2bf6a582c85530a",
         "export": "edd08638b4124cf0"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 1049088,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 1049088,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": [
         "07-laptop-1366x768.chrome.resizer.png",
         "07-laptop-1366x768.chrome.sidebar-edge.png",
@@ -3379,7 +3505,25 @@
         "app": "20ebe308f6d0aef2",
         "export": "6bcafd53c55ace87"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 1296000,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 1296000,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": [
         "08-desktop-1440x900.chrome.resizer.png",
         "08-desktop-1440x900.chrome.sidebar-edge.png",
@@ -3863,7 +4007,25 @@
         "app": "925407c41b90e466",
         "export": "8e8bc7ebbc7806b5"
       },
-      "repeat": null,
+      "repeat": {
+        "app": {
+          "differing": 0,
+          "total": 2073600,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "export": {
+          "differing": 0,
+          "total": 2073600,
+          "share": 0,
+          "meanAbsolute": 0,
+          "maxChannel": 0,
+          "visible": 0
+        },
+        "identical": true
+      },
       "files": [
         "09-wide-1920x1080.chrome.resizer.png",
         "09-wide-1920x1080.chrome.sidebar-edge.png",
@@ -3875,7 +4037,7 @@
     }
   ],
   "chromeTolerance": 0,
-  "repeatRequested": false,
+  "repeatRequested": true,
   "verdict": "PASS",
   "failures": []
 }

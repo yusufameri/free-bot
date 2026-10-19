@@ -75,7 +75,7 @@ stale, and a same-run pair cancels it.
 
 ## The tests
 
-`bun test packages/pixel-gate/src` drives 64 tests over the three modules whose arithmetic a
+`bun test packages/pixel-gate/src` drives 65 tests over the three modules whose arithmetic a
 verdict depends on. The diff tests call `diffRegion` and `digestImage` directly, and those two
 functions are injected into the browser with `Function.prototype.toString`, so the tests drive the
 same bytes the diff page runs rather than a re-implementation of them. The region tests drive the
@@ -196,8 +196,8 @@ same pixels. The committed pair is under the baseline's `stability/`.
 
 ## The baseline
 
-The committed baseline is `packages/verify/artifacts/pixel-gate/de64c3d/`, produced by
-`bun packages/pixel-gate/src/cli.ts --repeat` at commit `de64c3d`, against the app as it stands. The app state
+The committed baseline is `packages/verify/artifacts/pixel-gate/4d2c0d3/`, produced by
+`bun packages/pixel-gate/src/cli.ts --repeat` at commit `4d2c0d3`, against the app as it stands. The app state
 is stated in `assert.txt`: booted as `bun run up --no-open --replay` over a fresh temporary
 `FREEBOT_HOME` and bots root, one Bot and one thread created over `/rpc` before the page opens, the
 vault this run's own three-line placeholder at mode 600 in that temporary directory. No key is read,

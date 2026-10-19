@@ -1,11 +1,11 @@
 {
   "feature": "pixel-gate",
   "command": "bun packages/pixel-gate/src/cli.ts --repeat",
-  "commit": "de64c3d38bfa7eb15ded3c2b6575211866cbb503",
-  "shortSha": "de64c3d",
+  "commit": "4d2c0d35acc9af322184bbce544561d2be990a0c",
+  "shortSha": "4d2c0d3",
   "branch": "u6.7a-coderabbit-followup",
   "dirty": false,
-  "startedAt": "2026-10-19T06:34:57.806Z",
+  "startedAt": "2026-10-19T06:46:41.755Z",
   "runtime": "bun 1.2.5 on darwin arm64",
   "chrome": "chrome Chrome/155.0.8059.85",
   "fonts": {
@@ -19,17 +19,17 @@
     "geistResolves": false
   },
   "app": {
-    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv",
-    "url": "http://127.0.0.1:57819/#token=<redacted>",
+    "home": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc",
+    "url": "http://127.0.0.1:60450/#token=<redacted>",
     "botId": "bot-local",
     "threadId": "thread-1",
     "provider": "replay",
-    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv)"
+    "vault": "/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc)"
   },
   "exportSource": {
     "file": "design/prototype-84c6b185/freebot-prototype.html",
     "initialScreenReplacements": 1,
-    "servedAt": "http://127.0.0.1:57821/"
+    "servedAt": "http://127.0.0.1:60452/"
   },
   "viewports": [
     {

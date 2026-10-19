@@ -2,16 +2,16 @@
 
 feature: pixel-gate
 command: bun packages/pixel-gate/src/cli.ts --repeat
-commit: de64c3d38bfa7eb15ded3c2b6575211866cbb503 (de64c3d) on u6.7a-coderabbit-followup
-started: 2026-10-19T06:34:57.806Z
+commit: 4d2c0d35acc9af322184bbce544561d2be990a0c (4d2c0d3) on u6.7a-coderabbit-followup
+started: 2026-10-19T06:46:41.755Z
 runtime: bun 1.2.5 on darwin arm64
 chrome: chrome Chrome/155.0.8059.85
 chrome tolerance: 0 differing pixel(s) per chrome region
 
-app: http://127.0.0.1:57819/#token=<redacted>
-  home /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv
-  bot bot-local, thread thread-1, provider mode replay, vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-wu9hmv)
-export: design/prototype-84c6b185/freebot-prototype.html, served at http://127.0.0.1:57821/, its initial screen replaced 1 time(s)
+app: http://127.0.0.1:60450/#token=<redacted>
+  home /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc
+  bot bot-local, thread thread-1, provider mode replay, vault /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc/provider.env (this run's own placeholder, mode 600, removed with /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-cSqYJc)
+export: design/prototype-84c6b185/freebot-prototype.html, served at http://127.0.0.1:60452/, its initial screen replaced 1 time(s)
 
 fonts: the app resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; the export resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif
   the two stacks are the same; a 'Geist' string measures 215.98px against an absent family's 215.98px on the app and 215.98px against 215.98px on the export, so Geist has no face on this machine and both pages render the stack's fallback
