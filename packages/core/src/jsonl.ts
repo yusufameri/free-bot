@@ -41,7 +41,7 @@ function rewriteAtomically(path: string, content: string): void {
   const neighbour = `${path}.${process.pid}.tmp`;
   const fd = openSync(neighbour, "w");
   try {
-    writeSync(fd, content);
+    writeFully(fd, content);
     fsyncSync(fd);
   } finally {
     closeSync(fd);
@@ -63,6 +63,25 @@ function rewriteAtomically(path: string, content: string): void {
   } finally {
     closeSync(dirFd);
   }
+}
+
+/**
+ * Write every byte, or throw. `writeSync` is allowed to return having written fewer bytes than it
+ * was given, and a record that lands half-written is a line JSON cannot parse: the fsync would
+ * report a durable file and the caller's state would move, while the next boot drops or refuses the
+ * line that was supposed to hold it. Returns the bytes written, so a caller can put a file back.
+ */
+function writeFully(fd: number, text: string): number {
+  const bytes = Buffer.from(text, "utf8");
+  let written = 0;
+  while (written < bytes.length) {
+    const step = writeSync(fd, bytes, written, bytes.length - written);
+    if (step <= 0) {
+      throw new Error(`the file took ${written} of ${bytes.length} bytes and would take no more`);
+    }
+    written += step;
+  }
+  return written;
 }
 
 export class JsonlFile {
@@ -129,7 +148,7 @@ export class JsonlFile {
     const fd = this.#fd;
     const before = fstatSync(fd).size;
     try {
-      writeSync(fd, `${line}\n`);
+      writeFully(fd, `${line}\n`);
       fsyncSync(fd);
     } catch (error) {
       try {
