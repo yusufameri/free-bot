@@ -27,6 +27,7 @@
  * stdout stays the one URL. See docs/RUNNING.md.
  */
 
+import { nanoToUsd, usdToNano } from "@freebot/core";
 import {
   type ConnectorPaths,
   ConnectorRegistry,
@@ -71,6 +72,9 @@ export interface Up {
   stop(): Promise<number>;
 }
 
+/** The per-run ceiling a launch applies when `FREEBOT_SPEND_CAP_USD` names none. */
+export const DEFAULT_SPEND_CAP_USD = "5.00";
+
 export async function startUp(args: UpArgs): Promise<Up> {
   const sandbox = await resolveSandboxBackend(args.sandbox, args.sandboxSource, RUN_UNIT);
   const sandboxes = new LaunchSandboxes(sandbox.backend);
@@ -95,6 +99,8 @@ export async function startUp(args: UpArgs): Promise<Up> {
       // A supplier rather than a list, so a connector connected while this launch is up is offered
       // to the next run. The credential itself is read from the vault at call time either way.
       connectors: () => connectors.connectors(),
+      spendCapNanoUsd: args.spendCapNanoUsd ?? usdToNano(DEFAULT_SPEND_CAP_USD),
+      ...(args.prices === null ? {} : { prices: args.prices }),
       ...(args.transcript === null ? {} : { transcript: args.transcript }),
       ...(args.workspace === null ? {} : { botsRoot: args.workspace }),
     }),
@@ -185,6 +191,14 @@ export async function main(argv: readonly string[]): Promise<number | null> {
   );
   console.error(
     `freebot up: bots under ${up.botsRoot}; each Bot's workspace is mounted at /workspace and kept across runs`,
+  );
+  const capNanoUsd = args.spendCapNanoUsd ?? usdToNano(DEFAULT_SPEND_CAP_USD);
+  console.error(
+    `freebot up: spend cap ${nanoToUsd(capNanoUsd)} USD per run; ${
+      args.prices === null
+        ? "no token prices configured, so a keyed run reports no cost"
+        : "token prices configured"
+    }`,
   );
   const roster = up.connectors
     .map((connector) => `${connector.label} (${connector.id}) at ${connector.url}`)

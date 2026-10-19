@@ -38,6 +38,7 @@ freebot up: sandbox backend docker (chosen by auto: the Docker daemon answered)
 freebot up: model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)
 freebot up: vault /Users/you/.freebot/provider.env present, mode 600
 freebot up: bots under /Users/you/.freebot/bots; each Bot's workspace is mounted at /workspace and kept across runs
+freebot up: spend cap 5.00 USD per run; no token prices configured, so a keyed run reports no cost
 freebot up: the operator token rides the URL's fragment and is printed nowhere else
 freebot up: opened the URL in your browser
 freebot up: Ctrl-C stops the servers and removes this launch's sandboxes (docker)
@@ -137,6 +138,47 @@ One launch parks only its first run. Once you answer a card, the landed ledger h
 grant and the same call again is refused as `grant_consumed` rather than parked, which is why
 `packages/review/src/policy.ts` and its tests are the place to look if a second run of the same
 command behaves differently from the first.
+
+## Stopping a run
+
+The composer's **Stop run** control is enabled only while a run is in flight. It calls the contract's
+`cancel_run`, and the run settles at `cancelled`: the transcript keeps every frame that arrived
+before the stop, the approval card that was waiting reads `run stopped` with its buttons disabled,
+and the run's container is removed by the loop's own cleanup. The stop control is disabled again and
+the composer is ready for the next run. A run parked at the gate is woken immediately; a provider
+call already on the wire finishes before the loop reaches its next check.
+
+The details:
+
+- A run's terminal state is shown by its `run.status` frame (`run cancelled`), by the header's
+  `data-run-status`, and by the Computer tab's `Status` row.
+- `packages/verify/scripts/cancel-run.ts` is the live evidence. Its three committed frames are
+  `01-no-run`, `02-in-flight` and `03-cancelled`.
+- The taxonomy's `cancelled` entry is the only producer of this state; the loop emits no
+  `run.finished` for a stop, because a stop is not a completion.
+
+## The spend cap
+
+The run loop consults a per-run spend ceiling before every provider turn. It reads the run's settled
+usage, not an estimate: each turn's adapter reports what the call cost, and a total over the cap
+settles the run at the taxonomy's `spend_cap` with a `run.failed` reason naming the spend, the cap
+and the overage. The provider call that would cross the cap is never made. Spending exactly the cap
+is still within it.
+
+`bun run up` configures the two halves from the environment:
+
+| Variable | Meaning |
+| --- | --- |
+| `FREEBOT_SPEND_CAP_USD` | The per-run ceiling. The launch defaults to `5.00` when unset. |
+| `FREEBOT_PRICE_INPUT_PER_MTOK` | Input tokens' price in USD per million. |
+| `FREEBOT_PRICE_OUTPUT_PER_MTOK` | Output tokens' price in USD per million. |
+| `FREEBOT_PRICE_CACHE_READ_PER_MTOK` | Cache-read tokens' price. |
+| `FREEBOT_PRICE_CACHE_WRITE_PER_MTOK` | Cache-write tokens' price. |
+
+The four prices are all four or none: a partial set is refused at boot rather than defaulted. With
+none set, a keyed adapter reports no cost and the cap has nothing to measure, which the boot line
+says. With all four set, every keyed turn is priced and the cap applies. The cap measures provider
+calls; a connector's own vendor billing is not part of the run's token cost.
 
 ## The model
 
@@ -250,7 +292,11 @@ refusal, and SIGINTs a launch while a run still holds a live container. It write
 - **Per-token streaming.** The loop's provider port returns a whole turn, so the model's text arrives
   as one frame and the page renders it in one piece. Streaming it needs a port that yields, which is
   a change to `packages/core`.
-- **Spend caps.** Usage is now real and printed, but nothing consults `checkSpendCap` yet.
+- **Priced spend.** The loop consults the cap, but a keyed turn reports a cost only when the four
+  `FREEBOT_PRICE_*` variables are set. Without them the adapter reports no cost rather than a zero.
+  The cap also measures provider calls, not a connector's own vendor billing.
+- **An in-flight stop.** A stop is checked between provider calls; a call already on the wire is not
+  aborted mid-call. A run parked at the gate is woken immediately.
 - **The scheduler.** Idle-kill, auto-stop and rejoin after `sandbox_lost_mid_run` are still its.
 - **A hard `SIGKILL`** still leaves a container behind that no launch owns.
 - **The default browser-open path** was checked against a stand-in `open` on `PATH` rather than a

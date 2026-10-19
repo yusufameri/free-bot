@@ -6,8 +6,8 @@
  * The binding lives here rather than at each call site so a new code cannot land with a status and
  * no copy, or with a copy and no status.
  *
- * Six codes settle at `failed`, one parks the run at `paused` instead (the sandbox can be rejoined,
- * so losing it mid-run is not an ending), and one settles at `cancelled`.
+ * Seven codes settle at `failed`, one parks the run at `paused` instead (the sandbox can be
+ * rejoined, so losing it mid-run is not an ending), and one settles at `cancelled`.
  */
 
 import type { RunEventKind } from "./run-events.ts";
@@ -20,6 +20,7 @@ export const RUN_FAILURE_CODES = [
   "sandbox_unavailable",
   "sandbox_lost_mid_run",
   "approval_timeout",
+  "spend_cap",
   "cancelled",
   "internal_invariant",
 ] as const;
@@ -77,6 +78,13 @@ export const FAILURE_TAXONOMY = {
     status: "failed",
     event: "run.failed",
     copy: "The approval request timed out.",
+  },
+  spend_cap: {
+    means:
+      "The run's settled usage reached the configured cap, so the loop refused the next provider call.",
+    status: "failed",
+    event: "run.failed",
+    copy: "This run reached its spend cap.",
   },
   cancelled: {
     means: "The user cancelled the run.",

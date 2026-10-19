@@ -53,6 +53,12 @@ const EXPECTED: Array<{
     event: "run.failed",
     copy: "The approval request timed out.",
   },
+  {
+    code: "spend_cap",
+    status: "failed",
+    event: "run.failed",
+    copy: "This run reached its spend cap.",
+  },
   { code: "cancelled", status: "cancelled", event: null, copy: "Cancelled." },
   {
     code: "internal_invariant",
@@ -63,8 +69,8 @@ const EXPECTED: Array<{
 ];
 
 describe("the failure taxonomy", () => {
-  test("eight codes, each with the status and copy it converges to", () => {
-    expect(RUN_FAILURE_CODES.length).toBe(8);
+  test("nine codes, each with the status and copy it converges to", () => {
+    expect(RUN_FAILURE_CODES.length).toBe(9);
 
     for (const expected of EXPECTED) {
       const entry = failureEntry(expected.code);

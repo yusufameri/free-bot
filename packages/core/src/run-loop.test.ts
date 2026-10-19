@@ -26,6 +26,7 @@ import {
   type ProviderToolCall,
   type ProviderTurn,
   ProviderTurnError,
+  type ProviderUsage,
   runRunLoop,
   type SandboxPort,
   type ToolOutcome,
@@ -59,6 +60,9 @@ interface Scenario {
   /** Cancel the run the moment the human answers the first card. */
   cancelOnAnswer?: boolean;
   maxTurns?: number;
+  /** What each turn's provider call settled, in turn order. */
+  usage?: Array<ProviderUsage | undefined>;
+  spendCapNanoUsd?: number;
 }
 
 async function run(scenario: Scenario) {
@@ -129,7 +133,8 @@ async function run(scenario: Scenario) {
       }
       const next = scripted.shift();
       if (next === undefined) throw new Error("the provider ran out of scripted turns");
-      return next;
+      const usage = scenario.usage?.[input.turn - 1];
+      return usage === undefined ? next : { ...next, usage };
     },
   };
 
@@ -183,6 +188,9 @@ async function run(scenario: Scenario) {
       sandbox: { name: "u17-test" },
       tools: TOOLS,
       ...(scenario.maxTurns === undefined ? {} : { maxTurns: scenario.maxTurns }),
+      ...(scenario.spendCapNanoUsd === undefined
+        ? {}
+        : { spendCapNanoUsd: scenario.spendCapNanoUsd }),
     },
   );
 
@@ -450,7 +458,7 @@ describe("the loop over fake ports", () => {
     expect(r.executed).toEqual([]);
   });
 
-  test("a cancel between turns settles the run at cancelled and runs no further turn", async () => {
+  test("a cancel while parked settles the run at cancelled and runs no further turn", async () => {
     const r = await run({
       turns: [
         { text: [], toolCalls: [call("call_1", "echo one")] },
@@ -460,10 +468,108 @@ describe("the loop over fake ports", () => {
       cancelOnAnswer: true,
     });
     expect(r.outcome.status).toBe("cancelled");
-    expect(statusTrail(r.frames)).toEqual(["running", "awaiting_approval", "running", "cancelled"]);
+    expect(statusTrail(r.frames)).toEqual(["running", "awaiting_approval", "cancelled"]);
     expect(r.store.get(RUN)?.status).toBe("cancelled");
+    expect(r.executed).toEqual([]);
     expect(r.turnInputs).toHaveLength(1);
     expect(r.frames.some((frame) => frame.type === "run.finished")).toBe(false);
+  });
+
+  test("a settled total over the cap refuses the next provider turn with spend_cap", async () => {
+    const r = await run({
+      turns: [
+        { text: [], toolCalls: [call("call_1", "echo one")] },
+        { text: ["never"], toolCalls: [] },
+      ],
+      answers: [{ decision: "allow" }],
+      usage: [
+        {
+          provider: "byok",
+          model: "test-model",
+          tokens: { input: 1_000, output: 500, cacheRead: 0, cacheWrite: 0 },
+          costNanoUsd: 12_000_000,
+        },
+      ],
+      spendCapNanoUsd: 10_000_000,
+    });
+
+    expect(r.outcome.status).toBe("failed");
+    expect(r.turnInputs).toHaveLength(1);
+    expect(r.store.get(RUN)?.error).toMatchObject({
+      code: "spend_cap",
+      detail: "settled spend 0.012 USD exceeded the cap 0.01 USD by 0.002 USD",
+    });
+    expect(statusTrail(r.frames)).toEqual(["running", "awaiting_approval", "running", "failed"]);
+    expect(r.frames.at(-2)).toMatchObject({
+      type: "run.failed",
+      payload: {
+        reason: "settled spend 0.012 USD exceeded the cap 0.01 USD by 0.002 USD",
+      },
+    });
+    expect(r.executed.map((entry) => entry.toolCallId)).toEqual(["call_1"]);
+  });
+
+  test("an under-cap run is unaffected and its usage totals are recorded", async () => {
+    const r = await run({
+      turns: [
+        { text: [], toolCalls: [call("call_1", "echo one")] },
+        { text: ["done"], toolCalls: [] },
+      ],
+      answers: [{ decision: "allow" }],
+      usage: [
+        {
+          provider: "byok",
+          model: "test-model",
+          tokens: { input: 1_000, output: 0, cacheRead: 0, cacheWrite: 0 },
+          costNanoUsd: 4_000_000,
+        },
+        {
+          provider: "byok",
+          model: "test-model",
+          tokens: { input: 1_000, output: 0, cacheRead: 0, cacheWrite: 0 },
+          costNanoUsd: 5_000_000,
+        },
+      ],
+      spendCapNanoUsd: 10_000_000,
+    });
+
+    expect(r.outcome.status).toBe("done");
+    expect(r.turnInputs).toHaveLength(2);
+    expect(r.store.get(RUN)?.usage.costNanoUsd).toBe(9_000_000);
+    expect(r.store.usageEvents(RUN).map((event) => event.usageId)).toEqual([
+      `${RUN}:turn-1`,
+      `${RUN}:turn-2`,
+    ]);
+    expect(r.frames.some((frame) => frame.type === "run.failed")).toBe(false);
+  });
+
+  test("spending exactly the cap still allows the next turn", async () => {
+    const r = await run({
+      turns: [
+        { text: [], toolCalls: [call("call_1", "echo one")] },
+        { text: [], toolCalls: [] },
+      ],
+      answers: [{ decision: "allow" }],
+      usage: [
+        {
+          provider: "byok",
+          model: "test-model",
+          tokens: { input: 1_000, output: 0, cacheRead: 0, cacheWrite: 0 },
+          costNanoUsd: 10_000_000,
+        },
+        {
+          provider: "byok",
+          model: "test-model",
+          tokens: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+          costNanoUsd: 0,
+        },
+      ],
+      spendCapNanoUsd: 10_000_000,
+    });
+
+    expect(r.outcome.status).toBe("done");
+    expect(r.turnInputs).toHaveLength(2);
+    expect(r.store.get(RUN)?.usage.costNanoUsd).toBe(10_000_000);
   });
 
   test("a provider failure settles the run at the code its taxonomy entry names", async () => {

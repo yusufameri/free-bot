@@ -15,13 +15,14 @@
  * says 384.
  */
 
-import type {
-  Bot,
-  FileEntry,
-  ProviderConnection,
-  RunStatusValue,
-  RunSummary,
-  Thread,
+import {
+  type Bot,
+  type FileEntry,
+  type ProviderConnection,
+  RUN_STATUS_VALUES,
+  type RunStatusValue,
+  type RunSummary,
+  type Thread,
 } from "@freebot/protocol";
 import { groupEntries, LIBRARY_EMPTY, LIBRARY_PINNED_PATH, refusedLine } from "./library.ts";
 import type { StreamConnection } from "./notices.ts";
@@ -128,16 +129,22 @@ export interface AsideLive {
 
 /**
  * The live run's status word, out of the thread model's own state. The words are the wire's seven
- * (`packages/protocol/src/events.ts:79`); the model applies `run.status` without storing it, so the
- * pane reads the three transitions it does keep — a failure, an end, a parked approval — and calls
- * the rest running. `null` means no run is on screen.
+ * (`packages/protocol/src/events.ts:79`); the model keeps the last `run.status` payload, so a stop
+ * reads as `cancelled` here as it does in the transcript. The derived checks remain for a page that
+ * resumed mid-run before its thread's first status frame arrived. `null` means no run is on screen.
  */
 export function liveRunStatus(state: ThreadState): RunStatusValue | null {
   if (state.failed !== null) return "failed";
   if (state.done) return "done";
+  if (state.cancelled) return "cancelled";
   if (state.runId === null) return null;
+  if (state.runStatus !== null && isRunStatusValue(state.runStatus)) return state.runStatus;
   if (state.awaiting !== null) return "awaiting_approval";
   return "running";
+}
+
+function isRunStatusValue(value: string): value is RunStatusValue {
+  return (RUN_STATUS_VALUES as readonly string[]).includes(value);
 }
 
 /**

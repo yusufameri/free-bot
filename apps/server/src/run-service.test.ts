@@ -179,6 +179,54 @@ describe("a Bot, a thread, and a run inside them", () => {
   });
 });
 
+describe("a stop while the run is parked", () => {
+  test("cancel wakes the parked approval and settles the run at cancelled at once", async () => {
+    const provider: ProviderPort = {
+      async next(input) {
+        if (input.turn === 1) {
+          return {
+            text: [],
+            toolCalls: [
+              {
+                toolCallId: "call_1",
+                toolName: "bash",
+                args: { command: "echo one" },
+                destructive: true,
+              },
+            ],
+          };
+        }
+        return { text: [], toolCalls: [] };
+      },
+    };
+    const service = createRunService({
+      botsRoot: botsRoot(),
+      sandbox: noSandbox,
+      provider: () => provider,
+    });
+    const bot = service.createBot("Local Bot");
+    const thread = service.createThread(bot.id);
+    const { runId } = service.start({ prompt: "one", botId: bot.id, threadId: thread.id });
+
+    const deadline = Date.now() + 2_000;
+    while (service.run(runId)?.record.status !== "awaiting_approval") {
+      if (Date.now() > deadline) throw new Error("the run never parked");
+      await Bun.sleep(5);
+    }
+    expect(service.approvals.pending()).toHaveLength(1);
+    expect(service.cancel(runId)).toBe(true);
+
+    await Promise.race([
+      service.idle(),
+      Bun.sleep(2_000).then(() => {
+        throw new Error("the stop did not wake the parked approval");
+      }),
+    ]);
+    expect(service.run(runId)?.record.status).toBe("cancelled");
+    expect(service.approvals.pending()).toEqual([]);
+  });
+});
+
 describe("the Bot's workspace", () => {
   test("every run mounts this Bot's own directory at /workspace", async () => {
     const specs: SandboxSpec[] = [];

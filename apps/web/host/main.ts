@@ -157,6 +157,21 @@ const handle = mountThread({
   onAnswer: (decision, approvalId) => {
     post({ type: "answer", decision, approvalId });
   },
+  /**
+   * The stop is the contract's own `cancel_run`, not a bespoke control frame. The fixture peer has
+   * no route client, so there the same message travels on the page's socket to the same authority.
+   */
+  onCancel: (runId) => {
+    if (api !== null) {
+      void api
+        .cancel_run({ runId })
+        .catch((error: unknown) =>
+          handle.showError(error instanceof Error ? error.message : String(error)),
+        );
+      return;
+    }
+    post({ type: "cancel", runId });
+  },
   // One reporter for the page's socket state: the header word, the banner and the pane all follow it.
   onConnection: (next) => {
     connection = next;
@@ -374,9 +389,14 @@ function connect(): void {
     // The transcript moved, so the pane's own counters, its run and its newest command moved too.
     paintAside();
     if (handle.state().error !== null) ws.close();
-    if (message.type === "run.finished" || message.type === "run.failed") {
+    if (
+      message.type === "run.finished" ||
+      message.type === "run.failed" ||
+      (message.type === "run.status" && message.payload.status === "cancelled")
+    ) {
       // The thread's own counts and its run record both moved, so the list is re-read and the two
-      // surfaces that read it — the pane and the notice stack — repaint from what came back.
+      // surfaces that read it — the pane and the notice stack — repaint from what came back. A
+      // cancelled run carries only `run.status`, so it is named here rather than left behind.
       void shell
         .refresh()
         .then(() => {
@@ -385,7 +405,10 @@ function connect(): void {
         })
         .catch(() => undefined);
     }
-    if (startButton !== null && (handle.state().done || handle.state().failed !== null)) {
+    if (
+      startButton !== null &&
+      (handle.state().done || handle.state().failed !== null || handle.state().cancelled)
+    ) {
       startButton.disabled = false;
     }
   };

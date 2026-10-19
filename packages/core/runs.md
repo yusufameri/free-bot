@@ -91,8 +91,11 @@ integer count of nano-USD (`1 USD = 1_000_000_000`), parsed once from the decima
 publish and never a float afterwards; a price finer than one nano-USD per token is refused rather
 than rounded.
 
-`checkSpendCap(totals, capNanoUsd)` is the threshold compare a run loop consults. The run loop does
-not exist yet, so the enforcement wiring is a follow-up; the compare itself is done and tested.
+`checkSpendCap(totals, capNanoUsd)` is the threshold compare the run loop consults. The loop records
+each provider turn's settled `usage` on the run (U10.3) and checks the total before the next turn; a
+total over the configured cap settles the run at the taxonomy's `spend_cap`, and the next provider
+call is never made. A total exactly at the cap is still within it, and a run with no configured cap
+is uncapped.
 
 ## `freebot doctor`
 

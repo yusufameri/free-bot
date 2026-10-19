@@ -59,9 +59,11 @@ really does at the commit that served the page, and three it does not do yet.
 
 The driver reads the first, third and fifth from those sources at run time and compares them to what
 the page renders, so a version, a command or a tag that moves makes the page wrong and the driver say
-so. The two gaps it names are the ones `UX.md`'s "What exists today" table already states: the run
-cancel route exists with no control in the page (`apps/server/src/router.ts:41`), and the spend cap
-is computed but not consulted (`packages/core/src/run-usage.ts`).
+so. The two gaps the committed landing copy names are both closed in the app itself as of U10.3: the
+page carries a `Stop run` control over `cancel_run`, and the run loop consults `checkSpendCap`
+(`docs/cancel-and-cap.md`). The landing's static copy still says otherwise; regenerating it is a
+follow-up for the surface that owns it, and this document keeps the delta visible rather than
+letting the page and the app disagree silently.
 
 ## The controls, and what each one does
 

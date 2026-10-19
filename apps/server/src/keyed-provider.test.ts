@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ToolDefinition, ToolOutcome } from "@freebot/core";
+import type { TokenPrices, ToolDefinition, ToolOutcome } from "@freebot/core";
 import { ProviderTurnError } from "@freebot/core";
 import { createFakeTransport, jsonResponse, OpenAiCompatibleClient } from "@freebot/providers";
 import { KeyedProvider, outcomeText } from "./keyed-provider.ts";
@@ -33,7 +33,7 @@ const CALL = {
 
 function providerWith(
   responses: ReturnType<typeof jsonResponse>[],
-  options: { readonly prompt?: string } = {},
+  options: { readonly prompt?: string; readonly prices?: TokenPrices } = {},
 ) {
   const transport = createFakeTransport(responses);
   const notes: string[] = [];
@@ -42,6 +42,7 @@ function providerWith(
     model: "deepseek/deepseek-v4.1-flash",
     prompt: options.prompt ?? "print hi in the sandbox",
     client: new OpenAiCompatibleClient(CONNECTION, { transport }),
+    ...(options.prices === undefined ? {} : { prices: options.prices }),
     note: (line) => notes.push(line),
   });
   return { provider, transport, notes };
@@ -118,6 +119,44 @@ describe("the keyed provider over a fake transport", () => {
       'freebot provider: turn 1 tool_call call_1 bash {"command":"echo hi"}',
       "freebot provider: turn 1 done finish=tool_calls usage=118/23/141",
     ]);
+  });
+
+  test("a priced turn carries the nano-USD the run's spend cap compares", async () => {
+    const { provider } = providerWith(
+      [
+        jsonResponse(
+          200,
+          completion(
+            { role: "assistant", content: "Running it.", tool_calls: [CALL] },
+            "tool_calls",
+          ),
+        ),
+      ],
+      {
+        prices: {
+          inputPerMTok: "3.00",
+          outputPerMTok: "15.00",
+          cacheReadPerMTok: "0.30",
+          cacheWritePerMTok: "3.75",
+        },
+      },
+    );
+    const turn = await provider.next({ turn: 1, tools: TOOLS, results: [] });
+    expect(turn.usage).toEqual({
+      provider: "byok",
+      model: "deepseek/deepseek-v4.1-flash",
+      tokens: { input: 118, output: 23, cacheRead: 0, cacheWrite: 0 },
+      // 118 x 3000 + 23 x 15000, in integer nano-USD.
+      costNanoUsd: 699_000,
+    });
+  });
+
+  test("an unpriced turn reports no cost rather than a zero a cap would read as satisfied", async () => {
+    const { provider } = providerWith([
+      jsonResponse(200, completion({ role: "assistant", content: "hi" })),
+    ]);
+    const turn = await provider.next({ turn: 1, tools: TOOLS, results: [] });
+    expect(turn.usage).toBeUndefined();
   });
 
   test("the next turn carries the assistant's call and the tool's own output back to the model", async () => {

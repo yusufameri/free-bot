@@ -173,9 +173,14 @@ survives until the run removes it itself.
   the end of a run and carries `idleTtlMs` on the spec, but nothing stops an idle sandbox between
   runs, and nothing resumes a run parked at `sandbox_lost_mid_run`. The rejoin contract exists (the
   record's `lastSeenSeq`, the log's `since`), and the scheduler is what calls it.
-- **Spend caps are not wired.** `checkSpendCap` exists and is tested, and the loop does not consult it:
-  no `usage_event` is recorded either, because the replay provider reports no usage. This PR wires
-  neither, and a keyed provider is what makes the check meaningful.
+- **Spend caps are wired; priced usage is the remaining input.** The loop records each turn's
+  `usage` when its adapter reports one and consults `checkSpendCap` before the next provider turn
+  (U10.3, `docs/cancel-and-cap.md`). The replay provider reports no usage, and a keyed adapter prices
+  a turn only when the four `FREEBOT_PRICE_*` variables are set, so a keyless evidence run exercises
+  the boundary in `packages/verify/scripts/spend-cap.ts` rather than through a real bill.
+- **A stop is checked between provider calls.** `RunService.cancel` sets the flag and wakes a parked
+  approval; a provider call already on the wire finishes before the loop reaches its next check. The
+  live evidence is `packages/verify/scripts/cancel-run.ts`.
 - **The gate's allow carries no grant id**, so `tool_call.decision` cannot name the grant it consumed.
   `docs/protocol.md` already carries this follow-up.
 - **`packages/ui` renders no grant lifecycle or turn marker for a live run.** The `run.status` arm

@@ -17,11 +17,14 @@ import type {
   ProviderPort,
   ProviderToolCall,
   ProviderTurn,
+  ProviderUsage,
+  TokenCounts,
+  TokenPrices,
   ToolDefinition,
   ToolOutcome,
   TurnInput,
 } from "@freebot/core";
-import { ProviderTurnError } from "@freebot/core";
+import { costNanoUsd, ProviderTurnError } from "@freebot/core";
 import {
   type ChatMessage,
   type ChatResult,
@@ -81,6 +84,12 @@ export interface KeyedProviderOptions {
   readonly timeoutMs?: number;
   /** Injectable so a test drives the adapter over a loopback transport. */
   readonly client?: OpenAiCompatibleClient;
+  /**
+   * What a token costs on this model, so the turn reports the nano-USD the run's spend cap compares.
+   * Omitted means the adapter reports no usage cost at all, rather than a zero that would make an
+   * enforced cap look satisfied.
+   */
+  readonly prices?: TokenPrices;
   /** One line per turn, for a driver reading the run's own process. Defaults to stderr. */
   readonly note?: (line: string) => void;
 }
@@ -91,6 +100,7 @@ export class KeyedProvider implements ProviderPort {
   readonly #destructive: (toolName: string) => boolean;
   readonly #note: (line: string) => void;
   readonly #apiKey: string;
+  readonly #prices: TokenPrices | null;
   readonly #journal: KeyedTurnRecord[] = [];
   readonly #conversation: ChatMessage[];
   #pending: readonly ToolCallInput[] = [];
@@ -105,6 +115,7 @@ export class KeyedProvider implements ProviderPort {
         ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
       });
     this.#destructive = options.destructive ?? (() => true);
+    this.#prices = options.prices ?? null;
     this.#note = options.note ?? ((line) => console.error(line));
     this.#conversation = [
       { role: "system", content: options.system ?? SYSTEM_PROMPT },
@@ -196,7 +207,34 @@ export class KeyedProvider implements ProviderPort {
       arguments: call.arguments,
     }));
     this.#pendingText = result.text;
-    return { text: result.text.length === 0 ? [] : [result.text], toolCalls: calls };
+    const usage = this.#usageOf(result.usage);
+    return {
+      text: result.text.length === 0 ? [] : [result.text],
+      toolCalls: calls,
+      ...(usage === undefined ? {} : { usage }),
+    };
+  }
+
+  /**
+   * One call's settled usage in the loop's shape. The wire reports prompt and completion tokens
+   * only, so the two cache counts are zero; without prices there is no honest cost to report and the
+   * turn carries none.
+   */
+  #usageOf(usage: Usage | null): ProviderUsage | undefined {
+    const prices = this.#prices;
+    if (prices === null || usage === null) return undefined;
+    const tokens: TokenCounts = {
+      input: usage.inputTokens,
+      output: usage.outputTokens,
+      cacheRead: 0,
+      cacheWrite: 0,
+    };
+    return {
+      provider: "byok",
+      model: this.#model,
+      tokens,
+      costNanoUsd: costNanoUsd(prices, tokens),
+    };
   }
 
   /** Put the finished turn and its outcomes into the conversation, before the next one is asked. */

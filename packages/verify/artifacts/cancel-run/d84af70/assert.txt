@@ -1,0 +1,76 @@
+feature: cancel-run
+command: bun packages/verify/scripts/cancel-run.ts
+timestamp: 2026-10-19T08:46:34.836Z
+git sha: d84af700be3a0e290c1a162537b8350cfc9ab641
+git sha short: d84af70
+branch: u10.3-cancel-and-cap
+runtime: bun 1.2.5 on darwin arm64
+
+containers before the run (label freebot.unit=u1.7): 0
+PASS a decoy under another unit's label is up before the run: ["freebot-u103-decoy-64637"]
+the launcher's printed URL, redacted: http://127.0.0.1:56616/#token=<redacted>
+the launcher's cap line: freebot up: spend cap 5.00 USD per run; no token prices configured, so a keyed run reports no cost
+PASS the launch configures a per-run cap in the run path: [true,true]
+the Bot and thread the page opens on: bot-local / thread-1
+PASS with no run in flight the stop control is present, labelled and disabled: {"label":"Stop run","disabled":true,"inFlight":"false","runId":null,"stopping":"false"}
+PASS frame 01-no-run: the page held still across the capture: "{\"frameCount\":0,\"lastSeq\":0,\"prompts\":[],\"toolCards\":[],\"approvalDecisions\":[],\"runStatuses\":[],\"headerStatus\":null,\"stop\":{\"label\":\"Stop run\",\"disabled\":true,\"inFlight\":\"false\",\"runId\":null,\"stopping\":\"false\"},\"text\":\"\"}"
+PASS frame 01-no-run: the element the caption is about is inside the captured pixels (#stop): [true,0]
+PASS frame 01-no-run: claim - no message is rendered: true
+PASS frame 01-no-run: claim - the stop control names itself: true
+PASS frame 01-no-run: claim - and is disabled: true
+PASS frame 01-no-run: claim - with no run in flight: true
+frame 01-no-run: 01-no-run.png (81222 bytes, sha256 4e619fc03528edce825238de89661459d9b10e253ce9cb277de44ecb8b339431) - A connected page with no run: the stop control is present, labelled Stop run, and disabled.
+PASS in flight, the stop control is enabled and names the run: {"label":"Stop run","disabled":false,"inFlight":"true","runId":"run-1","stopping":"false"}
+PASS the page names the run the prompt started: "run run-1"
+PASS the prompt the page sent is on the page: "Use the bash tool to print today's date in the sandbox, then tell me what it printed."
+PASS one governed call is on the page, waiting for the answer: ["awaiting approval"]
+PASS the in-flight run holds exactly one container, this launch's own: [1,1]
+PASS frame 02-in-flight: the page held still across the capture: "{\"frameCount\":6,\"lastSeq\":6,\"prompts\":[\"Use the bash tool to print today's date in the sandbox, then tell me what it printed.\"],\"toolCards\":[[\"call_stub_11\",\"awaiting approval\"]],\"approvalDecisions\":[null],\"runStatuses\":[\"running\",\"awaiting_approval\"],\"headerStatus\":\"awaiting_approval\",\"stop\":{\"label\":\"Stop run\",\"disabled\":false,\"inFlight\":\"true\",\"runId\":\"run-1\",\"stopping\":\"false\"},\"text\":\"\"}"
+PASS frame 02-in-flight: the element the caption is about is inside the captured pixels (#stop): [true,0]
+PASS frame 02-in-flight: claim - a run is in flight: true
+PASS frame 02-in-flight: claim - the stop control is enabled: true
+PASS frame 02-in-flight: claim - and names the run it will stop: true
+PASS frame 02-in-flight: claim - the prompt that started the run is on the page: true
+PASS frame 02-in-flight: claim - the governed call is waiting for an answer: true
+PASS frame 02-in-flight: claim - the run's own status frame says awaiting_approval: true
+frame 02-in-flight: 02-in-flight.png (112529 bytes, sha256 dec1f5dd04f3541f56ebe50a0b9299bd4f78c26364d6a286ca419f3690a3ef28) - A run parked at the gate is in flight: Stop run is enabled, the page names the run, and the card that is waiting is still unanswered.
+PASS the container the stop left is removed: true
+PASS the terminal marker reads run cancelled: "run cancelled"
+PASS after the stop the control is disabled again and reports no run in flight: {"label":"Stop run","disabled":true,"inFlight":"false","runId":"run-1","stopping":"true"}
+PASS the run's status frames end at cancelled: "cancelled"
+PASS the page kept every frame that arrived before the stop: [true,true]
+PASS and the prompt that arrived before the stop is still there: ["Use the bash tool to print today's date in the sandbox, then tell me what it printed."]
+PASS and so is the tool card that arrived before the stop: [["call_stub_11","awaiting approval"]]
+PASS the waiting approval is marked cancelled rather than allowed or denied: ["cancelled"]
+PASS the composer is usable for the next run: false
+PASS the label-scoped census is back to its baseline: []
+PASS the decoy outside this unit's label survives the stop: ["freebot-u103-decoy-64637"]
+PASS frame 03-cancelled: the page held still across the capture: "{\"frameCount\":7,\"lastSeq\":7,\"prompts\":[\"Use the bash tool to print today's date in the sandbox, then tell me what it printed.\"],\"toolCards\":[[\"call_stub_11\",\"awaiting approval\"]],\"approvalDecisions\":[\"cancelled\"],\"runStatuses\":[\"running\",\"awaiting_approval\",\"cancelled\"],\"headerStatus\":\"cancelled\",\"stop\":{\"label\":\"Stop run\",\"disabled\":true,\"inFlight\":\"false\",\"runId\":\"run-1\",\"stopping\":\"true\"},\"text\":\"\"}"
+PASS frame 03-cancelled: the element the caption is about is inside the captured pixels (#thread .run-status[data-run-status="cancelled"]): [true,0]
+PASS frame 03-cancelled: claim - the run's status is cancelled: true
+PASS frame 03-cancelled: claim - the terminal marker is rendered: true
+PASS frame 03-cancelled: claim - the stop control is disabled again: true
+PASS frame 03-cancelled: claim - and reports no run in flight: true
+PASS frame 03-cancelled: claim - the prompt that arrived before the stop is kept: true
+PASS frame 03-cancelled: claim - the tool card that arrived before the stop is kept: true
+PASS frame 03-cancelled: claim - the waiting approval is no longer answerable: true
+frame 03-cancelled: 03-cancelled.png (116826 bytes, sha256 703a2f91a286a1cf6498a481bb521847deb9c2775e847772160d6b646addb8c2) - Stopped from the page: the run's terminal status is cancelled, the prompt and the call that arrived before the stop are still there, and the waiting approval is marked run stopped.
+
+== pairwise distinctness of the committed frames
+PASS frames: every committed frame differs from every other in its page facts: []
+PASS the launcher exits zero on SIGINT: 0
+PASS nothing listens on the page port after the launch stops: true
+PASS the label-scoped census is still its baseline after the launch stops: []
+PASS the decoy this driver created is removed: []
+the real vault at ~/.freebot/provider.env is never read, printed or copied by this driver; its only vault is the placeholder under the temp home named above
+
+PASS one committed PNG per key state: ["01-no-run.png","02-in-flight.png","03-cancelled.png"]
+artifact: 01-no-run.png (81222 bytes)
+artifact: 02-in-flight.png (112529 bytes)
+artifact: 03-cancelled.png (116826 bytes)
+PASS no committed line carries the operator token: false
+PASS no committed line carries a key-shaped literal: false
+
+checks: 50/50 PASS
+
+RESULT: PASS (50/50)
