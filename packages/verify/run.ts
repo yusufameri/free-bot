@@ -15,28 +15,6 @@ function shell(cmd: string[]): Outcome {
   return { ok: proc.exitCode === 0, output };
 }
 
-/**
- * The same, with the child's output streamed as it arrives.
- *
- * The pixel gate is the one long step, and a run that stalls should leave its last line in the CI
- * log rather than a captured buffer that is only printed after the process exits.
- */
-async function shellStreaming(cmd: string[]): Promise<Outcome> {
-  const proc = Bun.spawn(cmd, { cwd: root, stdout: "pipe", stderr: "pipe" });
-  let output = "";
-  const pump = async (stream: ReadableStream<Uint8Array>, sink: NodeJS.WriteStream) => {
-    const decoder = new TextDecoder();
-    for await (const chunk of stream) {
-      const text = decoder.decode(chunk);
-      output += text;
-      sink.write(text);
-    }
-  };
-  await Promise.all([pump(proc.stdout, process.stdout), pump(proc.stderr, process.stderr)]);
-  const code = await proc.exited;
-  return { ok: code === 0, output: output.trim() };
-}
-
 function git(args: string[]): string {
   const proc = Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "pipe" });
   if (proc.exitCode !== 0) {
@@ -140,7 +118,7 @@ const steps: Array<[string, () => Outcome | Promise<Outcome>]> = [
   ["scaffold-shape", () => shell(["sh", "packages/verify/features/scaffold.sh"])],
   // Order 36's hard pixel gate. One command, one browser, nine viewports; it exits non-zero on a
   // chrome mismatch or an undeclared box delta, so this step is the arming.
-  ["pixel-gate", () => shellStreaming(["bun", "packages/pixel-gate/src/cli.ts", "--no-write"])],
+  ["pixel-gate", () => shell(["bun", "packages/pixel-gate/src/cli.ts", "--no-write"])],
   ["healthz", healthz],
 ];
 

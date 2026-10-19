@@ -128,7 +128,17 @@ export function matrix(): string {
 export { CHROME_TOLERANCE, chooseViewports };
 
 try {
-  process.exit(await main());
+  // A gate that never returns a verdict is a failed gate, not a hung build. The nine-viewport run
+  // takes about four minutes on the build host and on CI; twelve minutes is comfortably past that
+  // and keeps a stuck CDP call from holding a job open until its own timeout.
+  const watchdog = setTimeout(() => {
+    console.error("pixel gate: no verdict within 12 minutes, so the run fails");
+    process.exit(1);
+  }, 12 * 60_000);
+  watchdog.unref();
+  const code = await main();
+  clearTimeout(watchdog);
+  process.exit(code);
 } catch (error) {
   console.error(`pixel gate crashed: ${error instanceof Error ? error.message : String(error)}`);
   process.exit(1);

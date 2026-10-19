@@ -43,7 +43,8 @@ runs on the build host and in CI. The command's exit code is `exitCodeFor(verdic
 zero only when every carried chrome region's differing-pixel count is at or under the tolerance, every
 desktop chrome region above its breakpoint is present, every moved box is either zero or matched by a
 declared delta, no viewport scrolls horizontally, and both pages measure the vendored Geist face. A
-font that times out or falls back is a failure, not a note.
+font that times out or falls back is a failure, not a note. The CLI also arms a twelve-minute
+watchdog: a run that never returns a verdict exits non-zero rather than holding a CI job open.
 
 The failure path has its own proof, and it does not wreck a page. `packages/pixel-gate/src/gate.test.ts`
 builds the report shapes the run produces and shifts one number: one differing chrome pixel fails the
