@@ -77,13 +77,14 @@ preflight in `apps/web/scripts/capture.ts`.
 
 ## What the gate still does not reach
 
-These twelve are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no
+These thirteen are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no
 included root reaches. The probe derives that set from the tree and asserts it equals this list, so a
 new unreached file fails the probe.
 
 | File | Why | Checked by |
 | --- | --- | --- |
 | `apps/web/host/main.ts` | browser code, needs `lib: DOM`, which the root program does not carry | `apps/web/tsconfig.json` |
+| `apps/web/landing/main.ts` | same, the landing route's clipboard control (U6.6) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/render.ts` | same, the DOM surface of the shared thread model | `apps/web/tsconfig.json` |
 | `packages/ui/browser/library.ts` | same, the DOM surface of the shared Library model (U4.1) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/provider.ts` | same, the DOM surface of page 1's provider model (U4.3) | `apps/web/tsconfig.json` |
@@ -96,7 +97,7 @@ new unreached file fails the probe.
 | `packages/sandbox/image/replay-ext.ts` | nothing imports it, and `image/` is not `src` or `scripts` | nothing |
 | `packages/pi-bridge/extension/smoke-echo.ts` | nothing imports it (the smoke passes its path as a string) | nothing |
 
-The ten DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
+The eleven DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
 control-plane and server code call `document` without a complaint, which is a worse trade than
 leaving the browser surface to the app config that already owns it. U6.3's three arrived with a real
 defect behind them: `notices.ts` called an unimported helper, and `bun run typecheck` was silent

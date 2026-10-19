@@ -99,6 +99,7 @@ const covered = [
  */
 const blind = [
   "apps/web/host/main.ts",
+  "apps/web/landing/main.ts",
   "packages/pi-bridge/extension/smoke-echo.ts",
   "packages/sandbox/image/replay-ext.ts",
   "packages/ui/browser/aside.ts",
