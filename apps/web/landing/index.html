@@ -218,6 +218,12 @@
             <p>Your model key lives in your own vault at mode 600. This project ships no key and owns no account.</p>
           </div>
         </div>
+        <div class="listrow">
+          <span class="monogram">05</span>
+          <div class="grow">
+            <p id="landing-cap">The run loop checks the per-run spend cap before every provider turn. A run over the cap settles at <code class="mono">spend_cap</code>, and <code class="mono">FREEBOT_SPEND_CAP_USD</code> sets the cap, 5.00 USD by default.</p>
+          </div>
+        </div>
       </div>
 
       <div class="listcard" id="landing-gaps">
@@ -225,12 +231,6 @@
           <span class="tag">Not built</span>
           <div class="grow">
             <p>There is no control in the page that cancels a run. The route exists and the page has no button for it.</p>
-          </div>
-        </div>
-        <div class="listrow">
-          <span class="tag">Not built</span>
-          <div class="grow">
-            <p>The spend cap is computed per run and the run loop does not consult it yet.</p>
           </div>
         </div>
         <div class="listrow">

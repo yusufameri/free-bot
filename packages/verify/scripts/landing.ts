@@ -65,6 +65,17 @@ const EXPORT_REGION = { from: 566, to: 613 } as const;
  */
 const EXPORT_CHROME = ["data-od-id", "lbl", "pre-run-4f3a", "Teach a task", "waiting on approval"];
 
+/**
+ * The spend-cap sentence this page adds, asserted as one literal so the claim cannot drift back to
+ * the gap list or to a promise the loop no longer keeps. It is the page's own copy rather than the
+ * export's, which is why it is typed here.
+ */
+const CAP_CLAIM =
+  "The run loop checks the per-run spend cap before every provider turn. A run over the cap settles at spend_cap, and FREEBOT_SPEND_CAP_USD sets the cap, 5.00 USD by default.";
+
+/** The sentence U10.3 made false, kept here so a page that reverts it fails this driver. */
+const OLD_CAP_CLAIM = "The spend cap is computed per run and the run loop does not consult it yet.";
+
 /** Regions whose own content extent is checked against their own box, per viewport. */
 const REGIONS = [
   ".landing",
@@ -468,6 +479,39 @@ async function main(): Promise<number> {
       "#landing-statement",
       "#landing-controls",
     ]);
+
+    section("the spend cap claim this unit corrects");
+    const capClaim = await evaluate<string>(
+      chrome.cdp,
+      session,
+      `document.querySelector('#landing-cap')?.textContent?.replace(/\\s+/g, ' ').trim() ?? ''`,
+    );
+    check(
+      "the cap claim states that the loop consults the cap before every provider turn, that an over-cap run settles at spend_cap, and that FREEBOT_SPEND_CAP_USD sets it",
+      capClaim,
+      CAP_CLAIM,
+    );
+    check(
+      "the old claim that the run loop does not consult the cap is absent from the page",
+      (await renderedText(chrome.cdp, session)).includes(OLD_CAP_CLAIM),
+      false,
+    );
+    const capPlacement = await evaluate<{ card: string; tag: string }>(
+      chrome.cdp,
+      session,
+      `(() => {
+        const node = document.querySelector('#landing-cap');
+        return {
+          card: node?.closest('.listcard')?.id ?? '',
+          tag: node?.closest('.listrow')?.querySelector('.tag')?.textContent?.trim() ?? '',
+        };
+      })()`,
+    );
+    checkThat(
+      "the cap claim sits in the runs-today card and carries no Not built tag",
+      capPlacement.card === "landing-runs" && capPlacement.tag === "",
+      capPlacement,
+    );
 
     const exportEyebrow = exportTextFor('class="eyebrow"');
     const exportHero = exportTextFor('class="h1"');
