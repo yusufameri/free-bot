@@ -448,8 +448,9 @@ describe("a thread's conversation across a restart", () => {
     // whole conversation is owed nothing, and one that reads it again gets the same frames.
     expect(reopened.events(thread.id, before.length).messages).toEqual([]);
 
-    reopened.start({ prompt: "and again", botId: bot.id, threadId: thread.id });
+    const second = reopened.start({ prompt: "and again", botId: bot.id, threadId: thread.id });
     await reopened.idle();
+    expect(reopened.run(second.runId)?.record.status).toBe("done");
     const continued = reopened.events(thread.id, 0).messages;
     expect(continued.slice(before.length).map((frame) => frame.seq)).toEqual(
       before.map((_frame, index) => before.length + index + 1),
