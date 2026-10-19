@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { appendFileSync, mkdtempSync, readFileSync } from "node:fs";
+import { appendFileSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { TranscriptStore } from "./transcript-store.ts";
 
 interface TestFrame {
@@ -138,6 +138,9 @@ describe("TranscriptStore", () => {
       refused: { line: 2, reason: "not a transcript record" },
     });
     expect(lines(path)).toEqual(['{"seq":1,"frame":{"kind":"kept"}}']);
+    // The repair rewrites the file rather than editing it in place, and the copy it swaps in is the
+    // only thing left in the directory: no neighbour file survives the swap.
+    expect(readdirSync(dirname(path))).toEqual(["transcript.jsonl"]);
     expect(second.append(2, { kind: "repaired" })).toBe("appended");
   });
 
@@ -152,6 +155,27 @@ describe("TranscriptStore", () => {
     expect(second.loadReport.count).toBe(1);
     expect(second.loadReport.refused).toEqual({ line: 2, reason: "not a transcript record" });
     expect(second.lastSeq).toBe(1);
+  });
+
+  test("a write that fails leaves the log where it was", () => {
+    const base = mkdtempSync(join(tmpdir(), "freebot-transcript-"));
+    const blocked = join(base, "blocked");
+    const store = new TranscriptStore<TestFrame>({
+      file: join(blocked, "transcript.jsonl"),
+      isFrame,
+    });
+    // The directory the append would create is a file by the time it asks for it, so the append
+    // reaches the disk step and fails there.
+    writeFileSync(blocked, "");
+
+    expect(() => store.append(1, { kind: "never-written" })).toThrow();
+    // The frame is not in the log either, so nothing a reader was told about can go missing on the
+    // next boot: the memory is only ever as far as the disk.
+    expect(store.lastSeq).toBe(0);
+    expect(store.count).toBe(0);
+    expect(store.since(0)).toEqual([]);
+    expect(store.audit()).toMatchObject({ lastSeq: 0, count: 0, rejected: 0 });
+    expect(store.verdict(1)).toBe("appended");
   });
 
   test("a transcript with no file persists nothing and reports nothing", () => {

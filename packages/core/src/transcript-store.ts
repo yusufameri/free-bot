@@ -72,13 +72,18 @@ export class TranscriptStore<TFrame> extends SeqLog<TFrame> {
     return this.#loadReport;
   }
 
-  /** The log's verdict on the frame, which is also the file's: only a frame it took is written. */
+  /**
+   * The log's verdict on the frame, which is also the file's: only a frame it would take is written.
+   *
+   * The disk is settled before the log's tail moves. A frame the log would refuse is never written,
+   * and a write that throws never reaches the log, so the in-memory tail cannot come out ahead of
+   * the file: a reader is only ever told about a seq the disk holds, and the next boot replays the
+   * whole of this log rather than the prefix of it the last write got through.
+   */
   override append(seq: number, frame: TFrame): SeqAppend {
-    const outcome = super.append(seq, frame);
-    if (outcome === "appended") {
-      this.#file.append(JSON.stringify({ seq, frame } satisfies TranscriptRecord<TFrame>));
-    }
-    return outcome;
+    if (this.verdict(seq) !== "appended") return super.append(seq, frame);
+    this.#file.append(JSON.stringify({ seq, frame } satisfies TranscriptRecord<TFrame>));
+    return super.append(seq, frame);
   }
 
   close(): void {
