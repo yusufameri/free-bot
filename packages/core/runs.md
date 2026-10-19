@@ -69,12 +69,19 @@ A malformed line anywhere else is corruption and throws with its line number.
 | `sandbox_unavailable` | failed | `run.failed` | FreeBot could not start the sandbox. Run freebot doctor. |
 | `sandbox_lost_mid_run` | paused | none | The sandbox was lost. FreeBot is reconnecting; the run continues where it stopped. |
 | `approval_timeout` | failed | `run.failed` | The approval request timed out. |
+| `spend_cap` | failed | `run.failed` | This run reached its spend cap. |
 | `cancelled` | cancelled | none | Cancelled. |
 | `internal_invariant` | failed | `run.failed` | FreeBot hit an internal error and stopped this run. |
+| `server_restart` | failed | `run.failed` | FreeBot stopped while this run was in flight. |
 
 A code carries its own sentence (`means`), the status the run converges to, the kind that carries it,
 and the one line the shell shows, so a new code cannot land with half a mapping. Losing the sandbox
 mid-run parks the run instead of ending it, because the smoke proved the rejoin path works.
+
+One code is not a mid-run failure at all. The boot pass settles a run the last process left in flight
+at `server_restart` (`settleAbandoned` in `apps/server/src/run-service.ts`), so the closed union still
+holds every way a run stops short of finishing, whether the run stopped or the process did.
+`docs/transcript.md` has the whole of it.
 
 Two rows have no wire kind. The landed twelve say nothing that means "this run is parked", "this run
 is paused", "this run was cancelled", or "this run rejoined", and the only kind left is `run.failed`,
