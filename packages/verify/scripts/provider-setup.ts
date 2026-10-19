@@ -958,7 +958,7 @@ const made: string[] = [];
 
 /** Write the artifact, refusing one that carries the key, the operator token, or a key-shaped literal. */
 function writeArtifact(): string | null {
-  const text = [...headerLines, ...log.lines, ""].join("\n");
+  const text = [...headerLines, ...log.lines, "", log.result(), ""].join("\n");
   for (const launched of live) {
     if (launched.token !== "" && text.includes(launched.token)) {
       console.error("refusing to write an artifact that contains the operator token");
