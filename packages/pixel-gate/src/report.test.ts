@@ -332,6 +332,16 @@ describe("compareRuns", () => {
     ).toBe(true);
   });
 
+  test("a same-id region of a different kind does not stand in for a chrome region", () => {
+    const a = run([viewport("01", [region("chrome.x", "chrome", null, "absent")])]);
+    const b = run([viewport("01", [region("chrome.x", "content", null, "absent")])]);
+    const proof = compareRuns(a, b, 0);
+    expect(proof.same).toBe(false);
+    expect(
+      proof.lines.some((line) => line.includes("the second run has no such chrome region")),
+    ).toBe(true);
+  });
+
   test("content regions are not part of the chrome proof", () => {
     const a = run([viewport("01", [region("content.x", "content", diff(0, 100))])]);
     const b = run([viewport("01", [region("content.x", "content", diff(50, 100))])]);

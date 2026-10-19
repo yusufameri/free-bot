@@ -488,7 +488,7 @@ export function compareRuns(left: RunReport, right: RunReport, epsilon = 0): Sta
       a.regions.filter((entry) => entry.kind === "chrome").map((entry) => entry.id),
     );
     for (const region of a.regions.filter((entry) => entry.kind === "chrome")) {
-      const twin = b.regions.find((entry) => entry.id === region.id);
+      const twin = b.regions.find((entry) => entry.id === region.id && entry.kind === "chrome");
       const mine = region.stat;
       if (twin === undefined) {
         same = false;
