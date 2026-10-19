@@ -128,8 +128,8 @@ describe("the verification index checker", () => {
       repoRoot,
       plant({
         feature: "launch",
-        from: "artifacts/launch/8d892fa/assert.txt",
-        to: "artifacts/launch/8d892fa/assert.txt/missing",
+        from: "artifacts/launch/085af4c/assert.txt",
+        to: "artifacts/launch/085af4c/assert.txt/missing",
       }),
     );
 

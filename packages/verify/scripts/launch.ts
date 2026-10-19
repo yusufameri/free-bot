@@ -253,8 +253,9 @@ function domFacts(cdp: Cdp, sessionId: string): Promise<DomFacts> {
     sessionId,
     `({
       frames: document.querySelectorAll('#thread .frame[data-seq]').length,
-      lastSeq: Math.max(0, ...[...document.querySelectorAll('#thread .frame[data-seq]')].map((e) => Number(e.dataset.seq))),
-      statuses: [...document.querySelectorAll('#thread .tool-card .status')].map((e) => e.textContent),
+      lastSeq: Number(document.querySelector('#lastseq').dataset.lastSeq),
+      // The page's facts hook reports the card's data-status; read the same fact, not the tag's word.
+      statuses: [...document.querySelectorAll('#thread .tool-card')].map((card) => card.dataset.status ?? ''),
       outputs: [...document.querySelectorAll('#thread .tool-card')]
         .map((card) => card.querySelector('.output-details')?.hidden === false),
       approvals: [...document.querySelectorAll('#thread .approval-card')].map((card) => card.dataset.decision ?? null),
@@ -315,7 +316,13 @@ const SPECS: readonly FrameSpec[] = [
         holds: (f) => f.cards.some(([, status]) => status === "awaiting approval"),
       },
       { label: "the run has not finished", holds: (f) => !f.done },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .approval-card",
   },
@@ -335,7 +342,13 @@ const SPECS: readonly FrameSpec[] = [
       },
       { label: "the run reported done", holds: (f) => f.done },
       { label: "the terminal marker is rendered", holds: (f) => f.streamEnd === "stream complete" },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .run-finished",
   },
@@ -355,7 +368,13 @@ const SPECS: readonly FrameSpec[] = [
       },
       { label: "the run reported done", holds: (f) => f.done },
       { label: "the terminal marker is rendered", holds: (f) => f.streamEnd === "stream complete" },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .run-finished",
   },
@@ -763,18 +782,27 @@ async function assertParked(
     await evalJson(
       cdp,
       sessionId,
-      `[...document.querySelectorAll('#thread .approval-card button')].map((b) => b.textContent)`,
+      `[...document.querySelectorAll('#thread .approval-card .approval-actions button')].map((b) => b.textContent)`,
     ),
     ["Allow once", "Deny"],
   );
   log.check(
-    `${label}: the run's own status frame is rendered, so a parked run does not look frozen`,
-    await evalJson<number>(
+    `${label}: the run's own status is on the header and the parked cards, so it does not look frozen`,
+    // Old: '#thread .run-status[data-run-status="awaiting_approval"]' count. New: '#run[data-run-status]' plus the two cards.
+    await evalJson(
       cdp,
       sessionId,
-      `document.querySelectorAll('#thread .run-status[data-run-status="awaiting_approval"]').length`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card');
+        const approval = document.querySelector('#thread .approval-card');
+        return [
+          document.querySelector('#run').dataset.runStatus,
+          card?.dataset.status,
+          approval?.dataset.state,
+        ];
+      })()`,
     ),
-    1,
+    ["awaiting_approval", "awaiting approval", "pending"],
   );
   return await evalJson<string>(
     cdp,
@@ -814,13 +842,23 @@ async function answerAllow(
     "allowed once",
   );
   log.check(
-    `${label}: the decision marker names the allow`,
+    `${label}: the decision is the tool card's done state and the approval card's allow`,
+    // Old: '#thread .tool-decision[data-tool-call=...]' text 'decision <id>: allow'. New: the cards' own status/decision facts.
     await evalJson(
       cdp,
       sessionId,
-      `document.querySelector('#thread .tool-decision[data-tool-call="${callId}"]').textContent`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card[data-tool-call="${callId}"]');
+        const approval = document.querySelector('#thread .approval-card');
+        return [
+          card?.dataset.status,
+          card?.dataset.finished,
+          approval?.dataset.decision,
+          approval?.querySelector('.approval-result')?.textContent,
+        ];
+      })()`,
     ),
-    `decision ${callId}: allow`,
+    ["done", "done", "allow", "allowed once"],
   );
   // The container's own stdout, which no replayed frame could carry.
   log.check(
@@ -833,13 +871,17 @@ async function answerAllow(
     OUTPUT,
   );
   log.check(
-    `${label}: the run's terminal status frame is rendered`,
-    await evalJson<number>(
+    `${label}: the run's terminal status is on the header and its card`,
+    // Old: '#thread .run-status[data-run-status="done"]' count. New: '#run[data-run-status]' plus the finished tool card.
+    await evalJson(
       cdp,
       sessionId,
-      `document.querySelectorAll('#thread .run-status[data-run-status="done"]').length`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card[data-tool-call="${callId}"]');
+        return [document.querySelector('#run').dataset.runStatus, card?.dataset.finished];
+      })()`,
     ),
-    1,
+    ["done", "done"],
   );
   log.check(
     `${label}: the run finished with no stream error`,
@@ -875,13 +917,24 @@ async function answerDeny(
     "denied",
   );
   log.check(
-    `${label}: the refusal is named user_denied`,
+    `${label}: the refusal is the tool card's denied state and the approval card's deny`,
+    // Old: '#thread .tool-decision[data-tool-call=...]' text 'decision <id>: deny (user_denied)'. New: the cards' own status/decision facts.
     await evalJson(
       cdp,
       sessionId,
-      `document.querySelector('#thread .tool-decision[data-tool-call="${callId}"]').textContent`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card[data-tool-call="${callId}"]');
+        const approval = document.querySelector('#thread .approval-card');
+        return [
+          card?.dataset.status,
+          card?.dataset.finished,
+          approval?.dataset.state,
+          approval?.dataset.decision,
+          approval?.querySelector('.approval-result')?.textContent,
+        ];
+      })()`,
     ),
-    `decision ${callId}: deny (user_denied)`,
+    ["denied", "denied", "denied", "deny", "denied"],
   );
   log.check(
     `${label}: the governed call produced no output`,
@@ -898,13 +951,17 @@ async function answerDeny(
     "stream complete",
   );
   log.check(
-    `${label}: the run's terminal status frame is rendered`,
-    await evalJson<number>(
+    `${label}: the run's terminal status is on the header and its card`,
+    // Old: '#thread .run-status[data-run-status="done"]' count. New: '#run[data-run-status]' plus the finished tool card.
+    await evalJson(
       cdp,
       sessionId,
-      `document.querySelectorAll('#thread .run-status[data-run-status="done"]').length`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card[data-tool-call="${callId}"]');
+        return [document.querySelector('#run').dataset.runStatus, card?.dataset.finished];
+      })()`,
     ),
-    1,
+    ["done", "denied"],
   );
 }
 

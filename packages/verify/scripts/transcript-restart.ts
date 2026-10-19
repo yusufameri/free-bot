@@ -247,7 +247,9 @@ interface RestartFacts {
   readonly duplicatesIgnored: number;
   readonly prompts: string[];
   readonly toolCards: Array<{ call: string; status: string; output: string; shown: boolean }>;
-  readonly runStatuses: string[];
+  readonly runStatus: string | null;
+  readonly renderedSeqs: number[];
+  readonly duplicateSeqs: number[];
   readonly runFailed: string[];
   readonly finished: string | null;
   readonly header: {
@@ -261,6 +263,7 @@ interface RestartFacts {
     readonly decision: string | null;
     readonly result: string | null;
     readonly buttons: number;
+    readonly answerButtons: number;
     readonly disabled: number;
   }>;
   readonly idle: { readonly hidden: boolean; readonly text: string };
@@ -276,20 +279,28 @@ function facts(cdp: Cdp, page: string): Promise<RestartFacts> {
       const frames = [...document.querySelectorAll('#thread .frame[data-seq]')];
       const run = document.querySelector('#run');
       const idle = document.querySelector('#idle-note');
+      const renderedSeqs = frames.map((node) => Number(node.dataset.seq));
+      const seen = new Set();
+      const duplicateSeqs = [];
+      for (const seq of renderedSeqs) {
+        if (seen.has(seq)) duplicateSeqs.push(seq);
+        else seen.add(seq);
+      }
       return {
         frameCount: frames.length,
-        lastSeq: Math.max(0, ...frames.map((node) => Number(node.dataset.seq))),
+        lastSeq: Number(document.querySelector('#lastseq').dataset.lastSeq),
         duplicatesIgnored: Number(document.querySelector('#dups').dataset.duplicatesIgnored),
         prompts: [...document.querySelectorAll('#thread .message.user .prompt')].map((node) => node.textContent),
         toolCards: [...document.querySelectorAll('#thread .tool-card')].map((card) => ({
           call: card.querySelector('.cmd')?.textContent ?? '',
-          status: card.querySelector('.status')?.textContent ?? '',
+          status: card.dataset.status ?? '',
           output: card.querySelector('.output')?.textContent ?? '',
           shown: card.querySelector('.output-details')?.hidden === false,
         })),
-        runStatuses: [...document.querySelectorAll('#thread .run-status')].map(
-          (node) => node.dataset.runStatus ?? '',
-        ),
+        // Old: '#thread .run-status' marker lines. New: '#run[data-run-status]' is the current run's status.
+        runStatus: run.dataset.runStatus ?? null,
+        renderedSeqs,
+        duplicateSeqs,
         runFailed: [...document.querySelectorAll('#thread .run-failed')].map((node) => node.textContent),
         finished: document.querySelector('#thread .run-finished')?.textContent ?? null,
         header: {
@@ -305,6 +316,7 @@ function facts(cdp: Cdp, page: string): Promise<RestartFacts> {
             decision: card.dataset.decision ?? null,
             result: card.querySelector('.approval-result')?.textContent ?? null,
             buttons: buttons.length,
+            answerButtons: card.querySelectorAll('.approval-actions button').length,
             disabled: buttons.filter((button) => button.disabled).length,
           };
         }),
@@ -346,7 +358,13 @@ const SPECS: readonly Spec[] = [
         holds: (f) => f.finished === "stream complete",
       },
       { label: "and the page names its status", holds: (f) => f.header.status === "done" },
-      { label: "with no frame unaccounted for", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .run-finished",
   },
@@ -368,12 +386,15 @@ const SPECS: readonly Spec[] = [
         label: "the streamed run is parked behind the hydrated frames",
         holds: (f) =>
           f.toolCards.some((card) => card.status === "awaiting approval") &&
-          f.runStatuses.includes("awaiting_approval"),
+          f.runStatus === "awaiting_approval",
       },
       {
+        // Old: frameCount === lastSeq plus the run-status trail. New: unique rendered frames and the current run's element.
         label: "and its first frame continues the seq space rather than restarting it",
         holds: (f) =>
-          f.frameCount === f.lastSeq && f.runStatuses.filter((s) => s === "done").length === 1,
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq) &&
+          f.runStatus === "awaiting_approval",
       },
     ],
     visible: "#thread .approval-card",
@@ -395,8 +416,8 @@ const SPECS: readonly Spec[] = [
         label: "and the card that was waiting is no longer answerable",
         holds: (f) =>
           f.approvals.length === 2 &&
-          f.approvals[1]?.decision === "failed" &&
-          f.approvals[1]?.disabled === f.approvals[1]?.buttons,
+          f.approvals[1]?.decision === "expired" &&
+          f.approvals[1]?.answerButtons === 0,
       },
       {
         label: "while the finished run the transcript brought back is untouched",
@@ -675,7 +696,7 @@ async function main(): Promise<void> {
       await evaluate<string[]>(
         chrome.cdp,
         aPage,
-        "[...document.querySelectorAll('#thread .tool-card .status')].map((node) => node.textContent)",
+        "[...document.querySelectorAll('#thread .tool-card')].map((node) => node.dataset.status)",
       ),
       ["awaiting approval"],
     );
@@ -692,9 +713,15 @@ async function main(): Promise<void> {
       { call: COMMAND, status: "done", output: OUTPUT, shown: true },
     ]);
     check(
-      "and every frame the page holds came from the log in order",
-      [done.frameCount === done.lastSeq, done.duplicatesIgnored, done.error],
-      [true, 0, ""],
+      // Old: frameCount === lastSeq, one marker per message. New: unique rendered frames within the stream's own last seq.
+      "and every rendered frame is unique and inside the stream the log holds",
+      [
+        done.duplicateSeqs,
+        done.renderedSeqs.every((seq) => seq > 0 && seq <= done.lastSeq),
+        done.duplicatesIgnored,
+        done.error,
+      ],
+      [[], true, 0, ""],
     );
     captures.push(await capture(chrome.cdp, aPage, "01-finished-run"));
 
@@ -702,7 +729,7 @@ async function main(): Promise<void> {
     say(`the transcript A wrote: ${written.length} lines, keyed by botsRoot/botId/threadId`);
     say(`  the first line, verbatim: ${transcriptLines(transcript)[0] ?? "(none)"}`);
     check("the transcript is where the service says it is", existsSync(transcript), true);
-    check("one line per frame the page rendered", written.length, done.frameCount);
+    check("one line per message the stream carried", written.length, done.lastSeq);
     check(
       "the lines are one record per seq, in order, each carrying the frame",
       written.map((entry) => entry.seq),
@@ -744,7 +771,7 @@ async function main(): Promise<void> {
     );
 
     // A half-written record, the shape a process that died mid-append leaves: no trailing newline.
-    appendFileSync(transcript, `{"seq":${done.frameCount + 1},"frame":{"v":1,"seq":`);
+    appendFileSync(transcript, `{"seq":${done.lastSeq + 1},"frame":{"v":1,"seq":`);
     const torn = readFileSync(transcript, "utf8");
     check(
       "the torn last line is on the disk before the next boot",
@@ -753,7 +780,7 @@ async function main(): Promise<void> {
         torn.split("\n").filter((line) => line.length > 0).length,
         torn.trimEnd().endsWith('"seq":'),
       ],
-      [false, done.frameCount + 1, true],
+      [false, done.lastSeq + 1, true],
     );
 
     // -----------------------------------------------------------------------
@@ -779,7 +806,7 @@ async function main(): Promise<void> {
     check(
       "the torn last line was dropped and the file repaired in place",
       [transcriptLines(transcript).length, readFileSync(transcript, "utf8").endsWith("\n")],
-      [done.frameCount, true],
+      [done.lastSeq, true],
     );
     const exceptions = chrome.cdp.console.filter((entry) => entry.startsWith("EXCEPTION"));
     check("and no page exception was raised while hydrating", exceptions, []);
@@ -801,23 +828,24 @@ async function main(): Promise<void> {
           "[...document.querySelectorAll('#thread .message.user')].at(-1).dataset.seq",
         ),
       ),
-      done.frameCount + 1,
+      done.lastSeq + 1,
     );
     check(
       "so the page holds both runs' frames with nothing skipped and nothing replayed twice",
       [
-        streaming.frameCount === streaming.lastSeq,
+        streaming.duplicateSeqs.length,
+        streaming.renderedSeqs.every((seq) => seq > 0 && seq <= streaming.lastSeq),
         streaming.duplicatesIgnored,
         streaming.prompts,
         streaming.toolCards.map((card) => card.status),
       ],
-      [true, 0, [PROMPT, SECOND_PROMPT], ["done", "awaiting approval"]],
+      [0, true, 0, [PROMPT, SECOND_PROMPT], ["done", "awaiting approval"]],
     );
     check("and the run the page names is the second one", streaming.header.run, "run run-2");
     check(
-      "and the file behind the page is still one line per frame it renders",
+      "and the file behind the page is still one line per message the stream carried",
       transcriptLines(transcript).length,
-      streaming.frameCount,
+      streaming.lastSeq,
     );
     captures.push(await capture(chrome.cdp, bPage, "02-after-restart"));
 
@@ -844,20 +872,18 @@ async function main(): Promise<void> {
       `run failed: ${RESTART_COPY}`,
     ]);
     check(
-      "the status trail ends at failed, with the run the first launch finished still done",
-      [
-        interrupted.runStatuses.at(-1),
-        interrupted.runStatuses.filter((status) => status === "done").length,
-        interrupted.runStatuses.filter((status) => status === "awaiting_approval").length,
-      ],
-      ["failed", 1, 2],
+      // Old: the '#thread .run-status' trail ending failed. New: '#run[data-run-status]' plus the finished run's card.
+      "the run element ends at failed, with the run the first launch finished still done",
+      [interrupted.runStatus, interrupted.toolCards[0]?.status],
+      ["failed", "done"],
     );
     check(
+      // Old: a failed card reading 'run failed' with two disabled buttons. New: the card closes as expired with its word and no buttons.
       "the card the parked run left behind is closed, not allowed and not denied",
       interrupted.approvals,
       [
-        { decision: "allow", result: "allowed once", buttons: 0, disabled: 0 },
-        { decision: "failed", result: "run failed", buttons: 2, disabled: 2 },
+        { decision: "allow", result: "allowed once", buttons: 1, answerButtons: 0, disabled: 0 },
+        { decision: "expired", result: "expired", buttons: 1, answerButtons: 0, disabled: 0 },
       ],
     );
     check(
@@ -866,9 +892,9 @@ async function main(): Promise<void> {
         interrupted.toolCards[0]?.status,
         interrupted.finished,
         interrupted.prompts[0],
-        interrupted.frameCount === interrupted.lastSeq,
+        interrupted.duplicateSeqs.length,
       ],
-      ["done", "stream complete", PROMPT, true],
+      ["done", "stream complete", PROMPT, 0],
     );
     const settled = linesOf(transcript);
     check(
@@ -917,7 +943,7 @@ async function main(): Promise<void> {
       chrome.cdp,
       dPage,
       "the settled conversation to come back",
-      `document.querySelectorAll('#thread .frame[data-seq]').length === ${before}`,
+      `document.querySelectorAll('#thread .frame[data-seq]').length === ${interrupted.frameCount}`,
     );
     const settledAgain = await facts(chrome.cdp, dPage);
     check(
@@ -973,14 +999,20 @@ async function main(): Promise<void> {
     const live = await facts(chrome.cdp, ePage);
     check(
       "streaming from a page with no history is unchanged: the frames arrive, in order, once",
-      [live.frameCount === live.lastSeq, live.duplicatesIgnored, live.header.status, live.error],
-      [true, 0, "done", ""],
+      [
+        live.duplicateSeqs.length,
+        live.renderedSeqs.every((seq) => seq > 0 && seq <= live.lastSeq),
+        live.duplicatesIgnored,
+        live.header.status,
+        live.error,
+      ],
+      [0, true, 0, "done", ""],
     );
     check(
       "and the run the page drove is the one the transcript now holds",
       [transcriptLines(eTranscript).length, withoutClock(linesOf(eTranscript)[0])],
       [
-        live.frameCount,
+        live.lastSeq,
         {
           v: 1,
           seq: 1,

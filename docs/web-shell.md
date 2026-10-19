@@ -1,10 +1,10 @@
 # The web chat surface (U1.5)
 
-Status: PASS. 76/76 harness checks green at commit `2f23017`, driven by
+Status: PASS. 76/76 harness checks green at commit `085af4c`, driven by
 `bun apps/web/scripts/capture.ts`, with eight committed key-state frames under
-`packages/verify/artifacts/web-shell/2f23017/`. Verdict: live-ui-verified. That run follows the
-merge-forward of `main` and adds one claim (every tool card's output open in its collapsible); the
-earlier `326cf65` run stays as history, and all eight sha256 values are identical between the two.
+`packages/verify/artifacts/web-shell/085af4c/`. Verdict: live-ui-verified. That run follows U6.5's
+item migration and asserts the cards' own decisions instead of the removed marker lines; the earlier
+`2f23017` and `326cf65` runs stay as history.
 
 `apps/web` was a README-only placeholder; it is now the surface a user sees. One thread renders
 streaming assistant text, tool-call cards and approval cards from the landed protocol DTOs, over a

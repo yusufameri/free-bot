@@ -240,8 +240,9 @@ function domFacts(cdp: Cdp, sessionId: string): Promise<DomFacts> {
     sessionId,
     `({
       frames: document.querySelectorAll('#thread .frame[data-seq]').length,
-      lastSeq: Math.max(0, ...[...document.querySelectorAll('#thread .frame[data-seq]')].map((e) => Number(e.dataset.seq))),
-      statuses: [...document.querySelectorAll('#thread .tool-card .status')].map((e) => e.textContent),
+      lastSeq: Number(document.querySelector('#lastseq').dataset.lastSeq),
+      // The page's facts hook reports the card's data-status; read the same fact, not the tag's word.
+      statuses: [...document.querySelectorAll('#thread .tool-card')].map((card) => card.dataset.status ?? ''),
       outputs: [...document.querySelectorAll('#thread .tool-card')]
         .map((card) => card.querySelector('.output-details')?.hidden === false),
       approvals: [...document.querySelectorAll('#thread .approval-card')].map((card) => card.dataset.decision ?? null),
@@ -305,7 +306,13 @@ const SPECS: readonly FrameSpec[] = [
         holds: (f) => f.cards.some(([, status]) => status === "awaiting approval"),
       },
       { label: "the run has not finished", holds: (f) => !f.done },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .approval-card",
   },
@@ -325,7 +332,13 @@ const SPECS: readonly FrameSpec[] = [
       },
       { label: "the run reported done", holds: (f) => f.done },
       { label: "the terminal marker is rendered", holds: (f) => f.streamEnd === "stream complete" },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .run-finished",
   },
@@ -345,7 +358,13 @@ const SPECS: readonly FrameSpec[] = [
       },
       { label: "the run reported done", holds: (f) => f.done },
       { label: "the terminal marker is rendered", holds: (f) => f.streamEnd === "stream complete" },
-      { label: "one rendered message per seq", holds: (f) => f.frameCount === f.lastSeq },
+      {
+        // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so every rendered frame is unique and in range.
+        label: "every rendered frame has a unique seq within the stream",
+        holds: (f) =>
+          f.duplicateSeqs.length === 0 &&
+          f.renderedSeqs.every((seq) => seq > 0 && seq <= f.lastSeq),
+      },
     ],
     visible: "#thread .run-finished",
   },
@@ -596,7 +615,7 @@ async function driveAllowPath(
     await evalJson(
       cdp,
       sessionId,
-      `[...document.querySelectorAll('#thread .approval-card button')].map((b) => b.textContent)`,
+      `[...document.querySelectorAll('#thread .approval-card .approval-actions button')].map((b) => b.textContent)`,
     ),
     ["Allow once", "Deny"],
   );
@@ -606,13 +625,22 @@ async function driveAllowPath(
     `document.querySelector('#thread .tool-card').dataset.toolCall`,
   );
   log.check(
-    "approval: the run's own status frame is rendered, so a parked run does not look frozen",
-    await evalJson<number>(
+    "approval: the run's own status is on the header and the parked cards, so it does not look frozen",
+    // Old: '#thread .run-status[data-run-status="awaiting_approval"]' count. New: '#run[data-run-status]' plus the two cards.
+    await evalJson(
       cdp,
       sessionId,
-      `document.querySelectorAll('#thread .run-status[data-run-status="awaiting_approval"]').length`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card');
+        const approval = document.querySelector('#thread .approval-card');
+        return [
+          document.querySelector('#run').dataset.runStatus,
+          card?.dataset.status,
+          approval?.dataset.state,
+        ];
+      })()`,
     ),
-    1,
+    ["awaiting_approval", "awaiting approval", "pending"],
   );
   captures.push(await capture(cdp, sessionId, framesDir, "02-approval-pending", log));
 
@@ -639,13 +667,23 @@ async function driveAllowPath(
     "allowed once",
   );
   log.check(
-    "post-approval: the decision marker names the allow",
+    "post-approval: the decision is the tool card's done state and the approval card's allow",
+    // Old: '#thread .tool-decision[data-tool-call=...]' text 'decision <id>: allow'. New: the cards' own status/decision facts.
     await evalJson(
       cdp,
       sessionId,
-      `document.querySelector('#thread .tool-decision[data-tool-call="${callId}"]').textContent`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card[data-tool-call="${callId}"]');
+        const approval = document.querySelector('#thread .approval-card');
+        return [
+          card?.dataset.status,
+          card?.dataset.finished,
+          approval?.dataset.decision,
+          approval?.querySelector('.approval-result')?.textContent,
+        ];
+      })()`,
     ),
-    `decision ${callId}: allow`,
+    ["done", "done", "allow", "allowed once"],
   );
   // The container's own stdout, which no replayed frame could carry.
   log.check(
@@ -658,13 +696,17 @@ async function driveAllowPath(
     "native-should-not-run\n",
   );
   log.check(
-    "post-approval: the run's terminal status frame is rendered",
-    await evalJson<number>(
+    "post-approval: the run's terminal status is on the header and its card",
+    // Old: '#thread .run-status[data-run-status="done"]' count. New: '#run[data-run-status]' plus the finished tool card.
+    await evalJson(
       cdp,
       sessionId,
-      `document.querySelectorAll('#thread .run-status[data-run-status="done"]').length`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card[data-tool-call="${callId}"]');
+        return [document.querySelector('#run').dataset.runStatus, card?.dataset.finished];
+      })()`,
     ),
-    1,
+    ["done", "done"],
   );
   log.check(
     "post-approval: the run finished with no stream error",
@@ -722,13 +764,24 @@ async function driveDenyPath(
     "denied",
   );
   log.check(
-    "deny: the refusal is named user_denied, which is the code this unit exists for",
+    "deny: the refusal is the tool card's denied state and the approval card's deny",
+    // Old: '#thread .tool-decision[data-tool-call=...]' text 'decision <id>: deny (user_denied)'. New: the cards' own status/decision facts.
     await evalJson(
       cdp,
       sessionId,
-      `document.querySelector('#thread .tool-decision[data-tool-call="${callId}"]').textContent`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card[data-tool-call="${callId}"]');
+        const approval = document.querySelector('#thread .approval-card');
+        return [
+          card?.dataset.status,
+          card?.dataset.finished,
+          approval?.dataset.state,
+          approval?.dataset.decision,
+          approval?.querySelector('.approval-result')?.textContent,
+        ];
+      })()`,
     ),
-    `decision ${callId}: deny (user_denied)`,
+    ["denied", "denied", "denied", "deny", "denied"],
   );
   log.check(
     "deny: the governed call produced no output",
@@ -745,13 +798,17 @@ async function driveDenyPath(
     "stream complete",
   );
   log.check(
-    "deny: the run's terminal status frame is rendered",
-    await evalJson<number>(
+    "deny: the run's terminal status is on the header and its card",
+    // Old: '#thread .run-status[data-run-status="done"]' count. New: '#run[data-run-status]' plus the finished tool card.
+    await evalJson(
       cdp,
       sessionId,
-      `document.querySelectorAll('#thread .run-status[data-run-status="done"]').length`,
+      `(() => {
+        const card = document.querySelector('#thread .tool-card[data-tool-call="${callId}"]');
+        return [document.querySelector('#run').dataset.runStatus, card?.dataset.finished];
+      })()`,
     ),
-    1,
+    ["done", "denied"],
   );
   captures.push(await capture(cdp, sessionId, framesDir, "04-denied-done", log));
   return captures;
@@ -759,20 +816,18 @@ async function driveDenyPath(
 
 let chromeProc: Bun.Subprocess | null = null;
 let userDataDir: string | null = null;
-let botsRoot: string | null = null;
+const botsRoots: string[] = [];
 
 function cleanup(): void {
   chromeProc?.kill();
   if (userDataDir !== null) rmSync(userDataDir, { recursive: true, force: true });
-  if (botsRoot !== null) rmSync(botsRoot, { recursive: true, force: true });
+  for (const root of botsRoots.splice(0)) rmSync(root, { recursive: true, force: true });
 }
 
-/** The bots root both servers this driver boots run over: its own, so no Bot a person has is touched. */
+/** A bots root for one boot, so each page's stream carries exactly one run and no Bot a person has. */
 function serverBotsRoot(): string {
-  const existing = botsRoot;
-  if (existing !== null) return existing;
   const made = mkdtempSync(join(tmpdir(), "freebot-one-run-path-bots-"));
-  botsRoot = made;
+  botsRoots.push(made);
   return made;
 }
 
@@ -887,6 +942,10 @@ async function main(): Promise<number> {
 
   const denyApi = await bootServer();
   log.note(`server: apps/server/src/index.ts, control plane on 127.0.0.1:${denyApi.apiPort}`);
+  // The deny path gets a Bot and thread of its own over its own bots root, so its page joins one
+  // stream and the allow path's finished run is not the page state it opens on.
+  const denyThread = await streamTarget(denyApi);
+  log.note(`the deny page's thread: ${denyThread}`);
   try {
     captures.push(...(await driveDenyPath(cdp, framesDir, log, denyApi)));
   } finally {

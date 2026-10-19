@@ -224,8 +224,9 @@ async function domFacts(cdp: Cdp, sessionId: string): Promise<DomFacts> {
     sessionId,
     `({
       frames: document.querySelectorAll('#thread .frame[data-seq]').length,
-      lastSeq: Math.max(0, ...[...document.querySelectorAll('#thread .frame[data-seq]')].map((e) => Number(e.dataset.seq))),
-      statuses: [...document.querySelectorAll('#thread .tool-card .status')].map((e) => e.textContent),
+      lastSeq: Number(document.querySelector('#lastseq').dataset.lastSeq),
+      // The page's facts hook reports the card's data-status; read the same fact, not the tag's word.
+      statuses: [...document.querySelectorAll('#thread .tool-card')].map((card) => card.dataset.status ?? ''),
       outputs: [...document.querySelectorAll('#thread .tool-card')]
         .map((card) => card.querySelector('.output-details')?.hidden === false),
     })`,
@@ -416,11 +417,12 @@ async function captureAllowPath(cdp: Cdp, framesDir: string, log: Log): Promise<
       "duplicates ignored: 1",
     );
     log.check(
-      "resume: the frame count still equals the last seq",
+      // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so assert no frame repeats.
+      "resume: no rendered frame repeats a seq",
       await evalJson<boolean>(
         cdp,
         sessionId,
-        `window.__threadFacts().frameCount === window.__threadFacts().lastSeq`,
+        `window.__threadFacts().duplicateSeqs.length === 0 && window.__threadFacts().frameCount > 0`,
       ),
       true,
     );
@@ -456,7 +458,7 @@ async function captureAllowPath(cdp: Cdp, framesDir: string, log: Log): Promise<
       await evalJson(
         cdp,
         sessionId,
-        `[...document.querySelectorAll('#thread .approval-card button')].map((b) => b.textContent)`,
+        `[...document.querySelectorAll('#thread .approval-card .approval-actions button')].map((b) => b.textContent)`,
       ),
       ["Allow once", "Deny"],
     );
@@ -492,13 +494,17 @@ async function captureAllowPath(cdp: Cdp, framesDir: string, log: Log): Promise<
       "allowed once",
     );
     log.check(
-      "post-approval: the grant was issued and recorded",
+      "post-approval: the grant is the approval card's allowed state, not a separate line",
+      // Old: '#thread .grant-lifecycle' line 'grant grant-ap-call_spike_2: issued'. New: the card's own decision facts.
       await evalJson(
         cdp,
         sessionId,
-        `document.querySelector('#thread .grant-lifecycle').textContent`,
+        `(() => {
+          const card = document.querySelector('#thread .approval-card');
+          return [card.dataset.state, card.dataset.decision, card.querySelector('.approval-result').textContent];
+        })()`,
       ),
-      "grant grant-ap-call_spike_2: issued",
+      ["allowed", "allow", "allowed once"],
     );
     captures.push(
       await capture(
@@ -515,7 +521,12 @@ async function captureAllowPath(cdp: Cdp, framesDir: string, log: Log): Promise<
     await waitTrue(cdp, sessionId, "the run to finish", `window.__threadFacts().done === true`);
     const done = await factsOf(cdp, sessionId);
     log.check("done: the page reported the run finished", done.done, true);
-    log.check("done: one rendered message per seq", done.frameCount, done.lastSeq);
+    log.check(
+      // Old: frameCount === lastSeq, one marker per message. New: cards coalesce messages, so assert no frame repeats.
+      "done: no rendered frame repeats a seq",
+      done.duplicateSeqs,
+      [],
+    );
     log.check("done: the fixture's whole log was rendered", done.lastSeq, head);
     log.check("done: every tool card reached a terminal status", done.cards, [
       ["call_spike_1", "done"],
@@ -591,13 +602,24 @@ async function captureDenyPath(cdp: Cdp, framesDir: string, log: Log): Promise<P
       "",
     );
     log.check(
-      "deny: the denial reason names the gate code",
+      "deny: the refusal is the cards' denied state, not a separate decision line",
+      // Old: '#thread .tool-decision[data-tool-call=...]' text 'decision <id>: deny (no_grant)'. New: the cards' own facts.
       await evalJson(
         cdp,
         sessionId,
-        `document.querySelector('#thread .tool-decision[data-tool-call="${GATED_CALL}"]').textContent`,
+        `(() => {
+          const card = document.querySelector('#thread .tool-card[data-tool-call="${GATED_CALL}"]');
+          const approval = document.querySelector('#thread .approval-card');
+          return [
+            card.dataset.status,
+            card.dataset.finished,
+            approval.dataset.state,
+            approval.dataset.decision,
+            approval.querySelector('.approval-result').textContent,
+          ];
+        })()`,
       ),
-      `decision ${GATED_CALL}: deny (no_grant)`,
+      ["denied", "denied", "denied", "deny", "denied"],
     );
     log.check("the deny path answered the gate once", server.answers, ["deny"]);
     captures.push(
