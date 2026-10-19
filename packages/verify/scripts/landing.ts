@@ -76,6 +76,18 @@ const CAP_CLAIM =
 /** The sentence U10.3 made false, kept here so a page that reverts it fails this driver. */
 const OLD_CAP_CLAIM = "The spend cap is computed per run and the run loop does not consult it yet.";
 
+/**
+ * The cancel sentence this page adds, asserted as one literal so the claim cannot drift back to the
+ * gap list or to a promise the run loop no longer keeps. It is the page's own copy rather than the
+ * export's, which is why it is typed here.
+ */
+const CANCEL_CLAIM =
+  "A run started from the page can be stopped from the page. It settles at cancelled, and the work that arrived before the stop stays.";
+
+/** The sentence U10.3 made false, kept here so a page that reverts it fails this driver. */
+const OLD_CANCEL_CLAIM =
+  "There is no control in the page that cancels a run. The route exists and the page has no button for it.";
+
 /** Regions whose own content extent is checked against their own box, per viewport. */
 const REGIONS = [
   ".landing",
@@ -511,6 +523,39 @@ async function main(): Promise<number> {
       "the cap claim sits in the runs-today card and carries no Not built tag",
       capPlacement.card === "landing-runs" && capPlacement.tag === "",
       capPlacement,
+    );
+
+    section("the cancel claim this unit corrects");
+    const cancelClaim = await evaluate<string>(
+      chrome.cdp,
+      session,
+      `document.querySelector('#landing-cancel')?.textContent?.replace(/\\s+/g, ' ').trim() ?? ''`,
+    );
+    check(
+      "the cancel claim states that a run started from the page can be stopped from the page, that it settles at cancelled, and that the work before the stop stays",
+      cancelClaim,
+      CANCEL_CLAIM,
+    );
+    check(
+      "the old claim that the page has no cancel control is absent from the page",
+      (await renderedText(chrome.cdp, session)).includes(OLD_CANCEL_CLAIM),
+      false,
+    );
+    const cancelPlacement = await evaluate<{ card: string; tag: string }>(
+      chrome.cdp,
+      session,
+      `(() => {
+        const node = document.querySelector('#landing-cancel');
+        return {
+          card: node?.closest('.listcard')?.id ?? '',
+          tag: node?.closest('.listrow')?.querySelector('.tag')?.textContent?.trim() ?? '',
+        };
+      })()`,
+    );
+    checkThat(
+      "the cancel claim sits in the runs-today card and carries no Not built tag",
+      cancelPlacement.card === "landing-runs" && cancelPlacement.tag === "",
+      cancelPlacement,
     );
 
     const exportEyebrow = exportTextFor('class="eyebrow"');
