@@ -246,9 +246,10 @@ export async function run(options: RunOptions): Promise<RunResult> {
   const conventional = artifactDir(root, FEATURE, shortSha);
   const dir = options.write ? (options.dir ?? conventional) : null;
   if (dir !== null) {
-    // Only the run's own conventional directory is cleared. A directory a person passed for
-    // `--artifact` is never deleted, because a wrong path must not take the whole tree with it.
-    if (dir === conventional) {
+    // Only the run's own conventional directory is cleared, and only when it was chosen by
+    // convention. A path a person passed for `--artifact` is never deleted, even when it spells out
+    // the conventional path: a wrong path must not take the whole tree with it.
+    if (options.dir === undefined) {
       rmSync(dir, { recursive: true, force: true });
     } else if (existsSync(dir) && readdirSync(dir).length > 0) {
       throw new Error(`--artifact ${dir} exists and is not empty; refusing to overwrite it`);

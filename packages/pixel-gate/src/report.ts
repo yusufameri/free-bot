@@ -490,7 +490,12 @@ export function compareRuns(left: RunReport, right: RunReport, epsilon = 0): Sta
     for (const region of a.regions.filter((entry) => entry.kind === "chrome")) {
       const twin = b.regions.find((entry) => entry.id === region.id);
       const mine = region.stat;
-      const theirs = twin?.stat ?? null;
+      if (twin === undefined) {
+        same = false;
+        lines.push(`FAIL ${a.label} ${region.id}: the second run has no such chrome region`);
+        continue;
+      }
+      const theirs = twin.stat;
       if (mine === null || theirs === null) {
         const both = mine === null && theirs === null;
         if (!both) same = false;

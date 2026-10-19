@@ -43,10 +43,10 @@ function parse(argv: readonly string[]): Args {
   let artifact: string | undefined;
   let stabilityPair: readonly [string, string] | undefined;
   let at = 0;
-  /** The value after a flag, so a bare flag fails instead of silently changing what runs. */
+  /** The value after a flag, so a bare or empty flag fails instead of silently changing what runs. */
   const take = (flag: string): string => {
     const next = argv[++at];
-    if (next === undefined || next.startsWith("--")) {
+    if (next === undefined || next.startsWith("--") || next.length === 0) {
       throw new Error(`${flag} needs a value`);
     }
     return next;
