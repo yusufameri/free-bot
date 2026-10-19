@@ -53,6 +53,39 @@ manifest digest. A real cross-machine digest needs a push, which is a follow-up.
 bash packages/sandbox/image/run.sh
 ```
 
+## When the tag drifts
+
+`freebot-sandbox:u0.6` is a mutable tag, and something on this machine re-points it. A check that
+trusted the tag would run whatever it happened to name. `ensurePinnedImage` in
+`packages/sandbox/src/image.ts` resolves the tag to an image id through `docker images`, inspects
+that id, and compares its `RootFS.Layers` with `PINNED_IMAGE.layers` (order 48). It never calls
+`docker image inspect <tag>`. That call can fail, or return an empty layer list, while the tag is
+moving.
+
+Several local images can carry the pinned layer set, because the Id includes build timestamps and
+the layers do not. On 2026-10-19 six images matched. When the tag names an off-pin image, the check
+looks through the local inventory for any image whose layers match the pin. If it finds one, one
+`docker tag` re-points the tag and one line reports the repair.
+
+```
+sandbox pin repair: freebot-sandbox:u0.6 pointed at 64be87b10b99 whose layer set differs; re-pointed it at a5a5e60d2b43, whose layer set matches docs/sandbox-image.md
+```
+
+If no local image matches, the check moves the tag aside to
+`freebot-sandbox:u0.6-off-pin-<short id>`, so no sandbox starts from an off-pin image. It then
+throws an error that names the expected layer set, the layer set the tag pointed at, and the
+command that repairs the machine.
+
+```
+bash packages/sandbox/image/run.sh
+```
+
+When no image exists at all, the check builds the recipe under `freebot-sandbox:u0.6-build` and
+promotes the build to the canonical tag only after its layers match. A build whose layers do not
+match is removed and refused, never promoted. `run.sh` makes the same comparison against
+`PINNED_IMAGE.layers` and exits non-zero on a mismatch. To land a new recipe, update
+`PINNED_IMAGE.layers` and this document in one commit, with the reason.
+
 ## The replay inside the image
 
 Container spec (recorded per run in `run.log`): `freebot-sandbox:u0.6`, mounts
