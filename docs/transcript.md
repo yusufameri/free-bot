@@ -133,3 +133,8 @@ key is in no artifact and in no file the runs wrote.
 - **`docs/bots-and-threads.md` still says frames are the live log.** Its "Where the records live" and
   "Limits and follow-ups" sections describe the behaviour before this unit, including the sentence
   "The frames of a finished conversation are not persisted." They are superseded by this document.
+  The same unit's row in `docs/VERIFICATION.md` closes with the same claim ("a restart brings back
+  the runs and not the transcript"), and its driver `packages/verify/scripts/bots-and-threads.ts`
+  checks the post-restart frame count against `0`, which a restart now fills. That row, that driver
+  and that page belong to the unit that wrote them; naming them here is what makes a claim the code
+  has outgrown findable, and this unit may not edit another unit's driver.
