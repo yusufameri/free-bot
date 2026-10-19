@@ -988,8 +988,9 @@ async function main(): Promise<number> {
   const cdp = chrome.cdp;
   log.note(`cdp: ${cdp.version}, headless, a dynamic DevToolsActivePort`);
 
+  let page = "";
   try {
-    const page = await openPage(cdp, launched.url);
+    page = await openPage(cdp, launched.url);
     await setViewport(cdp, page, 1440, 900);
     await waitFor(cdp, page, "the shell hook", `typeof window.__shellFacts === 'function'`);
     await waitFor(cdp, page, "the thread hook", `typeof window.__threadFacts === 'function'`);
@@ -1145,7 +1146,11 @@ async function main(): Promise<number> {
     );
   } catch (error) {
     log.fail("the driver run", error);
+    const failure = await factsOf(cdp, page).catch(() => null);
+    log.note(`the page at failure: ${JSON.stringify(failure)}`);
+    log.note(`the launcher stderr tail: ${launched.stderr().slice(-3000)}`);
     console.error(error);
+    console.error(`launcher stderr tail:\n${launched.stderr().slice(-3000)}`);
   } finally {
     chrome.stop();
   }
