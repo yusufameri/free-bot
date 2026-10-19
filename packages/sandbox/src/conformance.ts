@@ -464,9 +464,11 @@ const idleKillStep: Step = async (state, line) => {
   same(
     (await factOf(state, idler, "idle-touch")).running,
     true,
-    "a sandbox still running after 4 calls at 200ms against a 600ms ttl",
+    `a sandbox still running after 4 calls at 200ms against a ${idleTtlMs}ms ttl`,
   );
-  line("check idle-touch: still running after 4 exec calls at 200ms intervals against a 600ms ttl");
+  line(
+    `check idle-touch: still running after 4 exec calls at 200ms intervals against a ${idleTtlMs}ms ttl`,
+  );
 };
 
 const sweepStep: Step = async (state, line) => {
