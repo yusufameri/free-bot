@@ -1,5 +1,5 @@
 {
-  "$comment": "Order 40's per-driver subject manifest. A driver listed here must be re-run at a PR's head when any of its subjects changes. The pixel gate is the first entry; later drivers add their own blocks additively rather than editing this one.",
+  "$comment": "Order 40's per-driver subject manifest. A driver listed here must be re-run at a PR's head when any of its subjects changes, and the sweep-main command runs every entry's `sweep` block against current origin/main. A new driver adds its own block additively. `sweep.argv` may carry {checkout}, {shortSha}, {statusUrl} and {artifactOut}, filled after the isolated checkout exists.",
   "drivers": [
     {
       "id": "pixel-gate",
@@ -22,7 +22,12 @@
         "packages/verify/scripts/design-contract.ts",
         "docs/DESIGN-CONTRACT.md",
         "docs/pixel-gate.md"
-      ]
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/pixel-gate/src/cli.ts", "--repeat"],
+        "subject": "the app against the export, nine viewports, shell pixels within tolerance",
+        "needs": [["docker"], ["chrome"]]
+      }
     },
     {
       "id": "sandbox-pin-repair",
@@ -33,7 +38,12 @@
         "packages/sandbox/image/**",
         "packages/verify/scripts/sandbox-pin-repair.ts",
         "docs/sandbox-image.md"
-      ]
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/sandbox-pin-repair.ts"],
+        "subject": "the pinned sandbox tag re-pointed at a layer-matching image",
+        "needs": [["docker"]]
+      }
     },
     {
       "id": "mvp-status-capture",
@@ -54,7 +64,404 @@
         "apps/server/src/replay-provider.ts",
         "packages/pi-bridge/fixtures/rpc-handshake.jsonl",
         "docs/mvp-status-capture.md"
-      ]
+      ],
+      "sweep": {
+        "argv": [
+          "bun",
+          "packages/verify/scripts/status-capture.ts",
+          "--url",
+          "{statusUrl}",
+          "--out",
+          "{artifactOut}",
+          "--mode",
+          "both"
+        ],
+        "subject": "the MVP predicate and landing, captured from a live instance",
+        "needs": [["liveInstance"]]
+      }
+    },
+    {
+      "id": "launch",
+      "command": "bun packages/verify/scripts/launch.ts",
+      "artifact": "packages/verify/artifacts/launch",
+      "subjects": [
+        "packages/verify/scripts/launch.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/launch.ts"],
+        "subject": "one command, one URL, the whole click, and the reap on SIGINT",
+        "needs": [["docker"], ["chrome"]]
+      }
+    },
+    {
+      "id": "landing",
+      "command": "bun packages/verify/scripts/landing.ts",
+      "artifact": "packages/verify/artifacts/landing",
+      "subjects": [
+        "packages/verify/scripts/landing.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**",
+        "design/prototype-84c6b185/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/landing.ts"],
+        "subject": "the landing route against the export, at the nine viewports",
+        "needs": [["docker", "microsandbox"], ["chrome"]]
+      }
+    },
+    {
+      "id": "first-run",
+      "command": "bun packages/verify/scripts/first-run.ts",
+      "artifact": "packages/verify/artifacts/first-run",
+      "subjects": [
+        "packages/verify/scripts/first-run.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/first-run.ts"],
+        "subject": "the first-run wizard, the run it starts, and the container census",
+        "needs": [["docker"], ["chrome"]]
+      }
+    },
+    {
+      "id": "overlays",
+      "command": "bun packages/verify/scripts/overlays.ts",
+      "artifact": "packages/verify/artifacts/overlays",
+      "subjects": [
+        "packages/verify/scripts/overlays.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/overlays.ts"],
+        "subject": "the command palette, the Bot picker and the modal",
+        "needs": [["docker"], ["chrome"]]
+      }
+    },
+    {
+      "id": "bots-and-threads",
+      "command": "bun packages/verify/scripts/bots-and-threads.ts",
+      "artifact": "packages/verify/artifacts/bots-and-threads",
+      "subjects": [
+        "packages/verify/scripts/bots-and-threads.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/bots-and-threads.ts"],
+        "subject": "two Bots, two threads, a keyed run each and a real restart",
+        "needs": [["docker"], ["chrome"], ["vaultKey"]]
+      }
+    },
+    {
+      "id": "aside",
+      "command": "bun packages/verify/scripts/aside.ts",
+      "artifact": "packages/verify/artifacts/aside",
+      "subjects": [
+        "packages/verify/scripts/aside.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/aside.ts"],
+        "subject": "the details pane, the notices and the reconnect banner",
+        "needs": [["docker"], ["chrome"]]
+      }
+    },
+    {
+      "id": "files-surface",
+      "command": "bun packages/verify/scripts/files-surface.ts",
+      "artifact": "packages/verify/artifacts/files-surface",
+      "subjects": [
+        "packages/verify/scripts/files-surface.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/files-surface.ts"],
+        "subject": "the Library over the workspace a keyed run wrote",
+        "needs": [["docker"], ["chrome"], ["vaultKey"]]
+      }
+    },
+    {
+      "id": "provider-setup",
+      "command": "bun packages/verify/scripts/provider-setup.ts",
+      "artifact": "packages/verify/artifacts/provider-setup",
+      "subjects": [
+        "packages/verify/scripts/provider-setup.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/provider-setup.ts"],
+        "subject": "the provider page and a keyed run after the save",
+        "needs": [["docker"], ["chrome"], ["vaultKey"]]
+      }
+    },
+    {
+      "id": "connectors",
+      "command": "bun packages/verify/scripts/connectors.ts",
+      "artifact": "packages/verify/artifacts/connectors",
+      "subjects": [
+        "packages/verify/scripts/connectors.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/connectors/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/connectors.ts"],
+        "subject": "the connector seam over an emulated service, with the bash arm beside it",
+        "needs": [["docker"]]
+      }
+    },
+    {
+      "id": "connector-credentials",
+      "command": "bun packages/verify/scripts/connector-credentials.ts",
+      "artifact": "packages/verify/artifacts/connector-credentials",
+      "subjects": [
+        "packages/verify/scripts/connector-credentials.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/connectors/**",
+        "packages/sandbox/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/connector-credentials.ts"],
+        "subject": "a connector's credential written, rotated, removed and never readable",
+        "needs": [["docker", "microsandbox"]]
+      }
+    },
+    {
+      "id": "cancel-run",
+      "command": "bun packages/verify/scripts/cancel-run.ts",
+      "artifact": "packages/verify/artifacts/cancel-run",
+      "subjects": [
+        "packages/verify/scripts/cancel-run.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/cancel-run.ts"],
+        "subject": "stopping a run from the page, and the container census around it",
+        "needs": [["docker"], ["chrome"]]
+      }
+    },
+    {
+      "id": "spend-cap",
+      "command": "bun packages/verify/scripts/spend-cap.ts",
+      "artifact": "packages/verify/artifacts/spend-cap",
+      "subjects": [
+        "packages/verify/scripts/spend-cap.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "packages/core/**",
+        "apps/server/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/spend-cap.ts"],
+        "subject": "the landed run loop refusing a provider turn over the spend cap",
+        "needs": []
+      }
+    },
+    {
+      "id": "design-contract",
+      "command": "bun packages/verify/scripts/design-contract.ts",
+      "artifact": "packages/verify/artifacts/design-contract",
+      "subjects": [
+        "packages/verify/scripts/design-contract.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/pixel-gate/**",
+        "design/prototype-84c6b185/**",
+        "docs/DESIGN-CONTRACT.md"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/design-contract.ts"],
+        "subject": "the shell measured against the export at the nine viewports",
+        "needs": [["docker", "microsandbox"], ["chrome"]]
+      }
+    },
+    {
+      "id": "sandbox-conformance",
+      "command": "bun packages/verify/scripts/sandbox-conformance.ts",
+      "artifact": "packages/verify/artifacts/sandbox-conformance",
+      "subjects": [
+        "packages/verify/scripts/sandbox-conformance.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "packages/sandbox/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/sandbox-conformance.ts"],
+        "subject": "the eight SandboxProvider operations on Docker, plus the sabotage drill",
+        "needs": [["docker"]]
+      }
+    },
+    {
+      "id": "sandbox-microsandbox",
+      "command": "bun packages/verify/scripts/sandbox-microsandbox.ts",
+      "artifact": "packages/verify/artifacts/sandbox-microsandbox",
+      "subjects": [
+        "packages/verify/scripts/sandbox-microsandbox.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "packages/sandbox/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/sandbox-microsandbox.ts"],
+        "subject": "the same eight operations on microsandbox, plus a run inside a microVM",
+        "needs": [["microsandbox"]]
+      }
+    },
+    {
+      "id": "keyed-run",
+      "command": "bun packages/verify/scripts/keyed-run.ts",
+      "artifact": "packages/verify/artifacts/keyed-run",
+      "subjects": [
+        "packages/verify/scripts/keyed-run.ts",
+        "packages/verify/src/**",
+        "packages/verify/run.ts",
+        "packages/verify/driver-subjects.json",
+        "docs/VERIFICATION.md",
+        "apps/web/**",
+        "apps/server/**",
+        "packages/ui/**",
+        "packages/core/**",
+        "packages/sandbox/**",
+        "packages/providers/**",
+        "packages/pi-bridge/**"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/keyed-run.ts"],
+        "subject": "a real model's turn, typed into the page and answered at the gate",
+        "needs": [["docker"], ["chrome"], ["vaultKey"]]
+      }
+    },
+    {
+      "id": "type-gate",
+      "command": "bun packages/verify/scripts/type-gate.ts",
+      "artifact": "packages/verify/artifacts/type-gate",
+      "subjects": [
+        "packages/verify/scripts/type-gate.ts",
+        "packages/verify/src/**",
+        "packages/verify/driver-subjects.json",
+        "tsconfig.json",
+        "apps/web/scripts/**",
+        "packages/*/scripts/**",
+        "docs/type-gate.md",
+        "docs/VERIFICATION.md"
+      ],
+      "sweep": {
+        "argv": ["bun", "packages/verify/scripts/type-gate.ts"],
+        "artifactFile": "probe.txt",
+        "subject": "the root typecheck is not blind, proven by three planted errors",
+        "needs": []
+      }
     }
   ]
 }
