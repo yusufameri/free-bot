@@ -187,8 +187,9 @@ export async function ensurePinnedImage(
 
   const imageAt = async (ref: string): Promise<LocalImage | null> => {
     const ids = await engine.resolveRef(ref);
-    if (ids.length === 0) return null;
-    const [image] = await engine.inspect([ids[0] as string]);
+    const id = ids[0];
+    if (id === undefined) return null;
+    const [image] = await engine.inspect([id]);
     return image ?? null;
   };
 
