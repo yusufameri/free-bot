@@ -207,13 +207,24 @@ export const HTML_TOKENS: TokenTarget = {
   body: tokensCss,
 };
 
+/**
+ * The landing route's own document (U6.6). It is a second page rather than a second token set: the
+ * same `:root` block, written by the same emitter from this same table, so neither page can hold a
+ * value the other does not.
+ */
+export const LANDING_TOKENS: TokenTarget = {
+  path: "apps/web/landing/index.html",
+  syntax: "html",
+  body: tokensCss,
+};
+
 export const DOC_TOKENS: TokenTarget = {
   path: "docs/DESIGN-CONTRACT.md",
   syntax: "md",
   body: tokensTable,
 };
 
-export const TOKEN_TARGETS: readonly TokenTarget[] = [HTML_TOKENS, DOC_TOKENS];
+export const TOKEN_TARGETS: readonly TokenTarget[] = [HTML_TOKENS, LANDING_TOKENS, DOC_TOKENS];
 
 /**
  * Replace one target's marked block with the generated text, and nothing else. The block starts at
