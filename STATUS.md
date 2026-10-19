@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-19T23:42Z, against `origin/main` `b975620`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-20T00:00Z, against `origin/main` `4994ce9`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-64 units in the register: 58 done, 0 running, 4 pending, 2 parked.
+65 units in the register: 59 done, 0 running, 5 pending, 1 parked.
 
-The verification ledger holds 72 rows: 25 `live-ui-verified`, 32 `unit-test-verified`, 2 `type-check-only`, 13 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 74 rows: 25 `live-ui-verified`, 33 `unit-test-verified`, 2 `type-check-only`, 14 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -103,16 +103,17 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U10.14 | The landing's later-phases sentence drops Settings and in-page connectors, asserted from `#landing-later-phases` | [#71](https://github.com/yusufameri/free-bot/pull/71) |
 | U10.13 | The eight red drivers triaged: six stale claims fixed and re-run, two product defects filed, and a lost-tail socket write fixed | [#73](https://github.com/yusufameri/free-bot/pull/73) |
 | U10.16 | The restart run path: the driver scoped to the new run id, and a run whose setup throws settles instead of staying queued | [#74](https://github.com/yusufameri/free-bot/pull/74) |
+| U10.12 | The status driver reads the composer it has (input, textarea, or a named failure), and a page error carries its own message | [#77](https://github.com/yusufameri/free-bot/pull/77) |
 
 ## Not built yet
 
-Nothing is running. U10.16 landed the restart run fix, whose brief's premise it refuted first (the
-driver was reading run 1's frames as run 2's) and whose real fix was scoping the driver to the new run id
-plus settling a run whose setup throws. U10.13 had taken the sweep's eight reds to two owned defects; one
-is now fixed and U10.17 remains. The sweep enumerates 23 drivers and the next scheduled run will say
-whether main is green.
+Nothing is running. U10.12 landed the routine's driver fix, so the status pass can prove the predicate
+from its own frames again instead of borrowing them: the composer is written through the prototype its
+real tag asks for, and the shared evaluate wrapper now reports a page exception's own message rather than
+`Uncaught :: <expression>`. U10.17 remains the one owned sweep red; the next scheduled sweep will say
+whether main is green, and U10.18 carries the same hidden-error defect still copied in five drivers.
 
-Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.17.
+Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.17, U10.18.
 
 | Unit | What it is |
 | --- | --- |
@@ -120,6 +121,7 @@ Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.17.
 | U10.1 | The verification record as data plus a check that reads it. The checker half landed as U10.6; this carries what remains, including the unreferenced-artifact rule order 49 gives it |
 | U10.2 | Artifact hygiene: a real prune script, an ignore rule for the Chrome profiles, and one shared screenshot helper instead of ten |
 | U10.17 | The group-chat form opens with the prototype's sample room name as a live default |
+| U10.18 | Five drivers still read `exceptionDetails.text`, so their page errors hide the page's own message |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
 | U10.12 | Parked and folded into U10.13: its brief is superseded, and the composer fix is that unit's item 7 |
 
