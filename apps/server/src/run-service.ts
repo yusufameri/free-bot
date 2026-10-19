@@ -300,31 +300,34 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
    * the code the taxonomy already declares for this (`server_restart`) rather than inventing a
    * reason here.
    *
-   * The two ending frames are appended before the record is, because the transcript is what the
-   * page reads: making the frames the durable marker means a crash between the two writes cannot
-   * leave a run the page shows as still in flight, and the next boot sees the frame, keeps it, and
-   * finishes the record instead of appending a second ending.
+   * Both ending frames are appended before the record is failed, because the transcript is what the
+   * page reads: a crash between the two writes then leaves a conversation that already ends, and the
+   * next boot sees the frame, keeps it, and fails the record instead of appending a second ending.
+   * Each frame is asked for separately, since a crash can land between them, and a run the taxonomy
+   * has already failed at this code is repaired too, for the same reason.
    *
    * A `paused` run is left alone. The taxonomy parks a run that can be rejoined, so its status is a
    * wait rather than an ending, and a restart is not evidence that the wait ended. `queued`,
    * `running` and `awaiting_approval` all mean a loop is (or just was) driving this run.
    */
   function settleAbandoned(runtime: ThreadRuntime, record: RunRecord): void {
-    if (isTerminal(record.status) || record.status === "paused") return;
+    const restartFailure = record.error?.code === "server_restart";
+    if (record.status === "paused" || (isTerminal(record.status) && !restartFailure)) return;
     const ending = failureEntry("server_restart");
-    const settled = runtime.log
-      .since(0)
-      .some((entry) => entry.frame.runId === record.id && entry.frame.type === "run.failed");
-    runtime.store.fail(record.id, "server_restart", null);
-    if (settled) return;
+    const frames = runtime.log.since(0).filter((entry) => entry.frame.runId === record.id);
+    const hasFailFrame = frames.some((entry) => entry.frame.type === "run.failed");
+    const hasFailedStatus = frames.some(
+      (entry) => entry.frame.type === "run.status" && entry.frame.payload.status === "failed",
+    );
     const logPort = createLogPort({
       log: runtime.log,
       runId: record.id,
       noteSeq: (seq) => void runtime.store.noteSeq(record.id, seq),
       now,
     });
-    logPort.append("run.failed", { reason: ending.copy });
-    logPort.append("run.status", { runId: record.id, status: "failed" });
+    if (!hasFailFrame) logPort.append("run.failed", { reason: ending.copy });
+    if (!hasFailedStatus) logPort.append("run.status", { runId: record.id, status: "failed" });
+    runtime.store.fail(record.id, "server_restart", null);
   }
 
   function openRuntime(thread: ThreadRecord): ThreadRuntime {

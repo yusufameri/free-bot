@@ -471,6 +471,89 @@ describe("a thread's conversation across a restart", () => {
     expect(third.audit(thread.id)).toMatchObject({ gaps: [], duplicates: [] });
     third.close();
   });
+
+  test("a boot finishes an ending the last process got half way through", async () => {
+    const root = botsRoot();
+    const stuck: ProviderPort = { next: () => new Promise(() => {}) };
+    const first = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => stuck,
+    });
+    const bot = first.createBot("Local Bot");
+    const thread = first.createThread(bot.id);
+    const { runId } = first.start({ prompt: "hold the line", botId: bot.id, threadId: thread.id });
+    const deadline = Date.now() + 2_000;
+    while (first.run(runId)?.record.status !== "running") {
+      if (Date.now() > deadline) throw new Error("the run never reached its provider");
+      await Bun.sleep(5);
+    }
+    const inflight = first.events(thread.id, 0).messages.length;
+    first.close();
+
+    // The crash this covers: the process wrote the first ending frame and died before the second, so
+    // the record is still the running one it was and the transcript ends one frame short.
+    const transcript = threadTranscriptPath(root, bot.id, thread.id);
+    const held = readFileSync(transcript, "utf8")
+      .split("\n")
+      .filter((line) => line !== "");
+    const last = JSON.parse(held[held.length - 1] as string) as { frame: Record<string, unknown> };
+    const endingFrame = {
+      ...last.frame,
+      seq: inflight + 1,
+      type: "run.failed",
+      payload: { reason: "FreeBot stopped while this run was in flight." },
+    };
+    writeFileSync(
+      transcript,
+      `${held.join("\n")}\n${JSON.stringify({ seq: inflight + 1, frame: endingFrame })}\n`,
+    );
+
+    const second = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
+    expect(second.run(runId)?.record.status).toBe("failed");
+    // The frame the crash never wrote is the only one this boot adds: the ending it did write is
+    // kept rather than written a second time.
+    expect(
+      second
+        .events(thread.id, 0)
+        .messages.slice(inflight)
+        .map((frame) => frame.type),
+    ).toEqual(["run.failed", "run.status"]);
+    expect(
+      second.events(thread.id, 0).messages.filter((f) => f.type === "run.failed"),
+    ).toHaveLength(1);
+    expect(second.audit(thread.id)).toMatchObject({ gaps: [], duplicates: [] });
+    second.close();
+
+    // A record the taxonomy already failed at this code goes through the same repair, because the
+    // transcript can still be short of the frame that record was failed for.
+    const withoutStatus = readFileSync(transcript, "utf8")
+      .split("\n")
+      .filter((line) => line !== "")
+      .filter((line) => {
+        const record = JSON.parse(line) as {
+          frame: { type: string; payload: { status?: string } };
+        };
+        return !(record.frame.type === "run.status" && record.frame.payload.status === "failed");
+      });
+    writeFileSync(transcript, `${withoutStatus.join("\n")}\n`);
+
+    const third = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
+    expect(third.events(thread.id, 0).messages.slice(inflight)).toEqual([
+      endingFrame,
+      expect.objectContaining({ type: "run.status", payload: { runId, status: "failed" } }),
+    ]);
+    expect(third.audit(thread.id)).toMatchObject({ gaps: [], duplicates: [] });
+    third.close();
+  });
 });
 
 describe("the bots root a service runs over", () => {

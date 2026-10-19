@@ -41,10 +41,12 @@ around it adds nothing but the seq, because the frame already carries its own; t
 both agree on every line so a reader may trust either.
 
 `packages/core/src/jsonl.ts` is the file, `packages/core/src/transcript-store.ts` is the store.
-The store is a `SeqLog` rather than something holding one, and that is load-bearing: `append` writes
-the file only when the log itself accepted the frame, so a duplicate, a gap or a frame the log
-refused never reaches the disk. There is no second path that can append a frame the page would lose
-on the next restart, and `createLogPort` kept its own single call site.
+The store is a `SeqLog` rather than something holding one, and that is load-bearing: `append` asks
+the log's own rule what it would do with the frame, writes the file when the answer is to take it,
+and only then moves the log's tail. A duplicate, a gap or a frame the log would reject never reaches
+the disk, and a write that throws leaves the log where it was, so the copy in memory cannot come out
+ahead of the copy on disk. There is no second path that can append a frame the page would lose on
+the next restart, and `createLogPort` kept its own single call site.
 
 The file is the same append-with-`fsync` JSONL the run journal uses, so `RunStore` was moved onto
 the same `JsonlFile` rather than the rules being written twice.
@@ -61,11 +63,14 @@ thread's log. Three things follow.
   frame of the first run after a restart continues the hydrated space instead of restarting at 1.
   Nothing renumbers and nothing is replayed twice.
 - **Reading a transcript repairs it.** A last line with no newline is a write the process never
-  reported applied, so it is dropped and the file is repaired in place. A line that parses but that
-  the log refuses stops the replay at the last record it kept, truncates the file there, and reports
+  reported applied, so it is dropped and the file is rewritten from the records that survive. A line
+  that parses but that the log refuses stops the replay at the last record it kept, truncates the
+  file there, and reports
   `{line, reason}` on the store's `loadReport` rather than throwing: a transcript that is partly
   readable is a conversation worth showing, and the alternative is a server that will not boot. The
   request path is unaffected either way, because nothing is read from the store until a client asks.
+  A rewrite goes through a neighbour file that is fsynced and then renamed over the transcript, so a
+  crash in the middle of one cannot take records an earlier append already fsynced with it.
 
 ## A run the last process was holding
 
@@ -83,14 +88,17 @@ driving this run. A `paused` run is left alone, because the taxonomy parks a run
 rejoined, so its status is a wait rather than an ending, and a restart is not evidence that the wait
 ended.
 
-The two ending frames — `run.failed` carrying the taxonomy's copy, then `run.status failed` — are
-appended **before** the record is failed, and both steps are idempotent:
+The two ending frames (`run.failed` carrying the taxonomy's copy, then `run.status failed`) are
+appended **before** the record is failed, and each one is asked for on its own:
 
 - The frames go first because the transcript is what the page reads. A crash between the two writes
   then leaves a conversation that already ends, and the next boot finishes the record rather than
   showing a run still in flight.
-- The pass asks the transcript whether this run already has a `run.failed` frame. If it does, the
-  record is failed and no second ending is appended, so booting twice is not two endings.
+- Each frame is checked separately, because a crash can land between them. A boot that finds the
+  `run.failed` frame and not the status frame writes the status frame and nothing else, and the
+  reverse is the same, so booting twice is not two endings.
+- A run the taxonomy already failed at this code is repaired the same way, because a record can be
+  failed while the transcript is still short of a frame it was failed for.
 
 An approval card the abandoned run left parked is closed by the renderer, not left answerable: it
 carries `data-decision="failed"` and the words `run failed`, and its buttons are disabled. A click
