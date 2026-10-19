@@ -393,10 +393,10 @@ const ITEM_DOM = `(() => {
     turnsCount: document.querySelectorAll("#thread .turn").length,
     markers,
     bots,
-    runEnd:
-      document.querySelector("#thread .run-finished")?.textContent ??
-      document.querySelector("#thread .run-failed")?.textContent ??
-      null,
+    runEnd: (() => {
+      const ends = [...document.querySelectorAll("#thread .run-finished, #thread .run-failed")];
+      return ends.length === 0 ? null : ends[ends.length - 1].textContent ?? null;
+    })(),
     error: document.querySelector("#error").hidden ? null : document.querySelector("#error").textContent,
   };
 })()`;
