@@ -31,12 +31,13 @@ One directory holds everything a Bot owns. `FREEBOT_WORKSPACE` names it, and it 
   Bot the journal does not hold is refused by name and recorded as refused.
 - **A thread's runs** are a `RunStore` of its own, at `threads/<threadId>/runs.jsonl`, so a restart
   brings a thread's conversation back with the prompts and the statuses it ended at.
-- **A thread's log** is a `SeqLog` of its own, in memory. One log per thread is what makes a
-  conversation's seq space its own: `subscribe_events` and the page's stream both name the thread
-  they follow, and a stream that names none, or one the server does not hold, is refused before the
-  upgrade. Frames are the live log, not a persisted record: a restart brings back every run, and the
-  frames of a finished conversation are gone with the process that streamed them. The transcript of
-  a *running* conversation is not lost across a reconnect, which is what the resume banner covers.
+- **A thread's log** is a `SeqLog` of its own. One log per thread is what makes a conversation's seq
+  space its own: `subscribe_events` and the page's stream both name the thread they follow, and a
+  stream that names none, or one the server does not hold, is refused before the upgrade. A thread's
+  frames are also written to `threads/<threadId>/transcript.jsonl` and rebuilt into the log at boot,
+  so a restart brings back the runs and the transcript both; `docs/transcript.md` is that record.
+  The transcript of a *running* conversation is not lost across a reconnect either, which is what the
+  resume banner covers.
 
 ## What a Bot owns
 
@@ -86,7 +87,9 @@ carrying a nonce the driver minted; opens a second thread and checks the transcr
 selection; opens the other Bot's Library and checks it is empty while the first Bot's workspace
 holds that file; then interrupts the launch for real and starts a second one over the same
 directory, comparing the Bot-and-thread list it reads over the route surface before the stop with
-the one it reads after the start. Seven frames are committed with `assert.txt`.
+the one it reads after the start, and asserting the restarted page's selected thread shows the same
+frame count and the same conversation text it showed before the stop. Seven frames are committed
+with `assert.txt`.
 
 ## Limits and follow-ups
 
@@ -95,9 +98,9 @@ the one it reads after the start. Seven frames are committed with `assert.txt`.
   lines. Measured: the four existing drivers each launch several servers, and every one of them
   passes; each driver now points its launches at a bots root of its own. A single-user local app is
   the assumption, and it is not enforced.
-- **The frames of a finished conversation are not persisted.** A restart keeps the runs and their
-  prompts, and shows them in the thread list, but the transcript itself was the live log. Persisting
-  frames needs a decision about which facts are worth a file, which is a bigger unit.
+- **A thread's transcript has no ceiling.** Every frame of every run stays in
+  `threads/<threadId>/transcript.jsonl`, and that file is written without a lock, exactly like
+  `index.jsonl` and a thread's `runs.jsonl` above. `docs/transcript.md` carries both limits.
 - **A thread's title is always `New conversation`.** The thread list shows the first prompt as the
   row's detail, which is what a person reads, but the record itself has no rename. A rename is one
   command in the Bot store.
