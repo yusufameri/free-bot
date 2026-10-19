@@ -103,8 +103,25 @@ rebuild_id=$(docker inspect --format '{{.Id}}' "$rebuild_tag")
   else
     echo "RootFS layers identical across the two builds: no"
   fi
+  pinned_layers=$(cd "$repo" && bun -e 'import { PINNED_IMAGE } from "./packages/sandbox/src/image.ts"; console.log(JSON.stringify(PINNED_IMAGE.layers))')
+  if [ "$layers_a" = "$pinned_layers" ]; then
+    pin_match=yes
+  else
+    pin_match=no
+  fi
+  echo "RootFS layers equal the pin in packages/sandbox/src/image.ts: $pin_match"
   echo "RootFS layers (build 1): $layers_a"
 } >"$art/digest.txt"
+
+# A build that cannot match the pin must say so rather than leave the constant quietly behind the
+# image. Either path is deliberate and lands in one commit.
+if [ "$pin_match" != "yes" ]; then
+  say "PIN MISMATCH: this build's layer set differs from PINNED_IMAGE.layers."
+  say "  If the recipe change is deliberate, update PINNED_IMAGE.layers in packages/sandbox/src/image.ts"
+  say "  and docs/sandbox-image.md in one commit, then rerun this script."
+  say "  Otherwise the Dockerfile drift is a defect and this build must not be used."
+  FAILED=1
+fi
 
 # --- two replay runs in the image ------------------------------------------------------------
 for n in 1 2; do

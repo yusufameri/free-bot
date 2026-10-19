@@ -1,0 +1,26 @@
+feature: sandbox-pin-repair
+command: bun packages/verify/scripts/sandbox-pin-repair.ts
+timestamp: 2026-10-19T17:21:35.038Z
+git commit: 263e2850036005cd2956fd100633a7b39184dcac
+git short sha: 263e285 (branch u10.8-pin-repair)
+runtime: bun 1.2.5 on darwin arm64
+docker server: 28.3.2
+run unit label: u10.8-run-102o-ba9c18
+inventory: 315 local images, 6 carry the pinned layer set (0562884da9c0, 15cdfe36ab96, 3a6f049e9d7c, f3dcd70129c3, a5a5e60d2b43, 5b66f96eea3b)
+PASS a local image carries the pinned layer set before the tag moves
+PASS the probe image badf2069e4c2 is off-pin (0 layers against the pin's 7)
+bracket: attempt 1 started with freebot-sandbox:u0.6 at badf2069e4c2 (0 layers), read through docker images
+ensurePinnedImage: sandbox pin repair: freebot-sandbox:u0.6 pointed at badf2069e4c2 whose layer set differs; re-pointed it at 0562884da9c0, whose layer set matches docs/sandbox-image.md
+PASS the check repaired the tag and said so in one line
+PASS the returned image 0562884da9c0 carries the pinned layer set (7/7)
+PASS the returned image is one of the local layer matches, not a build
+PASS the tag resolves to 0562884da9c0 after the repair
+PASS the repair added no image id, so it did not build (0 new ids)
+PASS the tag started off-pin and the check repaired it within 5 attempts
+PASS a container from freebot-sandbox:u0.6 after the repair runs node --version -> v24.22.0 (stdout "v24.22.0", exit 0)
+PASS the run's own container freebot-sbx-u108-run-102o-ba9c18 is gone
+cleanup: label-scoped sweep under u10.8-run-102o-ba9c18 removed 0 container(s)
+PASS cleanup: freebot-sandbox:u0.6 points at a layer-matching image (0562884da9c0)
+PASS cleanup: the probe image badf2069e4c2 is gone from the engine
+PASS key scan: 1 file(s) under /Users/yusufameri/projects/free-bot-u10.8/packages/verify/artifacts/sandbox-pin-repair/263e285 carry no key-shaped literal
+RESULT: PASS (13/13)

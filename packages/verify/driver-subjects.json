@@ -23,6 +23,17 @@
         "docs/DESIGN-CONTRACT.md",
         "docs/pixel-gate.md"
       ]
+    },
+    {
+      "id": "sandbox-pin-repair",
+      "command": "bun packages/verify/scripts/sandbox-pin-repair.ts",
+      "artifact": "packages/verify/artifacts/sandbox-pin-repair",
+      "subjects": [
+        "packages/sandbox/src/image.ts",
+        "packages/sandbox/image/**",
+        "packages/verify/scripts/sandbox-pin-repair.ts",
+        "docs/sandbox-image.md"
+      ]
     }
   ]
 }
