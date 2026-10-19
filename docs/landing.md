@@ -68,7 +68,7 @@ is computed but not consulted (`packages/core/src/run-usage.ts`).
 | Control | Does |
 | --- | --- |
 | `Connect a provider` | A link to `/`. The app decides what a person meets there: a store with no Bot opens the first-run screen, a keyless machine with a Bot opens the provider page, a live one opens the shell. Deep-linking into a state the app would not have chosen would be the landing claiming to know something it does not. |
-| `Run in replay mode — see it work without a key` | The same link. The export offers replay as a second path; in this app, the launcher selects replay with `bun run up --replay` regardless of vault state, or in auto mode when the vault is empty. The note under the controls states these rules. The label stays the export's copy because the hero band is the export's, and the note carries the mechanism the label cannot. |
+| `Run in replay mode — see it work without a key` | The same link. The export offers replay as a second path; in this app, `bun run up --replay` forces replay for the launch regardless of vault state, while auto mode checks the vault when each run starts and selects replay only when it is empty. The note under the controls states these rules. The label stays the export's copy because the hero band is the export's, and the note carries the mechanism the label cannot. |
 | `Copy` | Writes `bun run up` to the clipboard and reports which of the two outcomes happened, the copy or the browser's refusal. |
 | `The repository` | `https://github.com/yusufameri/free-bot`, the `origin` remote. |
 | `How to run it` | `docs/RUNNING.md` on `main`. |

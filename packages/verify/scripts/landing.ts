@@ -285,6 +285,8 @@ async function startApp(): Promise<App> {
   }
   const deadline = Date.now() + 30_000;
   let url = "";
+  let apiPort = 0;
+  let token = "";
   try {
     while (!/^http:\/\/127\.0\.0\.1:\d+\/#token=\S+$/m.test(out)) {
       if (Date.now() > deadline) throw new Error(`the launcher printed no URL: ${out}`);
@@ -292,18 +294,22 @@ async function startApp(): Promise<App> {
     }
     url = /^(http:\/\/127\.0\.0\.1:\d+\/#token=\S+)$/m.exec(out)?.[1] ?? "";
     if (url === "") throw new Error(`the launcher's URL did not parse: ${out}`);
+    // An out-of-range port passes the text pattern but not the parser, so the parse sits under the
+    // same cleanup as a launcher that never answers.
+    const parsed = new URL(url);
+    apiPort = Number(parsed.port);
+    token = new URLSearchParams(parsed.hash.replace(/^#/, "")).get("token") ?? "";
   } catch (error) {
-    // A launcher that never answers is still this driver's process to stop and its home to remove.
+    // A launcher that never answers, or whose URL fails to parse, is still this driver's process
+    // to stop and its home to remove.
     proc.kill("SIGINT");
     await proc.exited;
     rmSync(home, { recursive: true, force: true });
     throw error;
   }
-  const parsed = new URL(url);
-  const token = new URLSearchParams(parsed.hash.replace(/^#/, "")).get("token") ?? "";
   return {
     url,
-    apiPort: Number(parsed.port),
+    apiPort,
     token,
     home,
     stderr: () => err,
