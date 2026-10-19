@@ -1,0 +1,47 @@
+stability: packages/verify/artifacts/pixel-gate/bc5a52d/stability/run-a.json against packages/verify/artifacts/pixel-gate/bc5a52d/stability/run-b.json, epsilon 0 differing pixel(s)
+ok   01-mobile-compact-360x800 chrome.resizer: absent then absent
+ok   01-mobile-compact-360x800 chrome.sidebar-edge: absent then absent
+ok   01-mobile-compact-360x800 chrome.aside-edge: absent then absent
+ok   01-mobile-compact-360x800 chrome.aside-strip-rule: absent then absent
+ok   01-mobile-compact-360x800 chrome total: 0/0 then 0/0, delta 0
+ok   02-mobile-standard-390x844 chrome.resizer: absent then absent
+ok   02-mobile-standard-390x844 chrome.sidebar-edge: absent then absent
+ok   02-mobile-standard-390x844 chrome.aside-edge: absent then absent
+ok   02-mobile-standard-390x844 chrome.aside-strip-rule: absent then absent
+ok   02-mobile-standard-390x844 chrome total: 0/0 then 0/0, delta 0
+ok   03-mobile-large-430x932 chrome.resizer: absent then absent
+ok   03-mobile-large-430x932 chrome.sidebar-edge: absent then absent
+ok   03-mobile-large-430x932 chrome.aside-edge: absent then absent
+ok   03-mobile-large-430x932 chrome.aside-strip-rule: absent then absent
+ok   03-mobile-large-430x932 chrome total: 0/0 then 0/0, delta 0
+ok   04-foldable-small-tablet-600x960 chrome.resizer: absent then absent
+ok   04-foldable-small-tablet-600x960 chrome.sidebar-edge: absent then absent
+ok   04-foldable-small-tablet-600x960 chrome.aside-edge: absent then absent
+ok   04-foldable-small-tablet-600x960 chrome.aside-strip-rule: absent then absent
+ok   04-foldable-small-tablet-600x960 chrome total: 0/0 then 0/0, delta 0
+ok   05-tablet-portrait-820x1180 chrome.resizer: absent then absent
+ok   05-tablet-portrait-820x1180 chrome.sidebar-edge: absent then absent
+ok   05-tablet-portrait-820x1180 chrome.aside-edge: absent then absent
+ok   05-tablet-portrait-820x1180 chrome.aside-strip-rule: absent then absent
+ok   05-tablet-portrait-820x1180 chrome total: 0/0 then 0/0, delta 0
+ok   06-tablet-landscape-1024x768 chrome.resizer: absent then absent
+ok   06-tablet-landscape-1024x768 chrome.sidebar-edge: 0/768 then 0/768, differing-pixel delta 0; max channel 0 then 0
+ok   06-tablet-landscape-1024x768 chrome.aside-edge: absent then absent
+ok   06-tablet-landscape-1024x768 chrome.aside-strip-rule: absent then absent
+ok   06-tablet-landscape-1024x768 chrome total: 0/768 then 0/768, delta 0
+ok   07-laptop-1366x768 chrome.resizer: 0/3840 then 0/3840, differing-pixel delta 0; max channel 0 then 0
+ok   07-laptop-1366x768 chrome.sidebar-edge: 0/768 then 0/768, differing-pixel delta 0; max channel 0 then 0
+ok   07-laptop-1366x768 chrome.aside-edge: 0/768 then 0/768, differing-pixel delta 0; max channel 0 then 0
+ok   07-laptop-1366x768 chrome.aside-strip-rule: 0/742 then 0/742, differing-pixel delta 0; max channel 0 then 0
+ok   07-laptop-1366x768 chrome total: 0/6118 then 0/6118, delta 0
+ok   08-desktop-1440x900 chrome.resizer: 0/4500 then 0/4500, differing-pixel delta 0; max channel 0 then 0
+ok   08-desktop-1440x900 chrome.sidebar-edge: 0/900 then 0/900, differing-pixel delta 0; max channel 0 then 0
+ok   08-desktop-1440x900 chrome.aside-edge: 0/900 then 0/900, differing-pixel delta 0; max channel 0 then 0
+ok   08-desktop-1440x900 chrome.aside-strip-rule: 0/742 then 0/742, differing-pixel delta 0; max channel 0 then 0
+ok   08-desktop-1440x900 chrome total: 0/7042 then 0/7042, delta 0
+ok   09-wide-1920x1080 chrome.resizer: 0/5400 then 0/5400, differing-pixel delta 0; max channel 0 then 0
+ok   09-wide-1920x1080 chrome.sidebar-edge: 0/1080 then 0/1080, differing-pixel delta 0; max channel 0 then 0
+ok   09-wide-1920x1080 chrome.aside-edge: 0/1080 then 0/1080, differing-pixel delta 0; max channel 0 then 0
+ok   09-wide-1920x1080 chrome.aside-strip-rule: 0/742 then 0/742, differing-pixel delta 0; max channel 0 then 0
+ok   09-wide-1920x1080 chrome total: 0/8302 then 0/8302, delta 0
+RESULT: STABLE, every chrome region's differing-pixel count is equal across the two runs
