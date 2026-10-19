@@ -587,6 +587,22 @@ async function main(): Promise<number> {
     await settle(chrome.cdp, session);
     await capture(chrome.cdp, session, dir, "hero-430x932.png");
 
+    section("the claims band, the part this unit changes");
+    for (const [width, height] of [
+      [1440, 900],
+      [430, 932],
+    ] as const) {
+      await setViewport(chrome.cdp, session, width, height);
+      await evaluate<void>(
+        chrome.cdp,
+        session,
+        `document.querySelector('#landing-runs')?.scrollIntoView({ block: 'start' })`,
+      );
+      await settle(chrome.cdp, session);
+      await capture(chrome.cdp, session, dir, `what-runs-today-${width}x${height}.png`);
+    }
+    await evaluate<void>(chrome.cdp, session, "window.scrollTo(0, 0)");
+
     section("the nine-viewport matrix");
     note(`read from ${MANIFEST}`);
     const overflowLines: string[] = [];
