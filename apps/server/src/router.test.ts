@@ -410,4 +410,37 @@ describe("the Bot and thread arms", () => {
 
     await h.stop();
   });
+
+  test("a group's members are deduplicated and limited to ordinary Bots this server holds", async () => {
+    const h = await harness([]);
+    const member = await h.client.create_bot({ name: "Member" });
+    const nested = await h.client.create_bot({ name: "Nested" });
+    const room = await h.client.create_bot({ name: "Room" });
+
+    const arranged = await h.client.arrange_bot({
+      botId: room.botId,
+      group: true,
+      members: [member.botId, member.botId],
+    });
+    expect(arranged.members).toEqual([member.botId]);
+
+    const self = await h.client
+      .arrange_bot({ botId: room.botId, members: [room.botId] })
+      .catch((error: { code?: string; message?: string }) => error);
+    expect(self).toMatchObject({ code: "bot_not_found" });
+    expect((self as { message: string }).message).toBe(`not a member Bot: ${room.botId}`);
+
+    const unknown = await h.client
+      .arrange_bot({ botId: room.botId, members: ["bot-nowhere"] })
+      .catch((error: { code?: string; message?: string }) => error);
+    expect(unknown).toMatchObject({ code: "bot_not_found" });
+
+    await h.client.arrange_bot({ botId: nested.botId, group: true });
+    const group = await h.client
+      .arrange_bot({ botId: room.botId, members: [nested.botId] })
+      .catch((error: { code?: string; message?: string }) => error);
+    expect(group).toMatchObject({ code: "bot_not_found" });
+
+    await h.stop();
+  });
 });

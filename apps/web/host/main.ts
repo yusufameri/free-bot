@@ -212,6 +212,9 @@ const shell = mountShell({
       return await client().arrange_bot({ botId, ...rest });
     },
   },
+  onRecords: () => {
+    paintGroupbar();
+  },
   onChange: (next) => {
     const previousBot = selection.botId;
     selection = next;
@@ -659,7 +662,7 @@ operator?.addEventListener("submit", (event) => {
 
 /** Enter sends; Shift+Enter keeps the newline the export's hint promises. */
 promptInput?.addEventListener("keydown", (event) => {
-  if (event.key === "Enter" && !event.shiftKey) {
+  if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
     event.preventDefault();
     operator?.requestSubmit();
   }

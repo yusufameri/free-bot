@@ -8,7 +8,14 @@
  * one preference store this build has; every other pane reports the install as it is.
  */
 
-import type { Bot, ConnectorRow, ProviderConnection, Thread } from "@freebot/protocol";
+import type {
+  Bot,
+  ConnectorRow,
+  ProviderConnection,
+  RunStatusValue,
+  Thread,
+} from "@freebot/protocol";
+import { RUN_STATUS_VALUES } from "@freebot/protocol";
 
 export const WORKSPACE_VIEWS = [
   "skills",
@@ -37,7 +44,7 @@ export interface ActivityRun {
   readonly botName: string;
   readonly threadTitle: string;
   readonly prompt: string;
-  readonly status: string;
+  readonly status: RunStatusValue;
   readonly startedAt: number;
 }
 
@@ -425,7 +432,7 @@ function activityPage(
   onFilter: (bot: string, status: string) => void,
 ): HTMLElement {
   const botNames = ["all", ...new Set(runs.map((run) => run.botName))];
-  const statuses = ["all", "succeeded", "failed", "cancelled", "waiting", "running"];
+  const statuses = ["all", ...RUN_STATUS_VALUES];
   const filterRow = el("div", "row");
   filterRow.style.flexWrap = "wrap";
   filterRow.style.marginBottom = "16px";
@@ -470,7 +477,13 @@ function activityPage(
       const when = new Date(run.startedAt).toLocaleString();
       const dot = el(
         "span",
-        `dot${run.status === "succeeded" ? " on" : run.status === "failed" || run.status === "cancelled" ? " ring" : ""}`,
+        run.status === "done"
+          ? "dot on"
+          : run.status === "failed" || run.status === "cancelled"
+            ? "dot ring"
+            : run.status === "running" || run.status === "awaiting_approval"
+              ? "pulse"
+              : "dot",
       );
       const copy = el("span", "grow");
       copy.append(el("span", "", run.botName));
@@ -551,7 +564,7 @@ function settingsPage(
     card([
       el("span", "cap", "Provider"),
       kv("Model", provider?.model ?? "none"),
-      kv("Tested", provider?.status === "capable" ? "yes" : "no"),
+      kv("Tested", provider?.testedAt != null ? "yes" : "no"),
     ]),
   );
 

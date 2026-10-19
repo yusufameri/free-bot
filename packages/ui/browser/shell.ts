@@ -12,7 +12,7 @@
  * nothing else, because re-subscribing a stream is not a shell decision.
  */
 
-import type { Bot, Thread } from "@freebot/protocol";
+import type { Bot, RunSummary, Thread } from "@freebot/protocol";
 import {
   BOTS_EMPTY,
   type BotRow,
@@ -77,7 +77,7 @@ export interface ShellHandle {
     threadTitle: string;
     runId: string;
     prompt: string;
-    status: string;
+    status: RunSummary["status"];
     startedAt: number;
   }>;
   /**
@@ -118,6 +118,8 @@ export function mountShell(config: {
   readonly calls: ShellCalls;
   /** Fired after the selection moves, with the ids the surface should now be showing. */
   readonly onChange?: (selection: ShellSelection) => void;
+  /** Fired after a placement change, which moves no selection and must not reconnect a stream. */
+  readonly onRecords?: () => void;
 }): ShellHandle {
   const sidebarEl = must<HTMLElement>("#sidebar");
   const listEl = must<HTMLElement>("#bot-list");
@@ -407,7 +409,7 @@ export function mountShell(config: {
       const updated = await config.calls.arrangeBot(patch);
       bots = bots.map((bot) => (bot.botId === updated.botId ? updated : bot));
       paint();
-      config.onChange?.(handle.selection());
+      config.onRecords?.();
     },
 
     runs() {
@@ -416,7 +418,7 @@ export function mountShell(config: {
         threadTitle: string;
         runId: string;
         prompt: string;
-        status: string;
+        status: RunSummary["status"];
         startedAt: number;
       }> = [];
       for (const bot of bots) {

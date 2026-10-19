@@ -218,13 +218,23 @@ export function createApiRouter(
           status: BOT_ERRORS.bot_not_found.status,
         });
       }
+      const members = input.members === undefined ? current.members : [...new Set(input.members)];
+      for (const memberId of members) {
+        const member = service.registry.bot(memberId);
+        if (member === undefined || memberId === current.id || member.group) {
+          throw new ORPCError("bot_not_found", {
+            message: `not a member Bot: ${memberId}`,
+            status: BOT_ERRORS.bot_not_found.status,
+          });
+        }
+      }
       const bot = service.registry.arrangeBot({
         id: current.id,
         pinned: input.pinned ?? current.pinned,
         section: input.section ?? current.section,
         hidden: input.hidden ?? current.hidden,
         group: input.group ?? current.group,
-        members: input.members ?? current.members,
+        members,
       });
       return botDto(bot, service.registry.threads(bot.id).length);
     }),
