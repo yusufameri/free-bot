@@ -114,6 +114,7 @@ function truncate(text: string, max = 4000): string {
 const steps: Array<[string, () => Outcome | Promise<Outcome>]> = [
   ["typecheck", () => shell(["bun", "run", "typecheck"])],
   ["tests", () => shell(["bun", "run", "test"])],
+  ["index-check", () => shell(["bun", "packages/verify/scripts/index-check.ts"])],
   ["scaffold-shape", () => shell(["sh", "packages/verify/features/scaffold.sh"])],
   ["healthz", healthz],
 ];
