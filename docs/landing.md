@@ -46,8 +46,8 @@ there would be six lines and two buttons on a black page. This page adds one sec
 `What runs today`, and the driver asserts both bands render in order.
 
 The section exists because of what this unit is: a page that ships no hosted-service implication and
-no dead control has to say what the product actually is. So it states five things this repository
-really does at the commit that served the page, and two it does not do yet.
+no dead control has to say what the product actually is. So it states six things this repository
+really does at the commit that served the page, and one it does not do yet.
 
 | Claim | Read from |
 | --- | --- |
@@ -56,18 +56,19 @@ really does at the commit that served the page, and two it does not do yet.
 | Each run gets one container from `freebot-sandbox:u0.6` | `packages/sandbox/src/image.ts`'s `PINNED_IMAGE.tag` |
 | The key lives in the vault at mode 600 | `apps/server/src/vault.ts`'s `writeFileSync(…, { mode: 0o600 })` |
 | The run loop checks the per-run cap before every provider turn, settles an over-cap run at `spend_cap`, and reads `FREEBOT_SPEND_CAP_USD` | `packages/core/src/run-loop.ts`'s `checkSpendCap` call and `apps/server/src/cli/up.ts`'s cap default |
+| A run started from the page can be stopped, settles at `cancelled`, and keeps the work before the stop | `docs/cancel-and-cap.md`'s `RunService.cancel`, `PendingApprovals.cancelRun` and the loop's cancelled check |
 | The repository URL | `git remote get-url origin` |
 
 The driver reads the command, the image tag and the repository URL from those sources at run time and
 compares them to what the page renders, so a version, a command or a tag that moves makes the page
-wrong and the driver say so. The cap claim is page copy rather than a repository fact, so the driver
-asserts its exact sentence from the DOM, asserts that it sits in `What runs today` with no `Not
-built` tag, and asserts that the sentence U10.3 made false is gone.
+wrong and the driver say so. The cap and cancel claims are page copy rather than repository facts, so
+the driver asserts each exact sentence from the DOM, asserts that each sits in `What runs today` with
+no `Not built` tag, and asserts that the sentences U10.3 made false are gone.
 
-U10.3 closed the cap gap in the app: the run loop consults `checkSpendCap` (`docs/cancel-and-cap.md`).
-U10.9 moves that claim from the gap list into `What runs today` and makes the landing driver hold it.
-The cancel line above it is outside this unit; the app's `Stop run` control landed in U10.3, so the
-landing copy that still calls a cancel control absent is a follow-up for a later unit.
+U10.3 closed both gaps in the app (`docs/cancel-and-cap.md`). The run loop consults `checkSpendCap`,
+and `Stop run` settles a run at `cancelled` with every frame that arrived before the stop kept. U10.9
+moved the cap claim and U10.10 moved the cancel claim from the gap list into `What runs today`, and
+the landing driver holds both.
 
 ## The controls, and what each one does
 
@@ -96,7 +97,7 @@ carries an id the driver knows, which is what makes "no dead control" checkable 
   `landingPage.requiredSections`, which lists "product proof/screenshots". The app's own screens are
   the subject of U6.7's fidelity pass against the export, and a capture embedded here would be a
   second copy of that evidence with no assertion behind it. The page's product evidence is instead
-  the real command, the real pinned image tag, and the two real gaps. Recorded here per plan §10.3,
+  the real command, the real pinned image tag, and the one gap that remains. Recorded here per plan §10.3,
   which says a parity unit that cannot match a surface states the delta rather than approximating it.
 - **No OS widget surface.** The manifest's `osWidgets` note says not to invent one where none is
   present, and the export carries none.
