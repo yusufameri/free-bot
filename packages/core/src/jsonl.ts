@@ -8,7 +8,15 @@
  * so both need exactly this rule, and it lives here once.
  */
 
-import { closeSync, fsyncSync, mkdirSync, openSync, readFileSync, writeFileSync, writeSync } from "node:fs";
+import {
+  closeSync,
+  fsyncSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  writeFileSync,
+  writeSync,
+} from "node:fs";
 import { dirname } from "node:path";
 
 function isEnoent(error: unknown): boolean {

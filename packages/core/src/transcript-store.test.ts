@@ -21,7 +21,9 @@ function transcript(name = "transcript.jsonl"): string {
 }
 
 function lines(path: string): string[] {
-  return readFileSync(path, "utf8").split("\n").filter((line) => line.length > 0);
+  return readFileSync(path, "utf8")
+    .split("\n")
+    .filter((line) => line.length > 0);
 }
 
 function reopen(path: string): TranscriptStore<TestFrame> {
@@ -48,10 +50,19 @@ describe("TranscriptStore", () => {
       tornTrailingLine: false,
       refused: null,
     });
-    expect(second.log.since(0)).toEqual([
+    expect(second.since(0)).toEqual([
       { seq: 1, frame: { kind: "run.started" } },
       { seq: 2, frame: { kind: "tool_call.result" } },
     ]);
+    // The replayed log is the same log, so the audit the stream reports is the file's own order.
+    expect(second.audit()).toMatchObject({
+      firstSeq: 1,
+      lastSeq: 2,
+      count: 2,
+      gaps: [],
+      duplicates: [],
+      rejected: 0,
+    });
   });
 
   test("a reopen resumes the seq space at the file's tail", () => {
@@ -62,14 +73,14 @@ describe("TranscriptStore", () => {
 
     const second = reopen(path);
     expect(second.lastSeq).toBe(3);
-    expect(second.log.lastSeq + 1).toBe(4);
+    expect(second.lastSeq + 1).toBe(4);
     expect(second.append(4, { kind: "frame-4" })).toBe("appended");
     expect(second.lastSeq).toBe(4);
 
     // A client that reconnected with the pre-restart tail gets exactly what it missed, and a
     // client that had seen nothing replays from the start of the same one seq space.
-    expect(second.log.since(3)).toEqual([{ seq: 4, frame: { kind: "frame-4" } }]);
-    expect(second.log.since(0).map((entry) => entry.seq)).toEqual([1, 2, 3, 4]);
+    expect(second.since(3)).toEqual([{ seq: 4, frame: { kind: "frame-4" } }]);
+    expect(second.since(0).map((entry) => entry.seq)).toEqual([1, 2, 3, 4]);
   });
 
   test("a frame the log refuses is not written", () => {
@@ -105,7 +116,7 @@ describe("TranscriptStore", () => {
 
     // The repair is what makes the next append a complete record rather than a joined one.
     expect(second.append(2, { kind: "next" })).toBe("appended");
-    expect(reopen(path).log.since(0)).toEqual([
+    expect(reopen(path).since(0)).toEqual([
       { seq: 1, frame: { kind: "kept" } },
       { seq: 2, frame: { kind: "next" } },
     ]);

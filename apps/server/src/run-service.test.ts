@@ -12,12 +12,12 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { existsSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ProviderPort, SandboxPort } from "@freebot/core";
 import type { SandboxSpec } from "@freebot/sandbox";
-import { createRunService, UnknownRecordError } from "./run-service.ts";
+import { createRunService, threadTranscriptPath, UnknownRecordError } from "./run-service.ts";
 
 /** One turn of text and no call, so a run finishes in the few frames it can. */
 /** Creates nothing and runs nothing, so a test that starts a run needs no container. */
@@ -357,6 +357,119 @@ describe("a second process over the same bots root", () => {
       "run-2",
     ]);
     reopened.close();
+  });
+});
+
+/**
+ * A thread's conversation across a restart: what the page replays, and what the boot pass does with
+ * a run the last process left in flight. The files themselves are `packages/core`'s subject
+ * (`transcript-store.test.ts`); what these assert is the wiring, at the paths the docs name.
+ */
+describe("a thread's conversation across a restart", () => {
+  test("the frames come back, and the next run continues the same seq space", async () => {
+    const root = botsRoot();
+    const first = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
+    const bot = first.createBot("Local Bot");
+    const thread = first.createThread(bot.id);
+    first.start({ prompt: "remember me", botId: bot.id, threadId: thread.id });
+    await first.idle();
+    const before = first.events(thread.id, 0).messages;
+    first.close();
+
+    const transcript = threadTranscriptPath(root, bot.id, thread.id);
+    expect(transcript).toBe(join(root, bot.id, "threads", thread.id, "transcript.jsonl"));
+    const written = readFileSync(transcript, "utf8")
+      .split("\n")
+      .filter((line) => line !== "");
+    expect(written).toHaveLength(before.length);
+    expect(JSON.parse(written[0] as string)).toEqual({ seq: 1, frame: before[0] });
+
+    const reopened = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
+    const after = reopened.events(thread.id, 0).messages;
+    expect(after).toEqual(before);
+    expect(after.length).toBeGreaterThan(0);
+    expect(after.every((frame, index) => frame.seq === index + 1)).toBe(true);
+    expect(reopened.audit(thread.id)).toMatchObject({
+      firstSeq: 1,
+      lastSeq: before.length,
+      count: before.length,
+      gaps: [],
+      duplicates: [],
+    });
+    // The cursor means the same thing on either side of the restart: a client that had read the
+    // whole conversation is owed nothing, and one that reads it again gets the same frames.
+    expect(reopened.events(thread.id, before.length).messages).toEqual([]);
+
+    reopened.start({ prompt: "and again", botId: bot.id, threadId: thread.id });
+    await reopened.idle();
+    const continued = reopened.events(thread.id, 0).messages;
+    expect(continued.slice(before.length).map((frame) => frame.seq)).toEqual(
+      before.map((_frame, index) => before.length + index + 1),
+    );
+    expect(continued[before.length]?.payload).toEqual({ prompt: "and again" });
+    reopened.close();
+  });
+
+  test("a run the last process left in flight is settled where the page can see it", async () => {
+    const root = botsRoot();
+    const stuck: ProviderPort = { next: () => new Promise(() => {}) };
+    const first = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => stuck,
+    });
+    const bot = first.createBot("Local Bot");
+    const thread = first.createThread(bot.id);
+    const { runId } = first.start({ prompt: "hold the line", botId: bot.id, threadId: thread.id });
+    const deadline = Date.now() + 2_000;
+    while (first.run(runId)?.record.status !== "running") {
+      if (Date.now() > deadline) throw new Error("the run never reached its provider");
+      await Bun.sleep(5);
+    }
+    const inflight = first.events(thread.id, 0).messages.length;
+    first.close();
+
+    const reopened = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
+    expect(reopened.run(runId)?.record.status).toBe("failed");
+    expect(reopened.run(runId)?.record.error).toEqual({
+      code: "server_restart",
+      detail: null,
+      at: expect.any(Number),
+    });
+    const frames = reopened.events(thread.id, 0).messages;
+    expect(frames.slice(inflight).map((frame) => [frame.type, frame.seq])).toEqual([
+      ["run.failed", inflight + 1],
+      ["run.status", inflight + 2],
+    ]);
+    expect(frames[inflight]?.payload).toEqual({
+      reason: "FreeBot stopped while this run was in flight.",
+    });
+
+    // The ending is in the transcript, so a second restart settles nothing a second time.
+    reopened.close();
+    const third = createRunService({
+      botsRoot: root,
+      sandbox: noSandbox,
+      provider: () => immediateProvider,
+    });
+    expect(third.run(runId)?.record.status).toBe("failed");
+    expect(
+      third.events(thread.id, 0).messages.filter((frame) => frame.type === "run.failed"),
+    ).toHaveLength(1);
+    expect(third.audit(thread.id)).toMatchObject({ gaps: [], duplicates: [] });
+    third.close();
   });
 });
 

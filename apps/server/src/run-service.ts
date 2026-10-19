@@ -6,18 +6,21 @@
  * - A Bot is a record (`BotStore`) and a host directory, `botsRoot/<botId>/workspace`, which every
  *   run of that Bot mounts at `/workspace`. Two Bots cannot see each other's files, because the
  *   mount is this Bot's directory and nothing else.
- * - A thread is a record, one conversation with one Bot, and it owns two things on disk: its run
- *   journal, `botsRoot/<botId>/threads/<threadId>/runs.jsonl`, and its log, which is a `SeqLog` per
- *   thread. One log per thread is what makes a conversation's seq space its own, so the page can
- *   show one thread's frames and only that thread's.
+ * - A thread is a record, one conversation with one Bot, and it owns three things on disk: its run
+ *   journal, `botsRoot/<botId>/threads/<threadId>/runs.jsonl`, its transcript,
+ *   `botsRoot/<botId>/threads/<threadId>/transcript.jsonl`, and its log, which is that transcript.
+ *   One log per thread is what makes a conversation's seq space its own, so the page can show one
+ *   thread's frames and only that thread's; one transcript per thread is what makes those frames
+ *   outlive the process, so the conversation a person was reading is the one they come back to.
  * - A run belongs to both. `start` names the Bot and the thread, refuses either if it is not there,
  *   and creates the run's record before it launches the loop, so a cancel or a read that arrives in
  *   the same tick as `start` sees the run the caller just asked for.
  *
  * Every thread the registry holds is opened at boot, so a restart brings back every Bot, every
  * thread and every run the last process had, and `list_bots` / `list_threads` answer from the same
- * records the run path reads. The three files that hold this are described in
- * `docs/bots-and-threads.md`.
+ * records the run path reads. A run the last process left in flight is settled at boot: the record
+ * says `failed`, and the transcript carries the two frames that say why (see `settleAbandoned`). The
+ * files that hold this are described in `docs/bots-and-threads.md` and `docs/transcript.md`.
  *
  * The model is real when the vault holds a key. `mode` defaults to `auto`, which asks the vault and
  * falls back to the replay transcript on a keyless machine, so the launcher's page gets the model
@@ -31,16 +34,25 @@ import type { Connector } from "@freebot/connectors";
 import {
   type BotRecord,
   BotStore,
+  failureEntry,
+  isTerminal,
   type ProviderPort,
   type RunRecord,
   RunStore,
   runRunLoop,
   type SandboxPort,
-  SeqLog,
+  type SeqLog,
   type ThreadRecord,
   type TokenPrices,
+  TranscriptStore,
 } from "@freebot/core";
-import type { BotRefusal, EventMessage, ListFilesOutput, ReadFileOutput } from "@freebot/protocol";
+import {
+  type BotRefusal,
+  type EventMessage,
+  eventMessageSchema,
+  type ListFilesOutput,
+  type ReadFileOutput,
+} from "@freebot/protocol";
 import { GrantStore } from "@freebot/review";
 import { DockerAdapter } from "@freebot/sandbox";
 import { envWorkspace } from "./cli/args.ts";
@@ -88,9 +100,14 @@ export const REGISTRY_FILE = "index.jsonl";
 /** The default title a thread carries until a person renames it. */
 export const NEW_THREAD_TITLE = "New conversation";
 
-/** One thread's run journal, the file a restart brings that thread's conversation back from. */
+/** One thread's run journal, the file a restart brings that thread's run records back from. */
 export function threadJournalPath(root: string, botId: string, threadId: string): string {
   return join(root, botId, "threads", threadId, "runs.jsonl");
+}
+
+/** One thread's transcript, the file a restart brings that thread's conversation back from. */
+export function threadTranscriptPath(root: string, botId: string, threadId: string): string {
+  return join(root, botId, "threads", threadId, "transcript.jsonl");
 }
 
 /**
@@ -221,7 +238,8 @@ export interface RunService {
 interface ThreadRuntime {
   readonly thread: ThreadRecord;
   readonly store: RunStore;
-  readonly log: SeqLog<EventMessage>;
+  /** The thread's frames: the log the stream serves from, and the file they survive in. */
+  readonly log: TranscriptStore<EventMessage>;
   readonly waiters: Set<() => void>;
 }
 
@@ -274,6 +292,41 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     return runtime;
   }
 
+  /**
+   * Settle a run the process holding it did not outlive.
+   *
+   * The record survives a restart; the loop driving it does not. Left alone it stays `running` and
+   * the page replays a conversation that will never gain another frame, so the boot pass ends it at
+   * the code the taxonomy already declares for this (`server_restart`) rather than inventing a
+   * reason here.
+   *
+   * The two ending frames are appended before the record is, because the transcript is what the
+   * page reads: making the frames the durable marker means a crash between the two writes cannot
+   * leave a run the page shows as still in flight, and the next boot sees the frame, keeps it, and
+   * finishes the record instead of appending a second ending.
+   *
+   * A `paused` run is left alone. The taxonomy parks a run that can be rejoined, so its status is a
+   * wait rather than an ending, and a restart is not evidence that the wait ended. `queued`,
+   * `running` and `awaiting_approval` all mean a loop is (or just was) driving this run.
+   */
+  function settleAbandoned(runtime: ThreadRuntime, record: RunRecord): void {
+    if (isTerminal(record.status) || record.status === "paused") return;
+    const ending = failureEntry("server_restart");
+    const settled = runtime.log
+      .since(0)
+      .some((entry) => entry.frame.runId === record.id && entry.frame.type === "run.failed");
+    runtime.store.fail(record.id, "server_restart", null);
+    if (settled) return;
+    const logPort = createLogPort({
+      log: runtime.log,
+      runId: record.id,
+      noteSeq: (seq) => void runtime.store.noteSeq(record.id, seq),
+      now,
+    });
+    logPort.append("run.failed", { reason: ending.copy });
+    logPort.append("run.status", { runId: record.id, status: "failed" });
+  }
+
   function openRuntime(thread: ThreadRecord): ThreadRuntime {
     const store = new RunStore({
       file: threadJournalPath(workspacesRoot, thread.botId, thread.id),
@@ -282,12 +335,17 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     const runtime: ThreadRuntime = {
       thread,
       store,
-      log: new SeqLog<EventMessage>(),
+      log: new TranscriptStore<EventMessage>({
+        file: threadTranscriptPath(workspacesRoot, thread.botId, thread.id),
+        isFrame: (value): value is EventMessage => eventMessageSchema.safeParse(value).success,
+      }),
       waiters: new Set(),
     };
     runtimes.set(thread.id, runtime);
-    for (const record of store.list()) runThreads.set(record.id, thread.id);
-    runSerial = Math.max(runSerial, store.list().length);
+    const runs = store.list();
+    for (const record of runs) runThreads.set(record.id, thread.id);
+    runSerial = Math.max(runSerial, runs.length);
+    for (const record of runs) settleAbandoned(runtime, record);
     return runtime;
   }
 
@@ -529,7 +587,10 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     },
 
     close: () => {
-      for (const runtime of runtimes.values()) runtime.store.close();
+      for (const runtime of runtimes.values()) {
+        runtime.store.close();
+        runtime.log.close();
+      }
       registry.close();
     },
   };
