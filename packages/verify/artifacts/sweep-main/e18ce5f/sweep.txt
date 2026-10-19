@@ -1,0 +1,46 @@
+sweep-main: every driver the subject manifest names, once, against one commit (origin/main by default)
+command: bun packages/verify/scripts/sweep-main.ts
+timestamp: 2026-10-19T22:58:42.528Z
+commit: e18ce5f996768d56942b65324dabf0cbf3bc2ff2
+commit short: e18ce5f
+base: HEAD (e18ce5f)
+checkout: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-pEEuvU/checkout (detached at the commit, bun install from its own lockfile)
+runtime: bun 1.2.5 on darwin arm64
+host docker: docker 28.3.2
+host microsandbox: msb 0.7.8, freebot-sandbox:u0.6 ready
+host chrome: /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+host vaultKey: /Users/yusufameri/.freebot/provider.env present
+host liveInstance: absent, FREEBOT_STATUS_URL is not set
+
+PASS pixel-gate: RESULT: PASS (31s)
+PASS sandbox-pin-repair: RESULT: PASS (13/13) (14s)
+SKIP mvp-status-capture: needs a live instance named by FREEBOT_STATUS_URL (FREEBOT_STATUS_URL is not set)
+PASS launch: RESULT: PASS (116/116) (6s)
+PASS landing: RESULT: PASS (51/51) (3s)
+PASS first-run: RESULT: PASS (113/113) (8s)
+FAIL overlays: RESULT: FAIL (104/105) (116s)
+  proof: packages/verify/artifacts/sweep-main/e18ce5f/overlays.log
+  file a unit: "sweep-main: overlays is red against e18ce5f". The overlays driver (`bun packages/verify/scripts/overlays.ts`, the command palette, the Bot picker and the modal) exited 1 with "RESULT: FAIL (104/105)" at e18ce5f. Proof packages/verify/artifacts/sweep-main/e18ce5f/overlays.log.
+PASS bots-and-threads: RESULT: PASS (81/81) (12s)
+PASS aside: RESULT: PASS (111/111) (13s)
+PASS files-surface: RESULT: PASS (54/54) (5s)
+PASS provider-setup: RESULT: PASS (95/95) (28s)
+FAIL connectors: RESULT: FAIL (68/76) (36s)
+  proof: packages/verify/artifacts/sweep-main/e18ce5f/connectors.log
+  file a unit: "sweep-main: connectors is red against e18ce5f". The connectors driver (`bun packages/verify/scripts/connectors.ts`, the connector seam over an emulated service, with the bash arm beside it) exited 1 with "RESULT: FAIL (68/76)" at e18ce5f. Proof packages/verify/artifacts/sweep-main/e18ce5f/connectors.log.
+PASS connector-credentials: RESULT: PASS (37/37) (1s)
+PASS cancel-run: RESULT: PASS (50/50) (23s)
+PASS spend-cap: RESULT: PASS (21/21) (0s)
+PASS design-contract: RESULT: PASS (264/264) (5s)
+PASS sandbox-conformance: PASS sandbox-conformance (36s)
+PASS sandbox-microsandbox: PASS sandbox-microsandbox (26s)
+PASS keyed-run: RESULT: PASS (69/69) (10s)
+PASS items: RESULT: PASS (203/203) (153s)
+PASS transcript-restart: RESULT: PASS (77/77) (7s)
+PASS workspace-pages: RESULT: PASS (36/36) (3s)
+PASS type-gate: PASS type-gate (30s)
+
+artifact: packages/verify/artifacts/sweep-main/e18ce5f/sweep.txt
+runnable 22, passed 20, failed 2, skipped 1
+arithmetic: 22 = 20 + 2 (passed + failed), 23 = 22 + 1 (runnable + skipped)
+RESULT: FAIL (20/22)

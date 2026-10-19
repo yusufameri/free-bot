@@ -1,0 +1,111 @@
+driver: launch
+subject: one command, one URL, the whole click, and the reap on SIGINT
+command: bun packages/verify/scripts/launch.ts
+commit: e18ce5f996768d56942b65324dabf0cbf3bc2ff2 (e18ce5f)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-pEEuvU/checkout
+exit: 0
+verdict: RESULT: PASS (116/116)
+seconds: 6
+
+--- the driver's own artifact: packages/verify/artifacts/launch/e18ce5f/assert.txt ---
+
+feature: launch
+command: bun packages/verify/scripts/launch.ts
+timestamp: 2026-10-19T22:50:02.756Z
+git sha: e18ce5f996768d56942b65324dabf0cbf3bc2ff2
+git sha short: e18ce5f
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+pinned image: freebot-sandbox:u0.6
+transcript: packages/pi-bridge/fixtures/rpc-handshake.jsonl
+
+# launch live-ui frames - 2026-10-19T22:50:02.756Z
+worktree /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-pEEuvU/checkout/  head e18ce5f  branch HEAD
+DRIVER DISCLOSURE: the driver pins FREEBOT_PROVIDER=replay in every launch it spawns, so the model's turns are the committed transcript at packages/pi-bridge/fixtures/rpc-handshake.jsonl and the launcher's own keyed default is exercised by packages/verify/scripts/keyed-run.ts instead. The sandbox is the pinned image. The launcher, both listeners, the gate, the loop, the run store, the log, the container, the page, its stream and the reap are real.
+WHY THREE LAUNCHES: a launch parks only its first run. Once a run is allowed, the landed ledger holds that action's grant, and the same call again is refused as grant_consumed rather than parked (packages/review/src/policy.ts). So the parked state that shutdown needs, and the two answered states, are each driven from a launch that has not answered that action yet.
+
+## the one command
+containers before the first run (label freebot.unit=u1.7): 0
+ok - the launcher printed a URL of the required shape, token in the fragment: true
+the printed URL, redacted: http://127.0.0.1:58825/#token=<redacted>
+ok - and its stdout held exactly one line at that moment, the URL: 1
+ok - the launcher's own diagnostic names the same page port: "58825"
+ok - the page answers on the URL's port: 200
+ok - healthz answers on the URL's port: "{\"status\":\"ok\",\"service\":\"freebot-server\"}"
+the thread the page's stream follows: thread-1
+ok - a page stream with no token is refused: "refused"
+ok - a page stream with a wrong token is refused: "refused"
+ok - a page stream that names no thread is refused: the stream is a thread's, not the server's: "refused"
+ok - a page stream that names a thread this launch does not hold is refused: "refused"
+ok - a page stream with the URL's own token and a real thread is accepted: "open"
+ok - the token reaches the launch's output once, inside the URL and nowhere else: 1
+cdp: Chrome/155.0.8059.85, headless, remote debugging on the DevToolsActivePort file (dynamic)
+
+## the printed URL, clicked the way a person clicks it
+ok - first launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:58825","fragmentKey":"#token=","fragmentLength":50,"search":""}
+ok - first launch: operator mode is on, so the prompt box is the way in: false
+ok - first launch: the connection is live: "connected"
+ok - first launch: the header is the export's own row: the Bot's name as its button, its role, and the three controls: {"title":"Stream Check · New conversation","role":"","share":"Share menu","computer":"Computer","details":["Details","Collapse the pane"]}
+ok - frame 01-armed: the page held still across the capture: "{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"approvalStates\":[],\"toolStates\":[],\"turnPhases\":[],\"turnTexts\":[],\"renderedSeqs\":[],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null}"
+ok - frame 01-armed: the element the caption is about is inside the captured pixels (#operator): [true,0]
+ok - frame 01-armed: the driver's DOM read agrees with the page's facts hook: [0,0,[],[]]
+ok - frame 01-armed: claim - no message is rendered: true
+ok - frame 01-armed: claim - the run has not finished: true
+ok - frame 01-armed: claim - no approval is pending: true
+ok - frame 01-armed: claim - the stream has no
+[...]
+ it printed to the browser opener, and nothing else: true
+ok - and says it opened a browser without printing the token anywhere else: true
+ok - the default launch: exits zero on SIGINT: 0
+ok - the default launch: reported that it stopped: true
+ok - the default launch: every container it says it removed is gone from Docker: []
+ok - the default launch: nothing listens on its page port afterwards: []
+
+## shutdown, with the first launch's run still parked
+containers before the shutdown, with the run still parked: 1 (freebot-sbx-run-1-l8oy82qe)
+ok - the first launch: exits zero on SIGINT: 0
+ok - the first launch: reported that it stopped: true
+ok - the first launch: every container it says it removed is gone from Docker: []
+ok - the first launch: nothing listens on its page port afterwards: []
+ok - the first launch named the container its parked run held: ["freebot-sbx-run-1-l8oy82qe"]
+ok - that container is gone from Docker by its own name: []
+ok - the label's container set is back where it started: []
+containers after the shutdown (label freebot.unit=u1.7): 0
+ok - nothing listens on the first launch's tunnel port afterwards: []
+ok - every launch's stdout holds exactly one URL, the one to open: [1,1,1]
+ok - and each is that launch's own first line: [true,true,true]
+the lines after the URL on the first launch's stdout, which the gate probes provoked: ["[auth] refused code=token_missing method=GET path=/events","[auth] refused code=token_mismatch method=GET path=/events"]
+ok - that line is still the URL of the required shape: [true,true,true]
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+pairs compared: 6 (4 frames)
+
+## frame index
+name → sha256 → asserted DOM facts → caption
+01-armed → b0682e2c78bfc9c0fd7e4add07aa4ec8cb21e8289619ad33d7ebcef75bbf6507 → last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text "" → The URL the one command printed, opened: the real engine is connected, the run has not started, and the operator's prompt box is the way in.
+  unmet claims: []
+02-parked → 568addc23ba9425cff1a01d4a49398c61a566bbfac9ff33595a6e398a4bae3eb → last seq 6 · done false · turns 1 · cards [call_stub_11:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text "" → A run started from the printed URL is parked at the gate: the approval card names the exact command the model asked for, and the tool card waits for the answer.
+  unmet claims: []
+03-finished → 72465e3bdcb9e5c32267c5e6834d8522bb173142c8c32640f08175a473c8141c → last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → Allowed once and finished: the card shows the decision, the governed call ran in the container so its output block holds the container's own stdout, and the run reached its terminal frame.
+  unmet claims: []
+04-denied → 3c63b12031cff1dff14754f1253f3d56e9d51d08ee3595ef13d9287a09161a5a → last seq 16 · done true · turns 2 · cards [call_stub_11:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → A second launch, denied: the same page and the same engine on a free port of its own, driven through a denial to its own terminal frame.
+  unmet claims: []
+
+## the committed artifact carries no token
+ok - frames: one committed PNG per key state: 4
+artifact: 01-armed.png (89953 bytes)
+artifact: 02-parked.png (123195 bytes)
+artifact: 03-finished.png (137168 bytes)
+artifact: 04-denied.png (131926 bytes)
+ok - no committed line carries any launch's operator token: [false,false,false]
+ok - the URL appears only with its token redacted: true
+
+chrome Google Chrome over CDP; really launched `bun run up`; replayed model; pinned sandbox image
+RESULT: PASS (116/116)
+
+
+--- captured output (stdout and stderr) ---
+
+RESULT: PASS (116/116)
+assert.txt: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-pEEuvU/checkout/packages/verify/artifacts/launch/e18ce5f/assert.txt
