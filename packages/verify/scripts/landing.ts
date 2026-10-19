@@ -602,7 +602,9 @@ async function main(): Promise<number> {
           // nothing to measure: a renamed selector would otherwise pass with no measurement at all.
           regionFailures.push(`${selector} (not found)`);
           failed += 1;
-          log.push(`FAIL viewport ${label}: region ${selector} was not found, so nothing was measured`);
+          log.push(
+            `FAIL viewport ${label}: region ${selector} was not found, so nothing was measured`,
+          );
           continue;
         }
         const [scrollWidth, clientWidth] = pair;
