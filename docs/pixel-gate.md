@@ -169,7 +169,9 @@ tool's.
 **A region is absent, not zero, when its column is not on screen.** Below 1120px both stylesheets
 stand the pane and the resizer down, and below 860px they stand the sidebar down. An absent region
 prints `absent` and no statistic. It is not a pass and not a failure; it is a region this viewport
-does not carry.
+does not carry. Above its own breakpoint, however, a chrome region that goes absent is a missing
+selector, and the verdict fails by name: the run expects all four above 1120px, the sidebar edge
+alone above 860px, and none at 860px and below.
 
 **A zero over zero is an empty set, not a pass.** At 360x800 there are no chrome regions at all, so
 the transcript prints that sentence where a `0/0` would read as a perfect score. The shell's evidence
