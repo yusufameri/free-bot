@@ -38,7 +38,9 @@
  *   `bun packages/verify/scripts/sweep-main.ts`; read its `runnable N, passed P, failed F, skipped
  *   S` line, and file the unit each `file a unit:` line proposes when F is not 0.
  *
- * Run from the repo root: `bun packages/verify/scripts/sweep-main.ts [--keep]`.
+ * Run from the repo root: `bun packages/verify/scripts/sweep-main.ts [--keep] [--base <ref>]`. The
+ * base defaults to `origin/main`; `--base HEAD` sweeps the branch in the caller's worktree, which is
+ * what a unit that changed a driver runs before it opens its PR.
  */
 
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -239,6 +241,13 @@ export function resolveArgv(argv: readonly string[], values: Record<string, stri
       return value;
     }),
   );
+}
+
+/** The ref the sweep checks out: `--base <ref>`, defaulting to `origin/main`. */
+export function resolveBase(argv: readonly string[]): string {
+  const index = argv.indexOf("--base");
+  const ref = index >= 0 ? argv[index + 1] : undefined;
+  return ref === undefined || ref === "" ? "origin/main" : ref;
 }
 
 export function resolveSubject(plan: PlannedDriver, values: Record<string, string>): Subject {
@@ -473,12 +482,14 @@ export function proposeUnit(
 
 export function formatSweep(sweep: Sweep, artifactLabel: string): string {
   const lines: string[] = [];
-  lines.push(`${FEATURE}: every driver the subject manifest names, once, against a commit of main`);
+  lines.push(
+    `${FEATURE}: every driver the subject manifest names, once, against one commit (origin/main by default)`,
+  );
   lines.push("command: bun packages/verify/scripts/sweep-main.ts");
   lines.push(`timestamp: ${sweep.ranAt}`);
   lines.push(`commit: ${sweep.commit}`);
   lines.push(`commit short: ${sweep.shortSha}`);
-  lines.push(`main was at: ${sweep.branch}`);
+  lines.push(`base: ${sweep.branch}`);
   lines.push(
     `checkout: ${sweep.checkout} (detached at the commit, bun install from its own lockfile)`,
   );
@@ -688,14 +699,17 @@ function manifestPath(): string {
 
 async function main(): Promise<number> {
   const keep = Bun.argv.slice(2).includes("--keep");
+  const base = resolveBase(Bun.argv.slice(2));
 
-  const fetched = await run(["git", "fetch", "origin", "main"], repoRoot, 120_000);
-  if (fetched.code !== 0) {
-    console.log("note: git fetch origin main failed, sweeping the origin/main already here");
+  if (base === "origin/main") {
+    const fetched = await run(["git", "fetch", "origin", "main"], repoRoot, 120_000);
+    if (fetched.code !== 0) {
+      console.log("note: git fetch origin main failed, sweeping the origin/main already here");
+    }
   }
-  const resolved = await run(["git", "rev-parse", "origin/main"], repoRoot, 30_000);
+  const resolved = await run(["git", "rev-parse", base], repoRoot, 30_000);
   if (resolved.code !== 0) {
-    console.error(`cannot resolve origin/main: ${resolved.text}`);
+    console.error(`cannot resolve ${base}: ${resolved.text}`);
     return 1;
   }
   const commit = resolved.text;
@@ -743,7 +757,7 @@ async function main(): Promise<number> {
       checkout: isolated.checkout,
       commit,
       shortSha,
-      branch: `origin/main (${commit.slice(0, 7)})`,
+      branch: `${base} (${commit.slice(0, 7)})`,
       host,
       subjects,
       artifactDir,

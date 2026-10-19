@@ -19,6 +19,7 @@ import {
   planDrivers,
   probeHost,
   resolveArgv,
+  resolveBase,
   runSweep,
   type Subject,
   summaryLine,
@@ -306,6 +307,13 @@ describe("the manifest boundary", () => {
     expect(
       resolveArgv(["bun", "live.ts", "{statusUrl}"], { statusUrl: "http://127.0.0.1:9" }),
     ).toEqual(["bun", "live.ts", "http://127.0.0.1:9"]);
+  });
+
+  test("the base defaults to origin/main and takes --base", () => {
+    expect(resolveBase([])).toBe("origin/main");
+    expect(resolveBase(["--keep"])).toBe("origin/main");
+    expect(resolveBase(["--base", "HEAD"])).toBe("HEAD");
+    expect(resolveBase(["--base"])).toBe("origin/main");
   });
 
   test("the vault scanner reads key-shaped names only", () => {
