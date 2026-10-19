@@ -70,7 +70,8 @@ describe("the status capture's page errors", () => {
         exceptionDetails: {
           text: "Uncaught",
           exception: {
-            description: "Error: Illegal invocation\n    at <anonymous>:1:37\n    at <anonymous>:1:1",
+            description:
+              "Error: Illegal invocation\n    at <anonymous>:1:37\n    at <anonymous>:1:1",
           },
         },
       }),
