@@ -1,0 +1,97 @@
+driver: bots-and-threads
+subject: two Bots, two threads, a keyed run each and a real restart
+command: bun packages/verify/scripts/bots-and-threads.ts
+commit: 0d74d05c60786dde84f94b444ea8c89ec845ddc7 (0d74d05)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout
+exit: 0
+verdict: RESULT: PASS (81/81)
+seconds: 9
+
+--- the driver's own artifact: packages/verify/artifacts/bots-and-threads/0d74d05/assert.txt ---
+
+feature: bots-and-threads
+command: bun packages/verify/scripts/bots-and-threads.ts
+timestamp: 2026-10-19T22:22:25.500Z
+git sha: 0d74d05c60786dde84f94b444ea8c89ec845ddc7
+git sha short: 0d74d05
+branch: HEAD
+runtime: bun 1.2.5 on darwin arm64
+the line the model was asked to write: freebot-u4.2 056f6fc41ca9
+the bots root this driver made: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-NkVOlN
+
+# bots-and-threads live-ui frames
+DRIVER DISCLOSURE: the launcher is spawned as `bun run up --no-open` with FREEBOT_WORKSPACE pointing at a fresh directory, so the server starts with no Bots at all and no Bot a person has run is touched. The provider mode is `auto`, so the model is whatever the vault selects; every prompt is typed into the page's own box and every approval card is answered on the page. The restart is a real SIGINT of the first launch and a second launch over the same directory.
+containers before the run (label freebot.unit=u1.7): 0
+
+## the first launch, and the bots root it holds
+the printed URL, redacted: http://127.0.0.1:55268/#token=<redacted>
+the launcher's line: freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-NkVOlN; each Bot's workspace is mounted at /workspace and kept across runs
+ok - the launcher is holding the bots root this driver made, with one workspace per Bot: "freebot up: bots under /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-bots-and-threads-NkVOlN; each Bot's workspace is mounted at /workspace and kept across runs"
+the launcher's line: freebot up: model mode auto, model deepseek/deepseek-v4.1-flash via api.commandcode.ai (key from the vault)
+ok - the launcher selected the keyed path from the vault, so the file the run writes is a real model's: [true,true]
+ok - and named the vault's endpoint and model, never the key's name or value: [true,true,false]
+cdp: Chrome/155.0.8059.85, headless, DevToolsActivePort file (dynamic)
+
+## the first Bot, made the way a page makes one, on a server that holds none
+the Bot this driver made over the route a page uses: {"botId":"bot-local","threadId":"thread-1"}
+ok - the page is the URL the launcher printed, token in the fragment and never sent to a server: {"fragmentKey":"#token=","search":""}
+ok - the server held no Bot, and this driver made one through the same arm a person's click uses: [1,"Local Bot",1]
+ok - the Bot's id is the one the single-Bot app used, so a machine that already ran it keeps its files: "bot-local"
+ok - frame 01-sidebar-first-bot: the page held still across the capture: "{\"shell\":{\"operator\":true,\"bots\":[{\"botId\":\"bot-local\",\"name\":\"Local Bot\",\"threadCount\":1,\"selected\":true,\"status\":\"idle\",\"sub\":\"\",\"dot\":\"dot\",\"pinned\":false,\"section\":\"Work\",\"hidden\":false,\"group\":false}],\"selectedBotId\":\"bot-local\",\"threads\":[{\"threadId\":\"thread-1\",\"title\":\"New conversation\",\"runs\":0,\"selected\":true}],\"selectedThreadId\":\"thread-1\",\"title\":\"Local Bot · New conversation\"},\"thread\":{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"approvalStates\":[],\"toolStates\":[],\"turnPhases\":[],\"turnTexts\":[],\"renderedSeqs\":[],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null},\"library\":{\"tab\":\"conversation\",\"state\":\"idle\",\"pinnedLabel\":\"/workspace\",\"pinnedPath\":\".\",\"listPath\":\".\",\"groups\":[],\"entries\":[],\"openPath\":null,\"openText\":null,\"refused\":null,\"message\":\"\"},\"error\":null,\"runEnds\":0,\"prompts\":0,\"conversation\":[]}"
+ok - frame 01-sidebar-first-bot: the element the caption is about is inside the captured pixels (#bot-list): [true,0]
+ok - frame 01-sidebar-first-bot: claim - one Bot is listed: true
+ok - frame 01-sidebar-first-bot: cl
+[...]
+ 07-after-restart: claim - the selected Bot's threads came back with their runs: true
+ok - frame 07-after-restart: claim - the header still names the Bot that is open: true
+ok - frame 07-after-restart: claim - the transcript came back with the frames the first launch left: true
+ok - frame 07-after-restart: claim - the conversation text is the one the first launch streamed: true
+frame 07-after-restart: 07-after-restart.png (166836 bytes, sha256 4a07b85c3520f538678dc47fe1afc74ca42cde4087033711705d0aa4d3882703) - bots=[Local Bot*:2 Research:1] threads=[thread-1*:2 thread-3:0] selected=thread-1 frames=11 prompts=2 library=idle
+
+## shutdown, and the containers this driver created
+ok - the second launch exits zero on SIGINT: 0
+ok - nothing listens on the second launch's page port: []
+ok - the label's container set is back where it started: true
+ok - and every container the launches said they removed is gone from Docker: []
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+
+## frame index
+name -> asserted facts -> caption
+01-sidebar-first-bot -> bots=[Local Bot*:1] threads=[thread-1*:0] selected=thread-1 frames=0 prompts=0 library=idle -> The sidebar on a server that held no Bots: this driver made `Local Bot` and its first thread over the route a page uses, and the conversation is empty behind it.
+  unmet claims: []
+02-bot-created -> bots=[Local Bot:1 Research*:1] threads=[thread-2*:0] selected=thread-2 frames=0 prompts=0 library=empty -> A Bot created from the sidebar's own control: the list holds two Bots, the new one is selected, and it already has a thread to talk in.
+  unmet claims: []
+03-thread-run -> bots=[Local Bot*:1 Research:1] threads=[thread-1*:1] selected=thread-1 frames=7 prompts=1 library=empty -> A run in the first Bot's thread: the model's write call was answered, the card closed as done, and the file it wrote is in this Bot's workspace.
+  unmet claims: []
+04-second-run -> bots=[Local Bot*:1 Research:1] threads=[thread-1*:2] selected=thread-1 frames=11 prompts=2 library=empty -> A second run in the same thread: the conversation appends to the one that was there, and the thread's own count is two.
+  unmet claims: []
+05-other-thread -> bots=[Local Bot*:1 Research:1] threads=[thread-1:2 thread-3*:0] selected=thread-3 frames=0 prompts=0 library=loaded -> A second thread in the same Bot: the list holds both, the new one is selected, and its transcript is empty rather than the other thread's.
+  unmet claims: []
+06-other-bot-library -> bots=[Local Bot:2 Research*:1] threads=[thread-2*:0] selected=thread-2 frames=0 prompts=0 library=empty -> The second Bot's Library, with the first Bot's workspace holding the file the model wrote: this Bot's workspace is its own and holds nothing.
+  unmet claims: []
+07-after-restart -> bots=[Local Bot*:2 Research:1] threads=[thread-1*:2 thread-3:0] selected=thread-1 frames=11 prompts=2 library=idle -> A second launch over the same bots root: both Bots are still listed with their threads, and the thread that ran has its transcript back, the frames and the conversation text restored from the thread's own persisted record rather than rebuilt from the live log.
+  unmet claims: []
+
+## the committed artifact carries no token and no key
+ok - frames: one committed PNG per key state: 7
+artifact: 01-sidebar-first-bot.png (89309 bytes)
+artifact: 02-bot-created.png (91152 bytes)
+artifact: 03-thread-run.png (155615 bytes)
+artifact: 04-second-run.png (163940 bytes)
+artifact: 05-other-thread.png (96495 bytes)
+artifact: 06-other-bot-library.png (96118 bytes)
+artifact: 07-after-restart.png (166836 bytes)
+ok - no committed line carries the launch's operator token: false
+ok - no committed line carries a key-shaped literal: false
+
+chrome Google Chrome over CDP; two really launched `bun run up --no-open` processes over one bots root, the first SIGINTed before the second; the model is the vault's keyed provider
+RESULT: PASS (81/81)
+
+
+--- captured output (stdout and stderr) ---
+
+RESULT: PASS (81/81)
+assert.txt: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout/packages/verify/artifacts/bots-and-threads/0d74d05/assert.txt
+frames: /private/var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout/packages/verify/artifacts/bots-and-threads/0d74d05

@@ -1,0 +1,106 @@
+driver: aside
+subject: the details pane, the notices and the reconnect banner
+command: bun packages/verify/scripts/aside.ts
+commit: 0d74d05c60786dde84f94b444ea8c89ec845ddc7 (0d74d05)
+ran in: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-sweep-main-QxK4O7/checkout
+exit: 0
+verdict: RESULT: PASS (111/111)
+seconds: 13
+
+--- the driver's own artifact: packages/verify/artifacts/aside/0d74d05/assert.txt ---
+
+
+## what this driver runs
+artifact directory: packages/verify/artifacts/aside/0d74d05/
+launch A: `bun run up --no-open --replay` over a fresh FREEBOT_HOME and bots root, its own placeholder vault at mode 600, its page opened through this driver's own TCP relay
+launch B: `bun run up --no-open` over the same kind of fresh home, so the mode is `auto` and the vault's placeholder endpoint is what a run reaches: http://127.0.0.1:9/…, a port nothing listens on. Nothing is billed and no packet leaves the loopback interface.
+the real vault at ~/.freebot/provider.env is never read, printed or copied by this driver; the only vault files it opens are its own, under the temp directories named below
+mobile-compact 360x800 mobile mustAvoidHorizontalScroll=true
+mobile-standard 390x844 mobile mustAvoidHorizontalScroll=true
+mobile-large 430x932 mobile mustAvoidHorizontalScroll=true
+foldable-small-tablet 600x960 foldable-tablet mustAvoidHorizontalScroll=true
+tablet-portrait 820x1180 tablet mustAvoidHorizontalScroll=true
+tablet-landscape 1024x768 tablet mustAvoidHorizontalScroll=true
+laptop 1366x768 desktop mustAvoidHorizontalScroll=true
+desktop 1440x900 desktop mustAvoidHorizontalScroll=true
+wide 1920x1080 wide mustAvoidHorizontalScroll=true
+containers before this driver runs anything (label freebot.unit=u1.7): 0
+launch A home: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-aside-replay-BK2xsh
+launch A workspace: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-aside-replay-BK2xsh/bots/bot-local/workspace
+launch A url, redacted: http://127.0.0.1:55327/#token=<redacted>
+launch A relay: 127.0.0.1:55329 -> 127.0.0.1:55327; the page is opened at 127.0.0.1:55329, so its own origin is the relay
+chrome Chrome/155.0.8059.85 over CDP
+the witness socket: a second /events client this driver opened on the origin, following thread thread-1 from seq 0, reading the server's log while the page cannot
+
+## the pane's frame
+the shell's own title line: "Aside Check · New conversation"
+ok   the pane's strip carries the export's tablist role: "tablist"
+ok   the pane's tabs are the four with a real source, in UX.md's order: [["computer","Computer"],["details","Details"],["tasks","Tasks"],["library","Library"]]
+ok   every tab carries the export's tab role: ["tab","tab","tab","tab"]
+ok   exactly the default tab is selected, by class and by aria-selected: [["computer"],["computer"],"computer"]
+ok   the export's two extra tabs and the Media delta are absent: 0
+ok   the pane's the strip carries the export's close button, labelled `Collapse the pane`, drawing the sprite's x: ["Collapse the pane","#i-x"]
+ok   the header's own control reads Details, pressed, labelled with what it does: ["Details","true","Collapse the pane"]
+ok   the frame renders the export's default width, in the grid and in the token: [372,372,"372px"]
+ok   and the stylesheet still declares the export's own token, so the settlement is real and not a token edit: "384px"
+ok   the resizer is the export's 5px track: 5
+the 384/372 settlement: the export declares --aside-w: 384px (freebot-prototype.html:37) and overwrites it at boot with S.asideW || 372 (:2248, seeded 372 at :829), so the export renders 372. This app keeps the declared token and renders the same 372, which closes both the aside and the thread deltas: the export's rendered aside is 372px and so is this app's.
+artifact 01-pane-open.png (89605 bytes)
+
+## the notices, from the records they come from
+get_provider over /rpc answers: {"baseUrl":"http://127.0.0.1:9/aside-not-a-provider","model":"aside-replay-placeholder","status":"untested","testedAt":null,"flags":null,"refusal":null,"answer":null}
+ok   the provider record this launch holds is `untested`, which is the notice's own signal: "untested"
+ok   the stack holds exactly the provider notice, its text the provider page's own headline, with its Open action: [["provider-untested"],["The connection did not pass its test"],["open-provider"]]
+ok   the dismiss controls are the export's:
+[...]
+compact 360x800: documentElement 360 <= 360 ok; regions over: 0; pane none 0px; token 430px; control none
+02-mobile-standard 390x844: documentElement 390 <= 390 ok; regions over: 0; pane none 0px; token 430px; control none
+03-mobile-large 430x932: documentElement 430 <= 430 ok; regions over: 0; pane none 0px; token 430px; control none
+04-foldable-small-tablet 600x960: documentElement 600 <= 600 ok; regions over: 0; pane none 0px; token 430px; control none
+05-tablet-portrait 820x1180: documentElement 820 <= 820 ok; regions over: 0; pane none 0px; token 430px; control none
+06-tablet-landscape 1024x768: documentElement 1024 <= 1024 ok; regions over: 0; pane none 0px; token 430px; control none
+07-laptop 1366x768: documentElement 1366 <= 1366 ok; regions over: 0; pane flex 430px; token 430px; control flex
+08-desktop 1440x900: documentElement 1440 <= 1440 ok; regions over: 0; pane flex 430px; token 430px; control flex
+09-wide 1920x1080: documentElement 1920 <= 1920 ok; regions over: 0; pane flex 430px; token 430px; control flex
+
+## both clamps at every viewport that carries the pane
+ok   laptop at 560px: the drag landed and the document does not overflow: [560,true]
+ok   laptop at 280px: the drag landed and the document does not overflow: [280,true]
+ok   desktop at 560px: the drag landed and the document does not overflow: [560,true]
+ok   desktop at 280px: the drag landed and the document does not overflow: [280,true]
+ok   wide at 560px: the drag landed and the document does not overflow: [560,true]
+ok   wide at 280px: the drag landed and the document does not overflow: [280,true]
+
+## launch B: a run against the placeholder endpoint, and what a failed run raises
+launch B home: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-aside-failing-rPRONh
+launch B url, redacted: http://127.0.0.1:55399/#token=<redacted>
+launch B's own line about the model: freebot up: model mode auto, model aside-failing-placeholder via 127.0.0.1:9 (key from the vault)
+launch B's thread record: [{"runId":"run-1","prompt":"this one cannot reach its model","status":"failed","startedAt":1792448564796}]
+ok   the failed run is the thread record's own failed run, and the notice names it: [[["run-1","failed"]],[["provider-untested","The connection did not pass its test"],["run-failed-run-1","Run run-1 failed."]]]
+ok   the banner is not on that page either: nothing was severed there: [false,"connected"]
+ok   the pane's computer tab reads the failed run off the same record, with the honest no-command note: ["run-1","failed",true]
+artifact 12-failed-run-notice.png (103266 bytes)
+ok   Dismiss all takes both notices off and remembers both ids: [0,["provider-untested","run-failed-run-1"],true]
+ok   both stay dismissed across a reload although both signals are still there: [0,["provider-untested","run-failed-run-1"],"untested"]
+
+## launch B with its signal taken away: a page that has none renders no stack
+launch B's vault and provider record removed; a second Bot (bot-2) with a thread and no runs made over /rpc
+the page boots into page 1 because the machine holds no connection; its own replay control is the way on, which is the path a person takes
+ok   the thread on screen has no runs, this machine has no connection, and the stack is not on the page: [[0],[],0,true,false]
+ok   the page's own state: the stream is up, so an absent banner is not an absent connection: ["connected",[]]
+ok   and the pane says what it really holds: no connection, no run, no command: ["none","not set"]
+artifact 13-no-signal.png (75932 bytes)
+
+## containment: what this driver left behind
+launch A's home removed with its process; its containers are the runs' own and were removed with them
+ok   the label's container set is back where it started: true
+artifact 14-follow-up.png (124772 bytes)
+
+chrome Chrome/155.0.8059.85; two real launches (`bun run up --no-open --replay` and `bun run up --no-open`), one relay the driver severed, one witness socket on the server's own log
+RESULT: PASS (111/111)
+
+
+--- captured output (stdout and stderr) ---
+
+RESULT: PASS (111/111)
+artifact: packages/verify/artifacts/aside/0d74d05/assert.txt
