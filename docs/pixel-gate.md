@@ -185,8 +185,12 @@ Three mechanisms, and the run's own artifact carries the proof of each.
 of `assert.txt`. Three flags are set on that one instance so both sides are rendered identically and
 neither is favoured: `--disable-lcd-text` removes the monitor's subpixel order from grayscale
 antialiasing, `--font-render-hinting=none` removes the rasterizer's stem-snapping, and
-`--force-color-profile=srgb` removes the display's colour transform. `--hide-scrollbars` comes from
-the shared CDP client.
+`--force-color-profile=srgb` removes the display's colour transform. A Linux CI runner also gets
+`--no-sandbox`, `--disable-dev-shm-usage` and `--disable-gpu`, because its Chrome otherwise exits
+before writing `DevToolsActivePort`; none of the three changes a rasterized pixel.
+`--hide-scrollbars` comes from the shared CDP client. The run's `dirty` flag excludes
+`packages/verify/artifacts` as a whole, because the verify step writes evidence there; a tracked
+source change still makes it true.
 
 **Fonts.** Both pages resolve the same stack, and `assert.txt` prints both, with the advance width
 of a `'Geist'`-family string against a family that cannot exist. Geist is vendored: one variable

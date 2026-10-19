@@ -45,6 +45,23 @@ export const DETERMINISM_FLAGS: readonly string[] = [
   "--force-color-profile=srgb",
 ];
 
+/**
+ * The flags a Linux CI runner needs and a desktop does not. The runner's Chrome runs as a build user
+ * with a small `/dev/shm`, so the sandbox and the shared-memory path are the two things that stop it
+ * writing `DevToolsActivePort`; `--disable-gpu` keeps a headless VM from trying to open one. None of
+ * them affect the rasterized pixels the determinism flags pin.
+ */
+export const LINUX_FLAGS: readonly string[] = [
+  "--no-sandbox",
+  "--disable-dev-shm-usage",
+  "--disable-gpu",
+];
+
+/** Every flag this platform's run passes, in the order the report prints them. */
+export function launchFlags(platform = process.platform): string[] {
+  return [...DETERMINISM_FLAGS, ...(platform === "linux" ? LINUX_FLAGS : [])];
+}
+
 /** The stylesheet that stops both pages moving, injected before any capture. */
 export const FREEZE_CSS = `*, *::before, *::after {
   animation: none !important;
@@ -275,14 +292,15 @@ export interface Browser {
 }
 
 export async function startBrowser(): Promise<Browser> {
+  const flags = launchFlags();
   const chrome = await launchChrome({
     windowSize: "1920,1080",
-    extraArgs: DETERMINISM_FLAGS,
+    extraArgs: flags,
   });
   return {
     cdp: chrome.cdp,
     version: chrome.cdp.version,
-    flags: DETERMINISM_FLAGS,
+    flags,
     stop: () => chrome.stop(),
   };
 }

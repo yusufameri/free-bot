@@ -11,6 +11,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import type { RegionDiff } from "./diff.ts";
 import { boxFailures, chromeFailures, exitCodeFor, verdictFailures } from "./gate.ts";
+import { LINUX_FLAGS, launchFlags } from "./page.ts";
 import type { BoxDelta } from "./regions.ts";
 import type { RegionReport, ViewportReport } from "./report.ts";
 
@@ -154,6 +155,20 @@ describe("the box verdict", () => {
       overflow: { document: [1920, 1920] as const, regions: {}, overflowing: ["#thread"] },
     };
     expect(verdictFailures([regionOver])[0]).toContain("#thread has content wider than its box");
+  });
+});
+
+describe("the browser flags", () => {
+  test("the Mac build host gets the three determinism flags and no Linux flags", () => {
+    expect(launchFlags("darwin")).toEqual([
+      "--disable-lcd-text",
+      "--font-render-hinting=none",
+      "--force-color-profile=srgb",
+    ]);
+  });
+
+  test("a Linux runner also gets the sandbox and shared-memory flags", () => {
+    expect(launchFlags("linux")).toEqual(expect.arrayContaining([...LINUX_FLAGS]));
   });
 });
 

@@ -244,7 +244,10 @@ export async function run(options: RunOptions): Promise<RunResult> {
       "--porcelain",
       "--",
       ".",
-      `:(exclude)packages/verify/artifacts/${FEATURE}`,
+      // Every evidence directory is written by the verify step itself (the gate, the scaffold
+      // summary, the test suites' artifacts), so a run's own output must not make the code it just
+      // measured look dirty. A tracked source change still does.
+      ":(exclude)packages/verify/artifacts",
     ]) !== "";
   const conventional = artifactDir(root, FEATURE, shortSha);
   const dir = options.write ? (options.dir ?? conventional) : null;
