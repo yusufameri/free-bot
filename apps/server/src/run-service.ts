@@ -36,6 +36,7 @@ import {
   BotStore,
   failureEntry,
   isTerminal,
+  type LogPort,
   type ProviderPort,
   type RunRecord,
   RunStore,
@@ -330,6 +331,29 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
     runtime.store.fail(record.id, "server_restart", null);
   }
 
+  /**
+   * Settle a run whose setup threw before the loop could begin.
+   *
+   * `start` creates the record and returns, and the work that prepares the loop (tool discovery, the
+   * provider's construction) runs after that. An error there used to leave the run `queued` with no
+   * frame and no owner, which the page can only render as a run that never starts. The record is
+   * failed at the taxonomy's own internal error, with the frames the page reads written first, and a
+   * run that already reached a terminal state is left exactly as it is.
+   */
+  function settleSetupFailure(
+    runtime: ThreadRuntime,
+    logPort: LogPort,
+    runId: string,
+    error: unknown,
+  ): void {
+    const record = runtime.store.get(runId);
+    if (record === undefined || isTerminal(record.status)) return;
+    const detail = error instanceof Error ? error.message : String(error);
+    runtime.store.fail(runId, "internal_invariant", detail);
+    logPort.append("run.failed", { reason: detail });
+    logPort.append("run.status", { runId, status: "failed" });
+  }
+
   function openRuntime(thread: ThreadRecord): ThreadRuntime {
     const store = new RunStore({
       file: threadJournalPath(workspacesRoot, thread.botId, thread.id),
@@ -510,48 +534,53 @@ export function createRunService(options: RunServiceOptions = {}): RunService {
           for (const wake of [...runtime.waiters]) wake();
         },
       });
-      const injected = options.sandbox;
-      const sandbox =
-        typeof injected === "function"
-          ? injected()
-          : (injected ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT })));
       const run = (async () => {
-        // The run's table, discovered when the run starts: the landed arms, plus one arm per tool
-        // the run's connectors offer. A connector that cannot be reached right now contributes no
-        // arms and says so on the note line, rather than failing a run that the other tools could
-        // still finish.
-        const tools = await runToolsFor(connectors(), options.note);
-        const provider = await providerFor(input.prompt, tools);
-        return await runRunLoop(
-          {
-            sandbox: new RunToolExecutor(sandbox, tools),
-            provider,
-            gate: createReviewGate(grants, refusals, { now, tools }),
-            approvals,
-            store: runtime.store,
-            log: logPort,
-            now,
-            cancelled: () => cancelled.has(runId),
-          },
-          {
-            runId,
-            threadId: runtime.thread.id,
-            botId: bot.id,
-            prompt: input.prompt,
-            sandbox: {
-              name: `${runId}-${LAUNCH_TAG}`,
-              idleTtlMs: RUN_IDLE_TTL_MS,
-              // This Bot's workspace is the container's `/workspace`. A run's container is destroyed
-              // when the run ends, so the files a run produced would go with it; the mount is what
-              // makes them outlive the run, and it is what keeps one Bot's files out of another's.
-              mounts: [{ host: readerFor(bot.id).root, container: RUN_WORKSPACE }],
+        try {
+          const injected = options.sandbox;
+          const sandbox =
+            typeof injected === "function"
+              ? injected()
+              : (injected ?? new DockerRunSandbox(new DockerAdapter({ unit: RUN_UNIT })));
+          // The run's table, discovered when the run starts: the landed arms, plus one arm per tool
+          // the run's connectors offer. A connector that cannot be reached right now contributes no
+          // arms and says so on the note line, rather than failing a run that the other tools could
+          // still finish.
+          const tools = await runToolsFor(connectors(), options.note);
+          const provider = await providerFor(input.prompt, tools);
+          return await runRunLoop(
+            {
+              sandbox: new RunToolExecutor(sandbox, tools),
+              provider,
+              gate: createReviewGate(grants, refusals, { now, tools }),
+              approvals,
+              store: runtime.store,
+              log: logPort,
+              now,
+              cancelled: () => cancelled.has(runId),
             },
-            tools: runToolDefinitions(tools),
-            ...(options.spendCapNanoUsd === undefined
-              ? {}
-              : { spendCapNanoUsd: options.spendCapNanoUsd }),
-          },
-        );
+            {
+              runId,
+              threadId: runtime.thread.id,
+              botId: bot.id,
+              prompt: input.prompt,
+              sandbox: {
+                name: `${runId}-${LAUNCH_TAG}`,
+                idleTtlMs: RUN_IDLE_TTL_MS,
+                // This Bot's workspace is the container's `/workspace`. A run's container is destroyed
+                // when the run ends, so the files a run produced would go with it; the mount is what
+                // makes them outlive the run, and it is what keeps one Bot's files out of another's.
+                mounts: [{ host: readerFor(bot.id).root, container: RUN_WORKSPACE }],
+              },
+              tools: runToolDefinitions(tools),
+              ...(options.spendCapNanoUsd === undefined
+                ? {}
+                : { spendCapNanoUsd: options.spendCapNanoUsd }),
+            },
+          );
+        } catch (error) {
+          settleSetupFailure(runtime, logPort, runId, error);
+          return undefined;
+        }
       })();
       inflight.push(run);
       return { runId };
