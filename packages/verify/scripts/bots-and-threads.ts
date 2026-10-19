@@ -36,6 +36,16 @@ import type { ShellFacts } from "../../../packages/ui/src/bots.ts";
 import type { FrameFacts } from "../../../packages/ui/src/frames.ts";
 import type { LibraryFacts } from "../../../packages/ui/src/library.ts";
 
+/**
+ * The conversation facts the restarted page is compared against, read from the live DOM before the
+ * SIGINT. `FrameFacts` owns the frame count but carries assistant text only; the conversation a
+ * person reads is the prompts and the deltas in render order, so the driver reads that pair itself.
+ */
+let restartBaseline: { frameCount: number; conversation: readonly string[] } = {
+  frameCount: -1,
+  conversation: [],
+};
+
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
 
@@ -235,6 +245,12 @@ interface PageFacts {
   readonly runEnds: number;
   /** How many prompts the transcript shows, which is one per run the thread has taken. */
   readonly prompts: number;
+  /**
+   * The selected thread's conversation as a person reads it: the prompt and the assistant text of
+   * every frame, in render order. Replayed from the persisted record, this is the same list the
+   * first launch showed.
+   */
+  readonly conversation: readonly string[];
 }
 
 function factsOf(cdp: Cdp, sessionId: string): Promise<PageFacts> {
@@ -248,6 +264,7 @@ function factsOf(cdp: Cdp, sessionId: string): Promise<PageFacts> {
       error: document.querySelector('#error').hidden ? null : document.querySelector('#error').textContent,
       runEnds: document.querySelectorAll('#thread .run-finished, #thread .run-failed').length,
       prompts: document.querySelectorAll('#thread .message.user .prompt').length,
+      conversation: [...document.querySelectorAll('#thread .message.user .prompt, #thread .delta')].map((node) => node.textContent ?? ''),
     })`,
   );
 }
@@ -413,7 +430,7 @@ const SPECS: readonly FrameSpec[] = [
   {
     name: "07-after-restart",
     caption:
-      "A second launch over the same bots root: both Bots are still listed with their threads, and the thread that ran still holds its two runs.",
+      "A second launch over the same bots root: both Bots are still listed with their threads, and the thread that ran has its transcript back, the frames and the conversation text restored from the thread's own persisted record rather than rebuilt from the live log.",
     claims: [
       { label: "both Bots came back", holds: (f) => f.shell.bots.length === 2 },
       {
@@ -428,8 +445,19 @@ const SPECS: readonly FrameSpec[] = [
         label: "the header still names the Bot that is open",
         holds: (f) => f.shell.title.startsWith(FIRST_BOT_NAME),
       },
+      {
+        label: "the transcript came back with the frames the first launch left",
+        holds: (f) =>
+          restartBaseline.frameCount > 0 && f.thread.frameCount === restartBaseline.frameCount,
+      },
+      {
+        label: "the conversation text is the one the first launch streamed",
+        holds: (f) =>
+          restartBaseline.conversation.length > 0 &&
+          JSON.stringify(f.conversation) === JSON.stringify(restartBaseline.conversation),
+      },
     ],
-    visible: "#thread-list",
+    visible: "#thread",
   },
 ];
 
@@ -1240,6 +1268,17 @@ async function main(): Promise<number> {
     (await factsOf(cdp, page)).shell.selectedThreadId,
     ranThreadId,
   );
+  // The facts the second launch is compared against, read while the page shows the thread that ran.
+  // The restart is literal, so the comparison is too: what comes back is checked against these
+  // values, not against a number written into the driver.
+  const beforeRestart = await factsOf(cdp, page);
+  restartBaseline = {
+    frameCount: beforeRestart.thread.frameCount,
+    conversation: beforeRestart.conversation,
+  };
+  log.note(
+    `the thread that ran, before the restart: ${restartBaseline.frameCount} frames, ${restartBaseline.conversation.length} conversation nodes`,
+  );
 
   log.section("the other Bot's Library, while the first Bot's workspace holds the file");
   await clickExpression(
@@ -1370,9 +1409,26 @@ async function main(): Promise<number> {
     ],
   );
   log.check(
-    "its transcript is empty, because the frames are the live log and the runs are the record",
-    await evalJson<number>(cdp, secondPage, `${THREAD}.frameCount`),
-    0,
+    "the restarted page selected the thread that ran",
+    await evalJson<string | null>(cdp, secondPage, `${SHELL}.selectedThreadId`),
+    ranThreadId,
+  );
+  await waitTrue(
+    cdp,
+    secondPage,
+    "the thread that ran to replay both runs' terminal markers from its persisted record",
+    `document.querySelectorAll('#thread .run-finished, #thread .run-failed').length === 2`,
+  );
+  const afterRestart = await factsOf(cdp, secondPage);
+  log.check(
+    "the restored frame count is the count the first launch left, not a fresh empty log",
+    afterRestart.thread.frameCount,
+    restartBaseline.frameCount,
+  );
+  log.check(
+    "the restored conversation text is the text the first launch streamed",
+    afterRestart.conversation,
+    restartBaseline.conversation,
   );
   captured.push(await capture(cdp, secondPage, "07-after-restart", log));
 
