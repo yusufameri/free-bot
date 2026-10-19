@@ -72,7 +72,7 @@ export function mountThread(config: {
   >();
   const approvalRefs = new Map<
     string,
-    { card: HTMLElement; actions: HTMLElement; toolCallId: string }
+    { card: HTMLElement; actions: HTMLElement; toolCallId: string; runId: string }
   >();
   let currentAssistant: HTMLElement | null = null;
   let state = initialState();
@@ -117,12 +117,15 @@ export function mountThread(config: {
 
   /**
    * A card whose run has ended has no answer to give, so its buttons go and the card carries the
-   * run's word instead of a person's. A replayed transcript can hold a card whose run the process
-   * never came back to (a restart, a stop) and its request is nobody's to approve now: leaving the
-   * buttons live would invite a click that reaches no parked call.
+   * run's word instead of a person's. Only the ending run's cards close: one thread can hold two
+   * runs, and a card belonging to the other one is still a request somebody can answer. A replayed
+   * transcript can hold a card whose run the process never came back to (a restart, a stop) and its
+   * request is nobody's to approve now: leaving the buttons live would invite a click that reaches
+   * no parked call.
    */
-  function closeWaitingCards(end: "cancelled" | "failed"): void {
+  function closeWaitingCards(end: "cancelled" | "failed", runId: string): void {
     for (const refs of approvalRefs.values()) {
+      if (refs.runId !== runId) continue;
       for (const button of refs.actions.querySelectorAll("button")) button.disabled = true;
       if (refs.card.dataset.decision === undefined) {
         refs.card.dataset.decision = end;
@@ -244,6 +247,7 @@ export function mountThread(config: {
           card,
           actions,
           toolCallId: message.payload.toolCallId,
+          runId: message.runId,
         });
         if (config.autoAnswer === "allow" || config.autoAnswer === "deny") {
           const answer = config.autoAnswer;
@@ -303,7 +307,7 @@ export function mountThread(config: {
         threadEl.append(marker);
         if (message.payload.status === "cancelled") {
           // The card that was waiting has no answer now; a stop is not an allow and not a denial.
-          closeWaitingCards("cancelled");
+          closeWaitingCards("cancelled", message.runId);
         }
         break;
       }
@@ -320,7 +324,7 @@ export function mountThread(config: {
         marker.dataset.runFailed = "true";
         threadEl.append(marker);
         // A failed run never reads its parked approval, so the card it left behind closes too.
-        closeWaitingCards("failed");
+        closeWaitingCards("failed", message.runId);
         break;
       }
       case "stream.resumed": {
