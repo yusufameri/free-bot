@@ -34,6 +34,7 @@ import { fileURLToPath } from "node:url";
 import { PINNED_IMAGE } from "@freebot/sandbox";
 import {
   type Cdp,
+  type Chrome,
   evaluate,
   launchChrome,
   openPage,
@@ -156,6 +157,25 @@ function exportTextFor(needle: string): string | null {
     .trim();
 }
 
+/**
+ * The export's own text between two needles, for the one literal the export wraps across lines (the
+ * statement, `freebot-prototype.html:577-580`). Empty when either needle is missing, so the caller
+ * fails on a real absence rather than on a match against an empty string.
+ */
+function exportTextBetween(startNeedle: string, endNeedle: string): string {
+  const lines = exportRegion();
+  const start = lines.findIndex((line) => line.includes(startNeedle));
+  if (start === -1) return "";
+  const end = lines.findIndex((line, index) => index > start && line.includes(endNeedle));
+  if (end === -1) return "";
+  return lines
+    .slice(start, end + 1)
+    .join(" ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 /** The page's facts, read out of its rendered DOM through the hook its own module installs. */
 interface Facts {
   readonly hero: string;
@@ -264,11 +284,21 @@ async function startApp(): Promise<App> {
     })();
   }
   const deadline = Date.now() + 30_000;
-  while (!/^http:\/\/127\.0\.0\.1:\d+\/#token=\S+$/m.test(out)) {
-    if (Date.now() > deadline) throw new Error(`the launcher printed no URL: ${out}`);
-    await sleep(100);
+  let url = "";
+  try {
+    while (!/^http:\/\/127\.0\.0\.1:\d+\/#token=\S+$/m.test(out)) {
+      if (Date.now() > deadline) throw new Error(`the launcher printed no URL: ${out}`);
+      await sleep(100);
+    }
+    url = /^(http:\/\/127\.0\.0\.1:\d+\/#token=\S+)$/m.exec(out)?.[1] ?? "";
+    if (url === "") throw new Error(`the launcher's URL did not parse: ${out}`);
+  } catch (error) {
+    // A launcher that never answers is still this driver's process to stop and its home to remove.
+    proc.kill("SIGINT");
+    await proc.exited;
+    rmSync(home, { recursive: true, force: true });
+    throw error;
   }
-  const url = /^(http:\/\/127\.0\.0\.1:\d+\/#token=\S+)$/m.exec(out)?.[1] ?? "";
   const parsed = new URL(url);
   const token = new URLSearchParams(parsed.hash.replace(/^#/, "")).get("token") ?? "";
   return {
@@ -325,9 +355,11 @@ async function main(): Promise<number> {
   mkdirSync(dir, { recursive: true });
 
   const viewports = readViewports();
-  const app = await startApp();
   const exported = exportRegion();
+  // Read the repository's facts before the launcher starts, so a missing fact throws with no
+  // process to leak and no temporary home to remove.
   const repo = repoFacts();
+  const app = await startApp();
 
   log.push(
     "landing route driver",
@@ -352,10 +384,11 @@ async function main(): Promise<number> {
     true,
   );
 
-  const chrome = await launchChrome({ windowSize: "1600,1000" });
-  note(`chrome ${chrome.cdp.version} over CDP`);
-
+  let chrome: Chrome | null = null;
   try {
+    chrome = await launchChrome({ windowSize: "1600,1000" });
+    note(`chrome ${chrome.cdp.version} over CDP`);
+
     const session = await openPage(chrome.cdp, landingUrl(app));
     await waitFor(
       chrome.cdp,
@@ -380,6 +413,26 @@ async function main(): Promise<number> {
       opening.eyebrow,
       exportTextFor('class="eyebrow"'),
     );
+    const pageStatement = await evaluate<string>(
+      chrome.cdp,
+      session,
+      `document.querySelector('#landing-statement')?.textContent?.replace(/\\s+/g, ' ').trim() ?? ''`,
+    );
+    const pageBrandmark = await evaluate<string>(
+      chrome.cdp,
+      session,
+      `document.querySelector('.brandmark .word')?.textContent?.replace(/\\s+/g, ' ').trim() ?? ''`,
+    );
+    check(
+      "the statement under it is the export's, whose own copy wraps across two lines",
+      pageStatement,
+      exportTextBetween('class="hint"', "</p>"),
+    );
+    check(
+      "the brandmark carries the export's own word",
+      pageBrandmark,
+      exportTextFor('class="word"'),
+    );
     checkThat(
       "the marked elements run brand, hero, controls, then the runs-today band: the export's own order for the hero, and nothing before it",
       opening.sections.join(",") === "hero,brand,controls,runs-today",
@@ -390,10 +443,13 @@ async function main(): Promise<number> {
       session,
       `(() => {
         const hero = document.querySelector('[data-landing="hero"]');
+        if (hero === null) return ['[data-landing="hero"] (missing)'];
         const wanted = ['.brandmark', '.eyebrow', '#landing-hero', '#landing-statement', '#landing-controls'];
-        return wanted
-          .map(selector => [selector, [...hero.querySelectorAll(selector)][0] ?? null])
-          .sort((a, b) => (a[1] === null || b[1] === null) ? 0 : a[1].compareDocumentPosition(b[1]) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
+        const found = wanted.map(selector => [selector, hero.querySelector(selector)]);
+        const missing = found.filter(([, node]) => node === null).map(([selector]) => selector + ' (missing)');
+        if (missing.length > 0) return missing;
+        return found
+          .sort((a, b) => a[1].compareDocumentPosition(b[1]) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1)
           .map(([selector]) => selector);
       })()`,
     );
@@ -408,13 +464,21 @@ async function main(): Promise<number> {
     const exportEyebrow = exportTextFor('class="eyebrow"');
     const exportHero = exportTextFor('class="h1"');
     const exportConnect = exportTextFor('data-od-id="cta-connect-provider"');
+    const exportStatement = exportTextBetween('class="hint"', "</p>");
+    const exportBrandmark = exportTextFor('class="word"');
     checkThat(
       "each export literal was really located in the export, so a match cannot pass vacuously",
-      exportEyebrow !== null && exportHero !== null && exportConnect !== null,
+      exportEyebrow !== null &&
+        exportHero !== null &&
+        exportConnect !== null &&
+        exportStatement !== "" &&
+        exportBrandmark !== null,
       {
         eyebrow: exportEyebrow,
         hero: exportHero,
         connect: exportConnect,
+        statement: exportStatement,
+        brandmark: exportBrandmark,
       },
     );
     check(
@@ -532,13 +596,16 @@ async function main(): Promise<number> {
         failed += 1;
         log.push(`FAIL viewport ${label}: overflow ${selector} ${scrollWidth} > ${clientWidth}`);
       }
-      if (regionFailures.length === 0) passed += 1;
-      log.push(`ok   viewport ${label}: every measured region's scrollWidth <= its clientWidth`);
+      if (regionFailures.length === 0) {
+        passed += 1;
+        log.push(`ok   viewport ${label}: every measured region's scrollWidth <= its clientWidth`);
+      }
+      const viewportOk = docOk && regionFailures.length === 0;
       overflowLines.push(
         `${label}: documentElement.scrollWidth ${docWidth} <= window.innerWidth ${innerWidth} ${docOk ? "ok" : "FAIL"}; regions ${regionFailures.length === 0 ? "all within their box" : regionFailures.join(", ")}`,
       );
       await capture(chrome.cdp, session, dir, `${label}.png`);
-      log.push(`RESULT: ${failed === 0 ? "PASS" : "FAIL"} — viewport ${label}`);
+      log.push(`RESULT: ${viewportOk ? "PASS" : "FAIL"} — viewport ${label}`);
     }
 
     section("the nine overflow pairs");
@@ -576,7 +643,7 @@ async function main(): Promise<number> {
       { landingChars: text.length, rootChars: rootText.length },
     );
   } finally {
-    chrome.stop();
+    chrome?.stop();
     await app.stop();
   }
 
