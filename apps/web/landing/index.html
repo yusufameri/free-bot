@@ -181,7 +181,7 @@
         <a class="btn btn-primary" id="landing-connect" href="/">Connect a provider</a>
         <a class="btn btn-ghost" id="landing-replay" href="/">Run in replay mode — see it work without a key</a>
       </div>
-      <p class="hint" id="landing-controls-note">Both open the app on this computer. The connect flow runs a real tool call before it saves a connection, and a launch with no key in the vault replays the committed transcript instead of calling a model.</p>
+      <p class="hint" id="landing-controls-note">Both open the app on this computer. <code class="mono">bun run up --replay</code> forces replay for the launch even when the vault holds a key. In auto mode, each run rechecks the vault: an empty vault replays the committed transcript, a saved connection calls the model. The connect flow runs a real tool call before it saves a connection.</p>
     </div>
   </section>
 

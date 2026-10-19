@@ -1,0 +1,391 @@
+
+## the contract's matrix
+read from design/prototype-84c6b185/DESIGN-MANIFEST.json
+mobile-compact 360x800 mobile mustAvoidHorizontalScroll=true
+mobile-standard 390x844 mobile mustAvoidHorizontalScroll=true
+mobile-large 430x932 mobile mustAvoidHorizontalScroll=true
+foldable-small-tablet 600x960 foldable-tablet mustAvoidHorizontalScroll=true
+tablet-portrait 820x1180 tablet mustAvoidHorizontalScroll=true
+tablet-landscape 1024x768 tablet mustAvoidHorizontalScroll=true
+laptop 1366x768 desktop mustAvoidHorizontalScroll=true
+desktop 1440x900 desktop mustAvoidHorizontalScroll=true
+wide 1920x1080 wide mustAvoidHorizontalScroll=true
+ok   every viewport forbids horizontal scroll: true
+compared tokens: 22 names, all read from packages/ui/src/tokens.ts
+ok   the export's initial screen was replaced exactly once: "1 replacement(s) of \"screen: 'welcome',\" in design/prototype-84c6b185/freebot-prototype.html"
+
+## the app under test
+booted as `bun run up --no-open --replay` over a fresh FREEBOT_HOME and bots root, read from its own stdout
+url http://127.0.0.1:58183/#token=<redacted>
+shell {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+ok   the pane is the export's aside and not an empty region: a strip holding the four tabs and the close button, one body, and an empty resizer track (U6.3): [2,4,0]
+fonts: body stack resolved to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; a Geist-family string measures 215.98px, the absent-family fallback 215.98px, system-ui 244.54px, so Geist does NOT resolve on this machine
+
+## the export under test
+design/prototype-84c6b185/freebot-prototype.html, byte-identical to the store's copy apart from its initial screen
+fonts: body stack resolved to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; a Geist-family string measures 215.98px, the absent-family fallback 215.98px
+
+## the deltas this frame declares
+none: every measured geometry and style field is equal on both pages at every viewport (U6.3 closed the aside's 12px, see docs/DESIGN-CONTRACT.md)
+
+## viewport 01-mobile-compact-360x800
+ok   geometry sidebar          app 0px                    export 0px                    delta 0
+ok   geometry thread           app 360px                  export 360px                  delta 0
+ok   geometry resizer          app 0px                    export 0px                    delta 0
+ok   geometry aside            app 0px                    export 0px                    delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["thread",0,360]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [360,360]
+ok   overflow #center scrollWidth <= clientWidth: [360,360]
+ok   overflow #sidebar scrollWidth <= clientWidth: [0,0]
+ok   overflow #aside scrollWidth <= clientWidth: [0,0]
+ok   overflow #resizer scrollWidth <= clientWidth: [0,0]
+ok   overflow #thread scrollWidth <= clientWidth: [360,360]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [360,360]
+ok   overflow #operator scrollWidth <= clientWidth: [360,360]
+ok   overflow header scrollWidth <= clientWidth: [360,360]
+ok   overflow .meta scrollWidth <= clientWidth: [332,332]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 49.95% differ (143,866/288,000), mean|delta| 12.15 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 01-mobile-compact-360x800.png (24457 bytes)
+reference 01-mobile-compact-360x800-export.png (40278 bytes)
+RESULT: PASS — viewport 01-mobile-compact-360x800
+
+## viewport 02-mobile-standard-390x844
+ok   geometry sidebar          app 0px                    export 0px                    delta 0
+ok   geometry thread           app 390px                  export 390px                  delta 0
+ok   geometry resizer          app 0px                    export 0px                    delta 0
+ok   geometry aside            app 0px                    export 0px                    delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["thread",0,390]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [390,390]
+ok   overflow #center scrollWidth <= clientWidth: [390,390]
+ok   overflow #sidebar scrollWidth <= clientWidth: [0,0]
+ok   overflow #aside scrollWidth <= clientWidth: [0,0]
+ok   overflow #resizer scrollWidth <= clientWidth: [0,0]
+ok   overflow #thread scrollWidth <= clientWidth: [390,390]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [390,390]
+ok   overflow #operator scrollWidth <= clientWidth: [390,390]
+ok   overflow header scrollWidth <= clientWidth: [390,390]
+ok   overflow .meta scrollWidth <= clientWidth: [362,362]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 43.36% differ (142,714/329,160), mean|delta| 12.35 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 02-mobile-standard-390x844.png (25078 bytes)
+reference 02-mobile-standard-390x844-export.png (48223 bytes)
+RESULT: PASS — viewport 02-mobile-standard-390x844
+
+## viewport 03-mobile-large-430x932
+ok   geometry sidebar          app 0px                    export 0px                    delta 0
+ok   geometry thread           app 430px                  export 430px                  delta 0
+ok   geometry resizer          app 0px                    export 0px                    delta 0
+ok   geometry aside            app 0px                    export 0px                    delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["thread",0,430]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [430,430]
+ok   overflow #center scrollWidth <= clientWidth: [430,430]
+ok   overflow #sidebar scrollWidth <= clientWidth: [0,0]
+ok   overflow #aside scrollWidth <= clientWidth: [0,0]
+ok   overflow #resizer scrollWidth <= clientWidth: [0,0]
+ok   overflow #thread scrollWidth <= clientWidth: [430,430]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [430,430]
+ok   overflow #operator scrollWidth <= clientWidth: [430,430]
+ok   overflow header scrollWidth <= clientWidth: [430,430]
+ok   overflow .meta scrollWidth <= clientWidth: [402,402]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 46.31% differ (185,597/400,760), mean|delta| 12.63 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 03-mobile-large-430x932.png (25427 bytes)
+reference 03-mobile-large-430x932-export.png (55633 bytes)
+RESULT: PASS — viewport 03-mobile-large-430x932
+
+## viewport 04-foldable-small-tablet-600x960
+ok   geometry sidebar          app 0px                    export 0px                    delta 0
+ok   geometry thread           app 600px                  export 600px                  delta 0
+ok   geometry resizer          app 0px                    export 0px                    delta 0
+ok   geometry aside            app 0px                    export 0px                    delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["thread",0,600]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [600,600]
+ok   overflow #center scrollWidth <= clientWidth: [600,600]
+ok   overflow #sidebar scrollWidth <= clientWidth: [0,0]
+ok   overflow #aside scrollWidth <= clientWidth: [0,0]
+ok   overflow #resizer scrollWidth <= clientWidth: [0,0]
+ok   overflow #thread scrollWidth <= clientWidth: [600,600]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [600,600]
+ok   overflow #operator scrollWidth <= clientWidth: [600,600]
+ok   overflow header scrollWidth <= clientWidth: [600,600]
+ok   overflow .meta scrollWidth <= clientWidth: [572,572]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 56.61% differ (326,063/576,000), mean|delta| 12.12 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 04-foldable-small-tablet-600x960.png (27182 bytes)
+reference 04-foldable-small-tablet-600x960-export.png (67466 bytes)
+RESULT: PASS — viewport 04-foldable-small-tablet-600x960
+
+## viewport 05-tablet-portrait-820x1180
+ok   geometry sidebar          app 0px                    export 0px                    delta 0
+ok   geometry thread           app 820px                  export 820px                  delta 0
+ok   geometry resizer          app 0px                    export 0px                    delta 0
+ok   geometry aside            app 0px                    export 0px                    delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["thread",0,820]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [820,820]
+ok   overflow #center scrollWidth <= clientWidth: [820,820]
+ok   overflow #sidebar scrollWidth <= clientWidth: [0,0]
+ok   overflow #aside scrollWidth <= clientWidth: [0,0]
+ok   overflow #resizer scrollWidth <= clientWidth: [0,0]
+ok   overflow #thread scrollWidth <= clientWidth: [820,820]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [820,820]
+ok   overflow #operator scrollWidth <= clientWidth: [820,820]
+ok   overflow header scrollWidth <= clientWidth: [820,820]
+ok   overflow .meta scrollWidth <= clientWidth: [792,792]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 43.84% differ (424,176/967,600), mean|delta| 9.40 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 05-tablet-portrait-820x1180.png (29517 bytes)
+reference 05-tablet-portrait-820x1180-export.png (90293 bytes)
+RESULT: PASS — viewport 05-tablet-portrait-820x1180
+
+## viewport 06-tablet-landscape-1024x768
+ok   geometry sidebar          app 264px                  export 264px                  delta 0
+ok   geometry thread           app 760px                  export 760px                  delta 0
+ok   geometry resizer          app 0px                    export 0px                    delta 0
+ok   geometry aside            app 0px                    export 0px                    delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["sidebar",0,264],["thread",264,760]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [1024,1024]
+ok   overflow #center scrollWidth <= clientWidth: [760,760]
+ok   overflow #sidebar scrollWidth <= clientWidth: [263,263]
+ok   overflow #aside scrollWidth <= clientWidth: [0,0]
+ok   overflow #resizer scrollWidth <= clientWidth: [0,0]
+ok   overflow #thread scrollWidth <= clientWidth: [760,760]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [760,760]
+ok   overflow #operator scrollWidth <= clientWidth: [760,760]
+ok   overflow header scrollWidth <= clientWidth: [760,760]
+ok   overflow .meta scrollWidth <= clientWidth: [732,732]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 36.40% differ (286,272/786,432), mean|delta| 8.19 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 06-tablet-landscape-1024x768.png (43536 bytes)
+reference 06-tablet-landscape-1024x768-export.png (85489 bytes)
+RESULT: PASS — viewport 06-tablet-landscape-1024x768
+
+## viewport 07-laptop-1366x768
+ok   geometry sidebar          app 264px                  export 264px                  delta 0
+ok   geometry thread           app 725px                  export 725px                  delta 0
+ok   geometry resizer          app 5px                    export 5px                    delta 0
+ok   geometry aside            app 372px                  export 372px                  delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["sidebar",0,264],["thread",264,725],["resizer",989,5],["aside",994,372]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [1366,1366]
+ok   overflow #center scrollWidth <= clientWidth: [725,725]
+ok   overflow #sidebar scrollWidth <= clientWidth: [263,263]
+ok   overflow #aside scrollWidth <= clientWidth: [371,371]
+ok   overflow #resizer scrollWidth <= clientWidth: [5,5]
+ok   overflow #thread scrollWidth <= clientWidth: [725,725]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [725,725]
+ok   overflow #operator scrollWidth <= clientWidth: [725,725]
+ok   overflow header scrollWidth <= clientWidth: [725,725]
+ok   overflow .meta scrollWidth <= clientWidth: [697,697]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 33.25% differ (348,834/1,049,088), mean|delta| 7.84 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 07-laptop-1366x768.png (74118 bytes)
+reference 07-laptop-1366x768-export.png (136551 bytes)
+RESULT: PASS — viewport 07-laptop-1366x768
+
+## viewport 08-desktop-1440x900
+ok   geometry sidebar          app 264px                  export 264px                  delta 0
+ok   geometry thread           app 799px                  export 799px                  delta 0
+ok   geometry resizer          app 5px                    export 5px                    delta 0
+ok   geometry aside            app 372px                  export 372px                  delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["sidebar",0,264],["thread",264,799],["resizer",1063,5],["aside",1068,372]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [1440,1440]
+ok   overflow #center scrollWidth <= clientWidth: [799,799]
+ok   overflow #sidebar scrollWidth <= clientWidth: [263,263]
+ok   overflow #aside scrollWidth <= clientWidth: [371,371]
+ok   overflow #resizer scrollWidth <= clientWidth: [5,5]
+ok   overflow #thread scrollWidth <= clientWidth: [799,799]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [799,799]
+ok   overflow #operator scrollWidth <= clientWidth: [799,799]
+ok   overflow header scrollWidth <= clientWidth: [799,799]
+ok   overflow .meta scrollWidth <= clientWidth: [771,771]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 28.91% differ (374,684/1,296,000), mean|delta| 7.08 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 08-desktop-1440x900.png (76348 bytes)
+reference 08-desktop-1440x900-export.png (159812 bytes)
+RESULT: PASS — viewport 08-desktop-1440x900
+
+## viewport 09-wide-1920x1080
+ok   geometry sidebar          app 264px                  export 264px                  delta 0
+ok   geometry thread           app 1279px                 export 1279px                 delta 0
+ok   geometry resizer          app 5px                    export 5px                    delta 0
+ok   geometry aside            app 372px                  export 372px                  delta 0
+ok   geometry: the visible regions run sidebar, thread, resizer, aside, left to right: [["sidebar",0,264],["thread",264,1279],["resizer",1543,5],["aside",1548,372]]
+ok   style    row radius       app 8px                    export 8px                    delta 0
+ok   style    row name size    app 14px                   export 14px                   delta 0
+ok   style    label size       app 10.5px                 export 10.5px                 delta 0
+ok   style    button radius    app 8px                    export 8px                    delta 0
+ok   style    button size      app 14px                   export 14px                   delta 0
+ok   style    motion timing    app 0.15s, 0.15s, 0.15s    export 0.15s, 0.15s, 0.15s    delta 0
+ok   style    body size        app 15px                   export 15px                   delta 0
+ok   style    background       app rgb(0, 0, 0)           export rgb(0, 0, 0)           delta 0
+ok   style    foreground       app rgb(255, 255, 255)     export rgb(255, 255, 255)     delta 0
+ok   style    sidebar edge     app rgb(36, 36, 36)        export rgb(36, 36, 36)        delta 0
+ok   tokens: all 22 declared :root values match the export's: []
+ok   tokens: all 22 used values match the export's, apart from the 1 declared override: []
+ok   fonts: the app and the export resolve the body family the same way: ["Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif","Geist, \"Geist Sans\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"]
+ok   overflow documentElement.scrollWidth <= innerWidth: [1920,1920]
+ok   overflow #center scrollWidth <= clientWidth: [1279,1279]
+ok   overflow #sidebar scrollWidth <= clientWidth: [263,263]
+ok   overflow #aside scrollWidth <= clientWidth: [371,371]
+ok   overflow #resizer scrollWidth <= clientWidth: [5,5]
+ok   overflow #thread scrollWidth <= clientWidth: [1279,1279]
+ok   overflow #library scrollWidth <= clientWidth: [0,0]
+ok   overflow #tabs scrollWidth <= clientWidth: [1279,1279]
+ok   overflow #operator scrollWidth <= clientWidth: [1279,1279]
+ok   overflow header scrollWidth <= clientWidth: [1279,1279]
+ok   overflow .meta scrollWidth <= clientWidth: [1251,1251]
+ok   the page held still across the capture: {"operator":"true","bots":1,"threads":0,"asideChildren":2,"resizerChildren":0,"asideTabs":4,"operatorVisible":true}
+pixels: 25.33% differ (525,254/2,073,600), mean|delta| 5.59 of 255. Information, not a verdict: the export renders prototype Bots and this app renders real records, so two pages with different content render different pixels whatever their styling.
+artifact 09-wide-1920x1080.png (80511 bytes)
+reference 09-wide-1920x1080-export.png (183227 bytes)
+RESULT: PASS — viewport 09-wide-1920x1080
+
+## the nine overflow pairs
+01-mobile-compact-360x800: documentElement.scrollWidth 360 <= window.innerWidth 360 ok
+02-mobile-standard-390x844: documentElement.scrollWidth 390 <= window.innerWidth 390 ok
+03-mobile-large-430x932: documentElement.scrollWidth 430 <= window.innerWidth 430 ok
+04-foldable-small-tablet-600x960: documentElement.scrollWidth 600 <= window.innerWidth 600 ok
+05-tablet-portrait-820x1180: documentElement.scrollWidth 820 <= window.innerWidth 820 ok
+06-tablet-landscape-1024x768: documentElement.scrollWidth 1024 <= window.innerWidth 1024 ok
+07-laptop-1366x768: documentElement.scrollWidth 1366 <= window.innerWidth 1366 ok
+08-desktop-1440x900: documentElement.scrollWidth 1440 <= window.innerWidth 1440 ok
+09-wide-1920x1080: documentElement.scrollWidth 1920 <= window.innerWidth 1920 ok
+
+## token assertions
+ok   --bg             #000000                                                      freebot-prototype.html:12
+ok   --surface        #0a0a0a                                                      freebot-prototype.html:13
+ok   --fg             #ffffff                                                      freebot-prototype.html:14
+ok   --muted          #737373                                                      freebot-prototype.html:15
+ok   --border         #242424                                                      freebot-prototype.html:16
+ok   --accent         #000000                                                      freebot-prototype.html:17
+ok   --accent-2       #0f172a                                                      freebot-prototype.html:18
+ok   --hover          color-mix(in oklch, var(--fg) 7%, transparent)               freebot-prototype.html:21
+ok   --hover-2        color-mix(in oklch, var(--fg) 12%, transparent)              freebot-prototype.html:22
+ok   --fg-soft        color-mix(in oklch, var(--fg) 5%, transparent)               freebot-prototype.html:23
+ok   --muted-2        color-mix(in oklch, var(--muted) 45%, transparent)           freebot-prototype.html:24
+ok   --font-display   'Geist', 'Geist Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif freebot-prototype.html:26
+ok   --font-body      'Geist', 'Geist Sans', system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif freebot-prototype.html:27
+ok   --font-mono      ui-monospace, 'Geist Mono', 'SF Mono', Menlo, Consolas, monospace freebot-prototype.html:28
+ok   --fs-h1          clamp(30px, 4.4vw, 46px)                                     freebot-prototype.html:30
+ok   --fs-h2          24px                                                         freebot-prototype.html:31
+ok   --fs-h3          17px                                                         freebot-prototype.html:32
+ok   --fs-body        15px                                                         freebot-prototype.html:33
+ok   --fs-meta        12.5px                                                       freebot-prototype.html:34
+ok   --radius         8px                                                          freebot-prototype.html:36
+ok   --aside-w        384px                                                        freebot-prototype.html:37
+ok   --sb-w           264px                                                        freebot-prototype.html:38
+
+chrome Chrome/155.0.8059.85; the app in replay mode with no provider call, the export served from the committed copy
+RESULT: PASS (273/273)
