@@ -46,8 +46,8 @@ there would be six lines and two buttons on a black page. This page adds one sec
 `What runs today`, and the driver asserts both bands render in order.
 
 The section exists because of what this unit is: a page that ships no hosted-service implication and
-no dead control has to say what the product actually is. So it states four things this repository
-really does at the commit that served the page, and three it does not do yet.
+no dead control has to say what the product actually is. So it states five things this repository
+really does at the commit that served the page, and two it does not do yet.
 
 | Claim | Read from |
 | --- | --- |
@@ -55,15 +55,19 @@ really does at the commit that served the page, and three it does not do yet.
 | A replay launch needs no key | `apps/server/src/provider.ts`'s `chooseProvider` fallback |
 | Each run gets one container from `freebot-sandbox:u0.6` | `packages/sandbox/src/image.ts`'s `PINNED_IMAGE.tag` |
 | The key lives in the vault at mode 600 | `apps/server/src/vault.ts`'s `writeFileSync(…, { mode: 0o600 })` |
+| The run loop checks the per-run cap before every provider turn, settles an over-cap run at `spend_cap`, and reads `FREEBOT_SPEND_CAP_USD` | `packages/core/src/run-loop.ts`'s `checkSpendCap` call and `apps/server/src/cli/up.ts`'s cap default |
 | The repository URL | `git remote get-url origin` |
 
-The driver reads the first, third and fifth from those sources at run time and compares them to what
-the page renders, so a version, a command or a tag that moves makes the page wrong and the driver say
-so. The two gaps the committed landing copy names are both closed in the app itself as of U10.3: the
-page carries a `Stop run` control over `cancel_run`, and the run loop consults `checkSpendCap`
-(`docs/cancel-and-cap.md`). The landing's static copy still says otherwise; regenerating it is a
-follow-up for the surface that owns it, and this document keeps the delta visible rather than
-letting the page and the app disagree silently.
+The driver reads the command, the image tag and the repository URL from those sources at run time and
+compares them to what the page renders, so a version, a command or a tag that moves makes the page
+wrong and the driver say so. The cap claim is page copy rather than a repository fact, so the driver
+asserts its exact sentence from the DOM, asserts that it sits in `What runs today` with no `Not
+built` tag, and asserts that the sentence U10.3 made false is gone.
+
+U10.3 closed the cap gap in the app: the run loop consults `checkSpendCap` (`docs/cancel-and-cap.md`).
+U10.9 moves that claim from the gap list into `What runs today` and makes the landing driver hold it.
+The cancel line above it is outside this unit; the app's `Stop run` control landed in U10.3, so the
+landing copy that still calls a cancel control absent is a follow-up for a later unit.
 
 ## The controls, and what each one does
 
