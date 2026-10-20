@@ -172,7 +172,11 @@ class Log {
   }
 }
 
-async function evalJson<T>(cdp: Cdp, sessionId: string, expression: string): Promise<T> {
+export async function evalJson<T>(
+  cdp: Cdp,
+  sessionId: string,
+  expression: string,
+): Promise<T> {
   const res = await cdp.send<{
     result?: { value?: unknown };
     exceptionDetails?: { text?: string };
@@ -1210,18 +1214,20 @@ async function main(): Promise<number> {
   return log.failed === 0 ? 0 : 1;
 }
 
-try {
-  const code = await main();
-  await cleanup();
-  process.exit(code);
-} catch (err) {
-  const message = err instanceof Error ? err.message : String(err);
-  console.error(`driver crashed: ${message}`);
-  log.fail("driver crashed before the run finished", message);
-  if (artifactsDir !== "") {
-    const written = writeArtifact();
-    if (written !== null) console.error(`assert.txt (partial, crashed): ${written}`);
+if (import.meta.main) {
+  try {
+    const code = await main();
+    await cleanup();
+    process.exit(code);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`driver crashed: ${message}`);
+    log.fail("driver crashed before the run finished", message);
+    if (artifactsDir !== "") {
+      const written = writeArtifact();
+      if (written !== null) console.error(`assert.txt (partial, crashed): ${written}`);
+    }
+    await cleanup();
+    process.exit(1);
   }
-  await cleanup();
-  process.exit(1);
 }
