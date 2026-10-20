@@ -26,6 +26,7 @@ import {
   specFor,
   unmetClaims,
 } from "../../../packages/ui/src/index.ts";
+import { saveScreenshot } from "../../../packages/verify/src/cdp.ts";
 import { GATED_CALL, loadFixture, seqOf, seqOfToolResult } from "./fixture.ts";
 import { startReplayServer } from "./server.ts";
 
@@ -265,14 +266,8 @@ async function capture(
   if (prep !== null) await evalJson(cdp, sessionId, prep);
   const before = await factsOf(cdp, sessionId);
   const box = await captionElement(cdp, sessionId, spec.visible);
-  const shot = await cdp.send<{ data: string }>(
-    "Page.captureScreenshot",
-    { format: "png" },
-    sessionId,
-  );
-  const buffer = Buffer.from(shot.data, "base64");
   const file = `${name}-${Date.now()}.png`;
-  writeFileSync(join(framesDir, file), buffer);
+  const buffer = await saveScreenshot(cdp, sessionId, join(framesDir, file));
   const after = await factsOf(cdp, sessionId);
   const dom = await domFacts(cdp, sessionId);
   const sha256 = createHash("sha256").update(buffer).digest("hex");

@@ -36,7 +36,7 @@ import {
   evaluate,
   launchChrome,
   openPage,
-  screenshot,
+  saveScreenshot,
   settle,
   setViewport,
   sleep,
@@ -669,8 +669,7 @@ async function captureState(
     (expression) => evaluate(chrome.cdp, session, expression),
     state.probes,
   );
-  const shot = await screenshot(chrome.cdp, session);
-  writeFileSync(join(out, state.file), shot);
+  await saveScreenshot(chrome.cdp, session, join(out, state.file));
   const failures = state.assert(facts, earlier);
 
   report.log.push("", `== ${state.file} ==`, `facts ${JSON.stringify(facts)}`);
@@ -895,8 +894,7 @@ async function captureLanding(
     await setViewport(chrome.cdp, session, viewport.width, viewport.height);
     await settle(chrome.cdp, session);
     const facts = await readFacts(run, probes);
-    const shot = await screenshot(chrome.cdp, session);
-    writeFileSync(join(out, viewport.file), shot);
+    await saveScreenshot(chrome.cdp, session, join(out, viewport.file));
 
     const failures: string[] = [];
     compare(failures, "the landing document's title", facts.landingTitle, "FreeBot");

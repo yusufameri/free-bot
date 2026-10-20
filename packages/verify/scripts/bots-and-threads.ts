@@ -35,7 +35,7 @@ import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
 import type { ShellFacts } from "../../../packages/ui/src/bots.ts";
 import type { FrameFacts } from "../../../packages/ui/src/frames.ts";
 import type { LibraryFacts } from "../../../packages/ui/src/library.ts";
-import { type PageExceptionDetails, pageErrorMessage } from "../src/cdp.ts";
+import { type PageExceptionDetails, pageErrorMessage, saveScreenshot } from "../src/cdp.ts";
 
 /**
  * The conversation facts the restarted page is compared against, read from the live DOM before the
@@ -481,14 +481,8 @@ async function capture(cdp: Cdp, sessionId: string, name: string, log: Log): Pro
   );
   const before = await factsOf(cdp, sessionId);
   const box = await captionElement(cdp, sessionId, spec.visible);
-  const shot = await cdp.send<{ data: string }>(
-    "Page.captureScreenshot",
-    { format: "png" },
-    sessionId,
-  );
-  const buffer = Buffer.from(shot.data, "base64");
   const file = `${name}.png`;
-  writeFileSync(join(artifactsDir, file), buffer);
+  const buffer = await saveScreenshot(cdp, sessionId, join(artifactsDir, file));
   const after = await factsOf(cdp, sessionId);
 
   log.check(

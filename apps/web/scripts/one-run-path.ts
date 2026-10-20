@@ -39,6 +39,7 @@ import {
   factsKey,
   unmetClaims,
 } from "../../../packages/ui/src/index.ts";
+import { saveScreenshot } from "../../../packages/verify/src/cdp.ts";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
@@ -391,14 +392,8 @@ async function capture(
   );
   const before = await factsOf(cdp, sessionId);
   const box = await captionElement(cdp, sessionId, spec.visible);
-  const shot = await cdp.send<{ data: string }>(
-    "Page.captureScreenshot",
-    { format: "png" },
-    sessionId,
-  );
-  const buffer = Buffer.from(shot.data, "base64");
   const file = `${name}-${Date.now()}.png`;
-  writeFileSync(join(framesDir, file), buffer);
+  const buffer = await saveScreenshot(cdp, sessionId, join(framesDir, file));
   const after = await factsOf(cdp, sessionId);
   const dom = await domFacts(cdp, sessionId);
   const sha256 = createHash("sha256").update(buffer).digest("hex");
