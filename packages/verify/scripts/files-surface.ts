@@ -38,7 +38,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
 import type { LibraryFacts } from "../../../packages/ui/src/library.ts";
-import { pageErrorMessage, type PageExceptionDetails } from "../src/cdp.ts";
+import { type PageExceptionDetails, pageErrorMessage } from "../src/cdp.ts";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const root = fileURLToPath(new URL("../../..", import.meta.url));

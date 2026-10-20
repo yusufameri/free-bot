@@ -4,8 +4,8 @@
  */
 
 import { describe, expect, test } from "bun:test";
-import { evalJson as launchEval } from "./launch.ts";
 import { evalJson as keyedRunEval } from "./keyed-run.ts";
+import { evalJson as launchEval } from "./launch.ts";
 
 type KeyedRunCdp = Parameters<typeof keyedRunEval>[0];
 type LaunchCdp = Parameters<typeof launchEval>[0];
@@ -40,9 +40,9 @@ describe("the keyed run driver's page errors", () => {
   test("a value the page returns comes back unchanged", async () => {
     const cdp = page({ result: { value: { done: true } } }) as unknown as KeyedRunCdp;
 
-    expect(await keyedRunEval<{ done: boolean }>(cdp, "session-1", "window.__threadFacts()")).toEqual(
-      { done: true },
-    );
+    expect(
+      await keyedRunEval<{ done: boolean }>(cdp, "session-1", "window.__threadFacts()"),
+    ).toEqual({ done: true });
   });
 });
 

@@ -31,7 +31,7 @@ import {
   factsKey,
   unmetClaims,
 } from "../../../packages/ui/src/index.ts";
-import { pageErrorMessage, type PageExceptionDetails } from "../src/cdp.ts";
+import { type PageExceptionDetails, pageErrorMessage } from "../src/cdp.ts";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
@@ -173,11 +173,7 @@ class Log {
   }
 }
 
-export async function evalJson<T>(
-  cdp: Cdp,
-  sessionId: string,
-  expression: string,
-): Promise<T> {
+export async function evalJson<T>(cdp: Cdp, sessionId: string, expression: string): Promise<T> {
   const res = await cdp.send<{
     result?: { value?: unknown };
     exceptionDetails?: PageExceptionDetails;
