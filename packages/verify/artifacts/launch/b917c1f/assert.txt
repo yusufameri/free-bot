@@ -1,0 +1,184 @@
+feature: launch
+command: bun packages/verify/scripts/launch.ts
+timestamp: 2026-10-20T00:55:59.706Z
+git sha: b917c1f4df5814afb325b6d063a3c946e847b6c4
+git sha short: b917c1f
+branch: u10.18-driver-errors
+runtime: bun 1.2.5 on darwin arm64
+pinned image: freebot-sandbox:u0.6
+transcript: packages/pi-bridge/fixtures/rpc-handshake.jsonl
+
+# launch live-ui frames - 2026-10-20T00:55:59.706Z
+worktree /Users/yusufameri/projects/free-bot-u10.18/  head b917c1f  branch u10.18-driver-errors
+DRIVER DISCLOSURE: the driver pins FREEBOT_PROVIDER=replay in every launch it spawns, so the model's turns are the committed transcript at packages/pi-bridge/fixtures/rpc-handshake.jsonl and the launcher's own keyed default is exercised by packages/verify/scripts/keyed-run.ts instead. The sandbox is the pinned image. The launcher, both listeners, the gate, the loop, the run store, the log, the container, the page, its stream and the reap are real.
+WHY THREE LAUNCHES: a launch parks only its first run. Once a run is allowed, the landed ledger holds that action's grant, and the same call again is refused as grant_consumed rather than parked (packages/review/src/policy.ts). So the parked state that shutdown needs, and the two answered states, are each driven from a launch that has not answered that action yet.
+
+## the one command
+containers before the first run (label freebot.unit=u1.7): 0
+ok - the launcher printed a URL of the required shape, token in the fragment: true
+the printed URL, redacted: http://127.0.0.1:61970/#token=<redacted>
+ok - and its stdout held exactly one line at that moment, the URL: 1
+ok - the launcher's own diagnostic names the same page port: "61970"
+ok - the page answers on the URL's port: 200
+ok - healthz answers on the URL's port: "{\"status\":\"ok\",\"service\":\"freebot-server\"}"
+the thread the page's stream follows: thread-1
+ok - a page stream with no token is refused: "refused"
+ok - a page stream with a wrong token is refused: "refused"
+ok - a page stream that names no thread is refused: the stream is a thread's, not the server's: "refused"
+ok - a page stream that names a thread this launch does not hold is refused: "refused"
+ok - a page stream with the URL's own token and a real thread is accepted: "open"
+ok - the token reaches the launch's output once, inside the URL and nowhere else: 1
+cdp: Chrome/155.0.8059.85, headless, remote debugging on the DevToolsActivePort file (dynamic)
+
+## the printed URL, clicked the way a person clicks it
+ok - first launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:61970","fragmentKey":"#token=","fragmentLength":50,"search":""}
+ok - first launch: operator mode is on, so the prompt box is the way in: false
+ok - first launch: the connection is live: "connected"
+ok - first launch: the header is the export's own row: the Bot's name as its button, its role, and the three controls: {"title":"Stream Check · New conversation","role":"","share":"Share menu","computer":"Computer","details":["Details","Collapse the pane"]}
+ok - frame 01-armed: the page held still across the capture: "{\"lastSeq\":0,\"done\":false,\"frameCount\":0,\"turns\":0,\"cards\":[],\"outputShown\":[],\"approvals\":[],\"deltas\":[],\"approvalStates\":[],\"toolStates\":[],\"turnPhases\":[],\"turnTexts\":[],\"renderedSeqs\":[],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null}"
+ok - frame 01-armed: the element the caption is about is inside the captured pixels (#operator): [true,0]
+ok - frame 01-armed: the driver's DOM read agrees with the page's facts hook: [0,0,[],[]]
+ok - frame 01-armed: claim - no message is rendered: true
+ok - frame 01-armed: claim - the run has not finished: true
+ok - frame 01-armed: claim - no approval is pending: true
+ok - frame 01-armed: claim - the stream has not started: true
+frame 01-armed: 01-armed.png (89953 bytes, sha256 b0682e2c78bfc9c0fd7e4add07aa4ec8cb21e8289619ad33d7ebcef75bbf6507) - last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text ""
+ok - first launch: the run is the one the page started: "run run-1"
+ok - first launch: the prompt the page sent is the run's prompt: "run one gated command"
+ok - first launch: the card shows the exact command the model asked for: "bash {\"command\":\"echo native-should-not-run\"}"
+ok - first launch: the buttons are the two real answers: ["Allow once","Deny"]
+ok - first launch: the run's own status is on the header and the parked cards, so it does not look frozen: ["awaiting_approval","awaiting approval","pending"]
+ok - the parked run holds one live container, this launch's own: [1,1]
+containers while the first launch's run is parked: 1 (freebot-sbx-run-1-vw4u38go)
+ok - frame 02-parked: the page held still across the capture: "{\"lastSeq\":6,\"done\":false,\"frameCount\":4,\"turns\":1,\"cards\":[[\"call_stub_11\",\"awaiting approval\"]],\"outputShown\":[false],\"approvals\":[null],\"deltas\":[],\"approvalStates\":[\"pending\"],\"toolStates\":[\"running\"],\"turnPhases\":[\"working\"],\"turnTexts\":[\"Working on your computer\"],\"renderedSeqs\":[1,3,4,5],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":null}"
+ok - frame 02-parked: the element the caption is about is inside the captured pixels (#thread .approval-card): [true,0]
+ok - frame 02-parked: the driver's DOM read agrees with the page's facts hook: [4,6,["awaiting approval"],[false]]
+ok - frame 02-parked: claim - one approval card is waiting: true
+ok - frame 02-parked: claim - the governed card waits for the answer: true
+ok - frame 02-parked: claim - the run has not finished: true
+ok - frame 02-parked: claim - every rendered frame has a unique seq within the stream: true
+frame 02-parked: 02-parked.png (123257 bytes, sha256 2afed8079487336b68a014a604973ea01b303645a2a3cc4a01357ddee372fd9e) - last seq 6 · done false · turns 1 · cards [call_stub_11:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text ""
+
+## a second launch, while the first is parked
+ok - the second launch took a different page port: [true,true]
+ok - the second launch's healthz answers: "{\"status\":\"ok\",\"service\":\"freebot-server\"}"
+ok - the first launch is still answering while the second serves: "{\"status\":\"ok\",\"service\":\"freebot-server\"}"
+the second launch's URL, redacted: http://127.0.0.1:61998/#token=<redacted>
+the second launch's own thread: thread-1
+ok - second launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:61998","fragmentKey":"#token=","fragmentLength":50,"search":""}
+ok - second launch: operator mode is on, so the prompt box is the way in: false
+ok - second launch: the connection is live: "connected"
+ok - second launch: the header is the export's own row: the Bot's name as its button, its role, and the three controls: {"title":"Stream Check · New conversation","role":"","share":"Share menu","computer":"Computer","details":["Details","Collapse the pane"]}
+ok - second launch: the run is the one the page started: "run run-1"
+ok - second launch: the prompt the page sent is the run's prompt: "run one gated command, on the second launch"
+ok - second launch: the card shows the exact command the model asked for: "bash {\"command\":\"echo native-should-not-run\"}"
+ok - second launch: the buttons are the two real answers: ["Allow once","Deny"]
+ok - second launch: the run's own status is on the header and the parked cards, so it does not look frozen: ["awaiting_approval","awaiting approval","pending"]
+ok - second launch: the card renders the decided state: "allowed once"
+ok - second launch: the decision is the tool card's done state and the approval card's allow: ["done","done","allow","allowed once"]
+ok - second launch: the output is the container's, not a replayed string: "native-should-not-run\n"
+ok - second launch: the run's terminal status is on the header and its card: ["done","done"]
+ok - second launch: the run finished with no stream error: true
+ok - frame 03-finished: the page held still across the capture: "{\"lastSeq\":16,\"done\":true,\"frameCount\":7,\"turns\":2,\"cards\":[[\"call_stub_11\",\"done\"]],\"outputShown\":[true],\"approvals\":[\"allow\"],\"deltas\":[\"stub-model saw tool result: Tool bash not found\"],\"approvalStates\":[\"allowed\"],\"toolStates\":[\"done\"],\"turnPhases\":[\"waiting\",\"thinking\"],\"turnTexts\":[\"Waiting on results\",\"Thinking it through\"],\"renderedSeqs\":[1,3,4,5,12,13,15],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":\"stream complete\"}"
+ok - frame 03-finished: the element the caption is about is inside the captured pixels (#thread .run-finished): [true,0]
+ok - frame 03-finished: the driver's DOM read agrees with the page's facts hook: [7,16,["done"],[true]]
+ok - frame 03-finished: claim - the approval card shows the allow decision: true
+ok - frame 03-finished: claim - the governed card is done with its output open: true
+ok - frame 03-finished: claim - the run reported done: true
+ok - frame 03-finished: claim - the terminal marker is rendered: true
+ok - frame 03-finished: claim - every rendered frame has a unique seq within the stream: true
+frame 03-finished: 03-finished.png (137308 bytes, sha256 2cd09a08f5ee38cae7e73b9373b4ca3f8cbe25b376d877e9e75dd6b59b4f05fe) - last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found"
+ok - the second launch: exits zero on SIGINT: 0
+ok - the second launch: reported that it stopped: true
+ok - the second launch: every container it says it removed is gone from Docker: []
+ok - the second launch: nothing listens on its page port afterwards: []
+the second launch announced removing 1 container(s)
+ok - the first launch's parked container survived the second launch's shutdown: true
+
+## a third launch, denied
+ok - the third launch took a page port of its own: [true,true]
+the third launch's own thread: thread-1
+ok - third launch: the page is the URL the launcher printed, token in the fragment and never sent to a server: {"scheme":"http:","host":"127.0.0.1:62008","fragmentKey":"#token=","fragmentLength":50,"search":""}
+ok - third launch: operator mode is on, so the prompt box is the way in: false
+ok - third launch: the connection is live: "connected"
+ok - third launch: the header is the export's own row: the Bot's name as its button, its role, and the three controls: {"title":"Stream Check · New conversation","role":"","share":"Share menu","computer":"Computer","details":["Details","Collapse the pane"]}
+ok - third launch: the run is the one the page started: "run run-1"
+ok - third launch: the prompt the page sent is the run's prompt: "run one gated command, on the third launch"
+ok - third launch: the card shows the exact command the model asked for: "bash {\"command\":\"echo native-should-not-run\"}"
+ok - third launch: the buttons are the two real answers: ["Allow once","Deny"]
+ok - third launch: the run's own status is on the header and the parked cards, so it does not look frozen: ["awaiting_approval","awaiting approval","pending"]
+ok - third launch: the card renders the decided state: "denied"
+ok - third launch: the refusal is the tool card's denied state and the approval card's deny: ["denied","denied","denied","deny","denied"]
+ok - third launch: the governed call produced no output: ""
+ok - third launch: the denied run still reached the terminal frame: "stream complete"
+ok - third launch: the run's terminal status is on the header and its card: ["done","denied"]
+ok - frame 04-denied: the page held still across the capture: "{\"lastSeq\":16,\"done\":true,\"frameCount\":7,\"turns\":2,\"cards\":[[\"call_stub_11\",\"denied\"]],\"outputShown\":[false],\"approvals\":[\"deny\"],\"deltas\":[\"stub-model saw tool result: Tool bash not found\"],\"approvalStates\":[\"denied\"],\"toolStates\":[\"denied\"],\"turnPhases\":[\"waiting\",\"thinking\"],\"turnTexts\":[\"Waiting on results\",\"Thinking it through\"],\"renderedSeqs\":[1,3,4,5,12,13,15],\"duplicateSeqs\":[],\"removedMarkers\":{\"turnTitle\":0,\"turnEnd\":0,\"toolDecision\":0,\"toolResult\":0,\"approvalResolved\":0,\"runStatus\":0,\"grantLifecycle\":0},\"resume\":null,\"streamEnd\":\"stream complete\"}"
+ok - frame 04-denied: the element the caption is about is inside the captured pixels (#thread .run-finished): [true,0]
+ok - frame 04-denied: the driver's DOM read agrees with the page's facts hook: [7,16,["denied"],[false]]
+ok - frame 04-denied: claim - the approval card shows the deny decision: true
+ok - frame 04-denied: claim - a tool card shows denied with no output: true
+ok - frame 04-denied: claim - the run reported done: true
+ok - frame 04-denied: claim - the terminal marker is rendered: true
+ok - frame 04-denied: claim - every rendered frame has a unique seq within the stream: true
+frame 04-denied: 04-denied.png (132040 bytes, sha256 ccf00f8317a8d331e6b2c368fe2dea9b5ffeb6197930df6e39099dbfdbc45152) - last seq 16 · done true · turns 2 · cards [call_stub_11:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found"
+ok - the third launch: exits zero on SIGINT: 0
+ok - the third launch: reported that it stopped: true
+ok - the third launch: every container it says it removed is gone from Docker: []
+ok - the third launch: nothing listens on its page port afterwards: []
+the third launch announced removing 1 container(s)
+ok - and the first launch's parked container is still the only one: true
+
+## a pinned port that is already taken
+ok - a launch pinned to the first launch's page port exits nonzero: true
+ok - and says which port it could not take: [true,true]
+
+## the default launch, which opens the URL it printed
+ok - the default launch hands the URL it printed to the browser opener, and nothing else: true
+ok - and says it opened a browser without printing the token anywhere else: true
+ok - the default launch: exits zero on SIGINT: 0
+ok - the default launch: reported that it stopped: true
+ok - the default launch: every container it says it removed is gone from Docker: []
+ok - the default launch: nothing listens on its page port afterwards: []
+
+## shutdown, with the first launch's run still parked
+containers before the shutdown, with the run still parked: 1 (freebot-sbx-run-1-vw4u38go)
+ok - the first launch: exits zero on SIGINT: 0
+ok - the first launch: reported that it stopped: true
+ok - the first launch: every container it says it removed is gone from Docker: []
+ok - the first launch: nothing listens on its page port afterwards: []
+ok - the first launch named the container its parked run held: ["freebot-sbx-run-1-vw4u38go"]
+ok - that container is gone from Docker by its own name: []
+ok - the label's container set is back where it started: []
+containers after the shutdown (label freebot.unit=u1.7): 0
+ok - nothing listens on the first launch's tunnel port afterwards: []
+ok - every launch's stdout holds exactly one URL, the one to open: [1,1,1]
+ok - and each is that launch's own first line: [true,true,true]
+the lines after the URL on the first launch's stdout, which the gate probes provoked: ["[auth] refused code=token_missing method=GET path=/events","[auth] refused code=token_mismatch method=GET path=/events"]
+ok - that line is still the URL of the required shape: [true,true,true]
+
+## pairwise distinctness of the committed frames
+ok - frames: every committed frame differs from every other in its page facts: []
+pairs compared: 6 (4 frames)
+
+## frame index
+name → sha256 → asserted DOM facts → caption
+01-armed → b0682e2c78bfc9c0fd7e4add07aa4ec8cb21e8289619ad33d7ebcef75bbf6507 → last seq 0 · done false · turns 0 · cards [] · output blocks [] · approvals [] · resume - · stream end - · text "" → The URL the one command printed, opened: the real engine is connected, the run has not started, and the operator's prompt box is the way in.
+  unmet claims: []
+02-parked → 2afed8079487336b68a014a604973ea01b303645a2a3cc4a01357ddee372fd9e → last seq 6 · done false · turns 1 · cards [call_stub_11:awaiting approval] · output blocks [closed] · approvals [pending] · resume - · stream end - · text "" → A run started from the printed URL is parked at the gate: the approval card names the exact command the model asked for, and the tool card waits for the answer.
+  unmet claims: []
+03-finished → 2cd09a08f5ee38cae7e73b9373b4ca3f8cbe25b376d877e9e75dd6b59b4f05fe → last seq 16 · done true · turns 2 · cards [call_stub_11:done] · output blocks [open] · approvals [allow] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → Allowed once and finished: the card shows the decision, the governed call ran in the container so its output block holds the container's own stdout, and the run reached its terminal frame.
+  unmet claims: []
+04-denied → ccf00f8317a8d331e6b2c368fe2dea9b5ffeb6197930df6e39099dbfdbc45152 → last seq 16 · done true · turns 2 · cards [call_stub_11:denied] · output blocks [closed] · approvals [deny] · resume - · stream end stream complete · text "stub-model saw tool result: Tool bash not found" → A second launch, denied: the same page and the same engine on a free port of its own, driven through a denial to its own terminal frame.
+  unmet claims: []
+
+## the committed artifact carries no token
+ok - frames: one committed PNG per key state: 4
+artifact: 01-armed.png (89953 bytes)
+artifact: 02-parked.png (123257 bytes)
+artifact: 03-finished.png (137308 bytes)
+artifact: 04-denied.png (132040 bytes)
+ok - no committed line carries any launch's operator token: [false,false,false]
+ok - the URL appears only with its token redacted: true
+
+chrome Google Chrome over CDP; really launched `bun run up`; replayed model; pinned sandbox image
+RESULT: PASS (116/116)

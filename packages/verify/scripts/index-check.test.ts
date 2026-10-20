@@ -124,12 +124,19 @@ describe("the verification index checker", () => {
   });
 
   test("a malformed artifact reference is rejected instead of read as its own prefix", () => {
+    const lines = readFileSync(realIndex, "utf8").split("\n");
+    const launch = lines.find((line) => line.startsWith("| launch |")) ?? "";
+    const artifact = launch.match(
+      /packages\/verify\/artifacts\/launch\/[0-9a-f]+\/assert\.txt/,
+    )?.[0];
+    if (artifact === undefined) throw new Error("the launch row carries no artifact reference");
+
     const report = checkIndex(
       repoRoot,
       plant({
         feature: "launch",
-        from: "artifacts/launch/a273e16/assert.txt",
-        to: "artifacts/launch/a273e16/assert.txt/missing",
+        from: artifact,
+        to: `${artifact}/missing`,
       }),
     );
 
