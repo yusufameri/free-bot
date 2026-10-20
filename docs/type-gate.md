@@ -1,16 +1,16 @@
 # The root type gate
 
-Status: PASS. 38/38 probe checks green at commit `8265336`, driven by
+Status: PASS. 38/38 probe checks green at commit `6b18776f1cddf4bb8474f48dddc37a391f00de70`, driven by
 `bun packages/verify/scripts/type-gate.ts`, with the transcript under
-`packages/verify/artifacts/type-gate/8265336/probe.txt`. Verdict: type-check-only. The counts below
-are the ones that run measured; the earlier transcript at
-`packages/verify/artifacts/type-gate/2c9b605/probe.txt` stays for history.
+`packages/verify/artifacts/type-gate/6b18776/probe.txt`. Verdict: type-check-only. The counts
+below are the ones that run measured; the earlier transcripts under
+`packages/verify/artifacts/type-gate/` stay for history.
 
 `bun run typecheck` is the cheap gate every unit, every PR and CI runs. Until this unit it was blind
 to 14 source files and to every `.tsx` file in the repo. It now covers each workspace's `src` and
 `scripts` directories in both extensions. At the merge head (`2c9b605`) the widened include reached 16
 files the pre-widening one does not: 112 repo files against 96. The head the Status names measures
-193 against 161, because later units kept landing. The two beyond the first measurement were this
+223 against 174, because later units kept landing. The two beyond the first measurement were this
 unit's own probe script and `apps/server/scripts/verify.ts`, which landed on `main` while this
 branch waited. This closes follow-up 1 of `docs/web-shell.md`, which parked the React and Next.js
 port on exactly this change.
@@ -40,7 +40,7 @@ apps/*/scripts/**/*.tsx
 ```
 
 The program went from 82 to 97 repo files at this unit's pre-merge head (`28d8de0`), 96 to 112 once
-the branch merged `main` (`2c9b605`), and measures 161 to 193 at the commit the Status names.
+the branch merged `main` (`2c9b605`), and measures 174 to 223 at the commit the Status names.
 The widened gate exits 0 at each head, so none of the newly covered files had a type error waiting.
 `tsconfig.base.json` gains `jsx: "preserve"` in the same change. It transforms nothing under
 `noEmit`, and it is the value the port's Next.js config needs, so a `.tsx` file parses in the root
@@ -79,9 +79,12 @@ preflight in `apps/web/scripts/capture.ts`.
 
 ## What the gate still does not reach
 
-These fourteen are the complete set of `.ts`/`.tsx` files under `packages/` and `apps/` that no
-included root reaches. The probe derives that set from the tree and asserts it equals this list, so a
-new unreached file fails the probe.
+These sixteen are the complete set of tracked `.ts`/`.tsx` files under `packages/` and `apps/` that
+no included root reaches. The probe derives that set from `git ls-files` and asserts it equals this
+list, so a new unreached file fails the probe. The census reads the commit's tree rather than the
+working checkout because untracked evidence scripts under `packages/verify/artifacts` are not part of
+any commit. The run at `e667880` counted 61 unreached with 45 of those scripts present, and a clean
+checkout of the same commit counts 16.
 
 | File | Why | Checked by |
 | --- | --- | --- |
@@ -92,6 +95,8 @@ new unreached file fails the probe.
 | `packages/ui/browser/provider.ts` | same, the DOM surface of page 1's provider model (U4.3) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/shell.ts` | same, the DOM surface of the Bot sidebar and thread list (U4.2) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/workspace.ts` | same, the DOM surface of the Workspace pages (U6.8) | `apps/web/tsconfig.json` |
+| `packages/ui/browser/connect-apps.ts` | same, the DOM surface of the Connect apps screen (U8.4) | `apps/web/tsconfig.json` |
+| `packages/ui/browser/page.ts` | same, the page vocabulary the Workspace and Connect apps screens share (U8.4) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/first-run.ts` | same, the DOM surface of the first-run screen (U6.2) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/aside.ts` | same, the DOM surface of the details pane (U6.3) | `apps/web/tsconfig.json` |
 | `packages/ui/browser/notices.ts` | same, the DOM surface of the banner and notice stack (U6.3) | `apps/web/tsconfig.json` |
@@ -100,12 +105,13 @@ new unreached file fails the probe.
 | `packages/sandbox/image/replay-ext.ts` | nothing imports it, and `image/` is not `src` or `scripts` | nothing |
 | `packages/pi-bridge/extension/smoke-echo.ts` | nothing imports it (the smoke passes its path as a string) | nothing |
 
-The twelve DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
+The fourteen DOM files stay out on purpose. Adding `lib: DOM` to the shared root program would let
 control-plane and server code call `document` without a complaint, which is a worse trade than
 leaving the browser surface to the app config that already owns it. U6.3's three arrived with a real
 defect behind them: `notices.ts` called an unimported helper, and `bun run typecheck` was silent
 because the whole host graph is out of the program. `apps/web/tsconfig.json` catches it, and the
-driver caught it in the browser.
+driver caught it in the browser. U8.4's two arrived the same way and are reachable from
+`apps/web/host/main.ts`, so that project checks them.
 
 ## The probe
 
@@ -114,23 +120,22 @@ bun packages/verify/scripts/type-gate.ts
 ```
 
 It writes `packages/verify/artifacts/type-gate/<short-sha>/probe.txt` and exits non-zero on any
-failed check. Per run it does all of this against the real gate, `bun run typecheck`. The artifact
-for the blind-set change U4.1 made is `packages/verify/artifacts/type-gate/e7cb536/probe.txt`, and the
-one U4.2 made, which adds `packages/ui/browser/shell.ts` to the list, is
-`packages/verify/artifacts/type-gate/bdf5f12/probe.txt`, the one U4.3 makes, which adds
-`packages/ui/browser/provider.ts`, is `packages/verify/artifacts/type-gate/d22c487/probe.txt`, the
-one U6.2 makes, which adds `packages/ui/browser/first-run.ts`, is
-`packages/verify/artifacts/type-gate/<short-sha>/probe.txt` for this branch's head, and the one U6.3
-makes, which adds `packages/ui/browser/aside.ts`, `notices.ts` and `icons.ts`, is
-`packages/verify/artifacts/type-gate/513a592/probe.txt`, and the one U6.4 makes, which adds
-`packages/ui/browser/overlays.ts`, is
-`packages/verify/artifacts/type-gate/<short-sha>/probe.txt` for this branch's head.
+failed check. Per run it does all of this against the real gate, `bun run typecheck`. Earlier runs
+stay in `packages/verify/artifacts/type-gate/` as history; the one this page's Status names is the
+run that carries the sixteen-file list.
+
+Run `bun install` in the checkout first. A checkout whose `node_modules` lacks a declared dependency
+fails the clean-tree check on that module and every restored-tree check inherits the failure. The run
+at `e667880` failed six checks this way, all of them on
+`packages/verify/src/emulator.ts(31,32): error TS2307: Cannot find module 'emulate' or its
+corresponding type declarations.` The dependency is declared in `packages/verify/package.json` and
+pinned in `bun.lock`, so the fix was an install, not a code change.
 
 1. The clean tree passes.
-2. A census compares the program against the tree. It asserts the root include is exactly the nine
-   patterns above, measures a temporary `.tsx` file in each of the four `.tsx` families, asserts 12
-   named files are in the program, that the program grew, and that the unreached set is exactly the
-   fourteen above.
+2. A census compares the program against the tracked tree. It asserts the root include is exactly the
+   nine patterns above, measures a temporary `.tsx` file in each of the four `.tsx` families, asserts
+   12 named files are in the program, that the program grew, and that the unreached set is exactly
+   the sixteen above.
 3. Three deliberate errors, one per covered location, are placed in the tree together. The
    pre-widening include accepts all three and does not reach them.
 4. Each error alone makes the root typecheck fail and names its file. The file is removed and the
