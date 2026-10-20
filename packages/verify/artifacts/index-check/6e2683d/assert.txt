@@ -1,0 +1,159 @@
+feature: index-check
+command: bun packages/verify/scripts/index-check-evidence.ts
+timestamp: 2026-10-20T04:11:29.336Z
+git sha: 6e2683d98cdaead91b922a2f607151e02543017c
+git sha short: 6e2683d
+branch: u10.1-verification-record
+planted row: launch-u10-13.md (docs/verification/ copied to a temp directory, 116/116 rewritten to 114)
+
+== planted mismatch ==
+$ bun packages/verify/scripts/index-check.ts --record /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-record-planted-J2GtZp
+exit 1
+index-check: /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-record-planted-J2GtZp → docs/VERIFICATION.md (base 71fe3eb)
+LEGACY row "artifact hygiene (U10.2)": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/artifact-hygiene/1f60b9c/assert.txt
+PASS row "bots and threads": 81/81 checks — packages/verify/artifacts/bots-and-threads/b917c1f/assert.txt
+PASS row "browser containment spike": 7/7 checks — packages/verify/artifacts/containment-browser/27cf9de/probes.txt
+PASS row "composio adapter": 76/76 checks — packages/verify/artifacts/connectors/c7e5326/assert.txt
+PASS row "connect apps (U8.4)": 27/27 checks — packages/verify/artifacts/connect-apps/3190f7f/assert.txt
+PASS row "connector credentials": 37/37 checks — packages/verify/artifacts/connector-credentials/615de58/assert.txt
+PASS row "connectors": 76/76 checks — packages/verify/artifacts/connectors/fa573bb/assert.txt
+PASS row "containment spike": 7/7 checks — packages/verify/artifacts/containment/57a229d/probes.txt
+PASS row "core run model": 45/45 checks — packages/verify/artifacts/core-run-model/ba092ab/assert.txt
+LEGACY row "design contract": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/design-contract/178e8fd/assert.txt
+PASS row "files surface": 54/54 checks — packages/verify/artifacts/files-surface/b917c1f/assert.txt
+LEGACY row "first run (U10.13)": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/first-run/d64faae/assert.txt
+LEGACY row "first run": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/first-run/8d892fa/assert.txt
+PASS row "forge test A": 91/91 checks — packages/verify/artifacts/forge-test-a/a46071c/assert.txt
+SKIP row "glossary": docs-only, no artifact path
+PASS row "items and the Bot's status": 203/203 checks — packages/verify/artifacts/items/a273e16/assert.txt
+PASS row "keyed run (U10.18)": 69/69 checks — packages/verify/artifacts/keyed-run/b917c1f/assert.txt
+PASS row "landing route": 54/54 checks — packages/verify/artifacts/landing/42e07c8/assert.txt
+FAIL row "launch (U10.13)": claimed 114 checks, artifact says 116/116 — packages/verify/artifacts/launch/b917c1f/assert.txt
+PASS row "launch": 116/116 checks — packages/verify/artifacts/launch/b917c1f/assert.txt
+PASS row "mvp smoke dry run": 75/75 checks — packages/verify/artifacts/mvp-smoke/333323c/assert.txt
+PASS row "MVP status capture (U10.11)": 7/7 checks — packages/verify/artifacts/mvp-status-capture/fa02379/assert.txt
+PASS row "MVP status capture (U10.12)": 7/7 checks — packages/verify/artifacts/mvp-status-capture/ee54548/assert.txt
+PASS row "one run path": 54/54 checks — packages/verify/artifacts/one-run-path/16a09ab/assert.txt
+PASS row "page 1 and a keyed run (U10.13)": 95/95 checks — packages/verify/artifacts/provider-setup/b917c1f/assert.txt
+PASS row "pi-bridge": artifact and commit agree — packages/verify/artifacts/pi-bridge/a67bc72/assert.txt
+LEGACY row "pi-rpc-spike": count: the driver printed its tally as two lines, 'assertion frames ok=true:' and '39', and never wrote a RESULT line — packages/verify/artifacts/pi-rpc/e203adf/assert.txt
+PASS row "pixel gate, armed (U6.7)": artifact and commit agree — packages/verify/artifacts/pixel-gate/50c5e27/assert.txt
+PASS row "pixel gate": artifact and commit agree — packages/verify/artifacts/pixel-gate/df87bca/assert.txt
+PASS row "protocol": artifact and commit agree — packages/verify/artifacts/protocol/efa0211/assert.txt
+PASS row "provider setup": 95/95 checks — packages/verify/artifacts/provider-setup/b917c1f/assert.txt
+PASS row "providers": artifact and commit agree — packages/verify/artifacts/providers/7032a72/assert.txt
+PASS row "review-grants": artifact and commit agree — packages/verify/artifacts/review-grants/c8efced/assert.txt
+LEGACY row "run loop": count: the driver ended with 'checks: 20/20 PASS' and a bare 'PASS run-loop', with no RESULT line — packages/verify/artifacts/run-loop/12730d2/assert.txt
+PASS row "sandbox backend selector and drill honesty": artifact and commit agree — packages/verify/artifacts/sandbox-conformance/ff4f655/assert.txt, packages/verify/artifacts/sandbox-microsandbox/ff4f655/assert.txt
+PASS row "sandbox conformance": artifact and commit agree — packages/verify/artifacts/sandbox-conformance/1763b71/assert.txt
+LEGACY row "sandbox image pin + replay + key scan": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/sandbox-image/8d36ea7/assert.txt
+PASS row "sandbox microsandbox": artifact and commit agree — packages/verify/artifacts/sandbox-microsandbox/f45eb69/assert.txt, packages/verify/artifacts/sandbox-conformance/f45eb69/assert.txt
+PASS row "sandbox pin repair (U10.8)": 13/13 checks — packages/verify/artifacts/sandbox-pin-repair/8871327/assert.txt
+LEGACY row "sandbox-provider": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/sandbox-provider/7032a72/assert.txt
+PASS row "scaffold": artifact and commit agree — packages/verify/artifacts/scaffold/8ed2aa4/assert.txt
+LEGACY row "server-auth": count: the driver printed one PASS line per check (32 of them) and a bare 'PASS server-auth', with no RESULT line — packages/verify/artifacts/server-auth/0b4cb7b/assert.txt
+PASS row "stopping a run and the spend cap": 50/50, 21/21 checks — packages/verify/artifacts/cancel-run/a273e16/assert.txt, packages/verify/artifacts/spend-cap/a273e16/assert.txt
+LEGACY row "the command palette, the Bot picker and the modal": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/overlays/731e067/assert.txt
+LEGACY row "the details pane, the notices and the reconnect banner (U10.13)": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/aside/e18ce5f/assert.txt
+LEGACY row "the details pane, the notices and the reconnect banner": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/aside/513a592/assert.txt
+PASS row "the Library over a keyed run (U10.13)": 54/54 checks — packages/verify/artifacts/files-surface/b917c1f/assert.txt
+LEGACY row "the root type gate (U10.13)": count: the driver ended with '38/38 checks passed' and a bare 'PASS type-gate', with no RESULT line — packages/verify/artifacts/type-gate/6b18776/probe.txt
+PASS row "the transcript across a restart": 77/77 checks — packages/verify/artifacts/transcript-restart/16a09ab/assert.txt
+PASS row "truth fix": 57/57 checks — packages/verify/artifacts/truth-fix/ada90ad/assert.txt
+PASS row "tunnel spike": 34/34 checks — packages/verify/artifacts/tunnel/bf0a4e6/assert.txt
+PASS row "type gate": artifact and commit agree — packages/verify/artifacts/type-gate/8d892fa/probe.txt
+LEGACY row "web chat surface": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/web-shell/a273e16/assert.txt
+LEGACY row "web-stream spike": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/web-stream/35bd852/assert.txt
+LEGACY row "workspace pages": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/workspace-pages/42c0fac/assert.txt
+FLAG unreferenced artifact pixel-gate/b272385: no row names the newest run of this feature
+FLAG unreferenced artifact sandbox-provider/ff4f655: no row names the newest run of this feature
+FLAG unreferenced artifact scaffold/b272385: no row names the newest run of this feature
+FLAG unreferenced artifact type-gate/b272385: no row names the newest run of this feature
+
+checked rows: 54 (57 artifacts)
+flags: 4
+legacy count rows: 4 (pi-rpc-spike, run loop, server-auth, the root type gate (U10.13))
+legacy header rows: 12 (artifact hygiene (U10.2), design contract, first run (U10.13), first run, sandbox image pin + replay + key scan, sandbox-provider, the command palette, the Bot picker and the modal, the details pane, the notices and the reconnect banner (U10.13), the details pane, the notices and the reconnect banner, web chat surface, web-stream spike, workspace pages)
+duplicates: none
+RESULT: FAIL (229/231)
+
+== the committed record ==
+$ bun packages/verify/scripts/index-check.ts --record docs/verification
+exit 0
+index-check: docs/verification → docs/VERIFICATION.md (base 71fe3eb)
+LEGACY row "artifact hygiene (U10.2)": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/artifact-hygiene/1f60b9c/assert.txt
+PASS row "bots and threads": 81/81 checks — packages/verify/artifacts/bots-and-threads/b917c1f/assert.txt
+PASS row "browser containment spike": 7/7 checks — packages/verify/artifacts/containment-browser/27cf9de/probes.txt
+PASS row "composio adapter": 76/76 checks — packages/verify/artifacts/connectors/c7e5326/assert.txt
+PASS row "connect apps (U8.4)": 27/27 checks — packages/verify/artifacts/connect-apps/3190f7f/assert.txt
+PASS row "connector credentials": 37/37 checks — packages/verify/artifacts/connector-credentials/615de58/assert.txt
+PASS row "connectors": 76/76 checks — packages/verify/artifacts/connectors/fa573bb/assert.txt
+PASS row "containment spike": 7/7 checks — packages/verify/artifacts/containment/57a229d/probes.txt
+PASS row "core run model": 45/45 checks — packages/verify/artifacts/core-run-model/ba092ab/assert.txt
+LEGACY row "design contract": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/design-contract/178e8fd/assert.txt
+PASS row "files surface": 54/54 checks — packages/verify/artifacts/files-surface/b917c1f/assert.txt
+LEGACY row "first run (U10.13)": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/first-run/d64faae/assert.txt
+LEGACY row "first run": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/first-run/8d892fa/assert.txt
+PASS row "forge test A": 91/91 checks — packages/verify/artifacts/forge-test-a/a46071c/assert.txt
+SKIP row "glossary": docs-only, no artifact path
+PASS row "items and the Bot's status": 203/203 checks — packages/verify/artifacts/items/a273e16/assert.txt
+PASS row "keyed run (U10.18)": 69/69 checks — packages/verify/artifacts/keyed-run/b917c1f/assert.txt
+PASS row "landing route": 54/54 checks — packages/verify/artifacts/landing/42e07c8/assert.txt
+PASS row "launch (U10.13)": 116/116 checks — packages/verify/artifacts/launch/b917c1f/assert.txt
+PASS row "launch": 116/116 checks — packages/verify/artifacts/launch/b917c1f/assert.txt
+PASS row "mvp smoke dry run": 75/75 checks — packages/verify/artifacts/mvp-smoke/333323c/assert.txt
+PASS row "MVP status capture (U10.11)": 7/7 checks — packages/verify/artifacts/mvp-status-capture/fa02379/assert.txt
+PASS row "MVP status capture (U10.12)": 7/7 checks — packages/verify/artifacts/mvp-status-capture/ee54548/assert.txt
+PASS row "one run path": 54/54 checks — packages/verify/artifacts/one-run-path/16a09ab/assert.txt
+PASS row "page 1 and a keyed run (U10.13)": 95/95 checks — packages/verify/artifacts/provider-setup/b917c1f/assert.txt
+PASS row "pi-bridge": artifact and commit agree — packages/verify/artifacts/pi-bridge/a67bc72/assert.txt
+LEGACY row "pi-rpc-spike": count: the driver printed its tally as two lines, 'assertion frames ok=true:' and '39', and never wrote a RESULT line — packages/verify/artifacts/pi-rpc/e203adf/assert.txt
+PASS row "pixel gate, armed (U6.7)": artifact and commit agree — packages/verify/artifacts/pixel-gate/50c5e27/assert.txt
+PASS row "pixel gate": artifact and commit agree — packages/verify/artifacts/pixel-gate/df87bca/assert.txt
+PASS row "protocol": artifact and commit agree — packages/verify/artifacts/protocol/efa0211/assert.txt
+PASS row "provider setup": 95/95 checks — packages/verify/artifacts/provider-setup/b917c1f/assert.txt
+PASS row "providers": artifact and commit agree — packages/verify/artifacts/providers/7032a72/assert.txt
+PASS row "review-grants": artifact and commit agree — packages/verify/artifacts/review-grants/c8efced/assert.txt
+LEGACY row "run loop": count: the driver ended with 'checks: 20/20 PASS' and a bare 'PASS run-loop', with no RESULT line — packages/verify/artifacts/run-loop/12730d2/assert.txt
+PASS row "sandbox backend selector and drill honesty": artifact and commit agree — packages/verify/artifacts/sandbox-conformance/ff4f655/assert.txt, packages/verify/artifacts/sandbox-microsandbox/ff4f655/assert.txt
+PASS row "sandbox conformance": artifact and commit agree — packages/verify/artifacts/sandbox-conformance/1763b71/assert.txt
+LEGACY row "sandbox image pin + replay + key scan": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/sandbox-image/8d36ea7/assert.txt
+PASS row "sandbox microsandbox": artifact and commit agree — packages/verify/artifacts/sandbox-microsandbox/f45eb69/assert.txt, packages/verify/artifacts/sandbox-conformance/f45eb69/assert.txt
+PASS row "sandbox pin repair (U10.8)": 13/13 checks — packages/verify/artifacts/sandbox-pin-repair/8871327/assert.txt
+LEGACY row "sandbox-provider": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/sandbox-provider/7032a72/assert.txt
+PASS row "scaffold": artifact and commit agree — packages/verify/artifacts/scaffold/8ed2aa4/assert.txt
+LEGACY row "server-auth": count: the driver printed one PASS line per check (32 of them) and a bare 'PASS server-auth', with no RESULT line — packages/verify/artifacts/server-auth/0b4cb7b/assert.txt
+PASS row "stopping a run and the spend cap": 50/50, 21/21 checks — packages/verify/artifacts/cancel-run/a273e16/assert.txt, packages/verify/artifacts/spend-cap/a273e16/assert.txt
+LEGACY row "the command palette, the Bot picker and the modal": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/overlays/731e067/assert.txt
+LEGACY row "the details pane, the notices and the reconnect banner (U10.13)": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/aside/e18ce5f/assert.txt
+LEGACY row "the details pane, the notices and the reconnect banner": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/aside/513a592/assert.txt
+PASS row "the Library over a keyed run (U10.13)": 54/54 checks — packages/verify/artifacts/files-surface/b917c1f/assert.txt
+LEGACY row "the root type gate (U10.13)": count: the driver ended with '38/38 checks passed' and a bare 'PASS type-gate', with no RESULT line — packages/verify/artifacts/type-gate/6b18776/probe.txt
+PASS row "the transcript across a restart": 77/77 checks — packages/verify/artifacts/transcript-restart/16a09ab/assert.txt
+PASS row "truth fix": 57/57 checks — packages/verify/artifacts/truth-fix/ada90ad/assert.txt
+PASS row "tunnel spike": 34/34 checks — packages/verify/artifacts/tunnel/bf0a4e6/assert.txt
+PASS row "type gate": artifact and commit agree — packages/verify/artifacts/type-gate/8d892fa/probe.txt
+LEGACY row "web chat surface": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/web-shell/a273e16/assert.txt
+LEGACY row "web-stream spike": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/web-stream/35bd852/assert.txt
+LEGACY row "workspace pages": commit header: this run predates the writer's commit header and prints no full sha; the artifact directory's short sha and this row's commit are the only link — packages/verify/artifacts/workspace-pages/42c0fac/assert.txt
+FLAG unreferenced artifact pixel-gate/b272385: no row names the newest run of this feature
+FLAG unreferenced artifact sandbox-provider/ff4f655: no row names the newest run of this feature
+FLAG unreferenced artifact scaffold/b272385: no row names the newest run of this feature
+FLAG unreferenced artifact type-gate/b272385: no row names the newest run of this feature
+
+checked rows: 54 (57 artifacts)
+flags: 4
+legacy count rows: 4 (pi-rpc-spike, run loop, server-auth, the root type gate (U10.13))
+legacy header rows: 12 (artifact hygiene (U10.2), design contract, first run (U10.13), first run, sandbox image pin + replay + key scan, sandbox-provider, the command palette, the Bot picker and the modal, the details pane, the notices and the reconnect banner (U10.13), the details pane, the notices and the reconnect banner, web chat surface, web-stream spike, workspace pages)
+duplicates: none
+RESULT: PASS (231/231)
+
+== checks ==
+PASS the planted record exits 1
+PASS the planted run names the launch row
+PASS the planted run quotes the claimed 114
+PASS the planted run quotes the artifact's 116/116
+PASS the committed record exits 0
+PASS the committed run ends PASS
+
+RESULT: PASS (6/6)
