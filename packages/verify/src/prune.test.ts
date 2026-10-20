@@ -161,6 +161,21 @@ describe("the artifact prune", () => {
     ).toThrow(/expected exactly <feature>\/<run>/);
   });
 
+  test("a feature whose name starts with two dots is not refused as a traversal", () => {
+    const planted = tree();
+    run(planted.root, "..alpha", "old", 1_000);
+    run(planted.root, "..alpha", "new", 2_000);
+
+    const plan = planPrune({
+      repoRoot: planted.root,
+      tablePath: planted.table,
+      only: join(planted.artifacts, "..alpha", "old"),
+      isTracked: planted.isTracked,
+    });
+
+    expect(plan.delete).toEqual([]);
+  });
+
   test("a path that names no directory is refused instead of read as nothing to do", () => {
     const planted = tree();
     expect(() =>

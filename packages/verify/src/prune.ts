@@ -106,6 +106,14 @@ function rowRuns(tablePath: string): Set<string> {
   return runs;
 }
 
+/**
+ * A relative path that climbs out of its root. The check is a path segment, not a string prefix, so
+ * a feature legitimately named `..foo` is a name rather than a traversal.
+ */
+function escapes(proximity: string): boolean {
+  return proximity === ".." || proximity.startsWith(`..${sep}`) || isAbsolute(proximity);
+}
+
 /** Resolve `--path` and refuse anything that is not exactly one run directory in the tree. */
 function onlyRun(artifactsRoot: string, only: string, repoRoot: string): string {
   const absolute = isAbsolute(only) ? resolve(only) : resolve(repoRoot, only);
@@ -115,7 +123,7 @@ function onlyRun(artifactsRoot: string, only: string, repoRoot: string): string 
       `refusing ${only}: name one <feature>/<run> directory, not the artifact tree`,
     );
   }
-  if (proximity.startsWith("..") || isAbsolute(proximity)) {
+  if (escapes(proximity)) {
     throw new PruneRefusal(`refusing ${only}: it is outside ${ARTIFACTS_REL}`);
   }
   if (proximity.split(sep).length !== 2) {
@@ -246,12 +254,7 @@ export function applyPrune(plan: PrunePlan): string[] {
   for (const entry of plan.delete) {
     const absolute = resolve(entry.absolute);
     const proximity = relative(root, absolute);
-    if (
-      proximity === "" ||
-      proximity.startsWith("..") ||
-      isAbsolute(proximity) ||
-      proximity.split(sep).length !== 2
-    ) {
+    if (proximity === "" || escapes(proximity) || proximity.split(sep).length !== 2) {
       throw new PruneRefusal(`refusing to delete ${entry.absolute}: not one run under ${root}`);
     }
     rmSync(absolute, { recursive: true });
