@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-20T03:36Z, against `origin/main` `aae143b`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-20T04:56Z, against `origin/main` `f0a688f`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-67 units in the register: 64 done, 0 running, 2 pending, 1 parked.
+68 units in the register: 65 done, 0 running, 2 pending, 1 parked.
 
-The verification ledger holds 84 rows: 26 `live-ui-verified`, 36 `unit-test-verified`, 3 `type-check-only`, 19 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 86 rows: 26 `live-ui-verified`, 37 `unit-test-verified`, 3 `type-check-only`, 20 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -109,6 +109,7 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U10.19 | The type gate back to 38/38: census from `git ls-files`, sixteen documented files, and a byte-identical restore test | [#83](https://github.com/yusufameri/free-bot/pull/83) |
 | U10.20 | Both missing gates inside `bun run verify`: lint with `--error-on-warnings` and the type gate, with the stylesheet ordered by rising specificity | [#85](https://github.com/yusufameri/free-bot/pull/85) |
 | U10.2 | Artifact hygiene: `bun run prune` with keep and refusal rules, the Chrome-profile ignore rule, one shared `saveScreenshot`, and the artifact lint exclusion | [#87](https://github.com/yusufameri/free-bot/pull/87) |
+| U10.1 | The proof index as data: 56 row files, a renderer, and a checker that fails a planted mismatch by name | [#89](https://github.com/yusufameri/free-bot/pull/89) |
 
 ## Not built yet
 
@@ -120,7 +121,7 @@ now the type gate itself: it fails 31/38 at main, including 'the tree passes wit
 removed' and 'the restored tree passes', so the instrument that proves the typecheck is not blind is
 itself broken; U10.19 owns it. U10.18 carries the hidden-error defect still copied in five drivers.
 
-Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1. U9.3 needs a Linux/KVM host.
+Queued, each with a brief at `briefs/<id>.md`: U9.3 (needs a Linux/KVM host) and U10.21 (worktree hygiene).
 
 | Unit | What it is |
 | --- | --- |
@@ -135,8 +136,10 @@ Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1. U9.3 needs a Linux/K
 Three notes on honesty that the surface carries. The sandbox pin repairs itself rather than refusing a
 run (U10.8). The verification index is per-unit history rather than coverage of main: the checker's tally
 is 46 checked rows and 50 artifacts, `RESULT: PASS (158/158)`; four rows are count-unverified by design.
-And the live suite was red in eight at `8d12b50`; the triage made six of them green again and the two
-remaining reds are the two product units below, so the suite should read green once those land. The first sweep ran drivers against
+And the live suite is now green: a manual sweep against `71fe3eb` reported runnable 23, passed 23, failed 0,
+skipped 1 (the skip is the status capture, by name, because no live instance is named), and order 40's mechanism is
+scheduled every six hours. The index is no longer hand-written: `docs/verification/` holds one row file per feature,
+`render-index.ts` generates `docs/VERIFICATION.md`, and the checker fails a planted mismatch by name. The first sweep ran drivers against
 the drivers are history until U10.13 separates stale claims from defects and the filed units land. The
 landing page's claims about app behavior now carry DOM ids and assertions in the landing driver (order
 52), so the three drifts of this week cannot recur silently. Two gaps still have no unit: the details
