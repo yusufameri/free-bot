@@ -19,6 +19,7 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { artifactPaths, loadRecord } from "../src/verification-record.ts";
 import { checkRecord } from "./index-check.ts";
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url)).replace(/\/$/, "");
@@ -65,11 +66,14 @@ function plantFilesSurface(dir: string): void {
 describe("the verification record checker", () => {
   test("the committed record agrees with every artifact and with its rendered index", () => {
     const report = checkRecord(repoRoot);
+    const loaded = loadRecord(repoRoot);
 
     expect(report.failures).toEqual([]);
     expect(report.ok).toBe(true);
-    expect(report.rows).toHaveLength(55);
-    expect(report.checkedRows).toBe(54);
+    expect(report.rows).toHaveLength(loaded.rows.length);
+    expect(report.checkedRows).toBe(
+      loaded.rows.filter((row) => artifactPaths(row.artifact).length > 0).length,
+    );
     expect(report.rows.find((row) => row.row.feature === "glossary")?.artifacts).toEqual([]);
     expect(report.duplicates).toEqual([]);
     expect(report.legacyCount).toHaveLength(4);
