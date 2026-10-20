@@ -37,6 +37,7 @@ import {
   factsKey,
   unmetClaims,
 } from "../../../packages/ui/src/index.ts";
+import { pageErrorMessage, type PageExceptionDetails } from "../src/cdp.ts";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
@@ -188,10 +189,12 @@ export async function evalJson<T>(
 ): Promise<T> {
   const res = await cdp.send<{
     result?: { value?: unknown };
-    exceptionDetails?: { text?: string };
+    exceptionDetails?: PageExceptionDetails;
   }>("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }, sessionId);
   if (res.exceptionDetails !== undefined) {
-    throw new Error(`evaluate failed: ${res.exceptionDetails.text} :: ${expression}`);
+    throw new Error(
+      `launch: evaluate failed: ${pageErrorMessage(res.exceptionDetails)} :: ${expression}`,
+    );
   }
   return res.result?.value as T;
 }

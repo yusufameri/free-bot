@@ -35,6 +35,7 @@ import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
 import type { ShellFacts } from "../../../packages/ui/src/bots.ts";
 import type { FrameFacts } from "../../../packages/ui/src/frames.ts";
 import type { LibraryFacts } from "../../../packages/ui/src/library.ts";
+import { pageErrorMessage, type PageExceptionDetails } from "../src/cdp.ts";
 
 /**
  * The conversation facts the restarted page is compared against, read from the live DOM before the
@@ -203,10 +204,12 @@ class Log {
 async function evalJson<T>(cdp: Cdp, sessionId: string, expression: string): Promise<T> {
   const res = await cdp.send<{
     result?: { value?: unknown };
-    exceptionDetails?: { text?: string };
+    exceptionDetails?: PageExceptionDetails;
   }>("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }, sessionId);
   if (res.exceptionDetails !== undefined) {
-    throw new Error(`evaluate failed: ${res.exceptionDetails.text} :: ${expression}`);
+    throw new Error(
+      `bots-and-threads: evaluate failed: ${pageErrorMessage(res.exceptionDetails)} :: ${expression}`,
+    );
   }
   return res.result?.value as T;
 }

@@ -38,6 +38,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { botWorkspacePath } from "../../../apps/server/src/workspace-files.ts";
 import type { LibraryFacts } from "../../../packages/ui/src/library.ts";
+import { pageErrorMessage, type PageExceptionDetails } from "../src/cdp.ts";
 
 const CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 const root = fileURLToPath(new URL("../../..", import.meta.url));
@@ -183,10 +184,12 @@ class Log {
 async function evalJson<T>(cdp: Cdp, sessionId: string, expression: string): Promise<T> {
   const res = await cdp.send<{
     result?: { value?: unknown };
-    exceptionDetails?: { text?: string };
+    exceptionDetails?: PageExceptionDetails;
   }>("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }, sessionId);
   if (res.exceptionDetails !== undefined) {
-    throw new Error(`evaluate failed: ${res.exceptionDetails.text} :: ${expression}`);
+    throw new Error(
+      `files-surface: evaluate failed: ${pageErrorMessage(res.exceptionDetails)} :: ${expression}`,
+    );
   }
   return res.result?.value as T;
 }

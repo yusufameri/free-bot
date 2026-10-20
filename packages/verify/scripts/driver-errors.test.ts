@@ -40,7 +40,9 @@ describe("the keyed run driver's page errors", () => {
   test("a value the page returns comes back unchanged", async () => {
     const cdp = page({ result: { value: { done: true } } }) as unknown as KeyedRunCdp;
 
-    expect(await keyedRunEval(cdp, "session-1", "window.__threadFacts()")).toEqual({ done: true });
+    expect(await keyedRunEval<{ done: boolean }>(cdp, "session-1", "window.__threadFacts()")).toEqual(
+      { done: true },
+    );
   });
 });
 
