@@ -17,7 +17,7 @@
  * Run from the repo root: `bun packages/verify/scripts/type-gate.ts`.
  */
 
-import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { artifactDir } from "../src/index.ts";
@@ -47,11 +47,11 @@ const EXPECTED_INCLUDE = [
 ];
 
 /** The repro U1.5 measured: a plain type error that the gate must refuse anywhere it looks. */
-const BROKEN = 'const broken: number = "this is a type error";\n';
+export const BROKEN = 'const broken: number = "this is a type error";\n';
 
 type ProbeCase = { label: string; path: string };
 
-const cases: ProbeCase[] = [
+export const cases: ProbeCase[] = [
   { label: ".tsx under apps/web", path: "apps/web/scripts/__type-gate-probe.tsx" },
   { label: ".ts under apps/web/scripts", path: "apps/web/scripts/__type-gate-probe.ts" },
   { label: "a package script", path: "packages/protocol/scripts/__type-gate-probe.ts" },
@@ -89,9 +89,9 @@ const covered = [
 ];
 
 /**
- * Files in the tree that no included root reaches, each with its follow-up in docs/type-gate.md.
- * The census asserts this list is exactly the tree-minus-program difference, so it is complete by
- * construction and a new unreached file fails the probe.
+ * Tracked files that no included root reaches, each with its follow-up in docs/type-gate.md. The
+ * census asserts this list is exactly the tracked tree-minus-program difference, so it is complete
+ * by construction and a new unreached file fails the probe.
  *
  * An import pulls a file into a program whatever the include list says, which is why
  * `packages/pi-bridge/extension/tool-gate.ts` is not here despite living outside `src` and
@@ -103,11 +103,13 @@ const blind = [
   "packages/pi-bridge/extension/smoke-echo.ts",
   "packages/sandbox/image/replay-ext.ts",
   "packages/ui/browser/aside.ts",
+  "packages/ui/browser/connect-apps.ts",
   "packages/ui/browser/first-run.ts",
   "packages/ui/browser/icons.ts",
   "packages/ui/browser/library.ts",
   "packages/ui/browser/notices.ts",
   "packages/ui/browser/overlays.ts",
+  "packages/ui/browser/page.ts",
   "packages/ui/browser/provider.ts",
   "packages/ui/browser/render.ts",
   "packages/ui/browser/shell.ts",
@@ -143,21 +145,18 @@ function git(args: string[]): string {
 }
 
 /**
- * Every `.ts`/`.tsx` file under `packages/` and `apps/`, repo-relative. The census diffs this
- * against the program, so this list has to be the whole tree, not a subset.
+ * Every tracked `.ts`/`.tsx` file under `packages/` and `apps/`, repo-relative. The census subject
+ * is the commit's tree, so untracked evidence scripts in a working checkout cannot move the answer:
+ * the run at `e667880` counted 61 unreached because 45 untracked capture scripts sat under
+ * `packages/verify/artifacts`, while a clean checkout of that commit counts 16.
  */
 function treeFiles(): string[] {
-  const found: string[] = [];
-  const walk = (dir: string): void => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name === "node_modules" || entry.name.startsWith(".")) continue;
-      const abs = join(dir, entry.name);
-      if (entry.isDirectory()) walk(abs);
-      else if (/\.tsx?$/.test(entry.name)) found.push(abs.slice(root.length + 1));
-    }
-  };
-  for (const top of ["packages", "apps"]) walk(join(root, top));
-  return found.sort();
+  const listed = sh(["git", "ls-files", "-z", "--", "packages", "apps"]);
+  if (!listed.ok) throw new Error(`git ls-files failed: ${listed.output}`);
+  return listed.output
+    .split("\0")
+    .filter((path) => /\.tsx?$/.test(path))
+    .sort();
 }
 
 /** Every file the given project puts in its program, repo-local only. */
@@ -194,154 +193,176 @@ function show(command: string, out: Outcome): void {
 
 const placed: string[] = [];
 
+/**
+ * Plant one probe. An existing path is refused rather than overwritten, because the restore below
+ * deletes what this wrote and a pre-existing file would be lost.
+ */
+export function placeProbe(probeRoot: string, path: string): void {
+  const abs = join(probeRoot, path);
+  if (existsSync(abs)) throw new Error(`refusing to overwrite ${path}`);
+  writeFileSync(abs, BROKEN);
+}
+
+/** Remove exactly the paths that were planted, leaving every other file untouched. */
+export function restoreProbes(probeRoot: string, paths: string[]): void {
+  for (const path of paths) rmSync(join(probeRoot, path), { force: true });
+}
+
 function place(path: string): void {
-  writeFileSync(join(root, path), BROKEN);
+  placeProbe(root, path);
   placed.push(path);
 }
 
 function clear(): void {
-  for (const path of placed.splice(0)) rmSync(join(root, path), { force: true });
+  restoreProbes(root, placed.splice(0));
 }
 
-let ok = false;
-let headSha = "";
-let shortSha = "";
-let branch = "";
+function main(): void {
+  let ok = false;
+  let headSha = "";
+  let shortSha = "";
+  let branch = "";
 
-try {
-  headSha = git(["rev-parse", "HEAD"]);
-  shortSha = git(["rev-parse", "--short", "HEAD"]);
-  branch = git(["rev-parse", "--abbrev-ref", "HEAD"]);
+  try {
+    headSha = git(["rev-parse", "HEAD"]);
+    shortSha = git(["rev-parse", "--short", "HEAD"]);
+    branch = git(["rev-parse", "--abbrev-ref", "HEAD"]);
 
-  log.push(
-    "type gate probe",
-    "command: bun packages/verify/scripts/type-gate.ts",
-    `timestamp: ${new Date().toISOString()}`,
-    `git sha: ${headSha}`,
-    `git sha short: ${shortSha}`,
-    `branch: ${branch}`,
-    `include, root tsconfig.json: ${JSON.stringify(includeOf("tsconfig.json"))}`,
-    `include, pre-widening: ${JSON.stringify(LEGACY_INCLUDE)}`,
-  );
-
-  section("clean tree");
-  const clean = gate();
-  show("bun run typecheck", clean);
-  check("the restored tree passes the root typecheck", clean.ok);
-
-  section("coverage census");
-  const include = includeOf("tsconfig.json");
-  check(
-    "the root include is exactly the nine patterns this gate ships",
-    [...include].sort().join("\n") === [...EXPECTED_INCLUDE].sort().join("\n"),
-    `root include is ${JSON.stringify(include)}`,
-  );
-
-  const widened = program("tsconfig.json");
-  writeFileSync(
-    join(root, legacyConfig),
-    `${JSON.stringify({ extends: "./tsconfig.base.json", include: LEGACY_INCLUDE }, null, 2)}\n`,
-  );
-  const legacy = program(legacyConfig);
-  log.push(`program files: ${widened.length} widened, ${legacy.length} pre-widening`);
-  check("the widening grew the program", widened.length > legacy.length);
-  const inProgram = new Set(widened);
-  for (const path of covered) {
-    check(`in program: ${path}`, inProgram.has(join(root, path)), "the include narrowed");
-  }
-
-  for (const family of tsxFamilies) place(family.path);
-  const withStubs = new Set(program("tsconfig.json"));
-  clear();
-  for (const family of tsxFamilies) {
-    check(
-      `${family.pattern} reaches a real .tsx file`,
-      withStubs.has(join(root, family.path)),
-      "the pattern matches nothing",
+    log.push(
+      "type gate probe",
+      "command: bun packages/verify/scripts/type-gate.ts",
+      `timestamp: ${new Date().toISOString()}`,
+      `git sha: ${headSha}`,
+      `git sha short: ${shortSha}`,
+      `branch: ${branch}`,
+      `include, root tsconfig.json: ${JSON.stringify(includeOf("tsconfig.json"))}`,
+      `include, pre-widening: ${JSON.stringify(LEGACY_INCLUDE)}`,
     );
-  }
 
-  const unreached = treeFiles().filter((path) => !inProgram.has(join(root, path)));
-  log.push(
-    `unreached .ts/.tsx files under packages/ and apps/: ${unreached.length}`,
-    ...unreached.map((path) => `  ${path}`),
-  );
-  check(
-    "the blind set is exactly the documented set",
-    unreached.join("\n") === blind.join("\n"),
-    "update docs/type-gate.md and the blind list",
-  );
+    section("clean tree");
+    const clean = gate();
+    show("bun run typecheck", clean);
+    check("the restored tree passes the root typecheck", clean.ok);
 
-  section("the hole, owned by the pre-widening include");
-  for (const probeCase of cases) place(probeCase.path);
-  log.push(
-    "$ git status --porcelain -- <probe paths>",
-    git(["status", "--porcelain", "--", ...cases.map((c) => c.path)]),
-  );
-  const beforeRun = tsc(["-p", legacyConfig]);
-  show(`tsc -p ${legacyConfig}   (all three deliberate errors are in the tree)`, beforeRun);
-  check(
-    "the pre-widening include accepts all three deliberate errors",
-    beforeRun.ok && !beforeRun.output.includes("error TS"),
-  );
-  const legacyDuring = new Set(program(legacyConfig));
-  for (const probeCase of cases) {
+    section("coverage census");
+    const include = includeOf("tsconfig.json");
     check(
-      `the pre-widening include does not reach ${probeCase.path}`,
-      !legacyDuring.has(join(root, probeCase.path)),
+      "the root include is exactly the nine patterns this gate ships",
+      [...include].sort().join("\n") === [...EXPECTED_INCLUDE].sort().join("\n"),
+      `root include is ${JSON.stringify(include)}`,
     );
-  }
-  clear();
 
-  for (const probeCase of cases) {
-    section(`probe: ${probeCase.label} (${probeCase.path})`);
-    place(probeCase.path);
-    const broken = gate();
-    show("bun run typecheck", broken);
-    check(`${probeCase.label}: the root typecheck fails`, !broken.ok);
-    check(`${probeCase.label}: the failure names the file`, broken.output.includes(probeCase.path));
-    check(`${probeCase.label}: the failure is a type error`, broken.output.includes("error TS"));
+    const widened = program("tsconfig.json");
+    writeFileSync(
+      join(root, legacyConfig),
+      `${JSON.stringify({ extends: "./tsconfig.base.json", include: LEGACY_INCLUDE }, null, 2)}\n`,
+    );
+    const legacy = program(legacyConfig);
+    log.push(`program files: ${widened.length} widened, ${legacy.length} pre-widening`);
+    check("the widening grew the program", widened.length > legacy.length);
+    const inProgram = new Set(widened);
+    for (const path of covered) {
+      check(`in program: ${path}`, inProgram.has(join(root, path)), "the include narrowed");
+    }
+
+    for (const family of tsxFamilies) place(family.path);
+    const withStubs = new Set(program("tsconfig.json"));
+    clear();
+    for (const family of tsxFamilies) {
+      check(
+        `${family.pattern} reaches a real .tsx file`,
+        withStubs.has(join(root, family.path)),
+        "the pattern matches nothing",
+      );
+    }
+
+    const unreached = treeFiles().filter((path) => !inProgram.has(join(root, path)));
+    log.push(
+      `unreached .ts/.tsx files under packages/ and apps/: ${unreached.length}`,
+      ...unreached.map((path) => `  ${path}`),
+    );
+    check(
+      "the blind set is exactly the documented set",
+      unreached.join("\n") === blind.join("\n"),
+      "update docs/type-gate.md and the blind list",
+    );
+
+    section("the hole, owned by the pre-widening include");
+    for (const probeCase of cases) place(probeCase.path);
+    log.push(
+      "$ git status --porcelain -- <probe paths>",
+      git(["status", "--porcelain", "--", ...cases.map((c) => c.path)]),
+    );
+    const beforeRun = tsc(["-p", legacyConfig]);
+    show(`tsc -p ${legacyConfig}   (all three deliberate errors are in the tree)`, beforeRun);
+    check(
+      "the pre-widening include accepts all three deliberate errors",
+      beforeRun.ok && !beforeRun.output.includes("error TS"),
+    );
+    const legacyDuring = new Set(program(legacyConfig));
+    for (const probeCase of cases) {
+      check(
+        `the pre-widening include does not reach ${probeCase.path}`,
+        !legacyDuring.has(join(root, probeCase.path)),
+      );
+    }
     clear();
 
-    const restored = gate();
-    show("bun run typecheck (probe file removed)", restored);
-    check(`${probeCase.label}: the restored tree passes`, restored.ok);
+    for (const probeCase of cases) {
+      section(`probe: ${probeCase.label} (${probeCase.path})`);
+      place(probeCase.path);
+      const broken = gate();
+      show("bun run typecheck", broken);
+      check(`${probeCase.label}: the root typecheck fails`, !broken.ok);
+      check(
+        `${probeCase.label}: the failure names the file`,
+        broken.output.includes(probeCase.path),
+      );
+      check(`${probeCase.label}: the failure is a type error`, broken.output.includes("error TS"));
+      clear();
+
+      const restored = gate();
+      show("bun run typecheck (probe file removed)", restored);
+      check(`${probeCase.label}: the restored tree passes`, restored.ok);
+    }
+
+    section("after");
+    const after = gate();
+    show("bun run typecheck", after);
+    check("the tree passes with every probe file removed", after.ok);
+    const residue = git([
+      "status",
+      "--porcelain",
+      "--",
+      ...cases.map((c) => c.path),
+      ...tsxFamilies.map((f) => f.path),
+    ]);
+    check("the probe left no residue", residue === "");
+  } finally {
+    clear();
+    rmSync(join(root, legacyConfig), { force: true });
   }
 
-  section("after");
-  const after = gate();
-  show("bun run typecheck", after);
-  check("the tree passes with every probe file removed", after.ok);
-  const residue = git([
-    "status",
-    "--porcelain",
-    "--",
-    ...cases.map((c) => c.path),
-    ...tsxFamilies.map((f) => f.path),
-  ]);
-  check("the probe left no residue", residue === "");
-} finally {
-  clear();
-  rmSync(join(root, legacyConfig), { force: true });
+  const failures = checks.filter((entry) => !entry.pass);
+  ok = failures.length === 0;
+
+  log.push(
+    "",
+    "== summary ==",
+    `${checks.length - failures.length}/${checks.length} checks passed`,
+    ...failures.map((entry) => `FAIL ${entry.label}`),
+    "",
+    `${ok ? "PASS" : "FAIL"} ${feature}`,
+    "",
+  );
+
+  const dir = artifactDir(root, feature, shortSha);
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "probe.txt"), log.join("\n"));
+
+  console.log(log.slice(log.indexOf("== summary ==")).join("\n").trimEnd());
+  console.log(`artifact: packages/verify/artifacts/${feature}/${shortSha}/probe.txt`);
+  process.exitCode = ok ? 0 : 1;
 }
 
-const failures = checks.filter((entry) => !entry.pass);
-ok = failures.length === 0;
-
-log.push(
-  "",
-  "== summary ==",
-  `${checks.length - failures.length}/${checks.length} checks passed`,
-  ...failures.map((entry) => `FAIL ${entry.label}`),
-  "",
-  `${ok ? "PASS" : "FAIL"} ${feature}`,
-  "",
-);
-
-const dir = artifactDir(root, feature, shortSha);
-mkdirSync(dir, { recursive: true });
-writeFileSync(join(dir, "probe.txt"), log.join("\n"));
-
-console.log(log.slice(log.indexOf("== summary ==")).join("\n").trimEnd());
-console.log(`artifact: packages/verify/artifacts/${feature}/${shortSha}/probe.txt`);
-process.exitCode = ok ? 0 : 1;
+if (import.meta.main) main();
