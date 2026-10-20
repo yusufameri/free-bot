@@ -450,7 +450,7 @@ function openGroupDialog(): void {
   label.textContent = "Room name";
   const nameInput = document.createElement("input");
   nameInput.className = "input";
-  nameInput.value = "Launch room";
+  nameInput.placeholder = "Name this room";
   nameInput.autocomplete = "off";
   field.append(label, nameInput);
 
@@ -529,7 +529,6 @@ function openGroupDialog(): void {
   modal.append(head, field, membersLabel, members, foot);
   document.body.append(scrim, modal);
   nameInput.focus();
-  nameInput.select();
 }
 
 document

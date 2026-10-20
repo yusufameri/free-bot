@@ -83,8 +83,8 @@ const EXPORT_CHROME = [
 
 const EXPORT_DATA = [
   "pre-run-4f3a",
-  // `Launch room` is the export's sample room name and the group modal prefills it, so it is data
-  // the app still carries and stays asserted here.
+  // `Launch room` is the export's sample room name, which the group form no longer prefills and the
+  // app must not ship, so it stays asserted here.
   "Launch room",
   "waiting on approval",
   '"secrets audit"',
@@ -1597,6 +1597,62 @@ async function main(): Promise<number> {
       ["library", true, []],
     );
 
+    // ── the group form opens empty ───────────────────────────────────────────
+    section("the group form, from the sidebar's own `New group chat` control");
+    await clickAt(chrome.cdp, session, "#sidebar-new-group");
+    const groupForm = await evaluate<{
+      label: string | null;
+      value: string | null;
+      placeholder: string | null;
+    }>(
+      chrome.cdp,
+      session,
+      `(() => {
+         const input = document.querySelector('.modal .input');
+         return {
+           label: document.querySelector('.modal .field label')?.textContent ?? null,
+           value: input === null ? null : input.value,
+           placeholder: input === null ? null : input.placeholder,
+         };
+       })()`,
+    );
+    note(
+      `the group form's field: label ${JSON.stringify(groupForm.label)}, value ${JSON.stringify(groupForm.value)}, placeholder ${JSON.stringify(groupForm.placeholder)}`,
+    );
+    await capture(chrome.cdp, session, dir, "14-group-empty.png");
+    const botsBeforeCreate = await evaluate<number>(
+      chrome.cdp,
+      session,
+      `window.__shellFacts().bots.length`,
+    );
+    await clickAt(chrome.cdp, session, ".modal input[type=checkbox]");
+    await clickAt(chrome.cdp, session, ".modal .btn-primary");
+    const groupRefused = await evaluate<{
+      value: string | null;
+      toast: string | null;
+      botCount: number;
+    }>(
+      chrome.cdp,
+      session,
+      `(() => ({
+         value: document.querySelector('.modal .input')?.value ?? null,
+         toast: document.querySelector('.toast')?.textContent ?? null,
+         botCount: window.__shellFacts().bots.length,
+       }))()`,
+    );
+    note(
+      `Create with a member checked and the field empty: toast ${JSON.stringify(groupRefused.toast)}, field ${JSON.stringify(groupRefused.value)}, Bots ${botsBeforeCreate} -> ${groupRefused.botCount}`,
+    );
+    await capture(chrome.cdp, session, dir, "15-group-refused.png");
+    overlayText.push(
+      await evaluate<string>(
+        chrome.cdp,
+        session,
+        `document.querySelector('.modal')?.innerText ?? ''`,
+      ),
+    );
+    await clickAt(chrome.cdp, session, ".modal .btn-ghost");
+
     // ── the export's chrome, over the document and the bundle ───────────────
     section("where the export's chrome was looked for");
     const documentScan = await evaluate<{ html: string; text: string; hidden: number; od: number }>(
@@ -1612,7 +1668,7 @@ async function main(): Promise<number> {
     const bundleResponse = await fetch(`http://127.0.0.1:${app.apiPort}/main.js`);
     const bundle = await bundleResponse.text();
     note(
-      `scanned: the whole rendered document (${documentScan.html.length} bytes of outerHTML, ${documentScan.text.length} bytes of innerText), the text of the three overlays as they were open (${overlayText.join(" ").length} bytes), and the served bundle GET /main.js (${bundle.length} bytes, ${bundleResponse.status})`,
+      `scanned: the whole rendered document (${documentScan.html.length} bytes of outerHTML, ${documentScan.text.length} bytes of innerText), the text collected from the overlays as they were open (${overlayText.join(" ").length} bytes), and the served bundle GET /main.js (${bundle.length} bytes, ${bundleResponse.status})`,
     );
     check(
       "the export's own implementer chrome is absent from the document and from the bundle",
