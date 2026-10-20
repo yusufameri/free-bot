@@ -1,0 +1,34 @@
+post-review change
+review: CodeRabbit on PR 87, packages/verify/src/prune.ts:118
+finding: proximity.startsWith("..") also refuses a feature whose name begins with two dots
+fix commit: 6d168e1
+
+The parent check now matches a `..` path segment: `proximity === ".." || proximity.startsWith(`..${sep}`)`, and the same helper is used in applyPrune.
+A feature named `..alpha` is no longer refused as a traversal; it stays outside the plan because dot entries are not evidence.
+
+$ bun test packages/verify/src/prune.test.ts
+bun test v1.2.5 (013fdddc)
+
+packages/verify/src/prune.test.ts:
+(pass) the artifact prune > keeps the newest untracked run, a row's run and a tracked run, and deletes only the rest [2.53ms]
+(pass) the artifact prune > applying the plan removes the named directory and nothing else [0.93ms]
+(pass) the artifact prune > runs tied at the newest modification time are all kept rather than one being guessed [0.93ms]
+(pass) the artifact prune > a file where a run directory belongs is named and kept, not deleted [0.63ms]
+(pass) the artifact prune > a path outside the artifact tree is refused by name [0.44ms]
+(pass) the artifact prune > the artifact tree itself is refused as too broad [0.45ms]
+(pass) the artifact prune > a feature directory is refused as too shallow [0.53ms]
+(pass) the artifact prune > a feature whose name starts with two dots is not refused as a traversal [0.65ms]
+(pass) the artifact prune > a path that names no directory is refused instead of read as nothing to do [0.29ms]
+(pass) the artifact prune > a missing evidence table refuses the plan [0.25ms]
+(pass) the artifact prune > the committed index names no run this plan deletes [22.46ms]
+(pass) an out-of-tree plan is refused again at the point of deletion [0.47ms]
+(pass) a prune of one run directory leaves its siblings alone [0.73ms]
+
+ 13 pass
+ 0 fail
+ 23 expect() calls
+Ran 13 tests across 1 files. [61.00ms]
+$ bun run lint
+exit 0
+$ bun run typecheck
+exit 0
