@@ -17,6 +17,6 @@
     "lineWidth": 100
   },
   "files": {
-    "includes": ["**", "!design/prototype-84c6b185"]
+    "includes": ["**", "!design/prototype-84c6b185", "!packages/verify/artifacts"]
   }
 }

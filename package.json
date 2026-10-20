@@ -11,7 +11,8 @@
     "lint": "biome check .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "bun test",
-    "verify": "bun packages/verify/run.ts"
+    "verify": "bun packages/verify/run.ts",
+    "prune": "bun packages/verify/src/prune.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",

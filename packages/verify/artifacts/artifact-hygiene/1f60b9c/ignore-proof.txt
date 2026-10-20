@@ -1,0 +1,11 @@
+$ git status --short | grep -i "chrome-profile\|freebot-chrome"
+(no output)
+
+$ ls -a | grep freebot-chrome
+(no output)
+$ mkdir -p packages/verify/artifacts/mvp-status/pass81-cbd719e/chrome-profile3
+$ git status --short | grep chrome-profile
+(no output)
+
+$ git check-ignore -v packages/verify/artifacts/mvp-status/pass81-cbd719e/chrome-profile3
+.gitignore:14:packages/verify/artifacts/**/chrome-profile*/	packages/verify/artifacts/mvp-status/pass81-cbd719e/chrome-profile3

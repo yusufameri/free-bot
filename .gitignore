@@ -6,3 +6,9 @@ dist/
 # Chrome profiles the CDP drivers create in the worktree. A driver removes its own; this covers
 # the one a crashed run leaves behind.
 .freebot-chrome-profile-*/
+
+# Chrome profiles the throwaway status captures leave in their own artifact directory. The
+# `capture*.ts` scripts under `packages/verify/artifacts/mvp-status/*/` point `--user-data-dir` at
+# `chrome-profile`, `chrome-profile2` or `chrome-profile3` beside their screenshots, and a run that
+# dies before its cleanup leaves the directory there.
+packages/verify/artifacts/**/chrome-profile*/

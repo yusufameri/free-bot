@@ -1,0 +1,294 @@
+$ bun packages/verify/run.ts
+PASS step lint (Checked 323 files in 191ms. No fixes applied.) [0.3s]
+PASS step typecheck ($ tsc -p tsconfig.json) [3.0s]
+PASS step type-gate (== summary ==) [29.6s]
+PASS step tests (bun test v1.2.5 (013fdddc)) [27.7s]
+PASS step index-check (index-check: docs/VERIFICATION.md) [0.0s]
+PASS step scaffold-shape (scaffold shape ok: 9 packages, 5 apps, every package extends tsconfig.base.json) [0.0s]
+pixel gate: 9 of 9 viewport(s), 17 regions, chrome tolerance 0
+commit 1f60b9c on u10.2-artifact-hygiene
+app up http://127.0.0.1:60935/#token=<redacted>
+  home /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/freebot-pixel-gate-run-PArLmB
+export served http://127.0.0.1:60937/ from design/prototype-84c6b185/freebot-prototype.html
+chrome Chrome/155.0.8059.85
+  determinism flags --disable-lcd-text --font-render-hinting=none --force-color-profile=srgb
+app shell loaded and frozen (0 running animation(s) cancelled)
+export app screen loaded and frozen (0 running animation(s) cancelled)
+diff page: a third target in the same browser, holding no DOM of its own
+  app: target 804A0B098F768E3AAF7BCDCBCDA5A807 (page) http://127.0.0.1:60935/#token=<redacted>
+  export: target 85551E1B7173F74582E3A03480312FA9 (page) http://127.0.0.1:60937/
+  diff: target 543A99FC4A5504FF016216B05155FEFA (page) about:blank#freebot-pixel-gate-diff
+same instance: one Chrome Chrome/155.0.8059.85 over one CDP connection with 8 target(s); 3 of 3 belong to this run
+fonts: app resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif
+  export resolves to Geist, "Geist Sans", system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif
+  the two stacks are the same
+  a 'Geist' string measures 243.62px against an absent family's 215.98px, so the vendored Geist face is in use on both pages
+
+### 01-mobile-compact-360x800
+  notices dismissed: 1 app, 1 export
+  regions: 14 absent, 0 chrome, 3 content; shots 360x800
+    chrome  chrome.resizer               absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-edge            absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-list         absent   no statistic           box delta 0,0,0,0
+    content content.center-header        measured 4669/20160 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 108775/210960 differ   box delta 0,0.2,0,2.05 BOXES-DIFFER
+    content content.center-composer      clipped  10427/57600 differ     box delta 0,2.25,0,-2.25 BOXES-DIFFER
+    content content.aside-strip          absent   no statistic           box delta 0,0,0,0
+    content content.aside-body           absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-bot-row      absent   no statistic           box delta 0,0,0,0
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1177ms
+  chrome 0/0 (0.0000%), content 123871/288720 (42.9035%), whole 43.0108%
+
+### 02-mobile-standard-390x844
+  regions: 14 absent, 0 chrome, 3 content; shots 390x844
+    chrome  chrome.resizer               absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-edge            absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-list         absent   no statistic           box delta 0,0,0,0
+    content content.center-header        measured 4861/21840 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 115159/245700 differ   box delta 0,0.2,0,2.05 BOXES-DIFFER
+    content content.center-composer      clipped  10688/62400 differ     box delta 0,2.25,0,-2.25 BOXES-DIFFER
+    content content.aside-strip          absent   no statistic           box delta 0,0,0,0
+    content content.aside-body           absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-bot-row      absent   no statistic           box delta 0,0,0,0
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1055ms
+  chrome 0/0 (0.0000%), content 130708/329940 (39.6157%), whole 39.7096%
+
+### 03-mobile-large-430x932
+  regions: 14 absent, 0 chrome, 3 content; shots 430x932
+    chrome  chrome.resizer               absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-edge            absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-list         absent   no statistic           box delta 0,0,0,0
+    content content.center-header        measured 5055/24080 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 149546/316050 differ   box delta 0,0.2,0,-15.76 BOXES-DIFFER
+    content content.center-composer      measured 21027/61490 differ     box delta 0,-15.56,0,15.57 BOXES-DIFFER
+    content content.aside-strip          absent   no statistic           box delta 0,0,0,0
+    content content.aside-body           absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-bot-row      absent   no statistic           box delta 0,0,0,0
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1142ms
+  chrome 0/0 (0.0000%), content 175628/401620 (43.7299%), whole 43.7274%
+
+### 04-foldable-small-tablet-600x960
+  regions: 14 absent, 0 chrome, 3 content; shots 600x960
+    chrome  chrome.resizer               absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-edge            absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-list         absent   no statistic           box delta 0,0,0,0
+    content content.center-header        measured 5769/33600 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 204309/457800 differ   box delta 0,0.2,0,2.05 BOXES-DIFFER
+    content content.center-composer      measured 12327/85800 differ     box delta 0,2.25,0,-2.25 BOXES-DIFFER
+    content content.aside-strip          absent   no statistic           box delta 0,0,0,0
+    content content.aside-body           absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-bot-row      absent   no statistic           box delta 0,0,0,0
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1174ms
+  chrome 0/0 (0.0000%), content 222405/577200 (38.5317%), whole 38.6120%
+
+### 05-tablet-portrait-820x1180
+  regions: 14 absent, 0 chrome, 3 content; shots 820x1180
+    chrome  chrome.resizer               absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-edge            absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-list         absent   no statistic           box delta 0,0,0,0
+    content content.center-header        measured 5908/45920 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 283323/806060 differ   box delta 0,0.2,0,2.05 BOXES-DIFFER
+    content content.center-composer      measured 11747/117260 differ    box delta 0,2.25,0,-2.25 BOXES-DIFFER
+    content content.aside-strip          absent   no statistic           box delta 0,0,0,0
+    content content.aside-body           absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-bot-row      absent   no statistic           box delta 0,0,0,0
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1334ms
+  chrome 0/0 (0.0000%), content 300978/969240 (31.0530%), whole 31.1056%
+
+### 06-tablet-landscape-1024x768
+  regions: 11 absent, 1 chrome, 5 content; shots 1024x768
+    chrome  chrome.resizer               absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          measured 0/768 differ           box delta 0,0,0,0
+    chrome  chrome.aside-edge            absent   no statistic           box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-list         measured 28337/154907 differ    box delta 0,0,0,0
+    content content.center-header        measured 5908/42560 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 129231/430920 differ   box delta 0,0.2,0,6.05 BOXES-DIFFER
+    content content.center-composer      measured 8701/111720 differ     box delta 0,6.25,0,-6.25 BOXES-DIFFER
+    content content.aside-strip          absent   no statistic           box delta 0,0,0,0
+    content content.aside-body           absent   no statistic           box delta 0,0,0,0
+    content content.sidebar-bot-row      measured 2948/8505 differ       box delta 0,-8.02,0,0 BOXES-DIFFER
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1255ms
+  chrome 0/768 (0.0000%), content 175125/748612 (23.3933%), whole 22.2008%
+
+### 07-laptop-1366x768
+  regions: 6 absent, 4 chrome, 7 content; shots 1366x768
+    chrome  chrome.resizer               measured 0/3840 differ          box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          measured 0/768 differ           box delta 0,0,0,0
+    chrome  chrome.aside-edge            measured 0/768 differ           box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      measured 0/742 differ           box delta 0,0,0,0
+    content content.sidebar-list         measured 28337/154907 differ    box delta 0,0,0,0
+    content content.center-header        measured 6168/40600 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 125626/411075 differ   box delta 0,0.2,0,6.05 BOXES-DIFFER
+    content content.center-composer      measured 8456/106575 differ     box delta 0,6.25,0,-6.25 BOXES-DIFFER
+    content content.aside-strip          measured 1113/16695 differ      box delta 0,0,0,0
+    content content.aside-body           clipped  71399/268604 differ    box delta 0,0,0,0
+    content content.sidebar-bot-row      measured 2948/8505 differ       box delta 0,-8.02,0,0 BOXES-DIFFER
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1338ms
+  chrome 0/6118 (0.0000%), content 244047/1006961 (24.2360%), whole 23.2122%
+
+### 08-desktop-1440x900
+  regions: 6 absent, 4 chrome, 7 content; shots 1440x900
+    chrome  chrome.resizer               measured 0/4500 differ          box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          measured 0/900 differ           box delta 0,0,0,0
+    chrome  chrome.aside-edge            measured 0/900 differ           box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      measured 0/742 differ           box delta 0,0,0,0
+    content content.sidebar-list         measured 29619/189623 differ    box delta 0,0,0,0
+    content content.center-header        measured 6168/44744 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 186623/558501 differ   box delta 0,0.2,0,6.05 BOXES-DIFFER
+    content content.center-composer      measured 9690/117453 differ     box delta 0,6.25,0,-6.25 BOXES-DIFFER
+    content content.aside-strip          measured 1113/16695 differ      box delta 0,0,0,0
+    content content.aside-body           clipped  72806/317576 differ    box delta 0,0,0,0
+    content content.sidebar-bot-row      measured 2948/8505 differ       box delta 0,-8.02,0,0 BOXES-DIFFER
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1445ms
+  chrome 0/7042 (0.0000%), content 308967/1253097 (24.6563%), whole 23.7438%
+
+### 09-wide-1920x1080
+  regions: 6 absent, 4 chrome, 7 content; shots 1920x1080
+    chrome  chrome.resizer               measured 0/5400 differ          box delta 0,0,0,0
+    chrome  chrome.sidebar-edge          measured 0/1080 differ          box delta 0,0,0,0
+    chrome  chrome.aside-edge            measured 0/1080 differ          box delta 0,0,0,0
+    chrome  chrome.aside-strip-rule      measured 0/742 differ           box delta 0,0,0,0
+    content content.sidebar-list         measured 29619/236963 differ    box delta 0,0,0,0
+    content content.center-header        measured 6168/71624 differ      box delta 0,0,0,0.2
+    content content.center-transcript    measured 278225/1124241 differ  box delta 0,0.2,0,6.05 BOXES-DIFFER
+    content content.center-composer      measured 8989/188013 differ     box delta 0,6.25,0,-6.25 BOXES-DIFFER
+    content content.aside-strip          measured 1113/16695 differ      box delta 0,0,0,0
+    content content.aside-body           clipped  72806/384356 differ    box delta 0,0,0,0
+    content content.sidebar-bot-row      measured 2948/8505 differ       box delta 0,-8.02,0,0 BOXES-DIFFER
+    content content.item-turn-marker     absent   no statistic           no counterpart
+    content content.item-tool-card       absent   no statistic           no counterpart
+    content content.item-approval-card   absent   no statistic           no counterpart
+    content content.overlay-palette      absent   no statistic           no counterpart
+    content content.overlay-picker       absent   no statistic           no counterpart
+    content content.overlay-modal        absent   no statistic           no counterpart
+  overflow (app): none
+  visited in 1776ms
+  chrome 0/8302 (0.0000%), content 399868/2030397 (19.6941%), whole 19.2582%
+
+chrome: chrome Chrome/155.0.8059.85
+### 01-mobile-compact-360x800
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 123871/288720 pixels differ (42.9035%), mean|delta| 14.366, max channel 255, over-threshold 122215
+whole frame: 123871/288000 pixels differ (43.0108%), mean|delta| 14.402
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+### 02-mobile-standard-390x844
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 130708/329940 pixels differ (39.6157%), mean|delta| 13.177, max channel 255, over-threshold 128620
+whole frame: 130708/329160 pixels differ (39.7096%), mean|delta| 13.208
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+### 03-mobile-large-430x932
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 175628/401620 pixels differ (43.7299%), mean|delta| 12.435, max channel 255, over-threshold 173312
+whole frame: 175242/400760 pixels differ (43.7274%), mean|delta| 12.454
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+### 04-foldable-small-tablet-600x960
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 222405/577200 pixels differ (38.5317%), mean|delta| 9.700, max channel 255, over-threshold 220110
+whole frame: 222405/576000 pixels differ (38.6120%), mean|delta| 9.720
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+### 05-tablet-portrait-820x1180
+chrome: 0/0 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 300978/969240 pixels differ (31.0530%), mean|delta| 7.085, max channel 255, over-threshold 298416
+whole frame: 300978/967600 pixels differ (31.1056%), mean|delta| 7.097
+chrome: this viewport carries no chrome region, because both pages stand the sidebar, the resizer and the pane down below their breakpoints. A 0/0 here is an empty set, not a pass; the shell's evidence at this width is the box deltas below.
+### 06-tablet-landscape-1024x768
+chrome: 0/768 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 175125/748612 pixels differ (23.3933%), mean|delta| 6.438, max channel 255, over-threshold 172130
+whole frame: 174594/786432 pixels differ (22.2008%), mean|delta| 6.151
+### 07-laptop-1366x768
+chrome: 0/6118 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 244047/1006961 pixels differ (24.2360%), mean|delta| 6.592, max channel 255, over-threshold 237613
+whole frame: 243516/1049088 pixels differ (23.2122%), mean|delta| 6.344
+### 08-desktop-1440x900
+chrome: 0/7042 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 308967/1253097 pixels differ (24.6563%), mean|delta| 6.720, max channel 255, over-threshold 302134
+whole frame: 307720/1296000 pixels differ (23.7438%), mean|delta| 6.507
+### 09-wide-1920x1080
+chrome: 0/8302 pixels differ (0.0000%), mean|delta| 0.000, max channel 0, over-threshold 0
+content: 399868/2030397 pixels differ (19.6941%), mean|delta| 4.996, max channel 255, over-threshold 392899
+whole frame: 399337/2073600 pixels differ (19.2582%), mean|delta| 4.900
+| # | viewport | chrome regions | chrome differing | chrome share | content regions | content share | whole share | boxes differing |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | mobile-compact 360x800 | 0 | 0/0 | 0.0000% | 3 | 42.9035% | 43.0108% | 2 |
+| 2 | mobile-standard 390x844 | 0 | 0/0 | 0.0000% | 3 | 39.6157% | 39.7096% | 2 |
+| 3 | mobile-large 430x932 | 0 | 0/0 | 0.0000% | 3 | 43.7299% | 43.7274% | 2 |
+| 4 | foldable-small-tablet 600x960 | 0 | 0/0 | 0.0000% | 3 | 38.5317% | 38.6120% | 2 |
+| 5 | tablet-portrait 820x1180 | 0 | 0/0 | 0.0000% | 3 | 31.0530% | 31.1056% | 2 |
+| 6 | tablet-landscape 1024x768 | 1 | 0/768 | 0.0000% | 5 | 23.3933% | 22.2008% | 3 |
+| 7 | laptop 1366x768 | 4 | 0/6118 | 0.0000% | 7 | 24.2360% | 23.2122% | 3 |
+| 8 | desktop 1440x900 | 4 | 0/7042 | 0.0000% | 7 | 24.6563% | 23.7438% | 3 |
+| 9 | wide 1920x1080 | 4 | 0/8302 | 0.0000% | 7 | 19.6941% | 19.2582% | 3 |
+chrome overall: 0/22230 pixels differ (0.0000%), tolerance 0 per region
+RESULT: PASS
+PASS step pixel-gate (pixel gate: 9 of 9 viewport(s), 17 regions, chrome tolerance 0) [13.2s]
+PASS step healthz (GET /healthz -> 200 {"status":"ok","service":"freebot-server"}) [0.1s]
+SKIP step status-capture (FREEBOT_STATUS_URL is not set, so there is no live instance to capture) [0.0s]
+artifact: packages/verify/artifacts/scaffold/1f60b9c/assert.txt
+PASS scaffold

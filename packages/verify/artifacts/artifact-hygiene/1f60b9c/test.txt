@@ -1,0 +1,1215 @@
+bun test v1.2.5 (013fdddc)
+
+spikes/mvp-smoke/frames.test.ts:
+(pass) collapsedPairs > two frames that show the same page are reported, whatever their bytes [0.10ms]
+(pass) collapsedPairs > the parked refusal state is distinct from the terminal state [0.05ms]
+(pass) collapsedPairs > frames differing only in the assistant text are still distinct
+
+spikes/mvp-smoke/display.test.ts:
+(pass) isDestructive > a bash command that names rm needs a human [0.09ms]
+(pass) mapPiFrame > turns count up and end with the current turn number
+(pass) mapPiFrame > only text deltas map; thinking and toolcall deltas drop
+(pass) mapPiFrame > a tool call card carries the literal command and the destructive verdict
+(pass) mapPiFrame > a denied call's result carries no output
+(pass) DisplayLog > emits dense seqs, reloads verbatim, and audits clean [1.04ms]
+
+spikes/web-stream/reducer.test.ts:
+(pass) mapping the recorded transcript > maps scenario a into 84 seq-dense display frames [0.50ms]
+(pass) mapping the recorded transcript > gates the marked destructive call with approval frames [0.17ms]
+(pass) mapping the recorded transcript > carries real tool output and duration for the ungated calls [0.11ms]
+(pass) the reducer > holds still at the approval gate: seq 53, awaiting, card waiting [0.22ms]
+(pass) the reducer > the allow path finishes the gated call with its output [0.16ms]
+(pass) the reducer > the deny path marks the card denied with no output [0.19ms]
+(pass) the reducer > a full replay ends done with the literal shape of the run [0.21ms]
+(pass) the reducer > resending seen seqs changes nothing and counts as duplicates [0.20ms]
+(pass) the reducer > a gap fails loudly with the expected literal message [0.09ms]
+(pass) the reducer > a seq that passed unseen is an out-of-order error [0.03ms]
+(pass) the reducer > markResumed records the resume point without touching the stream
+
+apps/sandbox-agent/src/outbox.test.ts:
+(pass) Outbox > pending holds every frame until the server acks it [0.09ms]
+(pass) Outbox > an ack trims everything at or below it, and never moves backwards [0.09ms]
+(pass) Outbox > since returns the unconfirmed frames after a seq, in emission order [0.08ms]
+
+apps/web/scripts/fixture.test.ts:
+(pass) the committed fixtures > regenerating reproduces both files byte for byte [6.94ms]
+(pass) the committed fixtures > dense seq from 1, one run, a strictly increasing clock [2.30ms]
+(pass) the committed fixtures > every line is a v1 message with a seq, and the v1 schema is what says so [1.11ms]
+(pass) the committed fixtures > the session opens with the prompt and closes with the run boundary [0.40ms]
+(pass) the committed fixtures > the allow fixture mints a grant, issues it, then consumes it on the gated call [0.33ms]
+(pass) the committed fixtures > the deny fixture records a refusal with no grant and no tool output [0.30ms]
+(pass) the committed fixtures > the gate's verdict precedes the result it governs, once per call [0.57ms]
+(pass) the committed fixtures > the gate's messages are ordered consent, verdict, result, for both paths [0.41ms]
+(pass) the committed fixtures > the fixture paths name the files the replay server reads
+
+apps/web/scripts/thread.test.ts:
+(pass) the allow fixture > every message applied, dense to the fixture's head [0.01ms]
+(pass) the allow fixture > the run's own prompt is the first thing the thread shows
+(pass) the allow fixture > four turns, one text run each, the last one closing the exchange [0.09ms]
+(pass) the allow fixture > every tool call ended in a terminal status with its literal output
+(pass) the allow fixture > the gate's verdict landed on the governed card
+(pass) the allow fixture > the approval carries the decision and the grant it minted
+(pass) the allow fixture > the grant lifecycle is on the record, issued then consumed by the call [0.12ms]
+(pass) the allow fixture > the run finished by itself
+(pass) the deny fixture > the refused call never ran, so its card has no output [0.03ms]
+(pass) the deny fixture > the refusal is on the approval card and the gate code is on the record [0.02ms]
+(pass) ordering > a seq already applied is counted and dropped, never rendered twice [0.51ms]
+(pass) ordering > a gap throws instead of rendering a transcript with a hole in it [0.22ms]
+(pass) ordering > a stream gap marker is reported as a stream error [0.08ms]
+
+apps/server/src/app.test.ts:
+(pass) GET /healthz > returns 200 and the service identity [0.87ms]
+(pass) GET /healthz > unknown paths are 404 [0.45ms]
+
+apps/server/src/provider.test.ts:
+(pass) the provider factory > auto takes the vault's keyed path when the vault holds a key [0.15ms]
+(pass) the provider factory > auto replays on a keyless machine and says why
+(pass) the provider factory > replay records even when a key is right there, which is how an evidence driver pins it [0.09ms]
+(pass) the provider factory > live demands the key and refuses to fall back to a recording [0.03ms]
+(pass) the provider factory > the description and the launcher's line carry no key, only its presence [0.12ms]
+
+apps/server/src/provider-setup.test.ts:
+(pass) writing the vault > a save puts the key in the vault at mode 600 and replaces what was there [0.68ms]
+(pass) writing the vault > a save makes the directory it needs, at mode 700 [0.74ms]
+(pass) connecting a provider > a capable test saves the flags and answers with them [1.30ms]
+(pass) connecting a provider > a reply with no tool call stores the weaker capability [0.72ms]
+(pass) connecting a provider > a refusal saves the connection marked untested, with the provider's status code [0.56ms]
+(pass) connecting a provider > the key reaches the vault file and nothing else the save produces [0.34ms]
+(pass) reading page 1's state > no vault is the keyless machine, and the connection is null [0.18ms]
+(pass) reading page 1's state > a hand-written vault is a connection nobody has tested [0.44ms]
+(pass) reading page 1's state > a record measured on another endpoint reads untested, so a stale capable cannot survive [0.48ms]
+(pass) reading page 1's state > a record file that is not the shape this contract ships is ignored, not trusted [0.46ms]
+(pass) reading page 1's state > the two default paths are FREEBOT_HOME's, and the record never holds a key
+
+apps/server/src/files-routes.test.ts:
+(pass) list_files and read_file over the oRPC route surface > the listing and the file's bytes come back over HTTP, from that Bot's workspace [12.86ms]
+(pass) list_files and read_file over the oRPC route surface > a symlink out of the workspace is refused with its own code on the wire [4.38ms]
+(pass) list_files and read_file over the oRPC route surface > an absolute path and a .. segment are refused at the contract boundary [5.09ms]
+(pass) list_files and read_file over the oRPC route surface > one Bot's workspace is not another Bot's, and an unknown Bot is refused by name [4.48ms]
+[auth] refused code=token_missing method=POST path=/rpc/list_files
+(pass) list_files and read_file over the oRPC route surface > an unauthenticated read is refused before any handler runs [2.92ms]
+
+apps/server/src/auth.test.ts:
+(pass) the per-launch token > is 256 bits of url-safe text, different every launch [0.63ms]
+(pass) the per-launch token > mints the same shape over 100 launches [0.19ms]
+(pass) the refusal matrix > the five codes are distinct literals
+(pass) the refusal matrix > a request with no token is refused 401 token_missing [0.06ms]
+(pass) the refusal matrix > a wrong token is refused 401 token_mismatch [0.05ms]
+(pass) the refusal matrix > a token that differs only in length is refused the same way [0.05ms]
+(pass) the refusal matrix > a foreign Origin is refused 403 origin_not_allowed [0.04ms]
+(pass) the refusal matrix > a foreign Host is refused 403 host_not_allowed before the token is read
+(pass) the refusal matrix > the allowed request passes
+(pass) the refusal matrix > a refusal body carries the code and never the presented token [0.10ms]
+(pass) the Host check > accepts loopback in every spelling [0.03ms]
+(pass) the Host check > refuses a rebinding-style hostname, including loopback-lookalikes [0.04ms]
+(pass) the Host check > refuses the tunnel leg's allowance unless the caller passes it [0.02ms]
+(pass) the Host check > refuses a missing Host header [0.03ms]
+(pass) the Host check > reads the hostname out of every host spelling [0.02ms]
+(pass) the Origin check > accepts loopback origins on http and https [0.01ms]
+(pass) the Origin check > refuses a foreign origin [0.02ms]
+(pass) the Origin check > refuses the opaque and non-http origins a browser can send [0.05ms]
+(pass) the Origin check > allows an absent Origin, which only a non-browser client sends
+(pass) the token reader > reads a bearer header and nothing else
+(pass) the token reader > reads a query token only where the caller allows it
+(pass) the token reader > prefers the header when both are present [0.09ms]
+(pass) the token reader > a query token satisfies the gate only when the caller asks for it [0.05ms]
+(pass) the check order > Host beats Origin beats token [0.03ms]
+(pass) the check order > a bare checkToken over the matrix [0.03ms]
+
+apps/server/src/workspace-files.test.ts:
+(pass) a path that leaves the workspace > an absolute path is refused by name, with no bytes [1.06ms]
+(pass) a path that leaves the workspace > a .. segment is refused at the head, in the middle, and at the tail [0.84ms]
+(pass) a path that leaves the workspace > a symlink that resolves outside is refused, and the message names where it pointed [0.79ms]
+(pass) a path that leaves the workspace > a symlink that stays inside is read like the file it names [0.66ms]
+(pass) the listing > directories come first, and every entry carries its own path, kind and size [0.95ms]
+(pass) the listing > a file is not a directory, and a missing path is named [1.03ms]
+(pass) the read > a directory, a missing path, and binary bytes are each refused by name [1.08ms]
+(pass) the read > a file past the cap comes back as a prefix, and its size is the bytes on disk [1.45ms]
+(pass) the read > an empty file is text, not binary [0.44ms]
+
+apps/server/src/api-server.test.ts:
+(pass) the oRPC surface over HTTP > start_run, get_run and cancel_run round trip through the contract [8.53ms]
+(pass) the oRPC surface over HTTP > a second cancel converges instead of failing [4.98ms]
+(pass) the oRPC surface over HTTP > an unknown run is NOT_FOUND on both read and cancel [2.76ms]
+(pass) the oRPC surface over HTTP > a strict input refuses an unknown key before the handler runs [4.30ms]
+[auth] refused code=token_missing method=POST path=/rpc/nope
+(pass) the oRPC surface over HTTP > unknown procedures are 404 behind the gate [2.24ms]
+(pass) the event stream over a real socket > replays from lastSeq, then yields a live event, in seq order [21.92ms]
+(pass) the event stream over a real socket > a resume from lastSeq 3 continues at seq 4 with no duplicate [18.34ms]
+(pass) the event stream over a real socket > a closed socket releases its subscription [14.05ms]
+[auth] refused code=token_missing method=GET path=/events
+[auth] refused code=token_mismatch method=GET path=/events
+(pass) the page's stream over the real server > a missing or wrong token is refused, and the printed token is accepted [2.94ms]
+(pass) the page's stream over the real server > the page sees the run it starts, in the shape it renders [13.54ms]
+(pass) the page's stream over the real server > a stream that names no thread, or an unknown one, is refused before the upgrade [3.19ms]
+(pass) the page's stream over the real server > the page serves its own host page and bundle [16.60ms]
+(pass) the page's stream over the real server > the vendored Geist face and its licence are served beside the page [1.82ms]
+[auth] refused code=token_missing method=POST path=/rpc/start_run
+[auth] refused code=token_mismatch method=POST path=/rpc/start_run
+[auth] refused code=origin_not_allowed method=POST path=/rpc/start_run
+[auth] refused code=host_not_allowed method=POST path=/rpc/start_run
+(pass) the gate over the real server > the 401/403/200 matrix, with each refusal's own code [4.48ms]
+[auth] refused code=token_missing method=POST path=/rpc/start_run
+(pass) the gate over the real server > a refused call never reaches a handler [2.50ms]
+[auth] refused code=token_missing method=GET path=/rpc-ws
+[auth] refused code=token_mismatch method=GET path=/rpc-ws
+[auth] refused code=origin_not_allowed method=GET path=/rpc-ws
+(pass) the gate over the real server > the WebSocket upgrade is refused without the token, and accepted with it [1.98ms]
+[auth] refused code=host_not_allowed method=GET path=/healthz
+(pass) the gate over the real server > healthz stays a liveness probe behind the Host check [2.44ms]
+[auth] refused code=host_not_allowed method=GET path=/healthz
+(pass) the gate over the real server > the tunnel leg's allowance stays off the API leg [1.17ms]
+(pass) the gate over the real server > the server answers on loopback only [111.29ms]
+
+apps/server/src/router.test.ts:
+(pass) a run started over start_run > executes the loop, and its frames arrive on subscribe_events [19.26ms]
+(pass) a run started over start_run > a denied park reaches user_denied and the governed call never runs [17.57ms]
+(pass) a run started over start_run > cancel_run ends the run the caller just started [5.50ms]
+(pass) a run started over start_run > a second run in the same thread appends to the same conversation [20.94ms]
+(pass) a run started over start_run > a stale thread is refused by name, and the frames stay in the live conversation [3.93ms]
+(pass) the Bot and thread arms > a Bot is created, listed, and given threads that come back with their runs [5.87ms]
+(pass) the Bot and thread arms > a Bot or a thread the server does not hold is refused by its own name [4.14ms]
+(pass) the Bot and thread arms > a group's members are deduplicated and limited to ordinary Bots this server holds [5.29ms]
+
+apps/server/src/vault.test.ts:
+(pass) the vault reader > reads the key, the endpoint and the model out of the vault file [0.54ms]
+(pass) the vault reader > tolerates an export line and one layer of quotes, and defaults the other two [0.33ms]
+(pass) the vault reader > no file, no key line, and a blank value are all the same answer: no key here [0.69ms]
+(pass) the vault reader > the description names the path, the presence, and the mode, and never a value [0.33ms]
+(pass) the vault reader > the default path is FREEBOT_HOME's provider.env [0.03ms]
+
+apps/server/src/tunnel.test.ts:
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+(pass) tunnel ingest > frames land in one log; the unary endpoint serves exactly the frames after last_seen_seq [9.42ms]
+[tunnel] agent detached log_last_seq=5
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+[stream] client attached last_seen_seq=0 log_last_seq=3
+[stream] client attached last_seen_seq=3 log_last_seq=6
+[stream] client attached last_seen_seq=0 log_last_seq=6
+(pass) tunnel ingest > a rejoining stream client receives exactly the frames after its last_seen_seq [9.44ms]
+[tunnel] agent detached log_last_seq=6
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+[stream] client attached last_seen_seq=0 log_last_seq=2
+(pass) tunnel ingest > a live stream client keeps receiving after its replay [6.77ms]
+[tunnel] agent detached log_last_seq=3
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+[tunnel] agent detached log_last_seq=4
+[tunnel] agent attached last_seen_seq=2 log_last_seq=4
+(pass) tunnel reconnect and repair > a replayed frame is suppressed, not duplicated, and the log stays gap-free [14.59ms]
+[tunnel] agent detached log_last_seq=5
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+(pass) tunnel reconnect and repair > a frame that skips ahead is nacked, and the resend heals it [12.60ms]
+[tunnel] agent detached log_last_seq=4
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+(pass) tunnel reconnect and repair > truncated and malformed tunnel payloads never touch the log [14.53ms]
+[tunnel] agent detached log_last_seq=2
+[auth] refused code=host_not_allowed method=GET path=/events
+[auth] refused code=host_not_allowed method=GET path=/audit
+(pass) the tunnel leg's HTTP reads > a rebound Host is refused on /events and /audit [2.02ms]
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+(pass) the tunnel leg's HTTP reads > the in-sandbox agent's Host still reaches both reads [8.97ms]
+[tunnel] agent detached log_last_seq=1
+[tunnel] agent attached last_seen_seq=0 log_last_seq=0
+(pass) the tunnel leg's HTTP reads > a loopback Host reads the log unchanged [8.24ms]
+[tunnel] agent detached log_last_seq=1
+[auth] refused code=origin_not_allowed method=GET path=/stream
+[auth] refused code=origin_not_allowed method=GET path=/stream
+(pass) cross-origin upgrades > a foreign Origin is refused before the socket opens [2.89ms]
+[stream] client attached last_seen_seq=0 log_last_seq=0
+[stream] client attached last_seen_seq=0 log_last_seq=0
+(pass) cross-origin upgrades > a loopback Origin and a client with no Origin still upgrade [1.17ms]
+
+apps/server/src/keyed-provider.test.ts:
+(pass) the keyed provider over a fake transport > one real turn: the model's text and tool call reach the loop, and the request is journaled [2.38ms]
+(pass) the keyed provider over a fake transport > a priced turn carries the nano-USD the run's spend cap compares [0.26ms]
+(pass) the keyed provider over a fake transport > an unpriced turn reports no cost rather than a zero a cap would read as satisfied [0.08ms]
+(pass) the keyed provider over a fake transport > the next turn carries the assistant's call and the tool's own output back to the model [0.20ms]
+(pass) the keyed provider over a fake transport > a denied call is told to the model as a refusal, so a retry is the model's own choice [0.03ms]
+(pass) the keyed provider over a fake transport > a tool the run does not offer is a malformed tool call, not a call the gate ever sees [0.22ms]
+(pass) the keyed provider over a fake transport > the client's typed failures become the taxonomy codes the loop settles on [0.26ms]
+(pass) the keyed provider over a fake transport > a provider that echoes the key cannot get it into a note, the journal, or a failure [0.10ms]
+(pass) the keyed provider over a fake transport > a call's arguments are repaired visibly rather than silently when the model wraps them [0.12ms]
+
+apps/server/src/connectors.test.ts:
+(pass) the two stores, one secret > a connect writes the credential to the vault and the rest to the record, both mode 600 [6.30ms]
+(pass) the two stores, one secret > the record file holds no credential, and names the vault instead [2.45ms]
+(pass) the two stores, one secret > a record that still carries a header map is refused by name, pointing at the vault [0.47ms]
+(pass) the two stores, one secret > the vault beside a --connectors path is that path's own directory
+(pass) the probe is a real call through the seam > connect and test both ask the person's own service, and it answers [4.70ms]
+(pass) the probe is a real call through the seam > a credential the service refuses is a state, not a throw [1.92ms]
+(pass) the probe is a real call through the seam > a record the vault holds no credential for is untested, and is never asked for one [4.11ms]
+(pass) rotation needs no rebuild > a credential replaced in place is what the next call carries, on the same registry [4.40ms]
+(pass) rotation needs no rebuild > rotating a credential does not rename the connector or lose its label [2.93ms]
+(pass) removal really removes > the credential leaves the vault, the record leaves the store, and a call is refused by name [3.35ms]
+(pass) removal really removes > removing one connector leaves another's credential exactly where it was [5.50ms]
+(pass) the run path's connectors > a record with a credential is a connector, and one without it is not offered [3.27ms]
+(pass) the run path's connectors > a connector the run path holds carries the credential's reference and no value [2.83ms]
+
+apps/server/src/run-service.test.ts:
+(pass) a Bot, a thread, and a run inside them > two runs in one thread share one seq space and both finish [2.81ms]
+(pass) a Bot, a thread, and a run inside them > both records exist before the loop's first await, and the run names them [1.17ms]
+(pass) a Bot, a thread, and a run inside them > two subscribers both see every frame, in seq order [12.07ms]
+(pass) a Bot, a thread, and a run inside them > one thread's frames are not another thread's, and each log starts at its own seq 1 [1.62ms]
+(pass) a Bot, a thread, and a run inside them > a Bot or a thread this server does not hold is refused by name [0.37ms]
+(pass) a stop while the run is parked > cancel wakes the parked approval and settles the run at cancelled at once [7.49ms]
+(pass) the Bot's workspace > every run mounts this Bot's own directory at /workspace [1.54ms]
+(pass) the Bot's workspace > a file in one Bot's workspace is not in another Bot's [0.67ms]
+(pass) the Bot's workspace > a workspace read for a Bot this server does not hold creates nothing and is refused [0.11ms]
+(pass) a second process over the same bots root > brings back every Bot, every thread and every run [2.10ms]
+(pass) a second process over the same bots root > run ids continue past the runs the last process recorded [2.16ms]
+(pass) a second process over the same bots root > a second run whose setup throws settles instead of staying queued [1.98ms]
+(pass) a second process over the same bots root > a setup error that names a parked code settles instead of throwing [1.04ms]
+(pass) a second process over the same bots root > a boot finishes a setup settlement that never reached the record [1.81ms]
+(pass) a thread's conversation across a restart > the frames come back, and the next run continues the same seq space [2.95ms]
+(pass) a thread's conversation across a restart > a run the last process left in flight is settled where the page can see it [7.96ms]
+(pass) a thread's conversation across a restart > a boot finishes an ending the last process got half way through [7.82ms]
+(pass) the bots root a service runs over > FREEBOT_WORKSPACE moves the whole set, so a driver lands in its own directory [0.54ms]
+(pass) the bots root a service runs over > the option still wins over the variable, and an empty variable means the default [0.56ms]
+
+packages/connectors/src/mcp.test.ts:
+(pass) the MCP adapter over a real server > the handshake reports the server, and the tools come from the server's own list [3.20ms]
+(pass) the MCP adapter over a real server > a call reaches the tool and carries its result back as the text the model reads [1.26ms]
+(pass) the MCP adapter over a real server > a tool that reports a failure is a refusal the caller can see, not a thrown error [2.29ms]
+(pass) the MCP adapter over a real server > a credential the server refuses fails the call, and no message carries the value [1.83ms]
+(pass) the MCP adapter over a real server > an unknown tool is refused by the server and named in the seam's error [1.13ms]
+(pass) the MCP adapter over a real server > a server that answers a request as an event stream is read the same way [0.13ms]
+(pass) the MCP adapter over a real server > the session the handshake minted rides every later message, and a notification has no id [0.08ms]
+(pass) the MCP adapter over a real server > a request without the session the server minted is refused [1.75ms]
+(pass) the MCP adapter over a real server > a server that cannot be reached is a health state rather than a crash [0.16ms]
+(pass) the MCP adapter's place in the seam > the same consumer runs over the MCP adapter and reports the same shape as the stub [1.42ms]
+
+packages/connectors/src/boundary.test.ts:
+(pass) the vendor boundary > no source file outside a vendor adapter imports a package [0.49ms]
+(pass) the vendor boundary > the interface module imports nothing at all [0.12ms]
+(pass) the vendor boundary > the package declares no dependency, so the vendor cannot leak through an import graph [0.06ms]
+(pass) the vendor boundary > the vendor's name is held to the allowlist, and the interface module names no vendor [0.21ms]
+(pass) the vendor boundary > a model-facing name carries its connector's id, so two connectors cannot collide [0.04ms]
+(pass) a second adapter the seam admits > the stub satisfies Connector and runs through the same consumer as an MCP adapter [0.18ms]
+(pass) a second adapter the seam admits > a call the stub cannot answer is a refusal, not a throw [0.11ms]
+
+packages/connectors/src/composio.test.ts:
+(pass) the Composio adapter over an emulated vendor > the session route is the MCP endpoint's path, and the tools come from the endpoint it names [5.55ms]
+(pass) the Composio adapter over an emulated vendor > a tool call changes the emulated account's own state, and reset returns it to empty [3.99ms]
+(pass) the Composio adapter over an emulated vendor > the project key reaches the session route and no other request anywhere [4.16ms]
+(pass) the Composio adapter over an emulated vendor > a session the vendor refuses is a health state, and no message carries the key [2.89ms]
+(pass) the Composio adapter over an emulated vendor > a session that answers a shape this seam cannot speak to is refused by name [11.99ms]
+(pass) the Composio adapter over an emulated vendor > a session that names no headers reaches the endpoint with none, and is refused by its gate [2.90ms]
+(pass) the Composio adapter over an emulated vendor > the adapter is the same Connector the seam's consumer drives, as the MCP adapter is [3.83ms]
+(pass) the Composio adapter over an emulated vendor > the hosted base is the vendor's own documented address, and the route is its documented path [0.03ms]
+
+packages/ui/src/provider.test.ts:
+(pass) the page's state > a testing save is the testing state whatever the last answer was [0.65ms]
+(pass) the page's state > each state gets its own headline and its own reason [0.11ms]
+(pass) the page's state > the first-run pane's empty state asks for the test in the export's words
+(pass) what the page shows about a connection > the endpoint line is the request the test makes [0.11ms]
+(pass) what the page shows about a connection > the flags read the way the smoke's own report spells them, unknown and all [0.07ms]
+(pass) what the page shows about a connection > a refusal names the provider's own status code, and a failure without one says so
+(pass) what the page shows about a connection > the answer is shown only for a connection that got one [0.02ms]
+(pass) what the page shows about a connection > the vault is named by its path and mode and never by its contents
+(pass) what the page shows about a connection > a save says what it replaces before it replaces it [0.09ms]
+(pass) what the page shows about a connection > the footer row names the active connection and its capability
+(pass) what the page shows about a connection > the one line under the form follows the state
+
+packages/ui/src/first-run.test.ts:
+(pass) the first-run screen's panes > three panes, in the export's order, with the export's captions [0.49ms]
+(pass) the first-run screen's panes > every caption separates its number from its word with the export's em dash [0.03ms]
+(pass) the first-run screen's panes > Continue advances one pane and the last pane has nothing after it [0.08ms]
+(pass) the first-run screen's panes > the primary is Continue until the last pane, then Start working [0.03ms]
+(pass) the first-run screen's panes > a blank name holds the first pane, a blank purpose the second, and a job is optional
+(pass) the first-run screen's panes > the four suggested jobs are the export's, each with the prompt it prefills [0.12ms]
+(pass) the first-run screen's panes > the purpose is one line, with no space kept around it [0.07ms]
+
+packages/ui/src/notices.test.ts:
+(pass) the banner > it is the export's own copy, verbatim [0.82ms]
+(pass) the banner > it stands once the stream was reported down, and clears only on an open socket [0.10ms]
+(pass) what raises a notice > a capable connection and a run that did not fail raise nothing [0.05ms]
+(pass) what raises a notice > an untested connection raises the headline page 1 uses, with one action
+(pass) what raises a notice > a limited connection raises the limited headline
+(pass) what raises a notice > a refusal adds the provider's own sentence to the headline [0.11ms]
+(pass) what raises a notice > a failed run raises a notice whose id names the run [0.03ms]
+(pass) what raises a notice > the provider's outcome stacks above the run's [0.04ms]
+(pass) what raises a notice > a page with no connection at all raises nothing rather than guessing [0.02ms]
+(pass) dismissals > a dismissed notice leaves the stack, the others stay [0.03ms]
+(pass) dismissals > what a page stored is read back, and nonsense reads as nothing dismissed [0.14ms]
+
+packages/ui/src/overlays.test.ts:
+(pass) the palette's rows > an empty query lists the Bots, then the selected Bot's threads, then the pages, then the actions [0.48ms]
+(pass) the palette's rows > the Bots mode is the Bots group alone, which is the export's own `Cmd/Ctrl+Shift+F`
+(pass) the palette's rows > a row carries the command that choosing it runs, so the host needs no second table
+(pass) the palette's rows > a query matches a label or a group by substring, case-insensitively
+(pass) the palette's rows > a quoted term answers nothing, because the search it asks for has no route here
+(pass) the palette's rows > the list is capped at the export's forty rows [0.68ms]
+(pass) the palette's rows > a matched term is split out of the label, and a label that lacks it splits whole [0.03ms]
+(pass) the picker's rows > an empty field offers the create row and every Bot, and no hint [0.15ms]
+(pass) the picker's rows > a typed name turns the first row into the Bot it would make [0.03ms]
+(pass) the picker's rows > below three characters the field does not filter and says how many more it needs
+(pass) the picker's rows > three characters filter the Bot rows and the hint goes [0.02ms]
+(pass) the picker's rows > a name that matches no Bot leaves the create row, which is how a new one is made
+(pass) the modal's file > a file reads as its name, its path, its size and its bytes [0.06ms]
+(pass) the modal's file > a nested path is titled by its last segment [0.03ms]
+(pass) the modal's file > a refusal carries the name the server put on the wire and no bytes [0.02ms]
+(pass) the modal's file > a failure that names nothing is `unknown`, rather than an empty reason
+
+packages/ui/src/aside.test.ts:
+(pass) the pane's width > a drag sets the width from the right edge and clamps it [0.83ms]
+(pass) the pane's width > the clamp holds exactly the export's two numbers [0.12ms]
+(pass) the pane's width > a fresh page renders the export's own default, not the declared token [0.04ms]
+(pass) the pane's width > what a page stored is read back, and nonsense falls back to the default [0.16ms]
+(pass) stampOf > today reads as a clock, an older day reads as a date [0.15ms]
+(pass) latestRun > the newest run by its own start time
+(pass) the live half > a run's status word comes from the model's own transitions [0.12ms]
+(pass) the live half > the newest tool card is the command the pane shows [0.04ms]
+(pass) the Details tab > the rows are the Bot record's own fields [0.36ms]
+(pass) the Details tab > an empty field says so rather than reading as a value
+(pass) the Details tab > no Bot and no connection are both named [0.11ms]
+(pass) the Tasks tab > the latest run and the thread's own run list [0.12ms]
+(pass) the Tasks tab > a live run names itself, and an empty thread says it is empty [0.04ms]
+(pass) the Computer tab > the run, the stream and the command the transcript holds [0.17ms]
+(pass) the Computer tab > no run and no command are both stated [0.05ms]
+(pass) the Library tab > the real entries, grouped by their own timestamps [0.18ms]
+(pass) the Library tab > an empty workspace and a refusal both read as the Library's own lines
+
+packages/ui/src/connections.test.ts:
+(pass) the connector state's words and control > each state renders its own label and its own sentence [0.89ms]
+(pass) the connector state's words and control > a connected connector offers no failure control [0.04ms]
+(pass) the connector state's words and control > an unreachable connector's failure control is Retry
+(pass) the connector state's words and control > an untested connector's failure control is Authorize
+(pass) the connector state's words and control > the detail page offers Reconnect beside Retry, and nothing on a healthy one [0.07ms]
+(pass) the connector list model > states that need a person sort above healthy ones, then by label
+(pass) the connector list model > a row carries its tools, its reference and its probe's own words [0.11ms]
+(pass) the connector list model > a record that was never probed says so rather than showing a zero time
+(pass) the connector list model > the summary counts connected and attention from the records
+(pass) the connector list model > removal says whether there was a record to remove [0.11ms]
+(pass) the id a new connector takes > a name becomes one lower-case slug [0.11ms]
+(pass) the id a new connector takes > a taken id takes the next free suffix rather than rotating the first connector
+(pass) the id a new connector takes > a long name still fits the contract's 64-character id
+(pass) the id a new connector takes > every id it produces is one the contract accepts [0.11ms]
+
+packages/ui/src/library.test.ts:
+(pass) groupOf > the calendar day decides, not the elapsed hours
+(pass) groupEntries > groups come in order, empty groups are omitted, and the server's order within a group holds [0.07ms]
+(pass) humanSize > bytes stay bytes and larger sizes carry one decimal [0.04ms]
+(pass) statusLine > one line per state, and none once the list is the evidence
+
+packages/ui/src/frames.test.ts:
+(pass) collapsedPairs > two frames that show the same page are reported, whatever their bytes [0.96ms]
+(pass) collapsedPairs > the intended key states are pairwise distinct [0.18ms]
+(pass) collapsedPairs > frames differing only in the assistant text are still distinct [0.05ms]
+(pass) captions > every intended key state satisfies its own caption's claims [0.32ms]
+(pass) captions > a caption naming a state the frame does not show reports the unmet claims [0.04ms]
+(pass) captions > the done caption fails when a finished card's output block is still closed [0.04ms]
+(pass) captions > the pending caption fails on a frame whose approval is already decided [0.04ms]
+(pass) describeFacts > one readable line, literal [0.07ms]
+(pass) the frame inventory > eight named states, in capture order
+(pass) the frame inventory > every spec carries at least one claim and a caption [0.03ms]
+(pass) the item states > the inventory is four approval states, four tool states and three turn phases
+(pass) the item states > each item spec's claims hold on facts that show that state [0.38ms]
+(pass) the item states > a duplicate marker line fails the state that removed it [0.07ms]
+(pass) the item states > a tool result maps to done, denied or failed, never to running
+(pass) the item states > an approval maps pending to allowed, denied or expired [0.12ms]
+(pass) the item states > each Bot item state has the export's dot, sub line and derived status [0.16ms]
+
+packages/ui/src/bots.test.ts:
+(pass) the Bot list > one row per record, in the order the server listed them, with the selected one marked [1.47ms]
+(pass) the Bot list > nothing selected marks no row, and no record is a row [0.04ms]
+(pass) the Bot list > a row's status and sub line come from the derivation, not from the record's count
+(pass) the Bot's status, from its runs > a parked approval outranks every other run, including one still moving [0.15ms]
+(pass) the Bot's status, from its runs > a run in flight is working, and paused is still in flight
+(pass) the Bot's status, from its runs > only the newest run can fail the Bot [0.11ms]
+(pass) the Bot's status, from its runs > no run, and a run that ended done or cancelled, are both idle
+(pass) the Bot's status, from its runs > the newest run is the greatest start time, whatever order the list arrived in [0.07ms]
+(pass) the Bot's status, from its runs > the live stream's status wins while the record is still being written [0.14ms]
+(pass) the Bot's status, from its runs > each status has the export's dot and its own sub line
+(pass) the row's status when the record and the stream disagree > a park in any thread outranks a live run that is still working [0.11ms]
+(pass) the row's status when the record and the stream disagree > a live idle wins over a record that still says working
+(pass) the row's status when the record and the stream disagree > a live idle wins over a record that still says failed
+(pass) the row's status when the record and the stream disagree > with no live word the record's derivation stands
+(pass) the thread list > a row carries the thread's own counts and the first thing it was asked [0.11ms]
+(pass) the thread list > a prompt that carries newlines is one line in the row
+(pass) the thread list > a long prompt is cut to one row's worth, and the cut is visible [0.09ms]
+(pass) the counts and the header > a count is spelled the way a person reads it [0.05ms]
+(pass) the counts and the header > the header names the Bot, and the thread when one is open [0.03ms]
+
+packages/ui/src/tokens.test.ts:
+(pass) the token table > carries the export's values, one literal at a time [1.30ms]
+(pass) the token table > names the export's values as export tokens and the motion as derived
+(pass) the token table > derives every motion name from a line the export writes [0.23ms]
+(pass) the token table > every token names a line of the export it was read from
+(pass) the token table > no value can break the Markdown table it is rendered into [0.13ms]
+(pass) the token table > refuses a name it does not hold [0.09ms]
+(pass) the generated token blocks > apps/web/host/index.html matches the table [46.21ms]
+(pass) the generated token blocks > apps/web/landing/index.html matches the table [2.23ms]
+(pass) the generated token blocks > docs/DESIGN-CONTRACT.md matches the table [8.64ms]
+(pass) the generated token blocks > a file with no markers is refused rather than silently accepted [0.13ms]
+
+packages/core/src/transcript-store.test.ts:
+(pass) TranscriptStore > a written transcript comes back with the same frames, in seq order [1.63ms]
+(pass) TranscriptStore > a reopen resumes the seq space at the file's tail [0.43ms]
+(pass) TranscriptStore > a frame the log refuses is not written [0.35ms]
+(pass) TranscriptStore > a torn trailing line is dropped, repaired, and reported [1.05ms]
+(pass) TranscriptStore > a line the replay cannot use stops it there and truncates the file [0.68ms]
+(pass) TranscriptStore > a record whose frame is not a frame is refused, not replayed [0.62ms]
+(pass) TranscriptStore > a write that fails leaves the log where it was [0.54ms]
+(pass) TranscriptStore > a transcript with no file persists nothing and reports nothing [0.04ms]
+
+packages/core/src/run-store.test.ts:
+(pass) the run record > start parks the run at queued and begin moves it to running [0.26ms]
+(pass) the run record > the parked record carries the card the shell renders [0.05ms]
+(pass) the run record > a parked record can build a valid approval.requested payload [0.11ms]
+(pass) the run record > the smoke's lifecycle runs status by status, ending at done with attempt 2 [0.19ms]
+(pass) the run record > a lost sandbox parks the run with its reason, and resuming clears it [0.03ms]
+(pass) the run record > a user pause records no reason [0.07ms]
+(pass) the run record > a failure settles the run at the status its taxonomy names, and cancel is one of them [0.05ms]
+(pass) the run record > the first terminal status wins [0.08ms]
+(pass) the run record > usage is added per call and a repeated usage id is refused, not counted twice [0.20ms]
+(pass) idempotent operations > starting an existing run returns the same record and never rewrites it
+(pass) idempotent operations > cancelling twice, and cancelling a settled run, is a no-op rather than an error [0.13ms]
+(pass) idempotent operations > a resent park and a stale approval answer are no-ops [0.06ms]
+(pass) idempotent operations > a repeated begin is a no-op
+(pass) idempotent operations > resolving the same approval twice is a no-op
+(pass) idempotent operations > the durable seq only moves forward, and only when it moves [0.10ms]
+(pass) idempotent operations > resuming a running run is a no-op, so a replayed rejoin cannot inflate the attempt count
+(pass) illegal moves > parking a run that never began is refused by name [0.10ms]
+(pass) illegal moves > a second, different approval cannot park an already parked run
+(pass) illegal moves > resume only leaves paused, so it cannot clear a park nobody answered [0.29ms]
+(pass) illegal moves > a parked run cannot begin again, so a replayed begin cannot clear a park [0.04ms]
+(pass) illegal moves > a run that never began fails without running: the sandbox that will not start
+(pass) illegal moves > a paused run cannot finish without resuming [0.12ms]
+(pass) illegal moves > a code the taxonomy settles cannot be used to park, or a parking code to fail [0.05ms]
+(pass) illegal moves > an unknown run and a non-seq are refused
+(pass) the journal > one line per applied command, and none for the no-ops [0.86ms]
+(pass) the journal > a store that reopens the journal converges to the same records [0.67ms]
+(pass) the journal > a torn trailing line is dropped, the journal repaired, and the state still converges [0.87ms]
+(pass) the journal > a malformed line before the end is corruption, and says which line [0.40ms]
+(pass) the journal > a line that is not JSON is corruption too [0.38ms]
+(pass) the journal > a replayed usage line counts once and is reported as refused [0.46ms]
+(pass) the journal > a command the lifecycle refuses in the journal is recorded, not fatal [0.39ms]
+(pass) the journal > a store with no journal persists nothing and reloads to the same state
+
+packages/core/src/run-loop.test.ts:
+(pass) the loop over fake ports > one approved call, one refused by the human, and the run finishes [1.23ms]
+(pass) the loop over fake ports > the approved call runs in the sandbox and the refused one never does [0.52ms]
+(pass) the loop over fake ports > the park is recorded on the run while the run waits, and cleared when it resolves [0.26ms]
+(pass) the loop over fake ports > the outcomes of one turn are the input to the next [0.43ms]
+(pass) the loop over fake ports > a ledger denial is fail-closed: no card is offered and the call never runs [0.27ms]
+(pass) the loop over fake ports > an ungoverned tool is refused without a card, and the refusal names the code [0.18ms]
+(pass) the loop over fake ports > the run's record, the status trail and the audit all agree on one run [0.29ms]
+(pass) the loop over fake ports > a sandbox that will not start fails the run before its first turn and leaks nothing [0.26ms]
+(pass) the loop over fake ports > losing the sandbox mid-call pauses the run instead of failing it [0.44ms]
+(pass) the loop over fake ports > an approval nobody answers fails the run with approval_timeout [0.15ms]
+(pass) the loop over fake ports > a cancel while parked settles the run at cancelled and runs no further turn [0.24ms]
+(pass) the loop over fake ports > a settled total over the cap refuses the next provider turn with spend_cap [0.48ms]
+(pass) the loop over fake ports > an under-cap run is unaffected and its usage totals are recorded [0.40ms]
+(pass) the loop over fake ports > spending exactly the cap still allows the next turn [0.29ms]
+(pass) the loop over fake ports > a provider failure settles the run at the code its taxonomy entry names
+(pass) the loop over fake ports > a provider that never settles trips the turn ceiling [0.48ms]
+(pass) the loop over fake ports > a turn with no calls finishes the run even when an earlier one was refused [0.23ms]
+(pass) the loop's shape > no port is optional: a run needs a sandbox, a provider, a gate, approvals, a store and a log [0.02ms]
+(pass) the loop's shape > text deltas land in the log as they stream, empty ones included [0.12ms]
+
+packages/core/src/run-status.test.ts:
+(pass) the run lifecycle > the fourteen legal pairs, listed literally [0.08ms]
+(pass) the run lifecycle > all forty-nine pairs agree with the table, so the other thirty-five are refused [0.09ms]
+(pass) the run lifecycle > only done, failed, and cancelled are terminal [0.01ms]
+(pass) the run lifecycle > a refusal names the move it refused [0.06ms]
+(pass) the run lifecycle > a legal move passes the assert [0.01ms]
+
+packages/core/src/run-usage.test.ts:
+(pass) integer money > a USD string parses to nano-USD exactly
+(pass) integer money > a string that is not an amount is refused, not rounded [0.17ms]
+(pass) integer money > nano-USD renders as USD with at least two decimals [0.05ms]
+(pass) integer money > render and parse are inverses over a spread of amounts [0.04ms]
+(pass) integer money > a per-million price becomes whole nano-USD per token
+(pass) integer money > a call's cost is the price times the tokens, in integers [0.11ms]
+(pass) the per-run accumulator > a fresh run has spent nothing
+(pass) the per-run accumulator > calls add up per provider and model, with the keys sorted [0.11ms]
+(pass) the per-run accumulator > the same events always produce the same totals [0.05ms]
+(pass) the spend cap > under the cap, the check passes with the remainder named [0.03ms]
+(pass) the spend cap > spending exactly the cap is still within it
+(pass) the spend cap > one nano over the cap fails the check and names the overshoot [0.04ms]
+(pass) the spend cap > a cap that is not an amount in nano-USD is refused
+
+packages/core/src/run-errors.test.ts:
+(pass) the failure taxonomy > ten codes, each with the status and copy it converges to [0.54ms]
+(pass) the failure taxonomy > one code parks the run, the rest settle it [0.05ms]
+(pass) the failure taxonomy > a code carried as run.failed is a valid payload under the landed schema [0.01ms]
+(pass) the failure taxonomy > a refusal says which code and which operation, and names the settled status [0.08ms]
+(pass) the failure taxonomy > an instance's failure carries its own detail, not the copy
+
+packages/core/src/bot-store.test.ts:
+(pass) bots and threads as records > a created Bot carries its name and the time it was made
+(pass) bots and threads as records > a Bot gains the role and the purpose a later command gives it [0.14ms]
+(pass) bots and threads as records > an update for a Bot this store does not hold is refused by name
+(pass) bots and threads as records > a second create of the same id is the same Bot, never a second one or a rewrite
+(pass) bots and threads as records > a thread belongs to one Bot and names the conversation [0.19ms]
+(pass) bots and threads as records > a thread for a Bot this store does not hold is refused by name
+(pass) bots and threads as records > every thread of one Bot is listed, in creation order, and another Bot's are not [0.09ms]
+(pass) bots and threads as records > the minting rule names the first Bot the way the single-Bot app did
+(pass) the journal > one line per applied command, and none for the no-ops [0.61ms]
+(pass) the journal > a store that reopens the journal converges to the same records [0.56ms]
+(pass) the journal > a torn trailing line is dropped, the journal repaired, and the state converges [0.46ms]
+(pass) the journal > a malformed thread line before the end is corruption, and says which line [0.37ms]
+(pass) the journal > a line that is not JSON is corruption too [0.25ms]
+(pass) the journal > a thread command for an absent Bot is recorded as refused, not fatal [0.27ms]
+(pass) the journal > a Bot's two fields are one more line, and the journal replays them [0.37ms]
+(pass) the journal > a journal written before the two fields existed replays with both empty [0.38ms]
+(pass) the journal > an update for an absent Bot is recorded as refused, not fatal [0.30ms]
+(pass) the journal > a store with no journal persists nothing and reloads to the same state [0.13ms]
+
+packages/core/src/run-events.test.ts:
+(pass) the run model against the wire vocabulary > every kind the run model speaks exists in packages/protocol's registry
+(pass) the run model against the wire vocabulary > every legal transition names its kind, and the nulls are exactly the gaps [0.18ms]
+(pass) the run model against the wire vocabulary > the table covers every legal pair and no others [0.03ms]
+(pass) the run model against the wire vocabulary > an illegal pair has no kind
+
+packages/core/src/seq-log.test.ts:
+(pass) SeqLog append and audit > in-order appends stay one contiguous run [0.22ms]
+(pass) SeqLog append and audit > a replayed frame is suppressed, never stored twice
+(pass) SeqLog append and audit > a frame that skips ahead is refused, then heals after the resend
+(pass) SeqLog append and audit > non-seqs are rejected without touching the log [0.10ms]
+(pass) SeqLog append and audit > reject() counts a malformed payload without storing anything
+(pass) SeqLog replay from last_seen_seq > since returns exactly the frames after the mark [0.04ms]
+(pass) SeqLog replay from last_seen_seq > a mid-stream disconnect replays exactly what the client missed
+
+packages/verify/scripts/status-capture.test.ts:
+(pass) the status capture's composer > an input composer is written through the input prototype [0.23ms]
+(pass) the status capture's composer > a textarea composer is written through the textarea prototype
+(pass) the status capture's composer > a composer that is neither an input nor a textarea fails by selector and tag [0.11ms]
+(pass) the status capture's composer > a composer the page does not render fails by selector [0.01ms]
+(pass) the status capture's page errors > a page exception's own message reaches the driver's error [0.12ms]
+(pass) the status capture's selector guard > a selector that matches nothing fails by name, with no empty facts [0.15ms]
+(pass) the status capture's selector guard > the moved run-status selector fails by its own name, not as an empty list [0.08ms]
+(pass) the status capture's selector guard > a required collection that matches nothing fails by name rather than reading [] [0.04ms]
+(pass) the status capture's selector guard > an optional collection reads as empty only where the state allows it
+(pass) the status capture's selector guard > a present selector returns the page's own value [0.10ms]
+(pass) the status capture's selector guard > a required collection reads every match, not the first [0.04ms]
+(pass) the status capture's arguments > a live URL and an output directory are both required [0.10ms]
+(pass) the status capture's arguments > the mode names the capture the pass wants
+(pass) the status capture's arguments > an unknown mode or flag fails by name [0.05ms]
+
+packages/verify/scripts/tcp-relay.test.ts:
+(pass) the driver relay > carries a payload larger than the socket buffers without losing a byte [73.29ms]
+(pass) the driver relay > holds the first request carrying the pattern, then forwards later requests on that connection [255.95ms]
+
+packages/verify/scripts/connect-apps.test.ts:
+(pass) the artifact's credential census > a text carrying one credential names its label, never its value [5.10ms]
+(pass) the artifact's credential census > a clean text carries no label [0.31ms]
+(pass) the artifact's credential census > an artifact carrying the operator token is refused [0.22ms]
+(pass) the artifact's credential census > an artifact carrying a connector credential is refused by label [0.06ms]
+(pass) the artifact's credential census > an artifact carrying a key-shaped literal is refused even when the run minted no key [0.21ms]
+(pass) the artifact's credential census > a clean artifact is written [0.04ms]
+(pass) the capture's stability guard > identical facts pass the comparison [0.12ms]
+(pass) the capture's stability guard > a state that moved during the capture is caught
+(pass) the capture's stability guard > a capture whose facts carry a credential is refused by label [0.09ms]
+(pass) the capture's stability guard > a capture with clean, stable facts is accepted
+
+packages/verify/scripts/type-gate.test.ts:
+(pass) the type gate's plant and restore > all three probes are planted, then the tree is byte-identical to its start [7.01ms]
+(pass) the type gate's plant and restore > a path that already holds a file is refused and keeps its bytes [1.60ms]
+
+packages/verify/scripts/sweep-main.test.ts:
+(pass) classification > a driver whose capabilities are present is runnable [1.89ms]
+(pass) classification > a missing capability becomes a skip naming the need and what the probe found [0.04ms]
+(pass) classification > a requirement group is satisfied by either backend [0.10ms]
+(pass) classification > a manifest entry with no sweep block is skipped by name [0.40ms]
+(pass) classification > the status capture skips with the live-instance reason when no URL is set [88.88ms]
+(pass) classification > the status capture is runnable when FREEBOT_STATUS_URL is set, and the URL is not echoed [55.79ms]
+(pass) the driver's own verdict > the last RESULT line wins over the per-viewport lines before it
+(pass) the driver's own verdict > a bare PASS line at the end is a verdict, as type-gate writes it
+(pass) the driver's own verdict > text with no verdict line is not green
+run fake-red: bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-fail-JjIxPx/red.ts
+FAIL fake-red: RESULT: FAIL (1/2) (0s)
+  proof: packages/verify/artifacts/sweep-main/abc1234/fake-red.log
+  file a unit: "sweep-main: fake-red is red against abc1234". The fake-red driver (`bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-fail-JjIxPx/red.ts`, the fake surface) exited 1 with "RESULT: FAIL (1/2)" at abc1234. Proof packages/verify/artifacts/sweep-main/abc1234/fake-red.log.
+(pass) the failure path > a driver that exits non-zero fails the sweep and proposes one fileable unit [50.05ms]
+run fake-green: bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-counts-778pf6/green.ts
+PASS fake-green: RESULT: PASS (2/2) (0s)
+run fake-red: bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-counts-778pf6/red.ts
+FAIL fake-red: RESULT: FAIL (1/2) (0s)
+  proof: packages/verify/artifacts/sweep-main/abc1234/fake-red.log
+  file a unit: "sweep-main: fake-red is red against abc1234". The fake-red driver (`bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-counts-778pf6/red.ts`, the fake surface) exited 1 with "RESULT: FAIL (1/2)" at abc1234. Proof packages/verify/artifacts/sweep-main/abc1234/fake-red.log.
+SKIP fake-skip: needs the Docker daemon the pinned image runs in (docker probe found nothing)
+(pass) the failure path > the summary's arithmetic adds up with a pass, a failure and a skip [39.88ms]
+run fake-quiet: bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-noverdict-EVfasZ/quiet.ts
+FAIL fake-quiet: exit 0 (0s)
+  proof: packages/verify/artifacts/sweep-main/abc1234/fake-quiet.log
+  file a unit: "sweep-main: fake-quiet is red against abc1234". The fake-quiet driver (`bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-noverdict-EVfasZ/quiet.ts`, the fake surface) exited 0 and printed no verdict line at abc1234. Proof packages/verify/artifacts/sweep-main/abc1234/fake-quiet.log. It exited 0 without printing a verdict line.
+(pass) the failure path > a driver that exits 0 without a verdict line is red, not a silent pass [21.09ms]
+run fake-leaky: bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-leak-CjQFSv/leaky.ts
+FAIL fake-leaky: printed a vault value (0s)
+  proof: packages/verify/artifacts/sweep-main/abc1234/fake-leaky.log
+  file a unit: "sweep-main: fake-leaky is red against abc1234". The fake-leaky driver (`bun /var/folders/jz/t5cf_2rj0tn2zcyffy62dqv00000gp/T/sweep-leak-CjQFSv/leaky.ts`, the fake surface) exited 0 with "RESULT: PASS (1/1)" at abc1234. Proof packages/verify/artifacts/sweep-main/abc1234/fake-leaky.log. It printed a vault value into its own output, which order 8 forbids.
+(pass) the failure path > a driver that prints a vault value fails and its log refuses to carry the value [21.52ms]
+(pass) the manifest boundary > a malformed needs block fails by driver, not as a silent skip [0.08ms]
+(pass) the manifest boundary > a command placeholder without a value fails before a driver starts
+(pass) the manifest boundary > the base defaults to origin/main and takes --base
+(pass) the manifest boundary > the vault scanner reads key-shaped names only [0.27ms]
+
+packages/verify/scripts/driver-errors.test.ts:
+(pass) the keyed run driver's page errors > a page exception's own message reaches the error, with the driver and expression named [0.95ms]
+(pass) the keyed run driver's page errors > a value the page returns comes back unchanged
+(pass) the launch driver's page errors > a page exception's own message reaches the error, with the driver and expression named [0.10ms]
+
+packages/verify/scripts/index-check.test.ts:
+(pass) the verification index checker > the committed index agrees with every artifact it names [5.34ms]
+(pass) the verification index checker > the glossary is skipped by name, not counted as checked [2.27ms]
+(pass) the verification index checker > the launch row's old 114 is caught by name against its 116/116 artifact [2.78ms]
+(pass) the verification index checker > the files surface row's old 53 is caught by name against its 54/54 artifact [3.14ms]
+(pass) the verification index checker > both wrong rows at once are reported one by one [3.06ms]
+(pass) the verification index checker > a Commit cell that does not start with the artifact's short sha is caught [2.80ms]
+(pass) the verification index checker > a malformed artifact reference is rejected instead of read as its own prefix [2.62ms]
+(pass) the verification index checker > an unequal fraction is a claim, not a denominator the bare-count fallback can read [2.76ms]
+(pass) the verification index checker > a fraction whose denominator disagrees with the artifact is a mismatch [2.59ms]
+(pass) the verification index checker > an artifact whose final result is FAIL is rejected, with or without a count claim [0.52ms]
+
+packages/verify/src/prune.test.ts:
+(pass) the artifact prune > keeps the newest untracked run, a row's run and a tracked run, and deletes only the rest [1.75ms]
+(pass) the artifact prune > applying the plan removes the named directory and nothing else [1.05ms]
+(pass) the artifact prune > runs tied at the newest modification time are all kept rather than one being guessed [0.57ms]
+(pass) the artifact prune > a file where a run directory belongs is named and kept, not deleted [0.51ms]
+(pass) the artifact prune > a path outside the artifact tree is refused by name [0.42ms]
+(pass) the artifact prune > the artifact tree itself is refused as too broad [0.39ms]
+(pass) the artifact prune > a feature directory is refused as too shallow [0.35ms]
+(pass) the artifact prune > a path that names no directory is refused instead of read as nothing to do [0.25ms]
+(pass) the artifact prune > a missing evidence table refuses the plan [0.27ms]
+(pass) the artifact prune > the committed index names no run this plan deletes [18.02ms]
+(pass) an out-of-tree plan is refused again at the point of deletion [0.42ms]
+(pass) a prune of one run directory leaves its siblings alone [0.53ms]
+
+packages/providers/src/fallback.test.ts:
+(pass) the structured-output prompt > it names the exact JSON shape and carries the tool specs and the task [0.74ms]
+(pass) the structured reply parser > a bare tool call [0.24ms]
+(pass) the structured reply parser > a fenced reply with prose around it
+(pass) the structured reply parser > the {name, arguments} spelling a weak caller invents
+(pass) the structured reply parser > a null tool is the model saying no tool is needed
+(pass) the structured reply parser > prose with no JSON is invalid, and the raw reply comes back with it
+(pass) the structured reply parser > an object with no tool key is invalid rather than an empty call
+(pass) one fallback turn > a JSON tool-call reply becomes the tool call, with response_format on the wire [0.41ms]
+(pass) one fallback turn > even the fallback failing is recorded, not swallowed [0.07ms]
+(pass) one fallback turn > a JSON reply with no tool key is a recorded failure mode too [0.08ms]
+(pass) one fallback turn > the client's own failure is the recorded failure mode [0.08ms]
+
+packages/providers/src/capability.test.ts:
+(pass) the capability test > a native tool call marks the connection strong and its closing reply is the answer [1.49ms]
+(pass) the capability test > the request carries the tool definition and the tool's own result goes back [0.28ms]
+(pass) the capability test > a reply with no tool call falls back to structured output and marks the connection weak [0.22ms]
+(pass) the capability test > an endpoint that answers whole replies reports streaming unknown, not false [0.29ms]
+(pass) the capability test > an endpoint that answers a 200 with no SSE records is retried whole, so its reply is not lost [0.22ms]
+(pass) the capability test > a refused credential comes back as the client's typed auth error, with its status [0.16ms]
+
+packages/providers/src/probe.test.ts:
+(pass) the replay plan over the committed transcript > it selects the recorded turn that ran a tool, and the model that turn ran on [1.02ms]
+(pass) the replay plan over the committed transcript > a transcript with no turn that ran a tool is refused, not replayed into a false flag [0.17ms]
+(pass) the probe over the recorded turn > its capability table is the observed turn, one flag per fact [1.49ms]
+(pass) the probe over the recorded turn > the probe wrote only the recorded commands [0.62ms]
+(pass) flag derivation > a native call is strong, whatever the gate then did with it [0.05ms]
+(pass) flag derivation > no native call but a parsable structured reply is weak
+(pass) flag derivation > nothing observed is none with the unknowns named
+(pass) flag derivation > a parsable reply that carries no tool call is named as parsable, not denied [0.08ms]
+(pass) flag derivation > an unevaluated structured path stays unknown rather than false [0.01ms]
+(pass) turn observation > it reads the frames the bridge already defines [0.12ms]
+
+packages/providers/src/client.test.ts:
+(pass) the OpenAI-compatible client > a non-streaming completion returns text, tool calls with parsed arguments, and usage [0.23ms]
+(pass) the OpenAI-compatible client > a trailing slash on the base URL does not double the path [0.09ms]
+(pass) the OpenAI-compatible client > streaming assembles deltas split across chunks and completes with the same result [0.37ms]
+(pass) the OpenAI-compatible client > a streamed refusal delta is a typed refusal [0.16ms]
+(pass) the client's typed failures > 401 with the provider's message is an auth failure [0.14ms]
+(pass) the client's typed failures > 429 carries the retry-after header in milliseconds [0.12ms]
+(pass) the client's typed failures > 429 reads a body retry_after when no header came [0.08ms]
+(pass) the client's typed failures > a refusal on the message is a typed refusal, not empty text
+(pass) the client's typed failures > a body that is not JSON is a transport failure, not a silent empty result [0.03ms]
+(pass) the client's typed failures > a 500 is a typed http failure carrying the status [0.09ms]
+(pass) the client's typed failures > a transport that never answers hits the deadline [21.34ms]
+(pass) the client's typed failures > a malformed tool call is a typed failure carrying the raw arguments [0.38ms]
+(pass) tool-call argument parsing > the shapes weak callers produce [0.08ms]
+(pass) tool-call argument parsing > the hopeless shapes fail with the text that arrived [0.10ms]
+(pass) the fetch transport against a loopback server > a fake provider on 127.0.0.1 is driven through the real transport [3.18ms]
+
+packages/protocol/src/events.test.ts:
+(pass) deny codes > the ten codes match packages/review in value and order [0.19ms]
+(pass) deny codes > the seeded stores cover every code the gate can name, in registry order
+(pass) deny codes > a real gate denial on unknown_tool splits into the code and its detail [0.16ms]
+(pass) deny codes > a real gate denial on no_grant splits into the code and its detail
+(pass) deny codes > a real gate denial on grant_mismatch splits into the code and its detail
+(pass) deny codes > a real gate denial on grant_expired splits into the code and its detail [0.18ms]
+(pass) deny codes > a real gate denial on grant_consumed splits into the code and its detail [0.07ms]
+(pass) deny codes > a real gate denial on grant_tombstoned splits into the code and its detail [0.12ms]
+(pass) deny codes > a real gate denial on grant_forged splits into the code and its detail [0.05ms]
+(pass) deny codes > a real gate denial on malformed_action splits into the code and its detail [0.16ms]
+(pass) deny codes > a real gate denial on user_denied splits into the code and its detail
+(pass) deny codes > a real gate denial on grant_store_error splits into the code and its detail
+(pass) deny codes > a denial with no detail is refused: a denied call always names why [0.17ms]
+(pass) deny codes > a real gate allow becomes a valid v1 decision with no ad-hoc fields [0.13ms]
+(pass) grant lifecycle > the four states are exactly issued, consumed, expired, rewound
+(pass) grant lifecycle > each state carries exactly its own fields [0.57ms]
+(pass) grant lifecycle > another state's fields are stripped, so a state cannot leak into the wrong shape
+(pass) run status > the seven statuses match packages/core in value and order
+(pass) run status > the payload parses and carries the run id beside the status
+(pass) run status > a status the seven-state model does not have is refused [0.13ms]
+
+packages/protocol/src/rejections.test.ts:
+(pass) the rejection list > every case is refused with exactly the recorded literal [0.44ms]
+(pass) the rejection list > the case names are the documented list
+(pass) the rejection list > three cases pin their literal text
+(pass) the rejection list > no case is recorded as accepted
+
+packages/protocol/src/dto.test.ts:
+(pass) operation registry > every Phase 1 operation is present [0.04ms]
+(pass) operation registry > start_run accepts its valid input [0.04ms]
+(pass) operation registry > start_run refuses an unknown key
+(pass) operation registry > cancel_run accepts its valid input
+(pass) operation registry > cancel_run refuses an unknown key
+(pass) operation registry > list_bots accepts its valid input [0.03ms]
+(pass) operation registry > list_bots refuses an unknown key [0.02ms]
+(pass) operation registry > create_bot accepts its valid input
+(pass) operation registry > create_bot refuses an unknown key
+(pass) operation registry > update_bot accepts its valid input [0.27ms]
+(pass) operation registry > update_bot refuses an unknown key
+(pass) operation registry > arrange_bot accepts its valid input
+(pass) operation registry > arrange_bot refuses an unknown key
+(pass) operation registry > list_threads accepts its valid input
+(pass) operation registry > list_threads refuses an unknown key
+(pass) operation registry > create_thread accepts its valid input
+(pass) operation registry > create_thread refuses an unknown key
+(pass) operation registry > get_events accepts its valid input
+(pass) operation registry > get_events refuses an unknown key [0.05ms]
+(pass) operation registry > approve accepts its valid input
+(pass) operation registry > approve refuses an unknown key [0.01ms]
+(pass) operation registry > deny accepts its valid input [0.02ms]
+(pass) operation registry > deny refuses an unknown key
+(pass) operation registry > list_files accepts its valid input
+(pass) operation registry > list_files refuses an unknown key
+(pass) operation registry > read_file accepts its valid input
+(pass) operation registry > read_file refuses an unknown key
+(pass) operation registry > get_provider accepts its valid input
+(pass) operation registry > get_provider refuses an unknown key
+(pass) operation registry > connect_provider accepts its valid input [0.29ms]
+(pass) operation registry > connect_provider refuses an unknown key
+(pass) operation registry > list_connectors accepts its valid input [0.06ms]
+(pass) operation registry > list_connectors refuses an unknown key
+(pass) operation registry > connect_connector accepts its valid input [0.27ms]
+(pass) operation registry > connect_connector refuses an unknown key [0.03ms]
+(pass) operation registry > test_connector accepts its valid input [0.07ms]
+(pass) operation registry > test_connector refuses an unknown key
+(pass) operation registry > remove_connector accepts its valid input
+(pass) operation registry > remove_connector refuses an unknown key
+(pass) workspace paths > a path under /workspace is accepted
+(pass) workspace paths > the refusal vocabulary is the seven names the surface branches on
+(pass) workspace paths > an absolute path is refused with the literal reason [0.13ms]
+(pass) workspace paths > a .. segment is refused at the head, middle, and tail
+(pass) workspace paths > list_files defaults to the workspace root and an empty path is refused [0.08ms]
+(pass) bots and threads > an id is one path segment, because it keys a directory
+(pass) bots and threads > a Bot carries its name, when it was made, and how many threads it holds [0.11ms]
+(pass) bots and threads > a Bot's role and purpose are one answer, both allowed to be empty [0.07ms]
+(pass) bots and threads > a thread is a conversation: its runs, oldest first, each with its status [0.11ms]
+(pass) bots and threads > a thread title is optional on create and bounded when it is given [0.04ms]
+(pass) runs and events > start_run needs a non-empty prompt and returns a runId [0.02ms]
+(pass) runs and events > get_events takes a cursor of 0 and bounds one page
+(pass) runs and events > get_events output carries envelope messages unchanged [0.17ms]
+(pass) approval answers > approve and deny each pin their decision [0.09ms]
+(pass) approval answers > an approval event and an answer share the approvalId vocabulary
+(pass) the provider connection > the base URL has to be one an HTTP client can post to [0.12ms]
+(pass) the provider connection > the vault is one KEY=value per line, so a value that spans lines is refused [0.07ms]
+(pass) the provider connection > the connection a client reads has no field a key could travel in [0.01ms]
+(pass) the provider connection > the page's state is the vault's own description plus the connection, or null [0.33ms]
+(pass) the connector surface > a connector is in exactly one of three states, and no probe leaves it in none [0.55ms]
+(pass) the connector surface > a row has no field a header or a token could travel in
+(pass) the connector surface > connecting takes an id, an endpoint and a credential, and refuses each of them raw [0.11ms]
+(pass) the connector surface > the credential has to be one line and inside the vault line's bound
+(pass) the connector surface > removal answers whether the connector was there, so a second removal is not an error [0.23ms]
+
+packages/protocol/src/spike-compat.test.ts:
+(pass) the fixture is the recorded spike traffic > 84 frames, dense seq, four turns, one gated call [0.11ms]
+(pass) every spike frame maps into v1 > the run boundary is synthesized once, and the answered placeholder resolves [0.07ms]
+(pass) every spike frame maps into v1 > the kind counts match the recorded frames
+(pass) every spike frame maps into v1 > the mapped seqs are dense from 1 [0.09ms]
+(pass) every spike frame maps into v1 > every mapped message parses and round-trips under v1 [0.40ms]
+(pass) every spike frame maps into v1 > the spike's own field values survive byte for byte [0.25ms]
+(pass) the approval the spike proved, both paths > the recorded request becomes an approval.requested with the real action hash [0.19ms]
+(pass) the approval the spike proved, both paths > allow resolves the placeholder with an issued grant, deny resolves it with none [0.20ms]
+(pass) the approval the spike proved, both paths > an unanswered placeholder maps to the pending state alone [0.12ms]
+
+packages/protocol/src/envelope.test.ts:
+(pass) round trip > run.started parses, serializes, and reparses equal [0.08ms]
+(pass) round trip > run.finished parses, serializes, and reparses equal [0.02ms]
+(pass) round trip > run.failed parses, serializes, and reparses equal
+(pass) round trip > run.status parses, serializes, and reparses equal
+(pass) round trip > turn.started parses, serializes, and reparses equal
+(pass) round trip > turn.ended parses, serializes, and reparses equal
+(pass) round trip > message.text.delta parses, serializes, and reparses equal
+(pass) round trip > tool_call.requested parses, serializes, and reparses equal [0.05ms]
+(pass) round trip > tool_call.decision parses, serializes, and reparses equal
+(pass) round trip > tool_call.result parses, serializes, and reparses equal
+(pass) round trip > approval.requested parses, serializes, and reparses equal
+(pass) round trip > approval.resolved parses, serializes, and reparses equal
+(pass) round trip > grant.lifecycle parses, serializes, and reparses equal
+(pass) round trip > stream.hello parses, serializes, and reparses equal [0.30ms]
+(pass) round trip > stream.resumed parses, serializes, and reparses equal [0.14ms]
+(pass) round trip > stream.gap parses, serializes, and reparses equal [0.03ms]
+(pass) taxonomy > the run-scoped kinds are exactly the v1 taxonomy [0.18ms]
+(pass) taxonomy > stream markers are exactly the three resume markers
+(pass) rejections > an unknown kind names the accepted discriminator values
+(pass) rejections > a missing seq is refused [0.14ms]
+(pass) rejections > seq 0 is refused; 0 is a cursor, never a message
+(pass) rejections > a non-integer and a string seq are refused
+(pass) rejections > version 2 is refused by the v1 tag
+(pass) rejections > a run-scoped kind without a runId is refused
+(pass) rejections > a missing payload is refused, an empty payload is legal [0.28ms]
+(pass) rejections > a denial without its reason code is refused [0.06ms]
+(pass) rejections > a denial whose detail is empty is refused [0.05ms]
+(pass) rejections > a reason code outside the ten is refused [0.03ms]
+(pass) rejections > an action hash that is not v1:sha256:<64 hex> is refused
+(pass) rejections > an approval decision that is neither allow nor deny is refused
+(pass) rejections > a grant state outside the four lifecycle states is refused
+(pass) rejections > a consumed grant without its consumer is refused [0.17ms]
+(pass) rejections > a negative resume point is refused
+(pass) unknown keys strip > an extra envelope key is dropped, not refused [0.11ms]
+(pass) unknown keys strip > an extra payload key is dropped, and the required ones survive [0.02ms]
+(pass) unknown keys strip > a key smuggled past the discriminant is gone after parse
+(pass) unknown keys strip > a deny carrying a grant parses, and the grant is stripped away
+(pass) unknown keys strip > a seq smuggled onto a stream marker is stripped [0.07ms]
+
+packages/pixel-gate/src/deltas.test.ts:
+(pass) the declared delta list > the contract's fenced copy equals the module [0.93ms]
+(pass) the declared delta list > design-contract's DECLARED_DELTAS is the same array
+(pass) the declared delta list > every declared field names a region the map carries [0.09ms]
+(pass) the declared delta list > every declared region is a content region, because chrome must agree [0.10ms]
+(pass) the declared delta list > every entry carries a reason and the viewports its region is carried on
+(pass) the declared delta list > a nonzero pixel in an entry appears among its allowed magnitudes
+
+packages/pixel-gate/src/gate.test.ts:
+(pass) the chrome verdict > one differing chrome pixel fails the run by name [0.52ms]
+(pass) the chrome verdict > an absent chrome region below its breakpoint is not a failure
+(pass) the chrome verdict > a desktop chrome region that went absent above its breakpoint fails [0.61ms]
+(pass) the font verdict > both pages measuring the vendored face passes [0.05ms]
+(pass) the font verdict > a page that fell back to the absent family fails by name
+(pass) the font verdict > two different stacks fail even when each resolves its own face
+(pass) the box verdict > a declared region that moved off its declared pixels fails [0.14ms]
+(pass) the box verdict > a region with no declaration fails, per order 36's last sentence
+(pass) the box verdict > a chrome box delta fails even when its pixels happen to match
+(pass) the box verdict > a report with every delta declared and every chrome pixel at zero exits 0
+(pass) the box verdict > a viewport that scrolls horizontally fails, by document or by region [0.20ms]
+(pass) the browser flags > the Mac build host gets the three determinism flags and no Linux flags
+(pass) the browser flags > a Linux runner also gets the sandbox and shared-memory flags [0.08ms]
+(pass) order 40's subject manifest > names the pixel gate with the command and artifact this unit arms
+(pass) order 40's subject manifest > names every file whose change invalidates the gate [0.06ms]
+
+packages/pixel-gate/src/diff.test.ts:
+(pass) diffRegion > two identical rectangles differ nowhere and have no mean difference [0.14ms]
+(pass) diffRegion > one pixel of a one-channel change counts as one differing pixel and nothing more
+(pass) diffRegion > the rectangle restricts the count, so a change outside it is invisible [0.12ms]
+(pass) diffRegion > the threshold separates a real change from sub-perceptual noise
+(pass) diffRegion > the alpha channel counts, so a transparent pixel over a colour is a difference
+(pass) diffRegion > a rectangle with no area has no statistic rather than a division by zero
+(pass) diffRegion > meanAbsolute is the mean over four channels, not over pixels [0.10ms]
+(pass) digestImage > identical bytes digest equally and a one-channel one-byte change does not [0.07ms]
+(pass) digestImage > the digest is fixed-width hex, so two digests can be compared as strings [0.04ms]
+(pass) digestImage > the empty buffer has a digest rather than throwing
+(pass) the injected runtime > carries the same two functions this file just drove
+(pass) the injected runtime > declares the surface the run calls: begin, put, compare and crop [0.09ms]
+(pass) the injected runtime > compare and crop take the two shot names, so a repeat pair is a comparison like any other [0.02ms]
+(pass) the injected runtime > begin clears both the shots and the decoded copies, so a viewport cannot inherit another
+(pass) the injected runtime > is one expression that returns, so a CDP evaluate can run it as an expression
+(pass) the injected runtime > keeps no backtick, so the template that builds it cannot be terminated early
+
+packages/pixel-gate/src/regions.test.ts:
+(pass) the map itself > every region has a unique id
+(pass) the map itself > every chrome region has an empty variance and every content region names one
+(pass) the map itself > the map carries all four chrome regions and the thirteen content regions [0.03ms]
+(pass) the map itself > every region's note names where its rectangle comes from [0.04ms]
+(pass) the map itself > a chrome edge band has a thickness and a box region does not
+(pass) the map itself > the chrome tolerance is zero, per order 36b
+(pass) the map itself > selectorsFor answers each page with the selectors that page carries [0.08ms]
+(pass) the map itself > selectorsFor deduplicates, so a shared selector is measured once [0.03ms]
+(pass) resolveRegions > a whole box becomes its own rectangle, snapped to whole pixels [0.22ms]
+(pass) resolveRegions > an edge band is taken from the edge it names, and is that thick [0.10ms]
+(pass) resolveRegions > a region whose source box is absent is absent, not a zero [0.03ms]
+(pass) resolveRegions > a source box with no area is absent, so a hidden column cannot pass as a match
+(pass) resolveRegions > a rectangle the viewport cuts is clipped and says so
+(pass) resolveRegions > the rectangle is taken from the source side, and the delta names both sides
+(pass) resolveRegions > boxes that agree within half a pixel are reported as agreeing [0.12ms]
+(pass) resolveRegions > a region with no counterpart box has no delta rather than a zero one [0.02ms]
+(pass) resolveRegions > the delta's sign is app minus export whichever page the rectangle came from [0.06ms]
+(pass) resolveRegions > a content region reports its delta as well, because a box difference is a finding either way [0.03ms]
+
+packages/pixel-gate/src/report.test.ts:
+(pass) sumDiffs > no regions sum to a zero statistic, not to an undefined share [0.04ms]
+(pass) sumDiffs > the differing counts and the totals add
+(pass) sumDiffs > the mean is over the pixels, not the mean of the regions' means [0.07ms]
+(pass) sumDiffs > the max channel is the worst region's, not an average
+(pass) sumDiffs > the visible count adds across regions
+(pass) canonicalJson > a short array of numbers stays on one line, as the repo's formatter prints it [0.15ms]
+(pass) canonicalJson > an array too wide for the budget expands with its elements indented one level deeper
+(pass) canonicalJson > an array of objects always expands, because an object is never inline
+(pass) canonicalJson > an array nested inside a nested object stays flat while it fits the budget [0.11ms]
+(pass) canonicalJson > an array of arrays that overflows expands with each inner array still flat
+(pass) canonicalJson > empty containers, null and booleans print without crashing
+(pass) canonicalJson > a mixed array expands, its scalar members beside an object and a flat array [0.11ms]
+(pass) canonicalJson > the whole summary round-trips, so formatting never loses a number [0.30ms]
+(pass) canonicalJson > a long key's array expands even when the array's own text is short [0.05ms]
+(pass) canonicalJson > an undefined property is dropped rather than printed as null
+(pass) compareRuns > two runs whose chrome counts are equal are stable at epsilon 0 [0.13ms]
+(pass) compareRuns > a chrome count that moved by one pixel is unstable at epsilon 0 [0.03ms]
+(pass) compareRuns > a stated epsilon admits the movement it names and no more [0.04ms]
+(pass) compareRuns > a viewport present in one run and absent from the other is unstable [0.03ms]
+(pass) compareRuns > a viewport present only in the second run is unstable [0.03ms]
+(pass) compareRuns > a chrome region present only in the second run is unstable [0.02ms]
+(pass) compareRuns > a region measured in one run and absent in the other is unstable [0.05ms]
+(pass) compareRuns > a region absent in both runs is not a stability failure [0.02ms]
+(pass) compareRuns > a chrome region absent in the first run and missing from the second is unstable [0.02ms]
+(pass) compareRuns > a same-id region of a different kind does not stand in for a chrome region [0.05ms]
+(pass) compareRuns > content regions are not part of the chrome proof
+(pass) renderText > names the command, the commit and both regions' numbers
+(pass) renderText > an absent region is printed as absent, not as a zero that reads as a match [0.49ms]
+(pass) renderText > a viewport with no chrome region says the set is empty rather than printing a perfect 0/0 [0.04ms]
+(pass) renderText > a viewport that does carry chrome regions makes no such claim
+(pass) renderText > a failure is printed as a failure and the verdict is FAIL
+(pass) renderJson > is parseable and carries one entry per viewport with both shares [0.16ms]
+
+packages/sandbox/src/interface.test.ts:
+(pass) spec validation > accepts a spec the Docker surface can express [0.03ms]
+(pass) spec validation > rejects names Docker cannot carry, with literal messages [0.19ms]
+(pass) spec validation > rejects env keys docker would refuse [0.07ms]
+(pass) spec validation > rejects mounts that are relative or collide with Docker's CSV syntax
+(pass) spec validation > rejects a relative state dir and a nonsensical ttl [0.12ms]
+(pass) spec validation > refuses the ownership namespace in caller labels [0.02ms]
+(pass) ownership labels (order 22) > names containers and labels the way cleanup matches them [0.03ms]
+(pass) ownership labels (order 22) > defaults the unit label to this unit and takes an override
+(pass) capability truth table > Docker reports exactly what it can do
+(pass) unsupported capabilities are typed, never silent > fork is an UnsupportedCapabilityError with a literal message [0.12ms]
+(pass) unsupported capabilities are typed, never silent > desktop is an UnsupportedCapabilityError and the interface still carries it [0.09ms]
+(pass) boundary checks that run before docker > refuses a handle that belongs to another provider
+(pass) boundary checks that run before docker > refuses an empty command
+(pass) boundary checks that run before docker > refuses a relative upload path and an out-of-range port [0.33ms]
+(pass) boundary checks that run before docker > the adapter is assignable to the frozen interface
+
+packages/sandbox/src/image.test.ts:
+(pass) ensurePinnedImage > re-points an off-pin tag at a local layer match without building [0.61ms]
+(pass) ensurePinnedImage > refuses with the repair command and leaves no off-pin tag when nothing matches [0.15ms]
+(pass) ensurePinnedImage > builds a missing image, promotes it on a pin match, and removes the scratch tag
+(pass) ensurePinnedImage > refuses a build whose layer set differs, and keeps the canonical tag unset [0.19ms]
+(pass) ensurePinnedImage > returns a matching tag without tagging or building [0.06ms]
+
+packages/sandbox/src/docker.test.ts:
+check pinned image: tag=freebot-sandbox:u0.6 id=sha256:5b66f96eea3b31a7dbbe485dc983e7daf1faea05f74bfb124d75dfc0f9d55a51 layers=7/7 matching docs/sandbox-image.md
+check pre-suite sweep (this run's unit label u1.2-run-1uk0-9e9fff only, a fresh token finds nothing): removed=0
+check create: handle={"provider":"docker","id":"u91-main-1uk0-9e9fff"} engine=53b97a7bc275 running=true labels={"freebot.provider":"docker","freebot.sandbox":"u91-main-1uk0-9e9fff","freebot.unit":"u1.2-run-1uk0-9e9fff","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: 7 RootFS layers equal the U0.6-recorded set; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=8cda16712988fdc6a9d57c5b5a2a108976d973d2e850d5a8dcb9882220cd1759 the sandbox's sha256sum=8cda16712988fdc6a9d57c5b5a2a108976d973d2e850d5a8dcb9882220cd1759 path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=8cda16712988fdc6a9d57c5b5a2a108976d973d2e850d5a8dcb9882220cd1759
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in freebot-sbx-u91-no-link-1uk0-9e9fff: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), docker said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1uk0-9e9fff is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1uk0-9e9fff:u91-round-trip ref=sha256:cc566d75d73d86dff7134b944890d2bc132f0bbeacfd06532f58b0c10ea1047a createdAt=2026-10-20T03:05:07.782028133Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1uk0-9e9fff booted from sha256:cc566d75d73d86dff7134b944890d2bc132f0bbeacfd06532f58b0c10ea1047a reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1uk0-9e9fff is gone from the engine
+check idle-kill: u91-idle-1uk0-9e9fff (idleTtlMs=3000) stopped after 5164ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u91-decoy-foreign-unit-1uk0-9e9fff=f2c6053ec5ab3cfc6ccc3bc4785534665561f3c6c895cfc7315883ac801e0f18 running
+census before sweep, decoy (a sibling run of this suite): u91-decoy-sibling-run-1uk0-9e9fff=d7021e261ff8a6359a30ef4e48d547adb49838c2099bfdf0fefc9aa84d648077 running
+census before sweep, decoy (no labels at all): u91-decoy-bare-1uk0-9e9fff=f3d6082ec5a9b78c2f5efbbc1fc86c1db5203a4ccc90a08209231155fe21fdf5 running
+census before sweep, this run: u91-main-1uk0-9e9fff=53b97a7bc275
+census before sweep, this run: u91-no-link-1uk0-9e9fff=gone
+census before sweep, this run: u91-restored-1uk0-9e9fff=gone
+census before sweep, this run: u91-idle-1uk0-9e9fff=5704bb74f6bb
+check sweep: removed 2 of 2 live sandboxes: 5704bb74f6bb, 53b97a7bc275
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+census after sweep, decoy unchanged: u91-decoy-foreign-unit-1uk0-9e9fff=f2c6053ec5ab3cfc6ccc3bc4785534665561f3c6c895cfc7315883ac801e0f18 running
+census after sweep, decoy unchanged: u91-decoy-sibling-run-1uk0-9e9fff=d7021e261ff8a6359a30ef4e48d547adb49838c2099bfdf0fefc9aa84d648077 running
+census after sweep, decoy unchanged: u91-decoy-bare-1uk0-9e9fff=f3d6082ec5a9b78c2f5efbbc1fc86c1db5203a4ccc90a08209231155fe21fdf5 running
+PASS operation create
+PASS operation exec
+PASS operation upload
+PASS operation download
+PASS operation tunnel
+PASS operation snapshot-resume
+PASS operation idle-kill
+PASS operation sweep
+conformance suite: 8/8 operations passed, ok=true
+(pass) docker adapter (integration) > the interface's operations pass the conformance suite [14608.69ms]
+check exposePort: http://127.0.0.1:60642 -> "exposed-body"
+check exposePort delete: u91-expose-1uk0-9e9fff is gone from the engine
+(pass) docker adapter (integration) > exposePort forwards a loopback URL to a port inside the sandbox [524.49ms]
+
+packages/sandbox/src/microsandbox.test.ts:
+feature: sandbox-microsandbox
+command: bun test packages/sandbox/src/microsandbox.test.ts
+timestamp: 2026-10-20T03:05:19.261Z
+git short sha: 1f60b9c (branch u10.2-artifact-hygiene)
+runtime: bun 1.2.5 on darwin arm64
+msb: msb 0.7.8
+run token: 1uk0-9f616c (this run owns freebot.unit=u1.2-run-1uk0-9f616c)
+
+check create: handle={"provider":"microsandbox","id":"u91-main-1uk0-9f616c"} engine=u91-main-1uk0-9f616c running=true labels={"freebot.provider":"microsandbox","freebot.sandbox":"u91-main-1uk0-9f616c","freebot.unit":"u1.2-run-1uk0-9f616c","org.freebot.sandbox.node-base-digest":"sha256:a5f4366e834695d5f363b920c104953a535d3a9864d1bdf74566a0ebe01daee5"}
+check pinned image: freebot-sandbox:u0.6 sha256:130dbb9ca6a220ec8dcb8b4331d3d35656d6fda21e9dc3aadefdeda0e67bcce5 7 OCI layers, imported with msb image load; in the sandbox node="v24.22.0\n" pi="1.3.0\n"
+check exec buffered: exit=0 stdout="hello-from-sandbox\n" stderr=""
+check exec streamed: exit=0 stdout="stream-one\nstream-two\n"
+check exec exit code: exit=7 for "exit 7"
+check exec detached: {started:true} then "detached-marker" read back
+check upload: bytes=4096 host sha256=6873c5b17ae87cdc1ad7a4bf61f880784534e01dd4a709aa4b42e28c243bb1bc the sandbox's sha256sum=6873c5b17ae87cdc1ad7a4bf61f880784534e01dd4a709aa4b42e28c243bb1bc path=/var/freebot/up.bin
+check download: bytes=4096 byte-equal to the 4096 that went in sha256=6873c5b17ae87cdc1ad7a4bf61f880784534e01dd4a709aa4b42e28c243bb1bc
+check tunnel handshake: {"kind":"attached","acked":0,"lastSeq":0}
+check tunnel echo: wrote {"kind":"ack","seq":7}, read back {"kind":"frame","seq":7,"frame":{"type":"agent_settled"}}
+check tunnel without a link: code=link_error message="no supervisor link in u91-no-link-1uk0-9f616c: /var/freebot/supervisor.port is not readable (start apps/sandbox-agent's supervisor in the sandbox first), msb said: cat: /var/freebot/supervisor.port: No such file or directory"
+check delete: u91-no-link-1uk0-9f616c is gone from the engine after delete()
+check snapshot: tag=freebot-snapshot/u91-main-1uk0-9f616c:u91-round-trip ref=freebot-snapshot-u91-main-1uk0-9f616c:u91-round-trip createdAt=2026-10-20T03:05:22.410Z
+check stop/resume: running -> not running -> running, marker="round-trip-marker\n"
+check restore: u91-restored-1uk0-9f616c booted from freebot-snapshot-u91-main-1uk0-9f616c:u91-round-trip reads marker="round-trip-marker\n"
+check delete restored: u91-restored-1uk0-9f616c is gone from the engine
+check idle-kill: u91-idle-1uk0-9f616c (idleTtlMs=3000) stopped after 3030ms
+check idle-touch: still running after 4 exec calls at 200ms intervals against a 3000ms ttl
+census before sweep, decoy (another unit's label): u92-unit-decoy-foreign-1uk0-9f616c=running
+census before sweep, decoy (a sibling run): u92-unit-decoy-sibling-1uk0-9f616c=running
+census before sweep, decoy (no ownership label at all): u92-unit-decoy-bare-1uk0-9f616c=running
+census before sweep, this run: u91-main-1uk0-9f616c=u91-main-1uk0-9f616c
+census before sweep, this run: u91-no-link-1uk0-9f616c=gone
+census before sweep, this run: u91-restored-1uk0-9f616c=gone
+census before sweep, this run: u91-idle-1uk0-9f616c=u91-idle-1uk0-9f616c
+check sweep: removed 2 of 2 live sandboxes: u91-idle-1uk0-9f616c, u91-main-1uk0-9f616c
+census after sweep, this run: 0 of the 4 sandboxes it created are left
+census after sweep, decoy unchanged: u92-unit-decoy-foreign-1uk0-9f616c=running
+census after sweep, decoy unchanged: u92-unit-decoy-sibling-1uk0-9f616c=running
+census after sweep, decoy unchanged: u92-unit-decoy-bare-1uk0-9f616c=running
+(pass) microsandbox adapter (integration) > the suite passes every operation [9354.66ms]
+sandboxes left under u1.2-run-1uk0-9f616c: 0
+
+packages/review/src/store.test.ts:
+(pass) issue > appends the full v1 record shape [0.20ms]
+(pass) issue > assigns ascending seq and refuses a duplicate id (issue-once) [0.03ms]
+(pass) issue > refuses an empty tool name and a non-positive ttl [0.12ms]
+(pass) issue > refuses args that are not canonical JSON [0.04ms]
+(pass) append-only log > consume appends a version and leaves the issue version untouched [0.10ms]
+(pass) append-only log > replay derives the same state from the log
+(pass) append-only log > grants() returns current versions only, ascending by seq [0.06ms]
+(pass) consume > refuses a second consume of the same grant [0.05ms]
+(pass) consume > refuses an unknown grant [0.04ms]
+(pass) consume > refuses an expired grant at the boundary instant
+(pass) rewind > tombstones exactly the grants past the rewind point [0.12ms]
+(pass) rewind > is idempotent: a second rewind over the same point appends nothing [0.06ms]
+(pass) rewind > keeps consumption history and removes authority [0.08ms]
+(pass) rewind > refuses a negative rewind point
+(pass) jsonl persistence > round-trips the full append history through text [0.29ms]
+(pass) jsonl persistence > keeps append order line by line [0.06ms]
+(pass) jsonl persistence > fails closed on a malformed line, naming it
+(pass) jsonl persistence > loads back from a file with identical state [0.62ms]
+
+packages/review/src/policy.test.ts:
+(pass) allow-once semantics > allows the granted action once and consumes its grant [0.21ms]
+(pass) allow-once semantics > two grants for one action allow twice, in seq order [0.12ms]
+(pass) allow-once semantics > key-order variants of the granted args still match [0.07ms]
+(pass) allow-once semantics > is legal to assign the policy to the pi-bridge ToolGate contract [0.07ms]
+(pass) fail-closed denials > unknown tool: outside the governed list, even with a grant [0.06ms]
+(pass) fail-closed denials > no grant: the tool has never been granted [0.02ms]
+(pass) fail-closed denials > grant mismatch: a grant for the tool exists, none for these args
+(pass) fail-closed denials > expired: valid strictly before expiresAt, denied at it
+(pass) fail-closed denials > tombstoned: a rewind past the grant removes its authority [0.07ms]
+(pass) fail-closed denials > forged: a record whose hash disagrees with its content never authorizes [0.11ms]
+(pass) fail-closed denials > malformed action: args that are not canonical JSON
+(pass) fail-closed denials > store failure denies instead of propagating
+(pass) fail-closed denials > the fail-closed and refusal flows carry distinct codes [0.45ms]
+(pass) a resolved human denial > a refused action denies user_denied, and the reason is a literal [0.05ms]
+(pass) a resolved human denial > the same call with no refusal says no_grant, so the two are distinguishable
+(pass) a resolved human denial > a later allow overrides the refusal: a live grant authorizes the refused action
+(pass) shared store > two policy instances over one store cannot double-spend a grant
+(pass) shared store > a reloaded store keeps enforcing consumption
+
+packages/review/src/grants.test.ts:
+(pass) canonical JSON > sorts object keys at every level
+(pass) canonical JSON > keeps array order
+(pass) canonical JSON > number text forms collapse through JS number semantics
+(pass) canonical JSON > treats a __proto__ key as data
+(pass) canonical JSON > refuses undefined, naming its path
+(pass) canonical JSON > refuses NaN and Infinity [0.29ms]
+(pass) canonical JSON > refuses -0
+(pass) canonical JSON > refuses non-JSON types [0.03ms]
+(pass) canonical JSON > refuses non-plain objects [0.10ms]
+(pass) canonical JSON > refuses array holes [0.03ms]
+(pass) canonical JSON > refuses an empty tool name [0.02ms]
+(pass) canonical action hash > pins the digest of a known action
+(pass) canonical action hash > key-order variants of equal args hash identically, nested included [0.04ms]
+(pass) canonical action hash > array order is not normalized: reordered args hash differently
+(pass) canonical action hash > different args under one tool hash differently
+(pass) canonical action hash > the same args under different tools hash differently
+(pass) canonical action hash > unicode is not normalized: NFC and NFD strings differ [0.13ms]
+(pass) grant record parsing > accepts a valid record and canonicalizes its args [0.02ms]
+(pass) grant record parsing > rejects a non-object
+(pass) grant record parsing > rejects unknown fields
+(pass) grant record parsing > rejects a hash that does not match the scheme
+(pass) grant record parsing > rejects an expiry at or before issue time [0.03ms]
+(pass) grant record parsing > rejects non-JSON args
+(pass) recomputeActionHash > reproduces the hash of a consistent record and exposes a forged one [0.06ms]
+
+packages/pi-bridge/src/gate.test.ts:
+(pass) tool gate decisions > allowTools allows what it names and denies everything else [0.39ms]
+(pass) tool gate decisions > the default gate denies every call
+(pass) tool gate decisions > a throwing handler yields a denial carrying the thrown text
+(pass) tool gate decisions > the extension decodes anything but a decision as a denial
+(pass) dialogs over the RPC extension UI sub-protocol > an allowed call answers the dialog with the encoded allow [31.19ms]
+(pass) dialogs over the RPC extension UI sub-protocol > a denied call answers with the reason, and the extension maps it to a block [32.04ms]
+(pass) dialogs over the RPC extension UI sub-protocol > a dialog without a timeout is denied on arrival, never left to block Pi [32.02ms]
+(pass) dialogs over the RPC extension UI sub-protocol > a malformed dialog payload is denied on arrival [32.36ms]
+(pass) dialogs over the RPC extension UI sub-protocol > a gate that never answers is denied at the dialog's own deadline [31.68ms]
+(pass) dialogs over the RPC extension UI sub-protocol > a late allow is dropped and never reaches Pi [154.28ms]
+(pass) the gate extension's tool_call handler > it asks over an input dialog that always carries a timeout, and allows on an allow [1.76ms]
+(pass) the gate extension's tool_call handler > it blocks with the bridge's reason on a denial [0.13ms]
+(pass) the gate extension's tool_call handler > it blocks when the dialog dies unanswered [0.21ms]
+(pass) fail-closed > with the gate throwing, the call is denied and the recorded block path is an error result with no execution [35.36ms]
+
+packages/pi-bridge/src/session.test.ts:
+(pass) PiSession over the recorded transcript > a response correlates by id, and the session writes the command it was given [2.07ms]
+(pass) PiSession over the recorded transcript > a success:false response rejects with a typed error carrying the wire's text [0.85ms]
+(pass) PiSession over the recorded transcript > an id-less parse response surfaces as a typed protocol error [0.18ms]
+(pass) PiSession over the recorded transcript > a command with no recorded response fails the replay loudly [0.33ms]
+(pass) PiSession over the recorded transcript > a full recorded session: ordered events, settle boundary, and totals [1.18ms]
+
+packages/pi-bridge/src/frames.test.ts:
+(pass) fixture transcript > every line parses with zero failures [3.26ms]
+(pass) fixture transcript > 248 lines: 165 pi->bridge frames, 39 ok:true checks, 0 ok:false [1.24ms]
+(pass) fixture transcript > the fixture exercises every modeled inbound frame kind [0.94ms]
+(pass) fixture transcript > the one non-command bridge->pi line is the malformed-JSON probe [0.75ms]
+(pass) parseFrame > strips a trailing CR and returns a typed response [0.14ms]
+(pass) parseFrame > rejects a response frame missing command/success with the offending line [0.19ms]
+(pass) parseFrame > rejects a non-JSON line
+(pass) parseFrame > keeps unknown frame kinds instead of failing [0.06ms]
+(pass) serializeFrame > writes exactly one LF-terminated record [0.09ms]
+
+apps/server/src/cli/args.test.ts:
+(pass) parseUpArgs > no flags takes a free port on both legs, opens a browser, and asks the vault [0.67ms]
+(pass) parseUpArgs > --api-port and --tunnel-port pin the two legs [0.08ms]
+(pass) parseUpArgs > --transcript and --connectors name the two files a driver pins, and both take a path [0.23ms]
+(pass) parseUpArgs > --no-open leaves the browser alone [0.12ms]
+(pass) parseUpArgs > --live demands the vault and --replay records, and the last flag wins [0.07ms]
+(pass) parseUpArgs > FREEBOT_PROVIDER sets the default a launched process starts with
+(pass) parseUpArgs > FREEBOT_SPEND_CAP_USD sets the cap, and a malformed one is refused at boot [0.16ms]
+(pass) parseUpArgs > the four token prices are all four or none, and a finer-than-nano price is refused [0.28ms]
+(pass) parseUpArgs > FREEBOT_WORKSPACE moves the Bots directory, and an empty one means the default [0.03ms]
+(pass) parseUpArgs > --sandbox names the backend, and the flag wins over FREEBOT_SANDBOX [0.15ms]
+(pass) parseUpArgs > a backend this launcher does not have is refused by name, never guessed at [0.14ms]
+(pass) parseUpArgs > an invalid FREEBOT_SANDBOX cannot refuse a flag or help [0.04ms]
+(pass) parseUpArgs > an unknown flag is refused and named
+(pass) parseUpArgs > a value that is not a port is refused [0.11ms]
+(pass) parseUpArgs > --help is read without the rest of the line having to parse [0.05ms]
+(pass) pageUrl > the operator token rides the fragment, which no browser sends to a server [0.04ms]
+(pass) UP_USAGE > names the command and every flag, so --help is the whole contract [0.06ms]
+
+apps/server/src/cli/reaping-sandbox.test.ts:
+(pass) LaunchSandboxes.reap > an inspection failure is not absence: it survives and is never forgotten [2.86ms]
+(pass) LaunchSandboxes.reap > a sandbox the engine answers gone for is removed without a delete attempt [0.57ms]
+(pass) LaunchSandboxes.reap > a held sandbox counts as removed only once the engine answers it is gone
+
+apps/server/src/cli/doctor.test.ts:
+(pass) the doctor's bounded probe retry > a probe that passes is not retried [2.84ms]
+(pass) the doctor's bounded probe retry > a probe that fails once is retried, and the second result is the one returned [0.33ms]
+(pass) the doctor's bounded probe retry > a probe that keeps failing returns its failure after exactly one retry [0.04ms]
+
+ 914 pass
+ 0 fail
+ 3094 expect() calls
+Ran 914 tests across 76 files. [27.95s]

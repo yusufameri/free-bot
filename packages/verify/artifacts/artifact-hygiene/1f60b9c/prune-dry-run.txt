@@ -1,0 +1,264 @@
+prune: packages/verify/artifacts (dry run)
+DELETE packages/verify/artifacts/mvp-status/7a9fb55
+DELETE packages/verify/artifacts/mvp-status/9c85033
+DELETE packages/verify/artifacts/mvp-status/d6d141b
+DELETE packages/verify/artifacts/mvp-status/dae0dbf
+DELETE packages/verify/artifacts/mvp-status/ee1a692
+DELETE packages/verify/artifacts/mvp-status/pass36-ee1a692
+DELETE packages/verify/artifacts/mvp-status/pass37-ee1a692
+DELETE packages/verify/artifacts/mvp-status/pass38-7f8cf73
+DELETE packages/verify/artifacts/mvp-status/pass40-7003b58
+DELETE packages/verify/artifacts/mvp-status/pass41-c3ab03a
+DELETE packages/verify/artifacts/mvp-status/pass43-b96cea1
+DELETE packages/verify/artifacts/mvp-status/pass44-b96cea1
+DELETE packages/verify/artifacts/mvp-status/pass45-78d3a8a
+DELETE packages/verify/artifacts/mvp-status/pass46-78d3a8a
+DELETE packages/verify/artifacts/mvp-status/pass47-78d3a8a
+DELETE packages/verify/artifacts/mvp-status/pass50-dead0a5
+DELETE packages/verify/artifacts/mvp-status/pass51-dead0a5
+DELETE packages/verify/artifacts/mvp-status/pass56-d0656c1
+DELETE packages/verify/artifacts/mvp-status/pass58-d0656c1
+DELETE packages/verify/artifacts/mvp-status/pass65-c6179fd
+DELETE packages/verify/artifacts/mvp-status/pass66-329de02
+DELETE packages/verify/artifacts/mvp-status/pass68-a026685
+DELETE packages/verify/artifacts/mvp-status/pass70-461dc46
+DELETE packages/verify/artifacts/mvp-status/pass71-8d12b50
+DELETE packages/verify/artifacts/mvp-status/pass72-d2334f4
+DELETE packages/verify/artifacts/mvp-status/pass74-9b16d6d
+DELETE packages/verify/artifacts/mvp-status/pass76-bc5337c
+DELETE packages/verify/artifacts/mvp-status/pass77-e667880
+DELETE packages/verify/artifacts/mvp-status/pass79-b0c3680
+DELETE packages/verify/artifacts/mvp-status/pass80-6ba0c06
+KEEP   packages/verify/artifacts/aside/513a592: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/aside/beae309: tracked in git
+KEEP   packages/verify/artifacts/aside/d64faae: tracked in git
+KEEP   packages/verify/artifacts/aside/e18ce5f: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/bots-and-threads/1b37147: tracked in git
+KEEP   packages/verify/artifacts/bots-and-threads/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/bots-and-threads/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/bots-and-threads/a273e16: tracked in git
+KEEP   packages/verify/artifacts/bots-and-threads/b727146: tracked in git
+KEEP   packages/verify/artifacts/bots-and-threads/b917c1f: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/bots-and-threads/c631efb: tracked in git
+KEEP   packages/verify/artifacts/bots-and-threads/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/cancel-run/085af4c: tracked in git
+KEEP   packages/verify/artifacts/cancel-run/a273e16: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/cancel-run/d84af70: tracked in git
+KEEP   packages/verify/artifacts/connect-apps/3190f7f: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/connector-credentials/615de58: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/connectors/615de58: tracked in git
+KEEP   packages/verify/artifacts/connectors/7544f5d: tracked in git
+KEEP   packages/verify/artifacts/connectors/b760edb: tracked in git
+KEEP   packages/verify/artifacts/connectors/c7e5326: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/connectors/ca04580: tracked in git
+KEEP   packages/verify/artifacts/connectors/d64faae: tracked in git
+KEEP   packages/verify/artifacts/connectors/d859a7b: tracked in git
+KEEP   packages/verify/artifacts/connectors/fa573bb: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/containment-browser/27cf9de: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/containment/57a229d: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/core-run-model/5046bd6: tracked in git
+KEEP   packages/verify/artifacts/core-run-model/ba092ab: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/design-contract/07aedaa: tracked in git
+KEEP   packages/verify/artifacts/design-contract/178e8fd: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/design-contract/2a3c6e7: tracked in git
+KEEP   packages/verify/artifacts/design-contract/36ff062: tracked in git
+KEEP   packages/verify/artifacts/design-contract/513a592: tracked in git
+KEEP   packages/verify/artifacts/design-contract/7394fa6: tracked in git
+KEEP   packages/verify/artifacts/design-contract/8265336: tracked in git
+KEEP   packages/verify/artifacts/design-contract/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/design-contract/a559443: tracked in git
+KEEP   packages/verify/artifacts/design-contract/beae309: tracked in git
+KEEP   packages/verify/artifacts/files-surface/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/files-surface/4a69b4f: tracked in git
+KEEP   packages/verify/artifacts/files-surface/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/files-surface/b917c1f: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/files-surface/bf67736: tracked in git
+KEEP   packages/verify/artifacts/files-surface/c631efb: tracked in git
+KEEP   packages/verify/artifacts/files-surface/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/files-surface/d64faae: tracked in git
+KEEP   packages/verify/artifacts/first-run/8d892fa: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/first-run/d64faae: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/forge-test-a/a46071c: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/index-check/6de9fc0: tracked in git
+KEEP   packages/verify/artifacts/index-check/b2e1595: tracked in git
+KEEP   packages/verify/artifacts/items/a273e16: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/items/b4588df: tracked in git
+KEEP   packages/verify/artifacts/keyed-run/085af4c: tracked in git
+KEEP   packages/verify/artifacts/keyed-run/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/keyed-run/5333adb: tracked in git
+KEEP   packages/verify/artifacts/keyed-run/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/keyed-run/a273e16: tracked in git
+KEEP   packages/verify/artifacts/keyed-run/b917c1f: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/keyed-run/c631efb: tracked in git
+KEEP   packages/verify/artifacts/keyed-run/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/landing/147b040: tracked in git
+KEEP   packages/verify/artifacts/landing/20ed41a: tracked in git
+KEEP   packages/verify/artifacts/landing/42e07c8: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/landing/5a0ec38: tracked in git
+KEEP   packages/verify/artifacts/landing/6f03e93: tracked in git
+KEEP   packages/verify/artifacts/landing/7637c58: tracked in git
+KEEP   packages/verify/artifacts/landing/8265336: tracked in git
+KEEP   packages/verify/artifacts/landing/8c63fb4: tracked in git
+KEEP   packages/verify/artifacts/landing/c843fee: tracked in git
+KEEP   packages/verify/artifacts/landing/eee33cb: tracked in git
+KEEP   packages/verify/artifacts/landing/faa4e5a: tracked in git
+KEEP   packages/verify/artifacts/launch/085af4c: tracked in git
+KEEP   packages/verify/artifacts/launch/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/launch/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/launch/8fdb87f: tracked in git
+KEEP   packages/verify/artifacts/launch/a273e16: tracked in git
+KEEP   packages/verify/artifacts/launch/b917c1f: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/launch/c631efb: tracked in git
+KEEP   packages/verify/artifacts/launch/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/launch/d64faae: tracked in git
+KEEP   packages/verify/artifacts/launch/ec45873: tracked in git
+KEEP   packages/verify/artifacts/mvp-smoke/333323c: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/mvp-status-capture/ee54548: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/mvp-status-capture/fa02379: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/mvp-status/pass81-cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/one-run-path/085af4c: tracked in git
+KEEP   packages/verify/artifacts/one-run-path/0b4cb7b: tracked in git
+KEEP   packages/verify/artifacts/one-run-path/16a09ab: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/one-run-path/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/one-run-path/7e63e57: tracked in git
+KEEP   packages/verify/artifacts/one-run-path/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/one-run-path/a273e16: tracked in git
+KEEP   packages/verify/artifacts/one-run-path/b760edb: tracked in git
+KEEP   packages/verify/artifacts/one-run-path/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/overlays/731e067: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/overlays/beae309: tracked in git
+KEEP   packages/verify/artifacts/overlays/d64faae: tracked in git
+KEEP   packages/verify/artifacts/overlays/e18ce5f: tracked in git
+KEEP   packages/verify/artifacts/overlays/e667880: tracked in git
+KEEP   packages/verify/artifacts/pi-bridge/a67bc72: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/pi-rpc/e203adf: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/pixel-gate/50c5e27: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/pixel-gate/8d23e06: tracked in git
+KEEP   packages/verify/artifacts/pixel-gate/b272385: tracked in git
+KEEP   packages/verify/artifacts/pixel-gate/bc5a52d: tracked in git
+KEEP   packages/verify/artifacts/pixel-gate/df87bca: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/protocol/e025559: tracked in git
+KEEP   packages/verify/artifacts/protocol/efa0211: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/provider-setup/2703ae2: tracked in git
+KEEP   packages/verify/artifacts/provider-setup/4a69b4f: tracked in git
+KEEP   packages/verify/artifacts/provider-setup/5042e1e: tracked in git
+KEEP   packages/verify/artifacts/provider-setup/7e63e57: tracked in git
+KEEP   packages/verify/artifacts/provider-setup/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/provider-setup/b917c1f: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/provider-setup/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/providers/4e4f6e6: tracked in git
+KEEP   packages/verify/artifacts/providers/7032a72: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/providers/934394f: tracked in git
+KEEP   packages/verify/artifacts/providers/a980049: tracked in git
+KEEP   packages/verify/artifacts/review-grants/c8efced: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/run-loop/12730d2: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-conformance/1763b71: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-conformance/c631efb: tracked in git
+KEEP   packages/verify/artifacts/sandbox-conformance/f45eb69: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-conformance/ff4f655: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-image/8d36ea7: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-microsandbox/2437261: tracked in git
+KEEP   packages/verify/artifacts/sandbox-microsandbox/8265336: tracked in git
+KEEP   packages/verify/artifacts/sandbox-microsandbox/a559443: tracked in git
+KEEP   packages/verify/artifacts/sandbox-microsandbox/c631efb: tracked in git
+KEEP   packages/verify/artifacts/sandbox-microsandbox/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/sandbox-microsandbox/f45eb69: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-microsandbox/ff4f655: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-pin-repair/263e285: tracked in git
+KEEP   packages/verify/artifacts/sandbox-pin-repair/8871327: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-pin-repair/dc9d4e5: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/1763b71: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/2437261: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/4f44e98: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/513a592: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/7032a72: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/sandbox-provider/7e63e57: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/8265336: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/83058fe: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/961edbb: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/a559443: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/c631efb: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/ca04580: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/sandbox-provider/d22c487: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/dc875b3: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/ebcad73: tracked in git
+KEEP   packages/verify/artifacts/sandbox-provider/ff4f655: tracked in git
+KEEP   packages/verify/artifacts/scaffold/0b4cb7b: tracked in git
+KEEP   packages/verify/artifacts/scaffold/1763b71: tracked in git
+KEEP   packages/verify/artifacts/scaffold/1be3f9a: tracked in git
+KEEP   packages/verify/artifacts/scaffold/2437261: tracked in git
+KEEP   packages/verify/artifacts/scaffold/27cf9de: tracked in git
+KEEP   packages/verify/artifacts/scaffold/28d8de0: tracked in git
+KEEP   packages/verify/artifacts/scaffold/2c9b605: tracked in git
+KEEP   packages/verify/artifacts/scaffold/333323c: tracked in git
+KEEP   packages/verify/artifacts/scaffold/384c318: tracked in git
+KEEP   packages/verify/artifacts/scaffold/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/scaffold/3d846e0: tracked in git
+KEEP   packages/verify/artifacts/scaffold/3e5b947: tracked in git
+KEEP   packages/verify/artifacts/scaffold/513a592: tracked in git
+KEEP   packages/verify/artifacts/scaffold/7ce8f5e: tracked in git
+KEEP   packages/verify/artifacts/scaffold/7e63e57: tracked in git
+KEEP   packages/verify/artifacts/scaffold/8265336: tracked in git
+KEEP   packages/verify/artifacts/scaffold/8d36ea7: tracked in git
+KEEP   packages/verify/artifacts/scaffold/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/scaffold/8ed2aa4: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/scaffold/a46071c: tracked in git
+KEEP   packages/verify/artifacts/scaffold/a559443: tracked in git
+KEEP   packages/verify/artifacts/scaffold/a67bc72: tracked in git
+KEEP   packages/verify/artifacts/scaffold/ada90ad: tracked in git
+KEEP   packages/verify/artifacts/scaffold/b272385: tracked in git
+KEEP   packages/verify/artifacts/scaffold/bf0a4e6: tracked in git
+KEEP   packages/verify/artifacts/scaffold/c631efb: tracked in git
+KEEP   packages/verify/artifacts/scaffold/ca04580: tracked in git
+KEEP   packages/verify/artifacts/scaffold/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/scaffold/cccaa23: tracked in git
+KEEP   packages/verify/artifacts/scaffold/efa0211: tracked in git
+KEEP   packages/verify/artifacts/scaffold/f804de5: tracked in git
+KEEP   packages/verify/artifacts/scaffold/ff4f655: tracked in git
+KEEP   packages/verify/artifacts/server-auth/0744562: tracked in git
+KEEP   packages/verify/artifacts/server-auth/0b4cb7b: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/server-auth/a283113: tracked in git
+KEEP   packages/verify/artifacts/spend-cap/085af4c: tracked in git
+KEEP   packages/verify/artifacts/spend-cap/a273e16: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/spend-cap/d84af70: tracked in git
+KEEP   packages/verify/artifacts/sweep-main/0d74d05: tracked in git
+KEEP   packages/verify/artifacts/sweep-main/74186ed: tracked in git
+KEEP   packages/verify/artifacts/sweep-main/8d12b50: tracked in git
+KEEP   packages/verify/artifacts/sweep-main/e18ce5f: tracked in git
+KEEP   packages/verify/artifacts/transcript-restart/085af4c: tracked in git
+KEEP   packages/verify/artifacts/transcript-restart/16a09ab: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/transcript-restart/23a4c89: tracked in git
+KEEP   packages/verify/artifacts/transcript-restart/9d26d43: tracked in git
+KEEP   packages/verify/artifacts/transcript-restart/a273e16: tracked in git
+KEEP   packages/verify/artifacts/truth-fix/ada90ad: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/tunnel/bf0a4e6: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/type-gate/28d8de0: tracked in git
+KEEP   packages/verify/artifacts/type-gate/2c9b605: tracked in git
+KEEP   packages/verify/artifacts/type-gate/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/type-gate/6b18776: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/type-gate/8265336: tracked in git
+KEEP   packages/verify/artifacts/type-gate/8d892fa: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/type-gate/9877569: tracked in git
+KEEP   packages/verify/artifacts/type-gate/a559443: tracked in git
+KEEP   packages/verify/artifacts/type-gate/b272385: tracked in git
+KEEP   packages/verify/artifacts/type-gate/bdf5f12: tracked in git
+KEEP   packages/verify/artifacts/type-gate/beae309: tracked in git
+KEEP   packages/verify/artifacts/type-gate/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/type-gate/d22c487: tracked in git
+KEEP   packages/verify/artifacts/type-gate/d64faae: tracked in git
+KEEP   packages/verify/artifacts/type-gate/e7cb536: tracked in git
+KEEP   packages/verify/artifacts/web-shell/085af4c: tracked in git
+KEEP   packages/verify/artifacts/web-shell/2f23017: tracked in git
+KEEP   packages/verify/artifacts/web-shell/326cf65: tracked in git
+KEEP   packages/verify/artifacts/web-shell/3c3a9e7: tracked in git
+KEEP   packages/verify/artifacts/web-shell/8d892fa: tracked in git
+KEEP   packages/verify/artifacts/web-shell/a273e16: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/web-shell/cbd719e: newest run for its feature
+KEEP   packages/verify/artifacts/web-stream/35bd852: named by docs/VERIFICATION.md
+KEEP   packages/verify/artifacts/workspace-pages/178e8fd: tracked in git
+KEEP   packages/verify/artifacts/workspace-pages/42c0fac: named by docs/VERIFICATION.md
+
+would delete 30 run directories, kept 231 (12 newest, 53 named by a row, 166 tracked, 0 not a run)

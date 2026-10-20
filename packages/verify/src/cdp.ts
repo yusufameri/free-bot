@@ -12,7 +12,7 @@
  * in `docs/DESIGN-CONTRACT.md`.
  */
 
-import { mkdirSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -322,12 +322,42 @@ export async function settle(cdp: Cdp, sessionId: string, quietMs = 120): Promis
   await sleep(quietMs);
 }
 
+/**
+ * The one CDP call the screenshot helpers need.
+ *
+ * `packages/verify` and both `apps/web/scripts` drivers carry their own connection class, and a
+ * class with private fields is nominal, so the helpers take this shape instead of either class.
+ */
+export interface ScreenshotSource {
+  send<T = Record<string, unknown>>(
+    method: string,
+    params?: Record<string, unknown>,
+    sessionId?: string,
+  ): Promise<T>;
+}
+
 /** The viewport-sized PNG of the page as it stands. */
-export async function screenshot(cdp: Cdp, sessionId: string): Promise<Buffer> {
+export async function screenshot(cdp: ScreenshotSource, sessionId: string): Promise<Buffer> {
   const shot = await cdp.send<{ data: string }>(
     "Page.captureScreenshot",
     { format: "png" },
     sessionId,
   );
   return Buffer.from(shot.data, "base64");
+}
+
+/**
+ * Capture the page and write it to `path`, the pair every evidence driver repeated.
+ *
+ * The buffer comes back so a driver can digest the exact bytes it wrote. The caller owns the
+ * directory, as it did when it called `writeFileSync` itself.
+ */
+export async function saveScreenshot(
+  cdp: ScreenshotSource,
+  sessionId: string,
+  path: string,
+): Promise<Buffer> {
+  const png = await screenshot(cdp, sessionId);
+  writeFileSync(path, png);
+  return png;
 }

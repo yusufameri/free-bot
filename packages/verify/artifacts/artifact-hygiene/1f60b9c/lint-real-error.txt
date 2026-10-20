@@ -1,0 +1,28 @@
+$ biome check .
+packages/verify/src/index.ts:8:1 lint/suspicious/noDebugger  FIXABLE  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × This is an unexpected use of the debugger statement.
+  
+    6 │ }
+    7 │ 
+  > 8 │ debugger;
+      │ ^^^^^^^^^
+    9 │ 
+  
+  i Unsafe fix: Remove debugger statement
+  
+    5 5 │     return join(repoRoot, "packages", "verify", "artifacts", feature, sha);
+    6 6 │   }
+    7   │ - 
+    8   │ - debugger;
+    9 7 │   
+  
+
+Checked 323 files in 167ms. No fixes applied.
+Found 1 error.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+error: script "lint" exited with code 1

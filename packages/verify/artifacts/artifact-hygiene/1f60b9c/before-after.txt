@@ -1,0 +1,4 @@
+run directories before: 261
+run directories after: 231
+artifact tree size before: 113M
+artifact tree size after:  93M
