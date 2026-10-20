@@ -1,0 +1,6 @@
+feature: one run path
+script: `bun apps/web/scripts/one-run-path.ts`
+verdict: live-ui-verified (54 CDP checks in headless Chrome 155 against a really launched `apps/server/src/index.ts`: both directions of the operator token on the page's stream, read as socket handshakes; then two runs started from the page's own prompt box, one answered allow and one answered deny, in four committed states whose DOM facts are read before and after each capture and fail the run if they moved, whose captions' claims are evaluated against those same facts, whose caption element is asserted inside the captured viewport, and which are pairwise distinct across six comparisons. The allow run's tool card shows the container's own stdout, `native-should-not-run\n`, and the deny run's tool card reads `denied` while its approval card carries `deny`. Not live: the provider is the replay transcript, because this driver boots the driver-facing `apps/server/src/index.ts`, which states the replay provider so a recorded turn is what its assertions hold, not because a key is missing (order 9), and the sandbox is the pinned image)
+artifact: `packages/verify/artifacts/one-run-path/16a09ab/assert.txt`
+commit: 16a09abb4fbff49ed738c837b7e649dd07c221dd
+date: 2026-10-19

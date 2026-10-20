@@ -1,0 +1,7 @@
+feature: the root type gate (U10.13)
+script: `bun packages/verify/scripts/type-gate.ts`
+verdict: unit-test-verified (38/38 probe checks). U8.4 added `packages/ui/browser/connect-apps.ts` and `packages/ui/browser/page.ts`, both reached only by `apps/web/tsconfig.json`, the DOM-aware project that owns the browser surface, so the blind set is sixteen tracked files rather than fourteen. That is the measured set, not a number adjusted to pass. The census now enumerates `git ls-files`, because the working checkout that produced `e667880` carried 45 untracked capture scripts under `packages/verify/artifacts` and the same commit measured 61 unreached there against 16 in a clean checkout. The seven red checks at `e667880` were not a broken restore. Six came from a stale install, `packages/verify/src/emulator.ts(31,32): error TS2307: Cannot find module 'emulate'`, a dependency declared in `packages/verify/package.json` and locked; the seventh was the fourteen-file list. The three planted errors, the four `.tsx` pattern probes and the clean-tree pass are unchanged, and `type-gate.test.ts` plants all three probes in a fixture tree, restores them, and asserts every byte is identical to the start.
+artifact: `packages/verify/artifacts/type-gate/6b18776/probe.txt`
+commit: 6b18776f1cddf4bb8474f48dddc37a391f00de70
+date: 2026-10-20
+legacy-count: the driver ended with '38/38 checks passed' and a bare 'PASS type-gate', with no RESULT line

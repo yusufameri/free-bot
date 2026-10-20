@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json",
     "test": "bun test",
     "verify": "bun packages/verify/run.ts",
+    "verification-index": "bun packages/verify/scripts/render-index.ts",
     "prune": "bun packages/verify/src/prune.ts"
   },
   "devDependencies": {

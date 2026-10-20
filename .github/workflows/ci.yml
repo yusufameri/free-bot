@@ -9,6 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The index checker resolves row commits and the rendered index's base, so a shallow
+          # clone would make every behind count and every ancestry check unanswerable.
+          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
         with:
