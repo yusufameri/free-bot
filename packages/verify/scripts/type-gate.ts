@@ -218,6 +218,12 @@ function clear(): void {
 }
 
 function main(): void {
+  if (!existsSync(join(root, "node_modules", ".bin", "tsc"))) {
+    console.error("tsc is not installed; run bun install");
+    process.exitCode = 1;
+    return;
+  }
+
   let ok = false;
   let headSha = "";
   let shortSha = "";
