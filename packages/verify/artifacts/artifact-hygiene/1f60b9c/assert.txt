@@ -1,0 +1,35 @@
+artifact hygiene (U10.2)
+
+base commit: cbd719e (the drivers and the status capture ran there)
+evidence commit: 1f60b9c (this directory's name)
+branch: u10.2-artifact-hygiene
+
+## prune
+
+PASS prune: `bun packages/verify/src/prune.ts --dry-run` exits 0 and lists 30 deletions, all under mvp-status (prune-dry-run.txt)
+PASS prune: `bun run prune` exits 0, deletes those 30, and leaves 231 run directories (prune-apply.txt)
+PASS prune: the dry run after the prune lists 0 deletions (prune-after.txt)
+PASS prune: the tree holds 261 run directories and 113M before, 231 and 93M after (before-after.txt)
+PASS prune: every deletion is untracked and no deletion is named by a row; 12 tests cover the keeps, the tie, the feature-level file, the refusals, and the out-of-tree apply (packages/verify/src/prune.test.ts)
+PASS prune: the evidence index reports RESULT: PASS (190/190) after the prune (index-check-after-prune.txt)
+
+## lint exclusion
+
+PASS lint: before the exclusion, `bun run lint` exits 1 with 46 errors, and the 20 printed diagnostics are all packages/verify/artifacts/mvp-status/*/capture*.ts (lint-before.txt)
+PASS lint: with the same artifacts on disk, `bun run lint` exits 0 (lint-after.txt); the exclusion removing every remaining error proves they were inside the artifact tree
+PASS lint: a planted `debugger;` in the tracked packages/verify/src/index.ts exits 1 and names packages/verify/src/index.ts:8 lint/suspicious/noDebugger (lint-real-error.txt)
+PASS lint: after the revert, `bun run lint` exits 0 again
+
+## ignore rules
+
+PASS ignore: `git check-ignore -v` names .gitignore:14 `packages/verify/artifacts/**/chrome-profile*/` for a profile directory the throwaway scripts create (ignore-proof.txt)
+PASS ignore: `git status --short` reports no chrome-profile entry after a real status capture, and none after the directory is created (ignore-proof.txt)
+
+## capture helper
+
+PASS capture: no hand-rolled `Page.captureScreenshot` remains under packages/verify/scripts or apps/web/scripts; the eight moved files are listed in calls-moved.txt
+PASS capture: seven drivers pass at cbd719e: web-shell 76/76, launch 116/116, one-run-path 54/54, files-surface 54/54, bots-and-threads 81/81, keyed-run 69/69, provider-setup 95/95 (drivers.txt)
+PASS capture: the status driver passes 7/7 over a live `bun run up --no-open --replay` with `--mode both` (status-capture-assert.txt)
+PASS gates: `bun run verify` PASS, `bun run lint` exit 0, `bun run typecheck` exit 0, `bun test` 914 pass and 0 fail at 1f60b9c (verify.txt, lint-final.txt, typecheck.txt, test.txt)
+
+RESULT: PASS (17/17)

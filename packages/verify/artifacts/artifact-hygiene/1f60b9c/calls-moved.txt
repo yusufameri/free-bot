@@ -1,0 +1,15 @@
+Every hand-rolled Page.captureScreenshot under packages/verify/scripts and apps/web/scripts calls
+saveScreenshot(cdp, sessionId, path) from packages/verify/src/cdp.ts. Paths are at the branch head.
+
+packages/verify/scripts/keyed-run.ts: saveScreenshot(cdp, sessionId, join(artifactsDir, file));
+packages/verify/scripts/files-surface.ts: saveScreenshot(cdp, sessionId, join(artifactsDir, file));
+packages/verify/scripts/status-capture.ts: saveScreenshot(chrome.cdp, session, join(out, state.file));
+packages/verify/scripts/status-capture.ts: saveScreenshot(chrome.cdp, session, join(out, viewport.file));
+packages/verify/scripts/launch.ts: saveScreenshot(cdp, sessionId, join(artifactsDir, file));
+packages/verify/scripts/bots-and-threads.ts: saveScreenshot(cdp, sessionId, join(artifactsDir, file));
+packages/verify/scripts/provider-setup.ts: saveScreenshot(cdp, sessionId, join(artifactsDir, file));
+apps/web/scripts/capture.ts: saveScreenshot(cdp, sessionId, join(framesDir, file));
+apps/web/scripts/one-run-path.ts: saveScreenshot(cdp, sessionId, join(framesDir, file));
+
+Remaining Page.captureScreenshot calls outside the helper:
+packages/verify/src/cdp.ts:342 (the helper itself) and packages/pixel-gate/src/page.ts (its own client, out of this unit's scope)

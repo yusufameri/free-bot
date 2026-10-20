@@ -1,0 +1,444 @@
+$ biome check .
+packages/verify/artifacts/mvp-status/7a9fb55/capture31.ts:25:13 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    23 │ while (!existsSync(portFile)) { if (Date.now() > deadline) throw new Error("no port file"); await Bun.sleep(100); }
+    24 │ const [port] = readFileSync(portFile, "utf8").split("\n");
+  > 25 │ let target: any;
+       │             ^^^
+    26 │ for (let i = 0; i < 40 && !target; i++) {
+    27 │   const l = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()) as any[];
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/7a9fb55/capture31.ts:27:83 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    25 │ let target: any;
+    26 │ for (let i = 0; i < 40 && !target; i++) {
+  > 27 │   const l = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()) as any[];
+       │                                                                                   ^^^
+    28 │   target = l.find((t) => t.type === "page" && t.url.includes("127.0.0.1"));
+    29 │   if (!target) await Bun.sleep(250);
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/7a9fb55/capture31.ts:34:37 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    32 │ await new Promise<void>((res, rej) => { ws.onopen = () => res(); ws.onerror = () => rej(new Error("ws")); });
+    33 │ let id = 0;
+  > 34 │ const pending = new Map<number, (v: any) => void>();
+       │                                     ^^^
+    35 │ ws.onmessage = (e) => { const m = JSON.parse(String(e.data)); if (m.id !== undefined && pending.has(m.id)) { pending.get(m.id)!(m.result); pending.delete(m.id); } };
+    36 │ const send = (method: string, params: any = {}) => new Promise<any>((res) => { const n = ++id; pending.set(n, res); ws.send(JSON.stringify({ id: n, method, params })); });
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/7a9fb55/capture31.ts:35:110 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    33 │ let id = 0;
+    34 │ const pending = new Map<number, (v: any) => void>();
+  > 35 │ ws.onmessage = (e) => { const m = JSON.parse(String(e.data)); if (m.id !== undefined && pending.has(m.id)) { pending.get(m.id)!(m.result); pending.delete(m.id); } };
+       │                                                                                                              ^^^^^^^^^^^^^^^^^^
+    36 │ const send = (method: string, params: any = {}) => new Promise<any>((res) => { const n = ++id; pending.set(n, res); ws.send(JSON.stringify({ id: n, method, params })); });
+    37 │ const ev = async (expression: string) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }))?.result?.value;
+  
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+  
+     33  33 │   let id = 0;
+     34  34 │   const pending = new Map<number, (v: any) => void>();
+     35     │ - ws.onmessage·=·(e)·=>·{·const·m·=·JSON.parse(String(e.data));·if·(m.id·!==·undefined·&&·pending.has(m.id))·{·pending.get(m.id)!(m.result);·pending.delete(m.id);·}·};
+         35 │ + ws.onmessage·=·(e)·=>·{·const·m·=·JSON.parse(String(e.data));·if·(m.id·!==·undefined·&&·pending.has(m.id))·{·pending.get(m.id)?.(m.result);·pending.delete(m.id);·}·};
+     36  36 │   const send = (method: string, params: any = {}) => new Promise<any>((res) => { const n = ++id; pending.set(n, res); ws.send(JSON.stringify({ id: n, method, params })); });
+     37  37 │   const ev = async (expression: string) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }))?.result?.value;
+  
+
+packages/verify/artifacts/mvp-status/7a9fb55/capture31.ts:36:39 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    34 │ const pending = new Map<number, (v: any) => void>();
+    35 │ ws.onmessage = (e) => { const m = JSON.parse(String(e.data)); if (m.id !== undefined && pending.has(m.id)) { pending.get(m.id)!(m.result); pending.delete(m.id); } };
+  > 36 │ const send = (method: string, params: any = {}) => new Promise<any>((res) => { const n = ++id; pending.set(n, res); ws.send(JSON.stringify({ id: n, method, params })); });
+       │                                       ^^^
+    37 │ const ev = async (expression: string) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }))?.result?.value;
+    38 │ 
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/7a9fb55/capture31.ts:36:64 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    34 │ const pending = new Map<number, (v: any) => void>();
+    35 │ ws.onmessage = (e) => { const m = JSON.parse(String(e.data)); if (m.id !== undefined && pending.has(m.id)) { pending.get(m.id)!(m.result); pending.delete(m.id); } };
+  > 36 │ const send = (method: string, params: any = {}) => new Promise<any>((res) => { const n = ++id; pending.set(n, res); ws.send(JSON.stringify({ id: n, method, params })); });
+       │                                                                ^^^
+    37 │ const ev = async (expression: string) => (await send("Runtime.evaluate", { expression, returnByValue: true, awaitPromise: true }))?.result?.value;
+    38 │ 
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/7a9fb55/capture31.ts:88:7 lint/correctness/noUnusedVariables  FIXABLE  ━━━━━━━━━━
+
+  ! This variable bf is unused.
+  
+    86 │ await shot("B-run-streaming.png");
+    87 │ await Bun.sleep(5000);
+  > 88 │ const bf = await shot("C-approval-waiting.png");
+       │       ^^
+    89 │ 
+    90 │ // Answer the approval: try every plausible control near the card, and report which one worked.
+  
+  i Unused variables are often the result of typos, incomplete refactors, or other sources of bugs.
+  
+  i Unsafe fix: If this is intentional, prepend bf with an underscore.
+  
+     86  86 │   await shot("B-run-streaming.png");
+     87  87 │   await Bun.sleep(5000);
+     88     │ - const·bf·=·await·shot("C-approval-waiting.png");
+         88 │ + const·_bf·=·await·shot("C-approval-waiting.png");
+     89  89 │   
+     90  90 │   // Answer the approval: try every plausible control near the card, and report which one worked.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture.ts:61:37 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    60 │ let id = 0;
+  > 61 │ const pending = new Map<number, (v: any) => void>();
+       │                                     ^^^
+    62 │ ws.onmessage = (e) => {
+    63 │   const msg = JSON.parse(String(e.data));
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture.ts:65:5 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    63 │   const msg = JSON.parse(String(e.data));
+    64 │   if (msg.id !== undefined && pending.has(msg.id)) {
+  > 65 │     pending.get(msg.id)!(msg.result);
+       │     ^^^^^^^^^^^^^^^^^^^^
+    66 │     pending.delete(msg.id);
+    67 │   }
+  
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+  
+     63  63 │     const msg = JSON.parse(String(e.data));
+     64  64 │     if (msg.id !== undefined && pending.has(msg.id)) {
+     65     │ - ····pending.get(msg.id)!(msg.result);
+         65 │ + ····pending.get(msg.id)?.(msg.result);
+     66  66 │       pending.delete(msg.id);
+     67  67 │     }
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture.ts:70:15 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    68 │ };
+    69 │ const send = (method: string, params: Record<string, unknown> = {}) =>
+  > 70 │   new Promise<any>((res) => {
+       │               ^^^
+    71 │     const n = ++id;
+    72 │     pending.set(n, res);
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture.ts:41:14 lint/correctness/noUnusedVariables  FIXABLE  ━━━━━━━━━━
+
+  ! This variable wsPath is unused.
+  
+    39 │   await Bun.sleep(100);
+    40 │ }
+  > 41 │ const [port, wsPath] = readFileSync(portFile, "utf8").split("\n");
+       │              ^^^^^^
+    42 │ let target: { webSocketDebuggerUrl: string; type: string; url: string } | undefined;
+    43 │ for (let i = 0; i < 40 && !target; i++) {
+  
+  i Unused variables are often the result of typos, incomplete refactors, or other sources of bugs.
+  
+  i Unsafe fix: If this is intentional, prepend wsPath with an underscore.
+  
+     39  39 │     await Bun.sleep(100);
+     40  40 │   }
+     41     │ - const·[port,·wsPath]·=·readFileSync(portFile,·"utf8").split("\n");
+         41 │ + const·[port,·_wsPath]·=·readFileSync(portFile,·"utf8").split("\n");
+     42  42 │   let target: { webSocketDebuggerUrl: string; type: string; url: string } | undefined;
+     43  43 │   for (let i = 0; i < 40 && !target; i++) {
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture2.ts:33:13 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    31 │ }
+    32 │ const [port] = readFileSync(portFile, "utf8").split("\n");
+  > 33 │ let target: any;
+       │             ^^^
+    34 │ for (let i = 0; i < 40 && !target; i++) {
+    35 │   const list = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()) as any[];
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture2.ts:35:86 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    33 │ let target: any;
+    34 │ for (let i = 0; i < 40 && !target; i++) {
+  > 35 │   const list = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()) as any[];
+       │                                                                                      ^^^
+    36 │   target = list.find((t) => t.type === "page" && t.url.includes("127.0.0.1"));
+    37 │   if (!target) await Bun.sleep(250);
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture2.ts:42:37 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    40 │ await new Promise<void>((res, rej) => { ws.onopen = () => res(); ws.onerror = () => rej(new Error("ws")); });
+    41 │ let id = 0;
+  > 42 │ const pending = new Map<number, (v: any) => void>();
+       │                                     ^^^
+    43 │ ws.onmessage = (e) => {
+    44 │   const m = JSON.parse(String(e.data));
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture2.ts:45:50 lint/style/noNonNullAssertion  FIXABLE  ━━━━━━━━━━
+
+  ! Forbidden non-null assertion.
+  
+    43 │ ws.onmessage = (e) => {
+    44 │   const m = JSON.parse(String(e.data));
+  > 45 │   if (m.id !== undefined && pending.has(m.id)) { pending.get(m.id)!(m.result); pending.delete(m.id); }
+       │                                                  ^^^^^^^^^^^^^^^^^^
+    46 │ };
+    47 │ const send = (method: string, params: any = {}) => new Promise<any>((res) => {
+  
+  i Unsafe fix: Replace with optional chain operator ?. This operator includes runtime checks, so it is safer than the compile-only non-null assertion operator
+  
+     43  43 │   ws.onmessage = (e) => {
+     44  44 │     const m = JSON.parse(String(e.data));
+     45     │ - ··if·(m.id·!==·undefined·&&·pending.has(m.id))·{·pending.get(m.id)!(m.result);·pending.delete(m.id);·}
+         45 │ + ··if·(m.id·!==·undefined·&&·pending.has(m.id))·{·pending.get(m.id)?.(m.result);·pending.delete(m.id);·}
+     46  46 │   };
+     47  47 │   const send = (method: string, params: any = {}) => new Promise<any>((res) => {
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture2.ts:47:39 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    45 │   if (m.id !== undefined && pending.has(m.id)) { pending.get(m.id)!(m.result); pending.delete(m.id); }
+    46 │ };
+  > 47 │ const send = (method: string, params: any = {}) => new Promise<any>((res) => {
+       │                                       ^^^
+    48 │   const n = ++id; pending.set(n, res); ws.send(JSON.stringify({ id: n, method, params }));
+    49 │ });
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture2.ts:47:64 lint/suspicious/noExplicitAny ━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    45 │   if (m.id !== undefined && pending.has(m.id)) { pending.get(m.id)!(m.result); pending.delete(m.id); }
+    46 │ };
+  > 47 │ const send = (method: string, params: any = {}) => new Promise<any>((res) => {
+       │                                                                ^^^
+    48 │   const n = ++id; pending.set(n, res); ws.send(JSON.stringify({ id: n, method, params }));
+    49 │ });
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture.ts:5:1 assist/source/organizeImports  FIXABLE  ━━━━━━━━━━
+
+  × Sort the imported names.
+  
+    3 │ // it opens one already-running app in headless Chrome over CDP and photographs it.
+    4 │ // Usage: bun capture.ts <url> <outDir>
+  > 5 │ import { mkdirSync, readFileSync, rmSync, existsSync } from "node:fs";
+      │ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    6 │ import { join } from "node:path";
+    7 │ 
+  
+  i Safe fix: Organize imports and exports (Biome)
+  
+      3   3 │   // it opens one already-running app in headless Chrome over CDP and photographs it.
+      4   4 │   // Usage: bun capture.ts <url> <outDir>
+      5     │ - import·{·mkdirSync,·readFileSync,·rmSync,·existsSync·}·from·"node:fs";
+          5 │ + import·{·existsSync,·mkdirSync,·readFileSync,·rmSync·}·from·"node:fs";
+      6   6 │   import { join } from "node:path";
+      7   7 │   
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     75  75 │   
+     76  76 │   const shot = async (name: string) => {
+     77     │ - ··const·{·data·}·=·await·send("Page.captureScreenshot",·{·format:·"png",·captureBeyondViewport:·false·});
+         77 │ + ··const·{·data·}·=·await·send("Page.captureScreenshot",·{
+         78 │ + ····format:·"png",
+         79 │ + ····captureBeyondViewport:·false,
+         80 │ + ··});
+     78  81 │     const path = join(outDir, name);
+     79  82 │     await Bun.write(path, Buffer.from(data, "base64"));
+    ······· │ 
+     91  94 │   await shot("01-first-open.png");
+     92  95 │   console.log("title:", await evaluate("document.title"));
+     93     │ - console.log("buttons:",·JSON.stringify(await·evaluate(
+     94     │ - ··`[...document.querySelectorAll('button')].map(b=>b.textContent.trim()).slice(0,12)`,
+     95     │ - )));
+         96 │ + console.log(
+         97 │ + ··"buttons:",
+         98 │ + ··JSON.stringify(
+         99 │ + ····await·evaluate(
+        100 │ + ······`[...document.querySelectorAll('button')].map(b=>b.textContent.trim()).slice(0,12)`,
+        101 │ + ····),
+        102 │ + ··),
+        103 │ + );
+     96 104 │   
+     97 105 │   // Leave the first-run gate the way a person does: press the skip control if there is one.
+  
+
+packages/verify/artifacts/mvp-status/9c85033/capture2.ts format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Formatter would have printed the following content:
+  
+     17  17 │   const chrome = Bun.spawn(
+     18  18 │     [
+     19     │ - ····CHROME,·"--headless",·"--remote-debugging-port=0",·`--user-data-dir=${userDataDir}`,
+     20     │ - ····"--no-first-run",·"--no-default-browser-check",·"--disable-extensions",·"--disable-sync",
+     21     │ - ····"--mute-audio",·"--hide-scrollbars",·"--window-size=1440,900",·url,
+         19 │ + ····CHROME,
+         20 │ + ····"--headless",
+         21 │ + ····"--remote-debugging-port=0",
+         22 │ + ····`--user-data-dir=${userDataDir}`,
+         23 │ + ····"--no-first-run",
+         24 │ + ····"--no-default-browser-check",
+         25 │ + ····"--disable-extensions",
+         26 │ + ····"--disable-sync",
+         27 │ + ····"--mute-audio",
+         28 │ + ····"--hide-scrollbars",
+         29 │ + ····"--window-size=1440,900",
+         30 │ + ····url,
+     22  31 │     ],
+     23  32 │     { stdio: ["ignore", "ignore", "pipe"] },
+    ······· │ 
+     38  47 │   }
+     39  48 │   const ws = new WebSocket(target.webSocketDebuggerUrl);
+     40     │ - await·new·Promise<void>((res,·rej)·=>·{·ws.onopen·=·()·=>·res();·ws.onerror·=·()·=>·rej(new·Error("ws"));·});
+         49 │ + await·new·Promise<void>((res,·rej)·=>·{
+         50 │ + ··ws.onopen·=·()·=>·res();
+         51 │ + ··ws.onerror·=·()·=>·rej(new·Error("ws"));
+         52 │ + });
+     41  53 │   let id = 0;
+     42  54 │   const pending = new Map<number, (v: any) => void>();
+     43  55 │   ws.onmessage = (e) => {
+     44  56 │     const m = JSON.parse(String(e.data));
+     45     │ - ··if·(m.id·!==·undefined·&&·pending.has(m.id))·{·pending.get(m.id)!(m.result);·pending.delete(m.id);·}
+         57 │ + ··if·(m.id·!==·undefined·&&·pending.has(m.id))·{
+         58 │ + ····pending.get(m.id)!(m.result);
+         59 │ + ····pending.delete(m.id);
+         60 │ + ··}
+     46  61 │   };
+     47     │ - const·send·=·(method:·string,·params:·any·=·{})·=>·new·Promise<any>((res)·=>·{
+     48     │ - ··const·n·=·++id;·pending.set(n,·res);·ws.send(JSON.stringify({·id:·n,·method,·params·}));
+     49     │ - });
+         62 │ + const·send·=·(method:·string,·params:·any·=·{})·=>
+         63 │ + ··new·Promise<any>((res)·=>·{
+         64 │ + ····const·n·=·++id;
+         65 │ + ····pending.set(n,·res);
+         66 │ + ····ws.send(JSON.stringify({·id:·n,·method,·params·}));
+         67 │ + ··});
+     50  68 │   const ev = async (expression: string) =>
+     51     │ - ··(await·send("Runtime.evaluate",·{·expression,·returnByValue:·true,·awaitPromise:·true·}))?.result?.value;
+         69 │ + ··(await·send("Runtime.evaluate",·{·expression,·returnByValue:·true,·awaitPromise:·true·}))?.result
+         70 │ + ····?.value;
+     52  71 │   const shot = async (name: string) => {
+     53  72 │     const { data } = await send("Page.captureScreenshot", { format: "png" });
+    ······· │ 
+     84 103 │   await Bun.sleep(1500);
+     85 104 │   await shot("03-new-bot.png");
+     86     │ - console.log("inputs:",·JSON.stringify(await·ev(`[...document.querySelectorAll('input,textarea')].map(i=>({tag:i.tagName,ph:i.placeholder,type:i.type}))`)));
+        105 │ + console.log(
+        106 │ + ··"inputs:",
+        107 │ + ··JSON.stringify(
+        108 │ + ····await·ev(
+        109 │ + ······`[...document.querySelectorAll('input,textarea')].map(i=>({tag:i.tagName,ph:i.placeholder,type:i.type}))`,
+        110 │ + ····),
+        111 │ + ··),
+        112 │ + );
+     87 113 │   
+     88 114 │   // Name the Bot the way the wizard asks, then advance with its own primary button.
+     89     │ - console.log("fill:",·await·ev(`(()·=>·{
+        115 │ + console.log(
+        116 │ + ··"fill:",
+        117 │ + ··await·ev(`(()·=>·{
+     90 118 │     const i = [...document.querySelectorAll('input')].find(x => x.type === 'text' || !x.type);
+     91 119 │     if (!i) return 'no-text-input';
+    ······· │ 
+     93 121 │     i.dispatchEvent(new Event('input', {bubbles:true}));
+     94 122 │     return i.value;
+     95     │ - })()`));
+        123 │ + })()`),
+        124 │ + );
+     96 125 │   await Bun.sleep(600);
+     97 126 │   console.log("advance ->", await clickText("/^\\s*(Continue|Create|Save|Done)\\s*$/"));
+    ······· │ 
+    100 129 │   
+    101 130 │   // Start a run with the replay provider's own recorded turn.
+    102     │ - console.log("composer:",·await·ev(`(()·=>·{
+        131 │ + console.log(
+        132 │ + ··"composer:",
+        133 │ + ··await·ev(`(()·=>·{
+    103 134 │     const t = document.querySelector('.composer-input, textarea, input[type=text]');
+    104 135 │     if (!t) return 'no-composer';
+    ······· │ 
+    106 137 │     t.dispatchEvent(new Event('input', {bubbles:true}));
+    107 138 │     return t.value.slice(0, 50);
+    108     │ - })()`));
+        139 │ + })()`),
+        140 │ + );
+    109 141 │   await Bun.sleep(400);
+    110 142 │   console.log("start ->", await clickText("/^\\s*(Send|Start|Run|Ask|Go)\\s*$/"));
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 301.
+Checked 386 files in 237ms. No fixes applied.
+Found 46 errors.
+Found 273 warnings.
+Found 2 infos.
+check ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  × Some errors were emitted while running checks.
+  
+
+error: script "lint" exited with code 1

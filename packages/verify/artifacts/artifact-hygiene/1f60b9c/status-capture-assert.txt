@@ -1,0 +1,73 @@
+MVP status capture driver
+command: bun packages/verify/scripts/status-capture.ts --url http://127.0.0.1:60150/#token=<redacted> --out /tmp/freebot-u102-status.O6A82B --mode both
+timestamp: 2026-10-20T03:02:39.631Z
+git sha: cbd719e6923aa584491e58ae4096eab475a91e5f
+git sha short: cbd719e
+branch: u10.2-artifact-hygiene
+runtime: bun 1.2.5 on darwin arm64
+mode: both
+url: http://127.0.0.1:60150/#token=<redacted>
+out: /tmp/freebot-u102-status.O6A82B
+
+## selectors
+conn: #conn (the connection state)
+operatorMode: .shell[data-operator="true"] (operator mode, which a URL carrying the launch token turns on)
+firstRunSkip: #frSkip (the first-run Skip control)
+botRow: .bot-row (the Bot row)
+prompt: #prompt (the composer input)
+start: #start (the composer's send control)
+runId: #run (the run element's id)
+headerStatus: #run[data-run-status] (the header run status)
+lastSeq: #lastseq (the last sequence counter)
+idleNote: #thread #idle-note (the empty thread's note)
+turns: #thread .message, #thread .turn (the thread turns)
+tools: #thread .tool-card (the tool cards)
+toolStatuses: #thread .tool-card (the tool cards' states)
+approvalState: #thread .approval-card (the approval card's state)
+approvalDecision: #thread .approval-card (the approval card's decision)
+approvalResults: #thread .approval-card .approval-result (the approval card's result)
+approvalButtons: #thread .approval-card .approval-actions button (the approval card's actions)
+command: #thread .approval-card .cmd (the approval card's command)
+stopLabel: #stop (the Stop run control's label)
+stopDisabled: #stop (the Stop run control's enabled state)
+stopInFlight: #stop (the Stop run control's in-flight flag)
+stopRunId: #stop (the Stop run control's run id)
+landingTitle: html (the landing document's title)
+landingH1: #landing-hero (the landing heading)
+landingLinks: #landing-controls a (the landing controls)
+landingSections: .landing h2 (the landing sections)
+scrollWidth: html (the document's scroll width)
+innerWidth: html (the viewport width)
+
+== A-shell-with-bot.png ==
+facts {"conn":"connected","operatorMode":"true","botRow":"Local Bot","prompt":"prompt","start":"Send","runId":null,"lastSeq":0,"idleNote":"Waiting for the run to start.","turns":[],"tools":[],"stopLabel":"Stop run","stopDisabled":true,"stopInFlight":"false"}
+ok   A-shell-with-bot: 13 selectors read, every fact holds
+
+== B-run-streaming.png ==
+facts {"conn":"connected","runId":"run-1","headerStatus":"awaiting_approval","lastSeq":6,"turns":["write the word done into /workspace/note.txt then tell me what you did","Working on your computer"],"tools":["Tool callpendingbash {\"command\":\"echo native-should-not-run\"}CopyOutpu"],"toolStatuses":["awaiting approval"],"approvalState":"pending","approvalButtons":["Allow once","Deny"],"command":"bash {\"command\":\"echo native-should-not-run\"}","stopLabel":"Stop run","stopDisabled":false,"stopInFlight":"true","stopRunId":"run-1"}
+ok   B-run-streaming: 14 selectors read, every fact holds
+
+== C-approval-waiting.png ==
+facts {"conn":"connected","runId":"run-1","headerStatus":"awaiting_approval","toolStatuses":["awaiting approval"],"approvalState":"pending","approvalButtons":["Allow once","Deny"],"command":"bash {\"command\":\"echo native-should-not-run\"}","stopLabel":"Stop run","stopDisabled":false,"stopInFlight":"true"}
+ok   C-approval-waiting: 10 selectors read, every fact holds
+
+== D-after-answer.png ==
+facts {"conn":"connected","runId":"run-1","headerStatus":"done","lastSeq":16,"tools":["Tool calldonebash {\"command\":\"echo native-should-not-run\"}CopyOutput ·"],"toolStatuses":["done"],"approvalState":"allowed","approvalDecision":"allow","approvalResults":["allowed once"],"command":"bash {\"command\":\"echo native-should-not-run\"}"}
+ok   D-after-answer: 10 selectors read, every fact holds
+
+== E-settled.png ==
+facts {"conn":"connected","runId":"run-1","headerStatus":"done","lastSeq":16,"turns":["write the word done into /workspace/note.txt then tell me what you did","Waiting on results","Thinking it throughstub-model saw tool result: Tool bash not found"],"tools":["Tool calldonebash {\"command\":\"echo native-should-not-run\"}CopyOutput ·"],"toolStatuses":["done"],"approvalState":"allowed","approvalDecision":"allow","approvalResults":["allowed once"],"stopLabel":"Stop run","stopDisabled":true,"stopInFlight":"false","stopRunId":"run-1"}
+ok   E-settled: 14 selectors read, every fact holds
+
+== L-landing-1440x900.png ==
+facts {"landingTitle":"FreeBot","landingH1":"Bots that do the work, on a computer that stays yours.","landingLinks":["Connect a provider","Run in replay mode — see it work without a key"],"landingSections":["This is a working local install, and some of it is not built yet."],"scrollWidth":1440,"innerWidth":1440}
+ok   L-landing-1440x900.png: every landing fact holds
+
+== L-landing-430x932.png ==
+facts {"landingTitle":"FreeBot","landingH1":"Bots that do the work, on a computer that stays yours.","landingLinks":["Connect a provider","Run in replay mode — see it work without a key"],"landingSections":["This is a working local install, and some of it is not built yet."],"scrollWidth":430,"innerWidth":430}
+ok   L-landing-430x932.png: every landing fact holds
+
+chrome Chrome/155.0.8059.85
+artifacts: A-shell-with-bot.png, B-run-streaming.png, C-approval-waiting.png, D-after-answer.png, E-settled.png, L-landing-1440x900.png, L-landing-430x932.png
+
+RESULT: PASS (7/7)
