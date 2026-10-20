@@ -1,0 +1,19 @@
+feature: scaffold
+command: bun run verify
+timestamp: 2026-10-20T02:06:55.977Z
+git sha: b272385fcc98408c8bbe11d6bdf67e70bd26d213
+git sha short: b272385
+branch: u10.20-lint-gate
+runtime: bun 1.2.5 on darwin arm64
+
+step lint: PASS
+step typecheck: PASS
+step type-gate: PASS
+step tests: PASS
+step index-check: PASS
+step scaffold-shape: PASS
+step pixel-gate: PASS
+step healthz: PASS
+step status-capture: SKIP (FREEBOT_STATUS_URL is not set, so there is no live instance to capture)
+
+PASS scaffold

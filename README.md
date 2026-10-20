@@ -31,7 +31,7 @@ bun install
 bun run verify
 ```
 
-`bun run verify` runs `bun run typecheck`, all tests, the workspace-shape checks in `packages/verify/features/scaffold.sh`, then boots `apps/server` on an ephemeral port and curls `/healthz`. It writes its proof to `packages/verify/artifacts/scaffold/<git-short-sha>/assert.txt` and prints `PASS scaffold` as its last line.
+`bun run verify` runs `biome check` with warnings treated as errors, the root typecheck, the type-gate probe in `packages/verify/scripts/type-gate.ts`, all tests, the index check, the workspace-shape checks in `packages/verify/features/scaffold.sh`, and the pixel gate. It then boots `apps/server` on an ephemeral port and curls `/healthz`. It writes its proof to `packages/verify/artifacts/scaffold/<git-short-sha>/assert.txt` and prints `PASS scaffold` as its last line.
 
 Other commands: `bun run lint`, `bun run typecheck`, `bun test`, and `bun run up`, which boots the
 server and the page and prints one URL to open with the operator token already in its fragment

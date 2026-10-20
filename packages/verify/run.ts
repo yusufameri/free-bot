@@ -172,7 +172,13 @@ function statusCapture(): Outcome {
 }
 
 const steps: Array<[string, () => Outcome | Promise<Outcome>]> = [
+  // Biome reports `noDescendingSpecificity` as a warning, which exits 0 on its own. The ladder
+  // treats a warning as red so the rule can still fail a future change.
+  ["lint", () => shell(["bun", "run", "lint", "--", "--error-on-warnings"])],
   ["typecheck", () => shell(["bun", "run", "typecheck"])],
+  // The type gate plants three deliberate errors and restores the tree, so it costs a handful of
+  // typecheck runs. Its elapsed time is printed with every step's line.
+  ["type-gate", () => shell(["bun", "packages/verify/scripts/type-gate.ts"])],
   ["tests", () => shell(["bun", "run", "test"])],
   ["index-check", () => shell(["bun", "packages/verify/scripts/index-check.ts"])],
   ["scaffold-shape", () => shell(["sh", "packages/verify/features/scaffold.sh"])],
@@ -187,22 +193,22 @@ const outcomes: Array<{ name: string; outcome: Outcome }> = [];
 
 for (const [name, run] of steps) {
   let outcome: Outcome;
+  const started = performance.now();
   try {
     outcome = await run();
   } catch (error) {
     outcome = { ok: false, output: error instanceof Error ? error.message : String(error) };
   }
+  const elapsed = ((performance.now() - started) / 1000).toFixed(1);
   outcomes.push({ name, outcome });
   const label = outcome.skipped === true ? "SKIP" : outcome.ok ? "PASS" : "FAIL";
-  console.log(
-    `${label} step ${name}${
-      outcome.skipped === true
-        ? ` (${outcome.output})`
-        : outcome.ok
-          ? ` (${outcome.output.split("\n")[0]})`
-          : ""
-    }`,
-  );
+  const detail =
+    outcome.skipped === true
+      ? ` (${outcome.output})`
+      : outcome.ok
+        ? ` (${outcome.output.split("\n")[0]})`
+        : "";
+  console.log(`${label} step ${name}${detail} [${elapsed}s]`);
   if (!outcome.ok) {
     console.log(truncate(outcome.output));
   }

@@ -84,10 +84,9 @@
     grid-template-columns: var(--sb-w) minmax(0, 1fr) 5px var(--aside-w);
   }
   /* The pane's collapsed state is the export's `body.collapsed` (freebot-prototype.html:209): the
-     column goes to zero and the pane and its resizer stand down. Declared here, right after the grid
-     it overrides, so reading top to bottom is reading the override. */
+     column goes to zero and the pane and its resizer stand down. The grid override sits right after
+     the grid it overrides; the hide sits after the regions it hides. */
   body.collapsed .shell[data-operator="true"] { grid-template-columns: var(--sb-w) minmax(0, 1fr) 0 0; }
-  body.collapsed #aside, body.collapsed #resizer { display: none; }
   #sidebar {
     display: flex; flex-direction: column; min-height: 0; overflow: hidden;
     border-right: 1px solid var(--border); background: var(--bg);
@@ -104,6 +103,7 @@
     display: flex; flex-direction: column; min-height: 0;
     border-left: 1px solid var(--border); background: var(--bg);
   }
+  body.collapsed #aside, body.collapsed #resizer { display: none; }
   /* A page without the operator token is the fixture peer's page: one column, no Bot list, no pane.
      Declared after the regions so it reads as the override it is. */
   .shell[data-operator="false"] #sidebar,
@@ -151,6 +151,16 @@
   .sb-row .name {
     flex: 1; min-width: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  .sb-brand { display: flex; align-items: center; gap: 9px; padding: 6px 8px 2px; }
+  .avatar {
+    width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border);
+    display: grid; place-items: center; font-family: var(--font-mono); font-size: 10px;
+    flex: none; background: var(--surface); color: var(--fg);
+  }
+  .avatar i { display: block; width: 9px; height: 9px; background: var(--fg); border-radius: 2px; }
+  .sb-brand .name {
+    flex: 1; min-width: 0; font-family: var(--font-display); font-weight: 600; font-size: 15px;
   }
   .sb-row .sub {
     font-family: var(--font-mono); font-size: 10px; color: var(--muted);
@@ -370,6 +380,10 @@
   .kv .k { color: var(--muted); }
   .kv .v { font-family: var(--font-mono); font-size: 12.5px; text-align: right; overflow-wrap: anywhere; }
   .hint { color: var(--muted); font-size: var(--fs-meta); line-height: 1.5; }
+  .cap {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 10px;
+  }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: none;
     height: 38px; padding: 0 16px; border: 1px solid transparent; border-radius: var(--radius);
@@ -598,6 +612,254 @@
     color: var(--fg); font-size: 13px; font-weight: 500; overflow-wrap: anywhere;
   }
 
+
+  /* ── the export's shell, brought in whole ────────────────────────────────
+     The sidebar's brand row, Pinned/Work/Hidden headings, the Workspace nav, and the footer are
+     the export's own (`freebot-prototype.html:212-247`). The chat column is its `.main`
+     (`:250-380`), and the page bodies follow `:403-439`. */
+  .sb-list { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding: 2px 10px 10px; }
+  .rule { border: 0; border-top: 1px solid var(--border); margin: 0; }
+  .sb-rule { margin: 12px 8px; }
+  #sidebar-title, #threads-title {
+    display: flex; align-items: center; gap: 7px; width: 100%; margin: 0;
+    padding: 12px 8px 5px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
+  }
+  #sidebar-title { display: none; }
+  #hidden-toggle { cursor: pointer; }
+  #hidden-toggle .chev { display: inline-block; transition: transform var(--dur) var(--ease); }
+  #hidden-toggle[aria-expanded="true"] .chev { transform: rotate(90deg); }
+  #hidden-count { margin-left: auto; }
+  .nav-row { width: 100%; }
+  .sb-row.is-active, .thread-row.is-active { background: var(--accent-2); }
+  #threads-bot { padding: 0 8px 4px; }
+  #new-thread { margin-top: 4px; }
+  .sb-foot { display: flex; flex-direction: column; gap: 2px; }
+  .sb-foot .tag { margin-left: auto; }
+  .sb-acct {
+    display: flex; align-items: center; gap: 9px; width: 100%; height: 40px; padding: 0 8px;
+    border-radius: var(--radius); transition: background var(--dur-fast) var(--ease);
+  }
+  .sb-acct:hover { background: var(--hover); }
+  .acct-name { display: block; font-size: 13.5px; }
+  .acct-sub { display: block; }
+  .sb-hidden-controls { display: none; }
+  #provider-open { width: 100%; }
+
+  #center { position: relative; }
+  .chead {
+    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+    border-bottom: 1px solid var(--border); flex: none; min-height: 56px; overflow: hidden;
+  }
+  .botname {
+    display: flex; align-items: center; gap: 8px; padding: 5px 9px 5px 6px;
+    min-width: 0; border-radius: var(--radius); transition: background var(--dur);
+  }
+  .botname .nm {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .botname:hover { background: var(--hover); }
+  .botname .nm {
+    font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .chead .hint { max-width: 220px; }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+  }
+  /* The export's header has no tab strip. The app's two surfaces still need a door, so the strip
+     floats in the header row instead of taking a row of its own; the transcript below keeps the
+     export's geometry. */
+  #tabs {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 6px; margin: 0; padding: 0; z-index: 6;
+  }
+  #thread {
+    flex: 1; overflow-y: auto; overflow-x: hidden; min-width: 0; min-height: 0;
+    padding: 22px max(22px, calc((100% - 760px) / 2)) 8px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  #thread > :first-child { margin-top: auto; }
+  .message.user { margin: 0; }
+  .turn { margin: 0; }
+  #operator { display: block; flex: none; }
+  .composer-wrap { flex: none; padding: 10px 22px 16px; }
+  .composer { max-width: 760px; margin: 0 auto; }
+  .composer-box {
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    transition: border-color var(--dur) var(--ease);
+  }
+  .composer-box:focus-within { border-color: var(--muted); }
+  #prompt {
+    display: block; width: 100%; border: 0; background: none; resize: none;
+    padding: 12px 13px 4px; min-height: 46px; max-height: 180px; font-size: 15px;
+    line-height: 1.55; outline: none; color: var(--fg);
+  }
+  #prompt::placeholder { color: var(--muted); }
+  .composer-tools { display: flex; align-items: center; gap: 2px; padding: 4px 7px 7px; }
+  .composer-tools .spacer { flex: 1; }
+  .composer-tools .iconbtn { width: 28px; height: 28px; }
+  .composer-send { height: 30px; width: 30px; padding: 0; }
+  .chint {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 7px 3px 0; font-size: 11.5px; color: var(--muted);
+  }
+
+  .groupbar {
+    display: flex; align-items: center; gap: 7px; padding: 8px 14px;
+    border-bottom: 1px solid var(--border); flex: none; flex-wrap: wrap;
+  }
+  .groupbar[hidden] { display: none; }
+  .groupbar .cap { margin: 0; }
+  .gm {
+    display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px;
+    border: 1px solid var(--border); border-radius: 999px; font-size: 12.5px;
+    transition: border-color var(--dur), color var(--dur);
+  }
+  .gm:hover { border-color: var(--fg); }
+  .gm .s { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; }
+  .groupbar .tag { margin-left: auto; }
+
+  #page { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; min-width: 0; }
+  #page[hidden] { display: none; }
+  body[data-page-open="true"] #thread,
+  body[data-page-open="true"] #operator,
+  body[data-page-open="true"] #tabs,
+  body[data-page-open="true"] #groupbar,
+  body[data-page-open="true"] #library { display: none; }
+  .page { min-height: 0; }
+  .page-inner { max-width: 1040px; margin: 0 auto; padding: 26px 26px 64px; }
+  .page-inner.narrow { max-width: 720px; }
+  .page-title {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 18px;
+    flex-wrap: wrap; margin-bottom: 22px;
+  }
+  .page-title h1 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.15; }
+  .eyebrow {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); display: block;
+  }
+  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 12px; }
+  .card {
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    padding: 15px; transition: border-color var(--dur) var(--ease);
+  }
+  .card.interactive { text-align: left; width: 100%; }
+  .card.interactive:hover { border-color: var(--fg); }
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .listcard {
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
+    overflow: hidden;
+  }
+  .listrow {
+    display: flex; align-items: center; gap: 12px; padding: 13px 15px; width: 100%;
+    border-bottom: 1px solid var(--border); transition: background var(--dur-fast) var(--ease);
+    text-align: left;
+  }
+  .listrow:last-child { border-bottom: 0; }
+  .listrow:hover { background: var(--hover); }
+  .monogram {
+    width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border);
+    display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px;
+    flex: none; background: var(--bg); letter-spacing: 0.02em;
+  }
+  .monogram.lg { width: 46px; height: 46px; font-size: 17px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .grid-side { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
+  .stack { display: flex; flex-direction: column; }
+  .stack > * + * { margin-top: 12px; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mono { font-family: var(--font-mono); }
+  .muted { color: var(--muted); }
+  .fs-meta { font-size: var(--fs-meta); }
+  .meta-row { display: flex; align-items: center; gap: 8px; font-size: var(--fs-meta); color: var(--muted); }
+  .kv { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 6px 0; font-size: 14px; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-family: var(--font-mono); font-size: 12.5px; text-align: right; overflow-wrap: anywhere; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .seg button {
+    padding: 6px 12px; font-size: 13px; color: var(--muted);
+    border-right: 1px solid var(--border); transition: background var(--dur), color var(--dur);
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button:hover { color: var(--fg); background: var(--hover); }
+  .seg button.is-active { background: var(--fg); color: var(--bg); }
+  .tag.solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  .tag.dim { border-style: dashed; }
+  .chip {
+    padding: 7px 12px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px;
+    color: var(--muted); transition: border-color var(--dur), color var(--dur);
+  }
+  .chip:hover, .chips .chip.on { border-color: var(--fg); color: var(--fg); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .input {
+    display: block; width: 100%; min-width: 0; height: 34px; padding: 0 11px;
+    border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
+    color: var(--fg); font-size: 14px; outline: none;
+  }
+  .input:focus { border-color: var(--fg); }
+  .sw {
+    width: 34px; height: 19px; border-radius: 999px; border: 1px solid var(--border);
+    position: relative; flex: none; cursor: pointer;
+  }
+  .sw i {
+    position: absolute; top: 3px; left: 3px; width: 11px; height: 11px;
+    border-radius: 50%; background: var(--muted); transition: left var(--dur), background var(--dur);
+  }
+  .sw.on { border-color: var(--fg); }
+  .bar { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: var(--fg); }
+  .sw.on i { left: 18px; background: var(--fg); }
+  .opt {
+    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
+  }
+  .opt.on { border-color: var(--fg); }
+  .opt .t { font-size: 14px; }
+  .opt .d { color: var(--muted); font-size: var(--fs-meta); margin-top: 2px; }
+  .phones { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; }
+  .phone {
+    width: 300px; border: 1px solid var(--border); border-radius: 26px; padding: 9px;
+    background: var(--surface); flex: none;
+  }
+  .phone .screen {
+    border: 1px solid var(--border); border-radius: 18px; height: 560px;
+    overflow: hidden; display: flex; flex-direction: column; background: var(--bg);
+  }
+  .pbar {
+    display: flex; align-items: center; justify-content: space-between; padding: 9px 14px;
+    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+    border-bottom: 1px solid var(--border); flex: none;
+  }
+  .pbody { padding: 12px; overflow-y: auto; min-height: 0; }
+  .empty-state { padding: 34px 24px; text-align: center; }
+  .empty-state h3 { font-family: var(--font-display); font-size: var(--fs-h3); }
+  .empty-state p { max-width: 52ch; margin: 10px auto 0; }
+  .menu {
+    position: fixed; z-index: 80; min-width: 226px; max-width: 300px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px;
+  }
+  .menu button {
+    display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 9px;
+    border-radius: 6px; font-size: 13.5px; color: var(--fg); transition: background var(--dur-fast);
+  }
+  .menu button:hover { background: var(--hover-2); }
+  .toast {
+    position: fixed; z-index: 90; left: 50%; bottom: 26px; transform: translateX(-50%);
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 9px 14px; font-size: 13.5px; max-width: calc(100vw - 32px);
+    display: flex; align-items: center; gap: 9px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field > label { font-size: var(--fs-meta); color: var(--muted); }
+  #firstrun .field + .field { margin-top: 12px; }
+  @media (max-width: 1120px) {
+    .grid-side { grid-template-columns: minmax(0, 1fr); }
+    .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  }
+
   /* ── the first-run screen ────────────────────────────────────────────────
      The export's onboarding screen (freebot-prototype.html:178-205) and its page 2 (:615-667): a
      centred 520px column on a 100vh grid, a brandmark, a step caption beside three progress bars,
@@ -618,10 +880,7 @@
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     margin-bottom: 22px;
   }
-  #firstrun .cap {
-    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--muted); display: block; margin: 0;
-  }
+  #firstrun .cap { margin: 0; }
   #firstrun .prog { display: flex; gap: 6px; }
   #firstrun .prog i { width: 22px; height: 2px; background: var(--border); border-radius: 2px; display: block; }
   #firstrun .prog i.on { background: var(--fg); }
@@ -629,12 +888,8 @@
     font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.15;
     font-weight: 600; letter-spacing: -0.02em;
   }
-  #firstrun .hint { color: var(--muted); font-size: var(--fs-meta); line-height: 1.5; }
   #frPane1 h2, #frPane2 h2, #frPane3 h2 { margin: 0; }
   #frPane1 > .hint, #frPane2 > .hint, #frPane3 > .hint { margin: 8px 0 18px; }
-  #firstrun .field { display: flex; flex-direction: column; gap: 6px; }
-  #firstrun .field + .field { margin-top: 12px; }
-  #firstrun .field > label { font-size: var(--fs-meta); color: var(--muted); }
   .wizard-input {
     width: 100%; min-width: 0; height: 38px; padding: 0 11px; border: 1px solid var(--border);
     border-radius: var(--radius); background: var(--bg); color: var(--fg); font-size: 14px;
@@ -803,270 +1058,6 @@
   body[data-page="first-run"] .meta,
   body[data-page="first-run"] #bot-title,
   body[data-tab="library"] #composer-wrap { display: none; }
-
-  /* ── the export's shell, brought in whole ────────────────────────────────
-     The sidebar's brand row, Pinned/Work/Hidden headings, the Workspace nav, and the footer are
-     the export's own (`freebot-prototype.html:212-247`). The chat column is its `.main`
-     (`:250-380`), and the page bodies follow `:403-439`. */
-  .sb-list { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; padding: 2px 10px 10px; }
-  .sb-brand { display: flex; align-items: center; gap: 9px; padding: 6px 8px 2px; }
-  .sb-brand .name {
-    flex: 1; min-width: 0; font-family: var(--font-display); font-weight: 600; font-size: 15px;
-  }
-  .avatar {
-    width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border);
-    display: grid; place-items: center; font-family: var(--font-mono); font-size: 10px;
-    flex: none; background: var(--surface); color: var(--fg);
-  }
-  .avatar i { display: block; width: 9px; height: 9px; background: var(--fg); border-radius: 2px; }
-  .rule { border: 0; border-top: 1px solid var(--border); margin: 0; }
-  .sb-rule { margin: 12px 8px; }
-  #sidebar-title, #threads-title {
-    display: flex; align-items: center; gap: 7px; width: 100%; margin: 0;
-    padding: 12px 8px 5px; font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
-    letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted);
-  }
-  #sidebar-title { display: none; }
-  #hidden-toggle { cursor: pointer; }
-  #hidden-toggle .chev { display: inline-block; transition: transform var(--dur) var(--ease); }
-  #hidden-toggle[aria-expanded="true"] .chev { transform: rotate(90deg); }
-  #hidden-count { margin-left: auto; }
-  .nav-row { width: 100%; }
-  .sb-row.is-active, .thread-row.is-active { background: var(--accent-2); }
-  #threads-bot { padding: 0 8px 4px; }
-  #new-thread { margin-top: 4px; }
-  .sb-foot { display: flex; flex-direction: column; gap: 2px; }
-  .sb-foot .tag { margin-left: auto; }
-  .sb-acct {
-    display: flex; align-items: center; gap: 9px; width: 100%; height: 40px; padding: 0 8px;
-    border-radius: var(--radius); transition: background var(--dur-fast) var(--ease);
-  }
-  .sb-acct:hover { background: var(--hover); }
-  .sb-acct .grow { min-width: 0; }
-  .acct-name { display: block; font-size: 13.5px; }
-  .acct-sub { display: block; }
-  .sb-hidden-controls { display: none; }
-  #provider-open { width: 100%; }
-
-  #center { position: relative; }
-  .chead {
-    display: flex; align-items: center; gap: 8px; padding: 10px 14px;
-    border-bottom: 1px solid var(--border); flex: none; min-height: 56px; overflow: hidden;
-  }
-  .botname {
-    display: flex; align-items: center; gap: 8px; padding: 5px 9px 5px 6px;
-    min-width: 0; border-radius: var(--radius); transition: background var(--dur);
-  }
-  .botname .nm {
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .botname:hover { background: var(--hover); }
-  .botname .nm {
-    font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: -0.01em;
-  }
-  .chead .hint { max-width: 220px; }
-  .sr-only {
-    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
-    clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
-  }
-  /* The export's header has no tab strip. The app's two surfaces still need a door, so the strip
-     floats in the header row instead of taking a row of its own; the transcript below keeps the
-     export's geometry. */
-  #tabs {
-    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 6px; margin: 0; padding: 0; z-index: 6;
-  }
-  #thread {
-    flex: 1; overflow-y: auto; overflow-x: hidden; min-width: 0; min-height: 0;
-    padding: 22px max(22px, calc((100% - 760px) / 2)) 8px;
-    display: flex; flex-direction: column; gap: 14px;
-  }
-  #thread > :first-child { margin-top: auto; }
-  .message.user { margin: 0; }
-  .turn { margin: 0; }
-  #operator { display: block; flex: none; }
-  .composer-wrap { flex: none; padding: 10px 22px 16px; }
-  .composer { max-width: 760px; margin: 0 auto; }
-  .composer-box {
-    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
-    transition: border-color var(--dur) var(--ease);
-  }
-  .composer-box:focus-within { border-color: var(--muted); }
-  #prompt {
-    display: block; width: 100%; border: 0; background: none; resize: none;
-    padding: 12px 13px 4px; min-height: 46px; max-height: 180px; font-size: 15px;
-    line-height: 1.55; outline: none; color: var(--fg);
-  }
-  #prompt::placeholder { color: var(--muted); }
-  .composer-tools { display: flex; align-items: center; gap: 2px; padding: 4px 7px 7px; }
-  .composer-tools .spacer { flex: 1; }
-  .composer-tools .iconbtn { width: 28px; height: 28px; }
-  .composer-send { height: 30px; width: 30px; padding: 0; }
-  .chint {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    padding: 7px 3px 0; font-size: 11.5px; color: var(--muted);
-  }
-
-  .groupbar {
-    display: flex; align-items: center; gap: 7px; padding: 8px 14px;
-    border-bottom: 1px solid var(--border); flex: none; flex-wrap: wrap;
-  }
-  .groupbar[hidden] { display: none; }
-  .groupbar .cap { margin: 0; }
-  .gm {
-    display: inline-flex; align-items: center; gap: 7px; padding: 4px 9px;
-    border: 1px solid var(--border); border-radius: 999px; font-size: 12.5px;
-    transition: border-color var(--dur), color var(--dur);
-  }
-  .gm:hover { border-color: var(--fg); }
-  .gm .s { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; }
-  .groupbar .tag { margin-left: auto; }
-
-  #page { flex: 1; overflow-y: auto; overflow-x: hidden; min-height: 0; min-width: 0; }
-  #page[hidden] { display: none; }
-  body[data-page-open="true"] #thread,
-  body[data-page-open="true"] #operator,
-  body[data-page-open="true"] #tabs,
-  body[data-page-open="true"] #groupbar,
-  body[data-page-open="true"] #library { display: none; }
-  .page { min-height: 0; }
-  .page-inner { max-width: 1040px; margin: 0 auto; padding: 26px 26px 64px; }
-  .page-inner.narrow { max-width: 720px; }
-  .page-title {
-    display: flex; align-items: flex-end; justify-content: space-between; gap: 18px;
-    flex-wrap: wrap; margin-bottom: 22px;
-  }
-  .page-title h1 { font-family: var(--font-display); font-size: var(--fs-h2); line-height: 1.15; }
-  .cap {
-    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 10px;
-  }
-  .eyebrow {
-    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--muted); display: block;
-  }
-  .cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(268px, 1fr)); gap: 12px; }
-  .card {
-    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
-    padding: 15px; transition: border-color var(--dur) var(--ease);
-  }
-  .card.interactive { text-align: left; width: 100%; }
-  .card.interactive:hover { border-color: var(--fg); }
-  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-  .listcard {
-    border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface);
-    overflow: hidden;
-  }
-  .listrow {
-    display: flex; align-items: center; gap: 12px; padding: 13px 15px; width: 100%;
-    border-bottom: 1px solid var(--border); transition: background var(--dur-fast) var(--ease);
-    text-align: left;
-  }
-  .listrow:last-child { border-bottom: 0; }
-  .listrow:hover { background: var(--hover); }
-  .monogram {
-    width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border);
-    display: grid; place-items: center; font-family: var(--font-mono); font-size: 13px;
-    flex: none; background: var(--bg); letter-spacing: 0.02em;
-  }
-  .monogram.lg { width: 46px; height: 46px; font-size: 17px; }
-  .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
-  .grid-side { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
-  .stack { display: flex; flex-direction: column; }
-  .stack > * + * { margin-top: 12px; }
-  .row { display: flex; align-items: center; gap: 10px; }
-  .row-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .grow { flex: 1; min-width: 0; }
-  .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .mono { font-family: var(--font-mono); }
-  .muted { color: var(--muted); }
-  .fs-meta { font-size: var(--fs-meta); }
-  .hint { color: var(--muted); font-size: var(--fs-meta); line-height: 1.5; }
-  .meta-row { display: flex; align-items: center; gap: 8px; font-size: var(--fs-meta); color: var(--muted); }
-  .kv { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; padding: 6px 0; font-size: 14px; }
-  .kv .k { color: var(--muted); }
-  .kv .v { font-family: var(--font-mono); font-size: 12.5px; text-align: right; overflow-wrap: anywhere; }
-  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  .seg button {
-    padding: 6px 12px; font-size: 13px; color: var(--muted);
-    border-right: 1px solid var(--border); transition: background var(--dur), color var(--dur);
-  }
-  .seg button:last-child { border-right: 0; }
-  .seg button:hover { color: var(--fg); background: var(--hover); }
-  .seg button.is-active { background: var(--fg); color: var(--bg); }
-  .tag { display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
-  .tag.solid { background: var(--fg); color: var(--bg); border-color: var(--fg); }
-  .tag.dim { border-style: dashed; }
-  .chip {
-    padding: 7px 12px; border: 1px solid var(--border); border-radius: 999px; font-size: 13px;
-    color: var(--muted); transition: border-color var(--dur), color var(--dur);
-  }
-  .chip:hover, .chips .chip.on { border-color: var(--fg); color: var(--fg); }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-  .input {
-    display: block; width: 100%; min-width: 0; height: 34px; padding: 0 11px;
-    border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg);
-    color: var(--fg); font-size: 14px; outline: none;
-  }
-  .input:focus { border-color: var(--fg); }
-  .sw {
-    width: 34px; height: 19px; border-radius: 999px; border: 1px solid var(--border);
-    position: relative; flex: none; cursor: pointer;
-  }
-  .sw i {
-    position: absolute; top: 3px; left: 3px; width: 11px; height: 11px;
-    border-radius: 50%; background: var(--muted); transition: left var(--dur), background var(--dur);
-  }
-  .sw.on { border-color: var(--fg); }
-  .sw.on i { left: 18px; background: var(--fg); }
-  .bar { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
-  .bar i { display: block; height: 100%; background: var(--fg); }
-  .opt {
-    display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px;
-    border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
-  }
-  .opt.on { border-color: var(--fg); }
-  .opt .t { font-size: 14px; }
-  .opt .d { color: var(--muted); font-size: var(--fs-meta); margin-top: 2px; }
-  .phones { display: flex; gap: 26px; flex-wrap: wrap; justify-content: center; }
-  .phone {
-    width: 300px; border: 1px solid var(--border); border-radius: 26px; padding: 9px;
-    background: var(--surface); flex: none;
-  }
-  .phone .screen {
-    border: 1px solid var(--border); border-radius: 18px; height: 560px;
-    overflow: hidden; display: flex; flex-direction: column; background: var(--bg);
-  }
-  .pbar {
-    display: flex; align-items: center; justify-content: space-between; padding: 9px 14px;
-    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
-    border-bottom: 1px solid var(--border); flex: none;
-  }
-  .pbody { padding: 12px; overflow-y: auto; min-height: 0; }
-  .empty-state { padding: 34px 24px; text-align: center; }
-  .empty-state h3 { font-family: var(--font-display); font-size: var(--fs-h3); }
-  .empty-state p { max-width: 52ch; margin: 10px auto 0; }
-  .menu {
-    position: fixed; z-index: 80; min-width: 226px; max-width: 300px;
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px;
-  }
-  .menu button {
-    display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 9px;
-    border-radius: 6px; font-size: 13.5px; color: var(--fg); transition: background var(--dur-fast);
-  }
-  .menu button:hover { background: var(--hover-2); }
-  .toast {
-    position: fixed; z-index: 90; left: 50%; bottom: 26px; transform: translateX(-50%);
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 9px 14px; font-size: 13.5px; max-width: calc(100vw - 32px);
-    display: flex; align-items: center; gap: 9px;
-  }
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field > label { font-size: var(--fs-meta); color: var(--muted); }
-  @media (max-width: 1120px) {
-    .grid-side { grid-template-columns: minmax(0, 1fr); }
-    .grid-2 { grid-template-columns: minmax(0, 1fr); }
-  }
 </style>
 </head>
 <body>

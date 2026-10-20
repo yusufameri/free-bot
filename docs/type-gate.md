@@ -165,9 +165,8 @@ script, which are the three blind spots the U1.5 review measured.
 2. `packages/pi-bridge/extension/smoke-echo.ts` is clean and unreached. Adding
    `packages/*/extension/**/*.ts` covers it and its sibling. The probe's blind-set check fails when
    that lands, by design, and names this doc.
-3. The probe is a manual run. `bun run verify` already covers the widened set, since its typecheck
-   step is the same root command, but only the probe notices a narrowed include. Wiring it into
-   `packages/verify/run.ts` would put that guard in CI.
+3. The probe runs as the `type-gate` step of `bun run verify`, so CI runs it. The root typecheck
+   reaches the widened set but does not notice a narrowed include; the probe does.
 4. The framework port adds real `.tsx` components under the widened gate. A component under
    `apps/*/src` is checked by the root gate as soon as React types are installed. A component under
    `apps/web/host` or a Next.js `app/` directory needs the DOM-aware project, so the port either
