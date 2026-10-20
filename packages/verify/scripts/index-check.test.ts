@@ -11,6 +11,7 @@ import { describe, expect, test } from "bun:test";
 import {
   copyFileSync,
   cpSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
@@ -20,7 +21,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { artifactPaths, loadRecord } from "../src/verification-record.ts";
-import { checkRecord } from "./index-check.ts";
+import { checkRecord, shortShaIndex } from "./index-check.ts";
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url)).replace(/\/$/, "");
 const realRecord = join(repoRoot, "docs", "verification");
@@ -248,5 +249,53 @@ describe("the verification record checker", () => {
 
     expect(report.ok).toBe(false);
     expect(report.failures.join("\n")).toContain("artifact not found");
+  });
+
+  test("a legacy-header row still fails when its artifact names a different full commit", () => {
+    const root = mkdtempSync(join(tmpdir(), "freebot-legacy-root-"));
+    const record = join(root, "record");
+    const artifacts = join(root, "packages", "verify", "artifacts", "demo", "abc1234");
+    mkdirSync(record, { recursive: true });
+    mkdirSync(artifacts, { recursive: true });
+
+    const commit = `abc1234${"0".repeat(33)}`;
+    const other = "d".repeat(40);
+    writeFileSync(join(artifacts, "assert.txt"), `commit: ${other}\nno header here\n`);
+    writeFileSync(
+      join(record, "demo.md"),
+      [
+        "feature: demo",
+        "script: `bun demo.ts`",
+        "verdict: unit-test-verified",
+        "artifact: `packages/verify/artifacts/demo/abc1234/assert.txt`",
+        `commit: ${commit}`,
+        "date: 2026-10-19",
+        "legacy-header: the run predates the writer's commit header",
+      ].join("\n") + "\n",
+    );
+
+    const report = checkRecord(root, {
+      recordDir: record,
+      indexPath: join(root, "VERIFICATION.md"),
+      base: commit,
+      checkDrift: false,
+    });
+
+    expect(report.ok).toBe(false);
+    expect(report.failures.join("\n")).toContain(`artifact names commit ${other}`);
+  });
+});
+
+describe("the short sha index", () => {
+  test("resolves a run directory named by eight characters, and refuses an ambiguous seven", () => {
+    const first = `aaaaaaa${"0".repeat(33)}`;
+    const second = `aaaaaaab${"0".repeat(32)}`;
+    const index = shortShaIndex([first, second]);
+
+    expect(index.resolve("aaaaaaa0")).toBe(first);
+    expect(index.resolve("aaaaaaab")).toBe(second);
+    expect(index.resolve("aaaaaaa")).toBeNull();
+    expect(index.resolve("ccccccc")).toBeNull();
+    expect(index.resolve(first)).toBe(first);
   });
 });

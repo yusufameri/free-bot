@@ -118,6 +118,36 @@ type GitView = {
   newest: (feature: string) => string | null;
 };
 
+/** Resolve a run directory's name to the full commit it prefixes. */
+export type ShortShaIndex = { resolve: (short: string) => string | null };
+
+/**
+ * Index full shas by their first seven characters, then match the whole name against those
+ * candidates.
+ *
+ * `git rev-parse --short` returns more than seven characters when seven is ambiguous, so a run
+ * directory can be named `abc1234d`. Indexing by the name itself would miss it. A name that matches
+ * no ancestor, or more than one, resolves to null rather than to a guess.
+ */
+export function shortShaIndex(shas: Iterable<string>): ShortShaIndex {
+  const all = new Set<string>();
+  const byPrefix = new Map<string, string[]>();
+  for (const sha of shas) {
+    all.add(sha);
+    const prefix = sha.slice(0, SHORT);
+    byPrefix.set(prefix, [...(byPrefix.get(prefix) ?? []), sha]);
+  }
+  return {
+    resolve: (short) => {
+      if (all.has(short)) return short;
+      const matches = (byPrefix.get(short.slice(0, SHORT)) ?? []).filter((sha) =>
+        sha.startsWith(short),
+      );
+      return matches.length === 1 ? (matches[0] ?? null) : null;
+    },
+  };
+}
+
 function git(root: string, args: string[]): string | null {
   const proc = Bun.spawnSync(["git", ...args], { cwd: root, stdout: "pipe", stderr: "ignore" });
   return proc.exitCode === 0 ? proc.stdout.toString().trim() : null;
@@ -155,17 +185,8 @@ function gitView(root: string, base: string): GitView {
       if (timestamp !== undefined && sha !== undefined) ancestors.set(sha, Number(timestamp));
     }
   }
-  const byPrefix = new Map<string, string[]>();
-  for (const sha of ancestors.keys()) {
-    const prefix = sha.slice(0, SHORT);
-    byPrefix.set(prefix, [...(byPrefix.get(prefix) ?? []), sha]);
-  }
-
-  const resolve = (short: string): string | null => {
-    if (ancestors.has(short)) return short;
-    const matches = byPrefix.get(short) ?? [];
-    return matches.length === 1 ? (matches[0] ?? null) : null;
-  };
+  const shortIndex = shortShaIndex(ancestors.keys());
+  const resolve = shortIndex.resolve;
 
   const distances = new Map<string, number | null>();
   const distance = (sha: string): number | null => {
@@ -487,6 +508,10 @@ export function checkRecord(root: string, options: CheckOptions = {}): Report {
           const headerProblem = `row "${row.feature}": artifact header says commit ${said.sha}, the row says ${row.commit} — ${path}`;
           if (!headerOk) problems.push(headerProblem);
           record(headerOk, headerProblem);
+        } else if (said?.kind === "mentioned" && !body.includes(row.commit)) {
+          const headerProblem = `row "${row.feature}": artifact names commit ${said.sha}, the row says ${row.commit} — ${path}`;
+          problems.push(headerProblem);
+          record(false, headerProblem);
         } else if (body.includes(row.commit)) {
           stated = "mentioned";
         } else if (row.legacyHeader !== null && row.legacyHeader.trim() !== "") {
