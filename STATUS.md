@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-20T01:10Z, against `origin/main` `ecf9b8b`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-20T01:42Z, against `origin/main` `3cb3672`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-67 units in the register: 61 done, 0 running, 5 pending, 1 parked.
+67 units in the register: 62 done, 0 running, 4 pending, 1 parked.
 
-The verification ledger holds 78 rows: 26 `live-ui-verified`, 34 `unit-test-verified`, 2 `type-check-only`, 16 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 80 rows: 26 `live-ui-verified`, 34 `unit-test-verified`, 3 `type-check-only`, 17 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -106,6 +106,7 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U10.12 | The status driver reads the composer it has (input, textarea, or a named failure), and a page error carries its own message | [#77](https://github.com/yusufameri/free-bot/pull/77) |
 | U10.17 | The group-chat form opens empty with `Name this room`, and Create without a name refuses | [#79](https://github.com/yusufameri/free-bot/pull/79) |
 | U10.18 | Five drivers call the shared page-error helper, so a page exception reaches the driver's error with its own message | [#81](https://github.com/yusufameri/free-bot/pull/81) |
+| U10.19 | The type gate back to 38/38: census from `git ls-files`, sixteen documented files, and a byte-identical restore test | [#83](https://github.com/yusufameri/free-bot/pull/83) |
 
 ## Not built yet
 
@@ -117,14 +118,14 @@ now the type gate itself: it fails 31/38 at main, including 'the tree passes wit
 removed' and 'the restored tree passes', so the instrument that proves the typecheck is not blind is
 itself broken; U10.19 owns it. U10.18 carries the hidden-error defect still copied in five drivers.
 
-Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.19, U10.20.
+Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.20.
 
 | Unit | What it is |
 | --- | --- |
 | U9.3 | The E2B Embed backend for Linux hosts and CI |
 | U10.1 | The verification record as data plus a check that reads it. The checker half landed as U10.6; this carries what remains, including the unreferenced-artifact rule order 49 gives it |
 | U10.2 | Artifact hygiene: a real prune script, an ignore rule for the Chrome profiles, and one shared screenshot helper instead of ten |
-| U10.19 | The type gate's plant/restore path: 31/38 at main, seven red, the sweep's last red |
+| U10.20 | Two gates outside the ladder: the nine lint errors at main, and the type gate as a manual run |
 | U10.20 | The lint gate: nine specificity errors at main, and no lint step in the verify ladder for CI to read |
 | U10.18 | Five drivers still read `exceptionDetails.text`, so their page errors hide the page's own message |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
