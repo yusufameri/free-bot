@@ -1,6 +1,6 @@
 # FreeBot status
 
-> Generated from the orchestration store at 2026-10-20T00:00Z, against `origin/main` `4994ce9`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
+> Generated from the orchestration store at 2026-10-20T01:00Z, against `origin/main` `8744f60`. The store is authoritative and this file is a snapshot the coordinator refreshes at every drain. The registers live outside the repository at `/Users/yusufameri/.opencode/orchestrate/freebot`: `units.tsv` (one row per unit), `ledger.tsv` (one verification row per PR and head), `decisions.tsv` (the decision trail), `gates.md`, `preferences.md` (the standing orders), `briefs/`, and `reports/`. The specification is `PLAN.md`.
 
 ## Against the done predicate
 
@@ -37,9 +37,9 @@ The list is fixed by the plan's §5.2 re-cut.
 
 ## Units
 
-65 units in the register: 59 done, 0 running, 5 pending, 1 parked.
+66 units in the register: 60 done, 1 running, 4 pending, 1 parked.
 
-The verification ledger holds 74 rows: 25 `live-ui-verified`, 33 `unit-test-verified`, 2 `type-check-only`, 14 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
+The verification ledger holds 76 rows: 26 `live-ui-verified`, 33 `unit-test-verified`, 2 `type-check-only`, 15 `docs-only`. A row names the artifact and the commit it was produced at, and CI green is an input to a verdict rather than the verdict.
 
 Done, by wave. Each row names the PR, and a unit with no PR number landed directly on main during the scaffold wave.
 
@@ -104,23 +104,26 @@ Done, by wave. Each row names the PR, and a unit with no PR number landed direct
 | U10.13 | The eight red drivers triaged: six stale claims fixed and re-run, two product defects filed, and a lost-tail socket write fixed | [#73](https://github.com/yusufameri/free-bot/pull/73) |
 | U10.16 | The restart run path: the driver scoped to the new run id, and a run whose setup throws settles instead of staying queued | [#74](https://github.com/yusufameri/free-bot/pull/74) |
 | U10.12 | The status driver reads the composer it has (input, textarea, or a named failure), and a page error carries its own message | [#77](https://github.com/yusufameri/free-bot/pull/77) |
+| U10.17 | The group-chat form opens empty with `Name this room`, and Create without a name refuses | [#79](https://github.com/yusufameri/free-bot/pull/79) |
 
 ## Not built yet
 
 Nothing is running. U10.12 landed the routine's driver fix, so the status pass can prove the predicate
 from its own frames again instead of borrowing them: the composer is written through the prototype its
 real tag asks for, and the shared evaluate wrapper now reports a page exception's own message rather than
-`Uncaught :: <expression>`. U10.17 remains the one owned sweep red; the next scheduled sweep will say
-whether main is green, and U10.18 carries the same hidden-error defect still copied in five drivers.
+`Uncaught :: <expression>`. U10.17 removed the prototype's sample room name, which was the overlays red. The sweep's last red is
+now the type gate itself: it fails 31/38 at main, including 'the tree passes with every probe file
+removed' and 'the restored tree passes', so the instrument that proves the typecheck is not blind is
+itself broken; U10.19 owns it. U10.18 carries the hidden-error defect still copied in five drivers.
 
-Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.17, U10.18.
+Queued, each with a brief at `briefs/<id>.md`: U9.3, U10.1, U10.2, U10.19. U10.18 is running.
 
 | Unit | What it is |
 | --- | --- |
 | U9.3 | The E2B Embed backend for Linux hosts and CI |
 | U10.1 | The verification record as data plus a check that reads it. The checker half landed as U10.6; this carries what remains, including the unreferenced-artifact rule order 49 gives it |
 | U10.2 | Artifact hygiene: a real prune script, an ignore rule for the Chrome profiles, and one shared screenshot helper instead of ten |
-| U10.17 | The group-chat form opens with the prototype's sample room name as a live default |
+| U10.19 | The type gate's plant/restore path: 31/38 at main, seven red, the sweep's last red |
 | U10.18 | Five drivers still read `exceptionDetails.text`, so their page errors hide the page's own message |
 | U9.4 | Parked. A paid cloud backend, kept behind the same seam and never a requirement |
 | U10.12 | Parked and folded into U10.13: its brief is superseded, and the composer fix is that unit's item 7 |
